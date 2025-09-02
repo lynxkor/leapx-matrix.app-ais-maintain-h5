@@ -34,6 +34,7 @@
   --color-text: var(--vt-c-text-light-1);
 
   --section-gap: 160px;
+  --van-primary-color: #07b56a;
 }
 
 @media (prefers-color-scheme: dark) {
