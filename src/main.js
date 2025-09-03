@@ -1,6 +1,6 @@
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
-import { List, Cell, Search, NavBar, PullRefresh, Image as VanImage, Lazyload, Swipe, SwipeItem, ActionSheet, ActionBar, ActionBarButton, Button, Form, Field, CellGroup, Icon } from 'vant'
+import { List, Cell, Search, NavBar, PullRefresh, Image as VanImage, Lazyload, Swipe, SwipeItem, ActionSheet, ActionBar, ActionBarButton, Button, Form, Field, CellGroup, Icon, Dialog } from 'vant'
 
 import App from './App.vue'
 import router from './router'
@@ -29,6 +29,7 @@ app.use(Form)
 app.use(Field)
 app.use(CellGroup)
 app.use(Icon)
+app.use(Dialog)
 
 // 注册时可以配置额外的选项
 app.use(Lazyload, {

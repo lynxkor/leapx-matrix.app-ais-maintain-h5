@@ -8,17 +8,23 @@ export function goBack() {
   if (window.history.length > 1) {
     window.history.go(-1)
   } else {
-    const navigatorType = getNavigatorType()
-    switch (navigatorType) {
-      case NAVIGATOR_TYPE_ANDROID:
-        window.Android.goback()
-        break
-      case NAVIGATOR_TYPE_IOS:
-        window.webkit.messageHandlers.goback.postMessage(null)
-        break
-      default:
-        window.close()
-        break
-    }
+    outWebview()
+  }
+}
+
+/**
+ * 退出webview
+ */
+export function outWebview() {
+  const navigatorType = getNavigatorType()
+  switch (navigatorType) {
+    case NAVIGATOR_TYPE_ANDROID:
+      window.Android.outWebview()
+      break
+    case NAVIGATOR_TYPE_IOS:
+      window.webkit.messageHandlers.outWebview.postMessage(null)
+      break
+    default:
+      window.close()
   }
 }

@@ -1,6 +1,8 @@
 // utils/request.js
 import axios from 'axios'
+import { showConfirmDialog } from 'vant'
 import { useUserStore } from '@/stores/user'
+import { outWebview } from '@/utils/app'
 
 // 创建axios实例
 const service = axios.create({
@@ -25,6 +27,28 @@ service.interceptors.request.use(
   },
   (error) => {
     // 请求错误处理
+    return Promise.reject(error)
+  }
+)
+
+// 响应拦截器
+service.interceptors.response.use(
+  (response) => {
+    return response
+  },
+  (error) => {
+    const status = error.response?.status
+
+    if (status === 401 || status === 403) {
+      showConfirmDialog({
+        title: '提示',
+        message: status === 401 ? '登录已过期，请点击确定返回' : '无权限访问，请点击确定返回',
+      }).then(() => {
+        // 确认按钮回调
+        outWebview()
+      })
+    }
+
     return Promise.reject(error)
   }
 )
