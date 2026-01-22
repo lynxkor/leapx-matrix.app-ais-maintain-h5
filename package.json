@@ -1,6 +1,6 @@
 {
   "name": "vue3-h5-template",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "private": true,
   "type": "module",
   "engines": {
@@ -29,10 +29,8 @@
   },
   "author": "pan_ji2@leapmotor.com",
   "license": "ISC",
-  "peerDependencies": {
-    "@leapmotor/design-v3-h5": "0.0.1"
-  },
   "dependencies": {
+    "@leapmotor/design-v3-h5": "0.0.1",
     "axios": "^1.11.0",
     "pinia": "^3.0.3",
     "vant": "^4.9.21",
