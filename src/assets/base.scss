@@ -34,7 +34,10 @@
   --color-text: var(--vt-c-text-light-1);
 
   --section-gap: 160px;
+
+  /* 自定义样式 */
   --van-primary-color: #{theme.$color-primary};
+  --van-nav-bar-height: 44px;
 }
 
 @media (prefers-color-scheme: dark) {
