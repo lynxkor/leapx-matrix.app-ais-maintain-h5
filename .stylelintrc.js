@@ -9,7 +9,7 @@ export default {
   ],
   overrides: [
     {
-      files: ['**/*.{html,vue}'],
+      files: ['**/*.{html,vue}']
     }
   ],
   rules: {
