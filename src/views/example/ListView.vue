@@ -53,7 +53,7 @@ getList()
 
 <template>
   <div class="m-example-list-c">
-    <van-search 
+    <van-search
       v-model="value"
       placeholder="请输入搜索关键词"
       @search="onSearch"
@@ -66,8 +66,8 @@ getList()
         @load="onLoad"
         @refresh="onRefresh"
       >
-        <RouterLink 
-          v-for="item in list" 
+        <RouterLink
+          v-for="item in list"
           :key="item"
           class="m-list-item"
           :to="{ path: '/example/detail', query: { id: item } }"
@@ -89,6 +89,15 @@ getList()
 
 <style lang="scss">
 .m-example-list-c {
+  padding-top: 54px;
+
+  .van-search {
+    position: fixed;
+    top: 44px;
+    z-index: 1;
+    width: 100%;
+  }
+
   .m-list-item {
     display: inline-block;
     width: 44%;
