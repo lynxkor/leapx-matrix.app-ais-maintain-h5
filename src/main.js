@@ -68,4 +68,10 @@ app.use(Lazyload, {
   lazyComponent: true
 })
 
+if (import.meta.env.DEV) {
+  import('vconsole').then(({ default: VConsole }) => {
+    new VConsole()
+  })
+}
+
 app.mount('#app')
