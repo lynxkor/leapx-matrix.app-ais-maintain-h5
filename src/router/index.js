@@ -26,7 +26,8 @@ const router = createRouter({
           // which is lazy-loaded when the route is visited.
           component: () => import('../views/example/ListView.vue'),
           meta: {
-            title: 'Demo-商品列表'
+            title: 'Demo-商品列表',
+            keepAlive: true
           }
         },
         {
