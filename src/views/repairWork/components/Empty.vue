@@ -35,8 +35,7 @@ defineProps({
   }
 
   .empty-text {
-    /* token: #6C6E6C */
-    color: #6c6e6c;
+    color: var(--leap-color-default-light-1);
     font-family:
       'PingFang SC',
       -apple-system,

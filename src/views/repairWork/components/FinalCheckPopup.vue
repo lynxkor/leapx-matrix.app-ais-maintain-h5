@@ -95,7 +95,7 @@
         <div class="footer-bar"></div>
         <van-button
           type="primary"
-          color="#009100"
+          color="var(--leap-color-primary)"
           round
           block
           :disabled="!canSubmit"
@@ -202,8 +202,6 @@ const handleSubmit = () => {
   display: flex;
   flex-direction: column;
   height: 100%;
-
-  /* token: #F4F4F4 */
   background-color: #f4f4f4;
 
   // 标题栏
@@ -212,8 +210,6 @@ const handleSubmit = () => {
     align-items: center;
     justify-content: center;
     height: 58px;
-
-    /* token: #F4F4F4 */
     background-color: #f4f4f4;
     position: relative;
     flex-shrink: 0;
@@ -225,9 +221,7 @@ const handleSubmit = () => {
       transform: translateY(-50%);
       width: 20px;
       height: 20px;
-
-      /* token: #888888 */
-      background-color: #888;
+      background-color: var(--leap-color-default-light-2);
       border-radius: 50%;
       display: flex;
       align-items: center;
@@ -236,20 +230,15 @@ const handleSubmit = () => {
 
       .van-icon {
         font-size: 12px;
-
-        /* token: #FFFFFF */
         color: #fff;
       }
     }
 
     .header-title {
-      /* token: PingFang SC Medium 14px */
       font-size: 14px;
       font-family: 'PingFang SC', sans-serif;
       font-weight: 500;
-
-      /* token: #191A1B */
-      color: #191a1b;
+      color: var(--leap-color-default);
       line-height: 20px;
     }
   }
@@ -261,7 +250,6 @@ const handleSubmit = () => {
     padding: 0 12px;
 
     .info-card {
-      /* token: #FFFFFF */
       background-color: #fff;
       border-radius: 8px;
       margin-bottom: 12px;
@@ -269,14 +257,10 @@ const handleSubmit = () => {
 
       .card-title {
         padding: 12px 0;
-
-        /* token: PingFang SC 中粗体 14px */
         font-size: 14px;
         font-family: 'PingFang SC', sans-serif;
         font-weight: 600;
-
-        /* token: #191A1B */
-        color: #191a1b;
+        color: var(--leap-color-default);
         line-height: 20px;
       }
 
@@ -284,9 +268,7 @@ const handleSubmit = () => {
         display: flex;
         align-items: center;
         height: 50px;
-
-        /* token: #E6E6E5 */
-        border-bottom: 0.5px solid #e6e6e5;
+        border-bottom: 0.5px solid var(--leap-color-default-light-4);
 
         &.last-item {
           border-bottom: none;
@@ -294,14 +276,10 @@ const handleSubmit = () => {
 
         .form-label {
           flex-shrink: 0;
-
-          /* token: PingFang SC 常规体 14px */
           font-size: 14px;
           font-family: 'PingFang SC', sans-serif;
           font-weight: 400;
-
-          /* token: #191A1B */
-          color: #191a1b;
+          color: var(--leap-color-default);
           line-height: 20px;
         }
 
@@ -316,16 +294,13 @@ const handleSubmit = () => {
 
           .van-field__control {
             text-align: right;
-
-            /* token: PingFang SC 常规体 14px */
             font-size: 14px;
             font-family: 'PingFang SC', sans-serif;
             font-weight: 400;
           }
 
           .van-field__control::placeholder {
-            /* token: #888888 */
-            color: #888;
+            color: var(--leap-color-default-light-2);
           }
         }
       }
@@ -336,8 +311,7 @@ const handleSubmit = () => {
 
       .parts-list {
         .part-item {
-          /* token: #F8F7F7 */
-          background-color: #f8f7f7;
+          background-color: var(--leap-color-default-light-5);
           border-radius: 4px;
           overflow: hidden;
           margin-bottom: 8px;
@@ -349,33 +323,24 @@ const handleSubmit = () => {
           .part-header {
             padding: 12px 0;
             background-color: transparent;
-
-            /* token: #E6E6E5 */
-            border-bottom: 0.5px solid #e6e6e5;
+            border-bottom: 0.5px solid var(--leap-color-default-light-4);
             margin: 0 8px;
 
             .part-name {
-              /* token: PingFang SC 中黑体 14px */
               font-size: 14px;
               font-family: 'PingFang SC', sans-serif;
               font-weight: 600;
-
-              /* token: #191A1B */
-              color: #191a1b;
+              color: var(--leap-color-default);
               line-height: 20px;
               word-break: break-all;
             }
 
             .part-trace-code {
               margin-top: 2px;
-
-              /* token: PingFang SC 常规体 12px */
               font-size: 12px;
               font-family: 'PingFang SC', sans-serif;
               font-weight: 400;
-
-              /* token: #888888 */
-              color: #888;
+              color: var(--leap-color-default-light-2);
               line-height: 17px;
             }
           }
@@ -384,9 +349,7 @@ const handleSubmit = () => {
             display: flex;
             align-items: center;
             height: 50px;
-
-            /* token: #E6E6E5 */
-            border-bottom: 0.5px solid #e6e6e5;
+            border-bottom: 0.5px solid var(--leap-color-default-light-4);
             padding: 0 8px;
 
             &.last-item {
@@ -395,14 +358,10 @@ const handleSubmit = () => {
 
             .form-label {
               flex-shrink: 0;
-
-              /* token: PingFang SC 常规体 14px */
               font-size: 14px;
               font-family: 'PingFang SC', sans-serif;
               font-weight: 400;
-
-              /* token: #191A1B */
-              color: #191a1b;
+              color: var(--leap-color-default);
               line-height: 20px;
             }
 
@@ -417,16 +376,13 @@ const handleSubmit = () => {
 
               .van-field__control {
                 text-align: right;
-
-                /* token: PingFang SC 常规体 14px */
                 font-size: 14px;
                 font-family: 'PingFang SC', sans-serif;
                 font-weight: 400;
               }
 
               .van-field__control::placeholder {
-                /* token: #888888 */
-                color: #888;
+                color: var(--leap-color-default-light-2);
               }
             }
           }
@@ -438,8 +394,6 @@ const handleSubmit = () => {
   // 底部按钮
   .popup-footer {
     height: 88px;
-
-    /* token: #FFFFFF */
     background-color: #fff;
     display: flex;
     flex-direction: column;
@@ -457,8 +411,6 @@ const handleSubmit = () => {
         content: '';
         width: 134px;
         height: 5px;
-
-        /* token: #000000 */
         background-color: #000;
         border-radius: 2.5px;
       }

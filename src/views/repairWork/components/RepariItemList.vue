@@ -121,8 +121,8 @@ const handleQuality = (item) => {
 <style lang="scss" scoped>
 .repair-item-list {
   width: 100%;
-  border-top: 0.5px solid #e6e6e5;
-  border-bottom: 0.5px solid #e6e6e5;
+  border-top: 0.5px solid var(--leap-color-default-light-4);
+  border-bottom: 0.5px solid var(--leap-color-default-light-4);
   padding: 10px 0;
 
   .collapse-header {
@@ -135,13 +135,13 @@ const handleQuality = (item) => {
       font-size: 14px;
       font-family: 'PingFang SC', sans-serif;
       font-weight: 400;
-      color: #191a1b;
+      color: var(--leap-color-default);
       line-height: 20px;
     }
 
     .van-icon {
       font-size: 16px;
-      color: #888;
+      color: var(--leap-color-default-light-2);
     }
   }
 
@@ -160,7 +160,7 @@ const handleQuality = (item) => {
     flex-direction: column;
 
     .repair-item-card {
-      background-color: #f8f7f7;
+      background-color: var(--leap-color-default-light-5);
       border-radius: 4px;
       border-left: 1px solid transparent;
       padding: 8px;
@@ -183,7 +183,7 @@ const handleQuality = (item) => {
             font-size: 14px;
             font-family: 'PingFang SC', sans-serif;
             font-weight: 500;
-            color: #191a1b;
+            color: var(--leap-color-default);
             line-height: 20px;
             text-overflow: ellipsis;
             overflow: hidden;
@@ -200,7 +200,7 @@ const handleQuality = (item) => {
               font-size: 12px;
               font-family: 'PingFang SC', sans-serif;
               font-weight: 400;
-              color: #888;
+              color: var(--leap-color-default-light-2);
               line-height: 17px;
             }
           }
@@ -220,25 +220,25 @@ const handleQuality = (item) => {
             cursor: pointer;
 
             &.delete {
-              color: #009100;
+              color: var(--leap-color-primary);
             }
 
             &.start {
-              color: #009100;
+              color: var(--leap-color-primary);
             }
 
             &.end {
-              color: #009100;
+              color: var(--leap-color-primary);
             }
 
             &.quality {
-              color: #009100;
+              color: var(--leap-color-primary);
             }
           }
 
           .van-divider {
             margin: 0;
-            border-color: #80c880;
+            border-color: var(--leap-color-primary-light-5);
             height: 12px;
           }
         }

@@ -298,13 +298,13 @@ watch(activeTab, () => {
       color: #545454;
 
       &.van-tab--active {
-        color: #009100;
+        color: var(--leap-color-primary);
         font-weight: 600;
       }
     }
 
     .van-tabs__line {
-      background-color: #009100;
+      background-color: var(--leap-color-primary);
       height: 2px;
       border-radius: 2px;
     }
@@ -324,10 +324,8 @@ watch(activeTab, () => {
       .filter-tab {
         height: 30px;
         padding: 2px 16px;
-
-        /* token: #F8F7F7 */
-        background-color: #f8f7f7;
-        border: 1px solid #f8f7f7;
+        background-color: var(--leap-color-default-light-5);
+        border: 1px solid var(--leap-color-default-light-5);
         border-radius: 4px;
         font-family:
           'PingFang SC',
@@ -337,15 +335,14 @@ watch(activeTab, () => {
         font-size: 12px;
         font-weight: 400;
         line-height: 24px;
-        color: #191a1b;
+        color: var(--leap-color-default);
         cursor: pointer;
         transition: all 0.3s;
 
         &.active {
-          /* token: #009100 */
           background-color: transparent;
-          border: 1px solid #009100;
-          color: #009100;
+          border: 1px solid var(--leap-color-primary);
+          color: var(--leap-color-primary);
         }
       }
     }
@@ -356,9 +353,7 @@ watch(activeTab, () => {
       gap: 4px;
       height: 30px;
       padding: 0 12px 0 8px;
-
-      /* token: #F8F7F7 */
-      background-color: #f8f7f7;
+      background-color: var(--leap-color-default-light-5);
       border-radius: 80px;
       cursor: pointer;
 
@@ -371,7 +366,7 @@ watch(activeTab, () => {
         font-size: 12px;
         font-weight: 400;
         line-height: 20px;
-        color: #191a1b;
+        color: var(--leap-color-default);
       }
     }
   }

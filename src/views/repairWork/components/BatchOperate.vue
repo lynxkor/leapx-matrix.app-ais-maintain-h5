@@ -376,23 +376,11 @@ const handleClose = () => {
 </script>
 
 <style lang="scss" scoped>
-// 颜色变量
-$color-primary: #009100; // 零跑绿
-$color-text-primary: #191a1b; // 主要文字
-$color-text-secondary: #888; // 次要文字
-$color-text-tertiary: #545454; // 第三级文字
-$color-warning: #c8a12b; // 警告色
-$color-danger: #b91919; // 危险色
-$color-border: #e6e6e5; // 边框色
-$color-bg-gray: #f4f4f4; // 灰色背景
-$color-bg-light: #f8f7f7; // 浅灰背景
-$color-white: #fff;
-
 .batch-operate-popup {
   display: flex;
   flex-direction: column;
   height: 100%;
-  background-color: $color-bg-gray;
+  background-color: #f4f4f4;
 
   // 标题栏
   .popup-header {
@@ -400,7 +388,7 @@ $color-white: #fff;
     align-items: center;
     justify-content: space-between;
     height: 58px;
-    background-color: $color-bg-gray;
+    background-color: #f4f4f4;
     padding: 0 16px;
     flex-shrink: 0;
 
@@ -419,7 +407,7 @@ $color-white: #fff;
 
       .van-icon {
         font-size: 20px;
-        color: $color-text-secondary;
+        color: var(--leap-color-default-light-2);
       }
     }
 
@@ -432,13 +420,13 @@ $color-white: #fff;
         font-family: 'PingFang SC', sans-serif;
         font-size: 14px;
         font-weight: 500;
-        color: $color-text-primary;
+        color: var(--leap-color-default);
         line-height: 20px;
       }
 
       .order-tag {
         background-color: rgba(25, 26, 27, 0.06);
-        color: $color-text-primary;
+        color: var(--leap-color-default);
         font-family: 'PingFang SC', sans-serif;
         font-size: 12px;
         font-weight: 400;
@@ -456,7 +444,7 @@ $color-white: #fff;
     padding: 0 12px;
 
     .content-card {
-      background-color: $color-white;
+      background-color: #fff;
       border-radius: 8px;
       padding: 12px;
     }
@@ -465,7 +453,7 @@ $color-white: #fff;
   // 车辆信息
   .vehicle-info-section {
     padding-bottom: 12px;
-    border-bottom: 0.5px solid $color-border;
+    border-bottom: 0.5px solid var(--leap-color-default-light-4);
 
     .vehicle-main {
       display: flex;
@@ -485,7 +473,7 @@ $color-white: #fff;
             font-family: 'PingFang SC', sans-serif;
             font-size: 16px;
             font-weight: 600;
-            color: $color-text-primary;
+            color: var(--leap-color-default);
             line-height: 22px;
           }
 
@@ -496,11 +484,11 @@ $color-white: #fff;
             line-height: 17px;
 
             &.status-pending {
-              color: $color-warning;
+              color: var(--leap-color-warning);
             }
 
             &.status-working {
-              color: $color-primary;
+              color: var(--leap-color-primary);
             }
           }
         }
@@ -509,7 +497,7 @@ $color-white: #fff;
           font-family: 'PingFang SC', sans-serif;
           font-size: 12px;
           font-weight: 400;
-          color: $color-text-tertiary;
+          color: #545454;
           line-height: 17px;
         }
       }
@@ -520,7 +508,7 @@ $color-white: #fff;
         justify-content: center;
         width: 44px;
         height: 32px;
-        border: 1px solid $color-danger;
+        border: 1px solid var(--leap-color-danger);
         border-radius: 4px;
         cursor: pointer;
 
@@ -528,7 +516,7 @@ $color-white: #fff;
           font-family: 'PingFang SC', sans-serif;
           font-size: 14px;
           font-weight: 400;
-          color: $color-danger;
+          color: var(--leap-color-danger);
         }
       }
     }
@@ -548,18 +536,18 @@ $color-white: #fff;
       min-width: 68px;
       height: 30px;
       padding: 2px 0;
-      background-color: $color-bg-light;
+      background-color: var(--leap-color-default-light-5);
       border-radius: 4px;
       font-family: 'PingFang SC', sans-serif;
       font-size: 12px;
       font-weight: 400;
-      color: $color-text-primary;
+      color: var(--leap-color-default);
       line-height: 20px;
 
       &.active {
         background-color: transparent;
-        border: 1px solid $color-primary;
-        color: $color-primary;
+        border: 1px solid var(--leap-color-primary);
+        color: var(--leap-color-primary);
       }
     }
   }
@@ -575,7 +563,7 @@ $color-white: #fff;
       font-family: 'PingFang SC', sans-serif;
       font-size: 14px;
       font-weight: 600;
-      color: $color-text-primary;
+      color: var(--leap-color-default);
       line-height: 20px;
     }
 
@@ -588,13 +576,13 @@ $color-white: #fff;
         font-family: 'PingFang SC', sans-serif;
         font-size: 12px;
         font-weight: 400;
-        color: $color-primary;
+        color: var(--leap-color-primary);
         line-height: 17px;
       }
 
       .arrow-icon {
         font-size: 16px;
-        color: $color-primary;
+        color: var(--leap-color-primary);
       }
     }
   }
@@ -605,7 +593,7 @@ $color-white: #fff;
       display: flex;
       align-items: center;
       padding: 12px 0;
-      border-bottom: 0.5px solid $color-border;
+      border-bottom: 0.5px solid var(--leap-color-default-light-4);
 
       &:last-child {
         border-bottom: none;
@@ -627,11 +615,11 @@ $color-white: #fff;
         background-color: transparent;
 
         &.checked {
-          background-color: $color-primary;
-          border-color: $color-primary;
+          background-color: var(--leap-color-primary);
+          border-color: var(--leap-color-primary);
 
           .van-icon {
-            color: $color-white;
+            color: #fff;
             font-size: 12px;
           }
         }
@@ -644,7 +632,7 @@ $color-white: #fff;
           font-family: 'PingFang SC', sans-serif;
           font-size: 14px;
           font-weight: 400;
-          color: $color-text-primary;
+          color: var(--leap-color-default);
           line-height: 20px;
           margin-bottom: 2px;
           display: -webkit-box;
@@ -662,7 +650,7 @@ $color-white: #fff;
             font-family: 'PingFang SC', sans-serif;
             font-size: 12px;
             font-weight: 400;
-            color: $color-text-secondary;
+            color: var(--leap-color-default-light-2);
             line-height: 17px;
           }
         }
@@ -683,7 +671,7 @@ $color-white: #fff;
       font-family: 'PingFang SC', sans-serif;
       font-size: 14px;
       font-weight: 400;
-      color: $color-text-secondary;
+      color: var(--leap-color-default-light-2);
       line-height: 20px;
     }
   }
@@ -691,7 +679,7 @@ $color-white: #fff;
   // 底部操作栏
   .popup-footer {
     flex-shrink: 0;
-    background-color: $color-white;
+    background-color: #fff;
     border-top: 1px solid #dce0e4;
 
     .footer-content {
@@ -718,11 +706,11 @@ $color-white: #fff;
           background-color: transparent;
 
           &.checked {
-            background-color: $color-primary;
-            border-color: $color-primary;
+            background-color: var(--leap-color-primary);
+            border-color: var(--leap-color-primary);
 
             .van-icon {
-              color: $color-white;
+              color: #fff;
               font-size: 12px;
             }
           }
@@ -732,7 +720,7 @@ $color-white: #fff;
           font-family: 'PingFang SC', sans-serif;
           font-size: 16px;
           font-weight: 400;
-          color: $color-text-primary;
+          color: var(--leap-color-default);
           line-height: 22px;
         }
       }
@@ -757,18 +745,18 @@ $color-white: #fff;
           }
 
           &.delete-btn {
-            border: 1px solid $color-primary;
+            border: 1px solid var(--leap-color-primary);
 
             span {
-              color: $color-primary;
+              color: var(--leap-color-primary);
             }
           }
 
           &.primary-btn {
-            background-color: $color-primary;
+            background-color: var(--leap-color-primary);
 
             span {
-              color: $color-white;
+              color: #fff;
             }
           }
 
@@ -782,7 +770,7 @@ $color-white: #fff;
 
     .footer-safe-area {
       height: 34px;
-      background-color: $color-white;
+      background-color: #fff;
       display: flex;
       justify-content: center;
       align-items: center;

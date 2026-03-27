@@ -148,7 +148,7 @@ const handleDispatch = () => {
       justify-content: space-between;
       align-items: center;
       padding-bottom: 8px;
-      border-bottom: 0.5px solid #e6e6e5;
+      border-bottom: 0.5px solid var(--leap-color-default-light-4);
 
       .order-number-wrapper {
         display: flex;
@@ -156,8 +156,7 @@ const handleDispatch = () => {
         gap: 2px;
 
         .order-number {
-          /* token: #191A1B */
-          color: #191a1b;
+          color: var(--leap-color-default);
           font-family:
             'PingFang SC',
             -apple-system,
@@ -169,11 +168,8 @@ const handleDispatch = () => {
         }
 
         .order-tag {
-          /* token: rgba(25, 26, 27, 0.06) */
           background-color: rgba(25, 26, 27, 0.06);
-
-          /* token: #191A1B */
-          color: #191a1b;
+          color: var(--leap-color-default);
           font-family:
             'PingFang SC',
             -apple-system,
@@ -198,17 +194,15 @@ const handleDispatch = () => {
         line-height: 17px;
 
         &.status-pending {
-          /* token: #C8A12B */
-          color: #c8a12b;
+          color: var(--leap-color-warning);
         }
 
         &.status-working {
-          /* token: #009100 */
-          color: #009100;
+          color: var(--leap-color-primary);
         }
 
         &.status-finished {
-          color: #888;
+          color: var(--leap-color-default-light-2);
         }
       }
     }
@@ -225,8 +219,7 @@ const handleDispatch = () => {
         gap: 4px;
 
         .plate-text {
-          /* token: #191A1B */
-          color: #191a1b;
+          color: var(--leap-color-default);
           font-family:
             'PingFang SC',
             -apple-system,
@@ -239,7 +232,6 @@ const handleDispatch = () => {
       }
 
       .vehicle-model {
-        /* token: #545454 */
         color: #545454;
         font-family:
           'PingFang SC',
@@ -263,7 +255,6 @@ const handleDispatch = () => {
         gap: 12px;
 
         .info-label {
-          /* token: #545454 */
           color: #545454;
           font-family:
             'PingFang SC',
@@ -278,8 +269,7 @@ const handleDispatch = () => {
         }
 
         .info-value {
-          /* token: #191A1B */
-          color: #191a1b;
+          color: var(--leap-color-default);
           font-family:
             'PingFang SC',
             -apple-system,

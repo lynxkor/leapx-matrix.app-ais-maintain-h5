@@ -270,8 +270,7 @@ const handleFinalCheckSubmit = (data) => {
 
 .actions-left {
   .more-text {
-    /* token: #009100 */
-    color: #009100;
+    color: var(--leap-color-primary);
     font-family:
       'PingFang SC',
       -apple-system,
@@ -305,19 +304,15 @@ const handleFinalCheckSubmit = (data) => {
   &.start-btn,
   &.end-btn,
   &.rework-btn {
-    /* token: #009100 */
-    color: #009100;
-    border-color: #009100;
+    color: var(--leap-color-primary);
+    border-color: var(--leap-color-primary);
     background: transparent;
   }
 
   &.dispatch-btn,
   &.final-check-btn {
-    /* token: #009100 */
-    background: #009100;
-    border-color: #009100;
-
-    /* token: #FFFFFF */
+    background: var(--leap-color-primary);
+    border-color: var(--leap-color-primary);
     color: #fff;
   }
 

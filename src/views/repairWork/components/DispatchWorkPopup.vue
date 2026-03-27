@@ -68,7 +68,7 @@
       <div class="popup-footer">
         <van-button
           type="primary"
-          color="#009100"
+          color="var(--leap-color-primary)"
           round
           block
           :disabled="!canSubmit"
@@ -218,7 +218,7 @@ const handleSubmit = () => {
       position: absolute;
       left: 16px;
       font-size: 20px;
-      color: #888;
+      color: var(--leap-color-default-light-2);
       cursor: pointer;
     }
 
@@ -226,7 +226,7 @@ const handleSubmit = () => {
       font-size: 14px;
       font-family: 'PingFang SC', sans-serif;
       font-weight: 500;
-      color: #191a1b;
+      color: var(--leap-color-default);
       line-height: 20px;
     }
   }
@@ -247,7 +247,7 @@ const handleSubmit = () => {
         font-size: 14px;
         font-family: 'PingFang SC', sans-serif;
         font-weight: 500;
-        color: #191a1b;
+        color: var(--leap-color-default);
         line-height: 20px;
         margin-bottom: 12px;
       }
@@ -264,12 +264,12 @@ const handleSubmit = () => {
           min-width: 101px;
           height: 32px;
           padding: 0 16px;
-          background-color: #f8f7f7;
+          background-color: var(--leap-color-default-light-5);
           border-radius: 4px;
           font-size: 14px;
           font-family: 'PingFang SC', sans-serif;
           font-weight: 400;
-          color: #191a1b;
+          color: var(--leap-color-default);
           line-height: 20px;
           cursor: pointer;
           transition: all 0.3s;
@@ -277,8 +277,8 @@ const handleSubmit = () => {
 
           &.active {
             background-color: transparent;
-            border-color: #009100;
-            color: #009100;
+            border-color: var(--leap-color-primary);
+            color: var(--leap-color-primary);
           }
         }
       }
@@ -289,7 +289,7 @@ const handleSubmit = () => {
   .popup-footer {
     height: 88px;
     background-color: #fff;
-    border-top: 1px solid #e6e6e5;
+    border-top: 1px solid var(--leap-color-default-light-4);
     display: flex;
     justify-content: center;
     padding: 7px 12px 0;

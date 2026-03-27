@@ -33,6 +33,8 @@ import router from './router'
 import 'vant/lib/index.css'
 // 必须写在vant样式后，覆盖vant样式
 import './assets/main.css'
+// 引入全局样式变量
+import '@/libs/assets/styles/variables.scss'
 
 const setHtmlFontsize = () => {
   var htmlWidth = document.documentElement.clientWidth || document.body.clientWidth

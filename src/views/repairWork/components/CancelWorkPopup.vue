@@ -95,18 +95,11 @@ const handleClose = () => {
 </script>
 
 <style lang="scss" scoped>
-// 颜色变量
-$color-primary: #009100; // 零跑绿
-$color-text-primary: #191a1b; // 主要文字
-$color-text-secondary: #888; // 次要文字
-$color-bg-gray: #f4f4f4; // 灰色背景
-$color-white: #fff;
-
 .cancel-work-popup {
   display: flex;
   flex-direction: column;
   height: 100%;
-  background-color: $color-bg-gray;
+  background-color: #f4f4f4;
 
   // 标题栏
   .popup-header {
@@ -114,7 +107,7 @@ $color-white: #fff;
     align-items: center;
     justify-content: space-between;
     height: 58px;
-    background-color: $color-bg-gray;
+    background-color: #f4f4f4;
     padding: 0 16px;
     flex-shrink: 0;
 
@@ -124,13 +117,13 @@ $color-white: #fff;
       display: flex;
       align-items: center;
       justify-content: center;
-      background-color: $color-text-secondary;
+      background-color: var(--leap-color-default-light-2);
       border-radius: 50%;
       cursor: pointer;
 
       .van-icon {
         font-size: 12px;
-        color: $color-white;
+        color: #fff;
       }
     }
 
@@ -138,7 +131,7 @@ $color-white: #fff;
       font-family: 'PingFang SC', sans-serif;
       font-size: 14px;
       font-weight: 500;
-      color: $color-text-primary;
+      color: var(--leap-color-default);
       line-height: 20px;
     }
 
@@ -154,7 +147,7 @@ $color-white: #fff;
     overflow: hidden;
 
     .textarea-wrapper {
-      background-color: $color-white;
+      background-color: #fff;
       border-radius: 6px;
       padding: 12px;
       height: 134px;
@@ -169,14 +162,14 @@ $color-white: #fff;
         font-family: 'PingFang SC', sans-serif;
         font-size: 14px;
         font-weight: 400;
-        color: $color-text-primary;
+        color: var(--leap-color-default);
         line-height: 20px;
         background-color: rgba(0, 0, 0, 0.04);
         border-radius: 8px;
         padding: 10px 8px;
 
         &::placeholder {
-          color: $color-text-secondary;
+          color: var(--leap-color-default-light-2);
         }
       }
     }
@@ -185,7 +178,7 @@ $color-white: #fff;
   // 底部操作栏
   .popup-footer {
     flex-shrink: 0;
-    background-color: $color-white;
+    background-color: #fff;
     padding: 7px 12px;
 
     .confirm-btn {
@@ -193,7 +186,7 @@ $color-white: #fff;
       align-items: center;
       justify-content: center;
       height: 40px;
-      background-color: $color-primary;
+      background-color: var(--leap-color-primary);
       border-radius: 8px;
       cursor: pointer;
 
@@ -201,14 +194,14 @@ $color-white: #fff;
         font-family: 'PingFang SC', sans-serif;
         font-size: 14px;
         font-weight: 400;
-        color: $color-white;
+        color: #fff;
         line-height: 20px;
       }
     }
 
     .footer-safe-area {
       height: 34px;
-      background-color: $color-white;
+      background-color: #fff;
       display: flex;
       justify-content: center;
       align-items: center;

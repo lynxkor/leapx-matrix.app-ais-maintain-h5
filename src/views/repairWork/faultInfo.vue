@@ -17,7 +17,7 @@
             :class="{ active: hasFault === true }"
             @click="hasFault = true"
           >
-            <van-icon v-if="hasFault === true" name="checked" color="#009100" size="20" />
+            <van-icon v-if="hasFault === true" name="checked" color="var(--leap-color-primary)" size="20" />
             <span>是</span>
           </div>
         </div>
@@ -32,7 +32,7 @@
       <div class="module-content">
         <!-- 添加故障模块按钮 -->
         <div class="add-module-btn" @click="showAddModulePopup = true">
-          <van-icon name="add-o" size="20" color="#009100" />
+          <van-icon name="add-o" size="20" color="var(--leap-color-primary)" />
           <span class="add-text">添加故障模块</span>
         </div>
         <!-- 故障模块列表 -->
@@ -141,7 +141,7 @@ const handleSubmit = () => {
       font-family: 'PingFang SC', -apple-system, BlinkMacSystemFont, sans-serif;
       font-size: 14px;
       font-weight: 600;
-      color: #191a1b;
+      color: var(--leap-color-default);
       line-height: 20px;
     }
   }
@@ -161,7 +161,7 @@ const handleSubmit = () => {
       font-family: 'PingFang SC', -apple-system, BlinkMacSystemFont, sans-serif;
       font-size: 14px;
       font-weight: 600;
-      color: #191a1b;
+      color: var(--leap-color-default);
       line-height: 20px;
     }
   }
@@ -176,7 +176,7 @@ const handleSubmit = () => {
       font-family: 'PingFang SC', -apple-system, BlinkMacSystemFont, sans-serif;
       font-size: 14px;
       font-weight: 600;
-      color: #191a1b;
+      color: var(--leap-color-default);
       line-height: 20px;
     }
 
@@ -195,13 +195,13 @@ const handleSubmit = () => {
           font-family: 'PingFang SC', -apple-system, BlinkMacSystemFont, sans-serif;
           font-size: 14px;
           font-weight: 400;
-          color: #191a1b;
+          color: var(--leap-color-default);
           line-height: 20px;
         }
 
         &.active {
           span {
-            color: #191a1b;
+            color: var(--leap-color-default);
           }
         }
       }
@@ -214,7 +214,7 @@ const handleSubmit = () => {
       display: flex;
       align-items: center;
       justify-content: center;
-      background-color: #E6F4E6;
+      background-color: var(--leap-color-primary-light-9);
       border-radius: 6px;
       gap: 4px;
       height: 40px;
@@ -224,7 +224,7 @@ const handleSubmit = () => {
         font-family: 'PingFang SC', -apple-system, BlinkMacSystemFont, sans-serif;
         font-size: 14px;
         font-weight: 400;
-        color: #009100;
+        color: var(--leap-color-primary);
         line-height: 20px;
       }
     }
@@ -235,7 +235,7 @@ const handleSubmit = () => {
       align-items: center;
       height: 40px;
       padding: 0 8px;
-      background-color: #f8f7f7;
+      background-color: var(--leap-color-default-light-5);
       border-radius: 6px;
       margin-top: 8px;
 
@@ -244,7 +244,7 @@ const handleSubmit = () => {
         font-family: 'PingFang SC', -apple-system, BlinkMacSystemFont, sans-serif;
         font-size: 14px;
         font-weight: 400;
-        color: #191a1b;
+        color: var(--leap-color-default);
         line-height: 20px;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -267,11 +267,11 @@ const handleSubmit = () => {
         font-family: 'PingFang SC', -apple-system, BlinkMacSystemFont, sans-serif;
         font-size: 14px;
         font-weight: 400;
-        color: #191a1b;
+        color: var(--leap-color-default);
         line-height: 20px;
 
         &::placeholder {
-          color: #888;
+          color: var(--leap-color-default-light-2);
         }
       }
     }
@@ -289,7 +289,7 @@ const handleSubmit = () => {
 
     .save-btn {
       height: 40px;
-      background-color: #009100;
+      background-color: var(--leap-color-primary);
       border-radius: 8px;
       display: flex;
       align-items: center;

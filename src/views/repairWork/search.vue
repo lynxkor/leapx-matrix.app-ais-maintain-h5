@@ -335,7 +335,7 @@ const handleDispatch = () => {
 
 .divider {
   font-size: 14px;
-  color: #191A1B;
+  color: var(--leap-color-default);
   font-weight: 300;
 }
 
@@ -347,10 +347,10 @@ const handleDispatch = () => {
   background: transparent;
   font-size: 12px;
   font-family: 'PingFang SC', -apple-system, BlinkMacSystemFont, sans-serif;
-  color: #191A1B;
+  color: var(--leap-color-default);
 
   &::placeholder {
-    color: #888888;
+    color: var(--leap-color-default-light-2);
   }
 }
 
@@ -361,7 +361,7 @@ const handleDispatch = () => {
   justify-content: center;
   width: 52px;
   height: 26px;
-  background-color: #009100;
+  background-color: var(--leap-color-primary);
   border-radius: 13px;
   font-size: 12px;
   font-family: 'PingFang SC', -apple-system, BlinkMacSystemFont, sans-serif;
