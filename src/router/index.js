@@ -42,7 +42,7 @@ const router = createRouter({
           }
         },
         {
-          path: '/repairWork',
+          path: '/repairWork/list',
           name: 'repairWork',
           // route level code-splitting
           // this generates a separate chunk (About.[hash].js) for this route
@@ -54,14 +54,26 @@ const router = createRouter({
           }
         },
         {
-          path: '/repairWork/detail',
-          name: 'repairWorkDetail',
+          path: '/repairWork/search',
+          name: 'repairWorkSearch',
           // route level code-splitting
           // this generates a separate chunk (About.[hash].js) for this route
           // which is lazy-loaded when the route is visited.
-          component: () => import('../views/repairWork/index.vue'),
+          component: () => import('../views/repairWork/search.vue'),
           meta: {
-            title: '维修作业详情'
+            title: '维修作业搜索',
+            hideHeader: true
+          }
+        },
+        {
+          path: '/repairWork/fault',
+          name: 'repairWorkFault',
+          // route level code-splitting
+          // this generates a separate chunk (About.[hash].js) for this route
+          // which is lazy-loaded when the route is visited.
+          component: () => import('../views/repairWork/faultInfo.vue'),
+          meta: {
+            title: '填写故障信息'
           }
         }
       ]

@@ -60,8 +60,11 @@
 
 <script setup>
 import { ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import RepairWorkCard from './components/RepairWorkCard.vue'
 import Empty from './components/Empty.vue'
+
+const router = useRouter()
 
 // 标签页
 const activeTab = ref('dispatch')
@@ -243,8 +246,7 @@ const handleFilterChange = (value) => {
 
 // 搜索
 const handleSearch = () => {
-  // TODO: 打开搜索弹窗
-  console.log('打开搜索')
+  router.push('/repairWork/search')
 }
 
 // 维修项目操作
