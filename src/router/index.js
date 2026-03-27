@@ -40,6 +40,29 @@ const router = createRouter({
           meta: {
             title: 'Demo-商品详情'
           }
+        },
+        {
+          path: '/repairWork',
+          name: 'repairWork',
+          // route level code-splitting
+          // this generates a separate chunk (About.[hash].js) for this route
+          // which is lazy-loaded when the route is visited.
+          component: () => import('../views/repairWork/index.vue'),
+          meta: {
+            title: '维修作业列表',
+            keepAlive: true
+          }
+        },
+        {
+          path: '/repairWork/detail',
+          name: 'repairWorkDetail',
+          // route level code-splitting
+          // this generates a separate chunk (About.[hash].js) for this route
+          // which is lazy-loaded when the route is visited.
+          component: () => import('../views/repairWork/index.vue'),
+          meta: {
+            title: '维修作业详情'
+          }
         }
       ]
     }

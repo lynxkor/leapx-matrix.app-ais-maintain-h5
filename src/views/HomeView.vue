@@ -1,9 +1,7 @@
 <script setup>
 import { ref } from 'vue'
 
-const list = ref([
-  { title: '商品列表', path: '/example' }
-])
+const list = ref([{ title: '商品列表', path: '/example' }])
 </script>
 
 <template>
