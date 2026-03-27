@@ -9,10 +9,8 @@
     <div class="batch-operate-popup">
       <!-- 标题栏 -->
       <div class="popup-header">
-        <div class="header-left">
-          <div class="close-btn" @click="handleClose">
-            <van-icon name="cross" />
-          </div>
+        <div class="close-btn" @click="handleClose">
+          <van-icon name="cross" />
         </div>
         <div class="header-center">
           <span class="order-number">{{ workOrder.orderNo }}</span>
@@ -392,23 +390,24 @@ const handleClose = () => {
     padding: 0 16px;
     flex-shrink: 0;
 
-    .header-left,
-    .header-right {
-      width: 20px;
-    }
-
     .close-btn {
       width: 20px;
       height: 20px;
       display: flex;
       align-items: center;
       justify-content: center;
+      background-color: var(--leap-color-default-light-2);
+      border-radius: 50%;
       cursor: pointer;
 
       .van-icon {
-        font-size: 20px;
-        color: var(--leap-color-default-light-2);
+        font-size: 12px;
+        color: #fff;
       }
+    }
+
+    .header-right {
+      width: 20px;
     }
 
     .header-center {

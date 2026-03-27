@@ -13,6 +13,7 @@
           <van-icon name="cross" />
         </div>
         <div class="header-title">终检确认</div>
+        <div class="header-right"></div>
       </div>
 
       <!-- 内容区域 -->
@@ -208,24 +209,20 @@ const handleSubmit = () => {
   .popup-header {
     display: flex;
     align-items: center;
-    justify-content: center;
+    justify-content: space-between;
     height: 58px;
     background-color: #f4f4f4;
-    position: relative;
+    padding: 0 16px;
     flex-shrink: 0;
 
     .close-btn {
-      position: absolute;
-      left: 16px;
-      top: 50%;
-      transform: translateY(-50%);
       width: 20px;
       height: 20px;
-      background-color: var(--leap-color-default-light-2);
-      border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
+      background-color: var(--leap-color-default-light-2);
+      border-radius: 50%;
       cursor: pointer;
 
       .van-icon {
@@ -240,6 +237,10 @@ const handleSubmit = () => {
       font-weight: 500;
       color: var(--leap-color-default);
       line-height: 20px;
+    }
+
+    .header-right {
+      width: 20px;
     }
   }
 

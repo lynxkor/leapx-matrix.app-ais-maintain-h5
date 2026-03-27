@@ -9,8 +9,11 @@
     <div class="dispatch-work-popup">
       <!-- 标题栏 -->
       <div class="popup-header">
-        <van-icon name="cross" @click="handleClose" />
+        <div class="close-btn" @click="handleClose">
+          <van-icon name="cross" />
+        </div>
         <div class="header-title">派工</div>
+        <div class="header-right"></div>
       </div>
 
       <!-- 内容区域 -->
@@ -208,18 +211,26 @@ const handleSubmit = () => {
   .popup-header {
     display: flex;
     align-items: center;
-    justify-content: center;
+    justify-content: space-between;
     height: 58px;
     background-color: #f4f4f4;
-    position: relative;
+    padding: 0 16px;
     flex-shrink: 0;
 
-    .van-icon {
-      position: absolute;
-      left: 16px;
-      font-size: 20px;
-      color: var(--leap-color-default-light-2);
+    .close-btn {
+      width: 20px;
+      height: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-color: var(--leap-color-default-light-2);
+      border-radius: 50%;
       cursor: pointer;
+
+      .van-icon {
+        font-size: 12px;
+        color: #fff;
+      }
     }
 
     .header-title {
@@ -228,6 +239,10 @@ const handleSubmit = () => {
       font-weight: 500;
       color: var(--leap-color-default);
       line-height: 20px;
+    }
+
+    .header-right {
+      width: 20px;
     }
   }
 
