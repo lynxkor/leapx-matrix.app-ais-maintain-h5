@@ -17,6 +17,7 @@
             class="search-input"
             placeholder="输入施工单号/VIN/车牌/车主"
             placeholder-style="color: #888888;"
+            @keyup.enter="handleSearch"
           />
           <!-- 搜索按钮 -->
           <div class="search-btn" @click="handleSearch">
@@ -40,8 +41,8 @@
               v-for="item in workOrderList"
               :key="item.id"
               :work-order="item"
-              :repair-items="item.repairItems || []"
-              :active-tab="activeTab"
+              :active-tab="getTabFromStatus(item.orderStatus)"
+              @refresh="onRefresh"
             />
           </div>
         </van-list>
@@ -57,6 +58,8 @@
 import { ref } from 'vue'
 import { useGlobalStore } from '@/stores/global'
 import { goBack } from '@/libs/utils/app'
+import { getList } from '../../api/repairWork'
+import { RepairOrderStatusEnum, PAGESIZE } from './constant'
 import RepairWorkCard from './components/RepairWorkCard.vue'
 import Empty from './components/Empty.vue'
 
@@ -67,7 +70,6 @@ globalStore.title = '搜索'
 
 // 搜索相关
 const searchValue = ref('')
-const activeTab = ref('dispatch')
 const hasSearched = ref(false)
 
 // 列表数据
@@ -77,6 +79,13 @@ const finished = ref(false)
 const refreshing = ref(false)
 const currentPage = ref(1)
 
+// 根据 orderStatus 推导 activeTab
+const getTabFromStatus = (orderStatus) => {
+  if (orderStatus <= RepairOrderStatusEnum.PENDING_DISPATCH) return 'dispatch'
+  if (orderStatus <= RepairOrderStatusEnum.UNDER_CONSTRUCTION) return 'working'
+  return 'inspection'
+}
+
 // 返回
 const handleBack = () => {
   goBack()
@@ -85,9 +94,7 @@ const handleBack = () => {
 // 搜索
 const handleSearch = () => {
   const value = searchValue.value.trim()
-  if (!value) {
-    return
-  }
+  if (!value) return
 
   hasSearched.value = true
   loadData(true)
@@ -103,131 +110,32 @@ const loadData = async(isRefresh = false) => {
   loading.value = true
 
   try {
-    // 模拟 API 请求
-    await new Promise((resolve) => setTimeout(resolve, 500))
-
-    // 模拟搜索结果
-    const mockData = {
-      dispatch: [
-        {
-          id: 1,
-          orderNo: '3318938923892839283',
-          tag: '外返',
-          status: 'pending',
-          statusText: '待派工',
-          plateNumber: '浙 AA12345',
-          vehicleModel: 'B10-510 激光雷达版 · LFV3H6686RKYM3393',
-          owner: '王小虎',
-          manager: '王小丫',
-          expectedDelivery: '2026-03-20 17:30',
-          createTime: '2026-03-02 10:23',
-          repairItems: [
-            {
-              name: '更换或拆装更换或更换或拆装更换或拆装气门嘴总成气门嘴总成拆装气门嘴总成气门嘴总成',
-              station: '0001',
-              technician: '云佩玉',
-              status: 'pending'
-            },
-            {
-              name: '更换或拆装气门嘴总成',
-              station: '0001',
-              technician: '云佩玉',
-              status: 'working'
-            }
-          ]
-        },
-        {
-          id: 2,
-          orderNo: '3318938923892839284',
-          tag: '内返',
-          status: 'pending',
-          statusText: '待派工',
-          plateNumber: '浙 BB67890',
-          vehicleModel: 'C11-650 性能版 · LFV3H6686RKYM3394',
-          owner: '李明',
-          manager: '张三',
-          expectedDelivery: '2026-03-21 18:00',
-          createTime: '2026-03-03 09:15',
-          repairItems: []
-        }
-      ],
-      working: [
-        {
-          id: 1,
-          orderNo: '3318938923892839283',
-          tag: '外返',
-          status: 'pending',
-          statusText: '待派工',
-          plateNumber: '浙 AA12345',
-          vehicleModel: 'B10-510 激光雷达版 · LFV3H6686RKYM3393',
-          owner: '王小虎',
-          manager: '王小丫',
-          expectedDelivery: '2026-03-20 17:30',
-          createTime: '2026-03-02 10:23',
-          repairItems: [
-            {
-              name: '更换或拆装更换或更换或拆装更换或拆装气门嘴总成气门嘴总成拆装气门嘴总成气门嘴总成',
-              station: '0001',
-              technician: '云佩玉',
-              status: 'pending'
-            },
-            {
-              name: '更换或拆装气门嘴总成',
-              station: '0001',
-              technician: '云佩玉',
-              status: 'working'
-            }
-          ]
-        },
-        {
-          id: 2,
-          orderNo: '3318938923892839284',
-          tag: '内返',
-          status: 'pending',
-          statusText: '待派工',
-          plateNumber: '浙 BB67890',
-          vehicleModel: 'C11-650 性能版 · LFV3H6686RKYM3394',
-          owner: '李明',
-          manager: '张三',
-          expectedDelivery: '2026-03-21 18:00',
-          createTime: '2026-03-03 09:15',
-          repairItems: []
-        }
-      ],
-      inspection: [
-        {
-          id: 2,
-          orderNo: '3318938923892839284',
-          tag: '内返',
-          status: 'pending',
-          statusText: '待派工',
-          plateNumber: '浙 BB67890',
-          vehicleModel: 'C11-650 性能版 · LFV3H6686RKYM3394',
-          owner: '李明',
-          manager: '张三',
-          expectedDelivery: '2026-03-21 18:00',
-          createTime: '2026-03-03 09:15',
-          repairItems: []
-        }
-      ]
+    const params = {
+      pageNum: currentPage.value,
+      pageSize: PAGESIZE,
+      searchKey: searchValue.value.trim(),
+      itemFlag: 1
     }
 
-    const tabData = mockData[activeTab.value] || []
+    const resData = await getList(params)
+    const res = resData.data || {}
+    const records = res.records || []
 
     if (isRefresh) {
-      workOrderList.value = tabData
+      workOrderList.value = records
     } else {
-      workOrderList.value.push(...tabData)
+      workOrderList.value.push(...records)
     }
 
-    // 模拟没有更多数据
-    if (currentPage.value >= 2) {
+    const totalPage = res.totalPage || res.pages || 1
+    if (currentPage.value >= totalPage || records.length < PAGESIZE) {
       finished.value = true
     } else {
       currentPage.value++
     }
   } catch (error) {
     console.error('搜索失败:', error)
+    finished.value = true
   } finally {
     loading.value = false
     refreshing.value = false
@@ -294,12 +202,6 @@ const onLoad = () => {
 
 .search-icon {
   flex-shrink: 0;
-}
-
-.divider {
-  font-size: 14px;
-  color: var(--leap-color-default);
-  font-weight: 300;
 }
 
 .search-input {

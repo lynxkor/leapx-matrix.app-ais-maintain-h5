@@ -39,8 +39,8 @@
             v-for="item in workOrderList"
             :key="item.id"
             :work-order="item"
-            :repair-items="item.repairItems || []"
-            :activeTab="activeTab"
+            :active-tab="activeTab"
+            @refresh="onRefresh"
           />
         </div>
 
@@ -57,6 +57,7 @@ import { useRouter } from 'vue-router'
 import RepairWorkCard from './components/RepairWorkCard.vue'
 import Empty from './components/Empty.vue'
 import { getList } from '../../api/repairWork'
+import { TabStatusMap, PAGESIZE } from './constant'
 
 const router = useRouter()
 
@@ -79,110 +80,40 @@ const finished = ref(false)
 const refreshing = ref(false)
 const currentPage = ref(1)
 
-// 模拟数据
-const mockData = {
-  dispatch: [
-    {
-      id: 1,
-      orderNo: '3318938923892839283',
-      tag: '外返',
-      status: 'pending',
-      statusText: '待派工',
-      plateNumber: '浙AA12345',
-      vehicleModel: 'B10-510激光雷达版 · LFV3H6686RKYM3393',
-      owner: '王小虎',
-      manager: '王小丫',
-      expectedDelivery: '2026-03-20 17:30',
-      createTime: '2026-03-02 10:23',
-      repairItems: [
-        {
-          name: '更换或拆装更换或更换或拆装更换或拆装气门嘴总成气门嘴总成拆装气门嘴总成气门嘴总成',
-          station: '0001',
-          technician: '云佩玉',
-          status: 'pending'
-        },
-        {
-          name: '更换或拆装气门嘴总成',
-          station: '0001',
-          technician: '云佩玉',
-          status: 'working'
-        }
-      ]
-    },
-    {
-      id: 2,
-      orderNo: '3318938923892839284',
-      tag: '内返',
-      status: 'pending',
-      statusText: '待派工',
-      plateNumber: '浙BB67890',
-      vehicleModel: 'C11-650性能版 · LFV3H6686RKYM3394',
-      owner: '李明',
-      manager: '张三',
-      expectedDelivery: '2026-03-21 18:00',
-      createTime: '2026-03-03 09:15',
-      repairItems: []
+// 格式化日期为 YYYY-MM-DD HH:mm:ss
+const formatDateTime = (date) => {
+  const y = date.getFullYear()
+  const m = String(date.getMonth() + 1).padStart(2, '0')
+  const d = String(date.getDate()).padStart(2, '0')
+  const h = String(date.getHours()).padStart(2, '0')
+  const min = String(date.getMinutes()).padStart(2, '0')
+  const s = String(date.getSeconds()).padStart(2, '0')
+  return `${y}-${m}-${d} ${h}:${min}:${s}`
+}
+
+// 根据筛选条件获取额外参数
+const getFilterParams = (filterValue) => {
+  const now = new Date()
+  if (filterValue === 'today') {
+    const start = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    const end = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1)
+    return {
+      createTimeStart: formatDateTime(start),
+      createTimeEnd: formatDateTime(end)
     }
-  ],
-  working: [
-    {
-      id: 1,
-      orderNo: '3318938923892839283',
-      tag: '外返',
-      status: 'pending',
-      statusText: '待派工',
-      plateNumber: '浙AA12345',
-      vehicleModel: 'B10-510激光雷达版 · LFV3H6686RKYM3393',
-      owner: '王小虎',
-      manager: '王小丫',
-      expectedDelivery: '2026-03-20 17:30',
-      createTime: '2026-03-02 10:23',
-      repairItems: [
-        {
-          name: '更换或拆装更换或更换或拆装更换或拆装气门嘴总成气门嘴总成拆装气门嘴总成气门嘴总成',
-          station: '0001',
-          technician: '云佩玉',
-          status: 'pending'
-        },
-        {
-          name: '更换或拆装气门嘴总成',
-          station: '0001',
-          technician: '云佩玉',
-          status: 'working'
-        }
-      ]
-    },
-    {
-      id: 2,
-      orderNo: '3318938923892839284',
-      tag: '内返',
-      status: 'pending',
-      statusText: '待派工',
-      plateNumber: '浙BB67890',
-      vehicleModel: 'C11-650性能版 · LFV3H6686RKYM3394',
-      owner: '李明',
-      manager: '张三',
-      expectedDelivery: '2026-03-21 18:00',
-      createTime: '2026-03-03 09:15',
-      repairItems: []
+  }
+  if (filterValue === 'week') {
+    const end = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1)
+    const start = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+    return {
+      createTimeStart: formatDateTime(start),
+      createTimeEnd: formatDateTime(end)
     }
-  ],
-  inspection: [
-    {
-      id: 2,
-      orderNo: '3318938923892839284',
-      tag: '内返',
-      status: 'pending',
-      statusText: '待派工',
-      plateNumber: '浙BB67890',
-      vehicleModel: 'C11-650性能版 · LFV3H6686RKYM3394',
-      owner: '李明',
-      manager: '张三',
-      expectedDelivery: '2026-03-21 18:00',
-      createTime: '2026-03-03 09:15',
-      repairItems: []
-    }
-  ]
+  }
+  if (filterValue === 'mine') {
+    return { mineFlag: 1 }
+  }
+  return {}
 }
 
 // 加载数据
@@ -193,25 +124,33 @@ const loadData = async(isRefresh = false) => {
   }
 
   try {
-    // 模拟API请求
-    await new Promise((resolve) => setTimeout(resolve, 500))
-
-    const tabData = mockData[activeTab.value] || []
-
-    if (isRefresh) {
-      workOrderList.value = tabData
-    } else {
-      workOrderList.value.push(...tabData)
+    const params = {
+      pageNum: currentPage.value,
+      pageSize: PAGESIZE,
+      orderStatus: TabStatusMap[activeTab.value],
+      itemFlag: 1,
+      ...getFilterParams(activeFilter.value)
     }
 
-    // 模拟没有更多数据
-    if (currentPage.value >= 2) {
+    const resData = await getList(params)
+    const res = resData.data || {}
+    const records = res.records || []
+    if (isRefresh) {
+      workOrderList.value = records
+    } else {
+      workOrderList.value.push(...records)
+    }
+
+    // 判断是否还有更多数据
+    const totalPage = res.totalPage || res.pages || 1
+    if (currentPage.value >= totalPage || records.length < PAGESIZE) {
       finished.value = true
     } else {
       currentPage.value++
     }
   } catch (error) {
     console.error('加载数据失败:', error)
+    finished.value = true
   } finally {
     loading.value = false
     refreshing.value = false
@@ -242,13 +181,6 @@ const handleFilterChange = (value) => {
 const handleSearch = () => {
   router.push('/repairWork/search')
 }
-
-getList({
-  pageNum: 1,
-  pageSize: 20
-}).then(res => {
-  console.log(res)
-})
 
 // 监听标签页切换
 watch(activeTab, () => {

@@ -19,6 +19,13 @@ export const RepairOrderStatusEnum = {
   CANCEL: 210
 }
 
+// Tab对应的工单状态查询值
+export const TabStatusMap = {
+  dispatch: RepairOrderStatusEnum.PENDING_DISPATCH, // 120 待派工
+  working: RepairOrderStatusEnum.UNDER_CONSTRUCTION, // 140 施工中
+  inspection: RepairOrderStatusEnum.PENDING_FINAL_INSPECTION // 150 待终检
+}
+
 export const BusinessTypeEnum = {
   /** 自然到店 */
   NATURAL_ARRIVAL: 10,
@@ -116,3 +123,6 @@ export const MaintenanceTypeEnum = {
   /** 保养 */
   MAINTENANCE: '6EA3066F-82AC-E911-B0BB-FC82BA5F9EDF'
 }
+
+export const PAGESIZE = 20
+

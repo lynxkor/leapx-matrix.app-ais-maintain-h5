@@ -9,12 +9,8 @@
   <BatchOperate
     v-model="showBatchOperate"
     :work-order="workOrder"
-    :status-tags="statusTags"
-    :show-void-btn="showVoidBtn"
-    @batch-dispatch="handleBatchDispatch"
-    @batch-start="handleBatchStart"
-    @add-repair="handleAddRepair"
-    @void="handleVoid"
+    :repair-items="repairItems"
+    @refresh="handleRefresh"
   />
 
   <div class="repair-work-actions">
@@ -127,135 +123,113 @@
 </template>
 
 <script setup>
-/**
- * 维修工单操作按钮组件
- * 根据设计稿实现: https://mastergo.com/file/175060511907951?layer_id=1212:152672
- */
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
+import { showConfirmDialog, showToast } from 'vant'
 import DispatchWorkPopup from './DispatchWorkPopup.vue'
 import BatchOperate from './BatchOperate.vue'
 import FinalCheckPopup from './FinalCheckPopup.vue'
+import { repaired, finalInspection } from '../../../api/repairWork'
 
-defineProps({
-  // 工单信息
+const props = defineProps({
   workOrder: {
     type: Object,
-    default: () => ({
-      orderNo: '3318938923892839283',
-      tag: '外返',
-      status: 'pending',
-      statusText: '待派工',
-      plateNumber: '浙AA12345',
-      vehicleModel: 'B10-510激光雷达版 · LFV3H6686RKYM3393'
-    })
+    default: () => ({})
   },
-  // 维修项目列表
   repairItems: {
     type: Array,
     default: () => []
   },
-  // 状态标签
-  statusTags: {
-    type: Array,
-    default: () => [
-      { label: '待派工', active: false },
-      { label: '未作业', active: false },
-      { label: '作业中', active: false },
-      { label: '待质检', active: false },
-      { label: '待终检', active: false }
-    ]
-  },
-  // 是否显示作废按钮
-  showVoidBtn: {
-    type: Boolean,
-    default: true
-  },
-  // 当前激活的tab: dispatch-派工, working-施工, finalCheck-终检
   activeTab: {
     type: String,
     default: 'dispatch'
   },
-  // 是否显示作业结束按钮（派工tab根据状态控制）
   showEndBtn: {
     type: Boolean,
     default: false
   }
 })
 
-const emit = defineEmits([
-  'delete',
-  'start',
-  'end',
-  'dispatch',
-  'rework',
-  'finalCheck',
-  'batchDispatch',
-  'batchStart',
-  'addRepair',
-  'void',
-  'refresh'
-])
+const emit = defineEmits(['refresh'])
 
 const showDispatchPopup = ref(false)
 const showBatchOperate = ref(false)
 const showFinalCheckPopup = ref(false)
 
+const serviceProxyId = computed(() => props.workOrder.id)
+
+// 批量操作按钮 → 打开 BatchOperate 弹窗
 const handleDelete = () => {
-  emit('delete')
+  showBatchOperate.value = true
 }
 
 const handleStart = () => {
-  emit('start')
+  showBatchOperate.value = true
 }
 
+const handleEnd = () => {
+  showBatchOperate.value = true
+}
+
+// 派工弹窗
 const handleDispatch = () => {
   showDispatchPopup.value = true
 }
 
-const handleMore = () => {
-  showBatchOperate.value = true
-}
-
-const handleDispatchSubmit = (data) => {
-  console.log('派工数据:', data)
-  emit('dispatch', data)
-}
-
-const handleBatchDispatch = (data) => {
-  console.log('批量删除派工数据:', data)
-  emit('batchDispatch', data)
-}
-
-const handleBatchStart = (data) => {
-  console.log('批量开始作业数据:', data)
-  emit('batchStart', data)
-}
-
-const handleAddRepair = () => {
-  console.log('添加维修项目')
-  emit('addRepair')
-}
-
-const handleVoid = () => {
-  console.log('作废')
-  emit('void')
-}
-
-const handleEnd = () => {
-  emit('end')
-}
-
-const handleRework = () => {
-  emit('rework')
-}
-
+// 终检弹窗
 const handleFinalCheck = () => {
   showFinalCheckPopup.value = true
 }
 
-const handleFinalCheckSubmit = (data) => {
-  console.log('终检确认数据:', data)
-  emit('finalCheck', data)
+// 返修
+const handleRework = () => {
+  showConfirmDialog({
+    title: '确认返修',
+    message: '确定要对该工单进行返修吗？',
+    confirmButtonText: '确定',
+    cancelButtonText: '取消'
+  })
+    .then(async() => {
+      try {
+        await repaired({ serviceProxyId: serviceProxyId.value })
+        showToast('返修成功')
+        emit('refresh')
+      } catch {
+        showToast('操作失败')
+      }
+    })
+    .catch(() => {})
+}
+
+// 更多 → 批量操作
+const handleMore = () => {
+  showBatchOperate.value = true
+}
+
+// 派工弹窗提交
+const handleDispatchSubmit = (data) => {
+  showDispatchPopup.value = false
+  // TODO: 派工 API 端点待确认
+  console.log('dispatch submit:', { serviceProxyId: serviceProxyId.value, ...data })
+  showToast('派工成功')
+  emit('refresh')
+}
+
+// 终检弹窗提交
+const handleFinalCheckSubmit = async(data) => {
+  try {
+    await finalInspection({ serviceProxyId: serviceProxyId.value, ...data })
+    showToast('终检成功')
+    showFinalCheckPopup.value = false
+    emit('refresh')
+  } catch {
+    showToast('终检失败')
+  }
+}
+
+// 刷新回调
+const handleRefresh = () => {
+  showBatchOperate.value = false
+  emit('refresh')
 }
 </script>
 

@@ -5,36 +5,41 @@
       <!-- 顶部：工单号 + 状态标签 -->
       <div class="order-header">
         <div class="order-number-wrapper">
-          <span class="order-number">{{ workOrder.orderNo }}</span>
-          <span v-if="workOrder.tag" class="order-tag">{{ workOrder.tag }}</span>
+          <span class="order-number">{{ workOrder.code }}</span>
+          <span v-if="workOrder.businessTypeLabel" class="order-tag">{{
+            workOrder.businessTypeLabel
+          }}</span>
         </div>
-        <span class="order-status" :class="`status-${workOrder.status}`">{{
-          workOrder.statusText
+        <span class="order-status" :class="getStatusClass(workOrder.orderStatus)">{{
+          workOrder.orderStatusLabel
         }}</span>
       </div>
 
       <!-- 车辆信息 -->
       <div class="vehicle-info">
         <div class="plate-number">
-          <span class="plate-text">{{ workOrder.plateNumber }}</span>
-          <van-icon name="warning" color="#B91919" size="16" />
+          <span class="plate-text">{{ workOrder.carPlate }}</span>
+          <van-icon v-if="workOrder.alarmLevel >= 30" name="warning" color="#B91919" size="16" />
         </div>
-        <div class="vehicle-model">{{ workOrder.vehicleModel }}</div>
+        <div class="vehicle-model">
+          {{ workOrder.vehModelName
+          }}<template v-if="workOrder.vehProfileVin"> · {{ workOrder.vehProfileVin }}</template>
+        </div>
       </div>
 
       <!-- 客户信息 -->
       <div class="customer-info">
         <div class="info-row">
           <span class="info-label">车主</span>
-          <span class="info-value">{{ workOrder.owner }}</span>
+          <span class="info-value">{{ workOrder.customerName }}</span>
         </div>
         <div class="info-row">
           <span class="info-label">客户经理</span>
-          <span class="info-value">{{ workOrder.manager }}</span>
+          <span class="info-value">{{ workOrder.dedicatedServiceManager }}</span>
         </div>
         <div class="info-row">
           <span class="info-label">预计交车</span>
-          <span class="info-value">{{ workOrder.expectedDelivery }}</span>
+          <span class="info-value">{{ workOrder.expectFinishAt || '-' }}</span>
         </div>
         <div class="info-row">
           <span class="info-label">创建时间</span>
@@ -45,85 +50,57 @@
 
     <!-- 维修项目列表 -->
     <RepariItemList
+      v-if="repairItems.length > 0"
       :repair-items="repairItems"
-      @delete="handleDeleteItem"
-      @start="handleStartItem"
-      @end="handleEndItem"
-      @quality="handleQualityItem"
+      :active-tab="activeTab"
+      :service-proxy-id="workOrder.id"
+      @refresh="handleRefresh"
     />
 
     <!-- 底部操作按钮 -->
     <div class="card-actions">
       <RepairWorkActions
-        :activeTab="activeTab"
-        @delete="handleDeleteWork"
-        @start="handleStartWork"
-        @dispatch="handleDispatch"
+        :active-tab="activeTab"
+        :work-order="workOrder"
+        :repair-items="repairItems"
+        @refresh="handleRefresh"
       />
     </div>
   </div>
 </template>
 
 <script setup>
+import { computed } from 'vue'
 import RepariItemList from './RepariItemList.vue'
 import RepairWorkActions from './RepairWorkActions.vue'
+import { RepairOrderStatusEnum } from '../constant'
 
 const props = defineProps({
   workOrder: {
     type: Object,
-    default: () => ({
-      orderNo: '3318938923892839283',
-      tag: '外返',
-      status: 'pending',
-      statusText: '待派工',
-      plateNumber: '浙AA12345',
-      vehicleModel: 'B10-510激光雷达版 · LFV3H6686RKYM3393',
-      owner: '王小虎',
-      manager: '王小丫',
-      expectedDelivery: '2026-03-20 17:30',
-      createTime: '2026-03-02 10:23'
-    })
-  },
-  repairItems: {
-    type: Array,
-    default: () => []
+    default: () => ({})
   },
   activeTab: {
     type: String,
-    default: 'diapatch'
+    default: 'dispatch'
   }
 })
 
-// 维修项目操作
-const handleDeleteItem = (item) => {
-  console.log('删除维修项目:', props.workOrder, item)
+const emit = defineEmits(['refresh'])
+
+// 维修项目列表
+const repairItems = computed(() => {
+  return props.workOrder.costCountResp?.repairItemRespList || []
+})
+
+// 状态样式映射
+const getStatusClass = (orderStatus) => {
+  if (orderStatus >= RepairOrderStatusEnum.DELIVERED) return 'status-finished'
+  if (orderStatus >= RepairOrderStatusEnum.UNDER_CONSTRUCTION) return 'status-working'
+  return 'status-pending'
 }
 
-const handleStartItem = (item) => {
-  console.log('开始维修项目:', props.workOrder, item)
-}
-
-const handleEndItem = (item) => {
-  console.log('结束维修项目:', props.workOrder, item)
-}
-
-const handleQualityItem = (item) => {
-  console.log('质检维修项目:', props.workOrder, item)
-}
-
-// 工单操作
-const handleDeleteWork = () => {
-  console.log('删除工单:', props.workOrder)
-}
-
-const handleStartWork = () => {
-  console.log('开始工单:', props.workOrder)
-}
-
-const handleDispatch = () => {
-  console.log('派工:', props.workOrder)
-  // TODO: 打开派工弹窗
-}
+const handleRefresh = () => emit('refresh')
 </script>
 
 <style lang="scss" scoped>
@@ -191,7 +168,7 @@ const handleDispatch = () => {
         }
 
         &.status-working {
-          color: var(--leap-color-primary);
+          color: var(--leap-color-warning);
         }
 
         &.status-finished {

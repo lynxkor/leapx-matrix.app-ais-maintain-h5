@@ -7,14 +7,19 @@
     @close="handleClose"
   >
     <div class="batch-operate-popup">
+      <!-- 派工弹窗 -->
+      <DispatchWorkPopup v-model="showDispatchPopup" @submit="handleBatchDispatchSubmit" />
+
       <!-- 标题栏 -->
       <div class="popup-header">
         <div class="close-btn" @click="handleClose">
           <van-icon name="cross" />
         </div>
         <div class="header-center">
-          <span class="order-number">{{ workOrder.orderNo }}</span>
-          <span v-if="workOrder.tag" class="order-tag">{{ workOrder.tag }}</span>
+          <span class="order-number">{{ workOrder.code }}</span>
+          <span v-if="workOrder.businessTypeLabel" class="order-tag">{{
+            workOrder.businessTypeLabel
+          }}</span>
         </div>
         <div class="header-right"></div>
       </div>
@@ -28,14 +33,15 @@
             <div class="vehicle-main">
               <div class="vehicle-left">
                 <div class="plate-row">
-                  <span class="plate-number">{{ workOrder.plateNumber }}</span>
-                  <span class="status-text" :class="`status-${workOrder.status}`">{{
-                    workOrder.statusText
-                  }}</span>
+                  <span class="plate-number">{{ workOrder.carPlate }}</span>
+                  <span class="status-text">{{ workOrder.orderStatusLabel }}</span>
                 </div>
-                <div class="vehicle-model">{{ workOrder.vehicleModel }}</div>
+                <div class="vehicle-model">
+                  {{ workOrder.vehModelName
+                  }}<template v-if="workOrder.vehProfileVin"> · {{ workOrder.vehProfileVin }}</template>
+                </div>
               </div>
-              <div v-if="showVoidBtn" class="void-btn" @click="handleVoid">
+              <div class="void-btn" @click="handleVoid">
                 <span>作废</span>
               </div>
             </div>
@@ -53,10 +59,10 @@
           <!-- 状态标签栏 -->
           <div class="status-tags">
             <div
-              v-for="(tag, index) in internalStatusTags"
+              v-for="(tag, index) in statusTagList"
               :key="index"
               class="status-tag-item"
-              :class="{ active: tag.active }"
+              :class="{ active: activeTagIndex === index }"
               @click="handleTagClick(index)"
             >
               {{ tag.label }}
@@ -67,20 +73,24 @@
           <div class="repair-list" v-if="filteredRepairItems.length > 0">
             <div
               v-for="item in filteredRepairItems"
-              :key="item.id"
+              :key="item.repairItemId || item.id"
               class="repair-item"
-              @click="toggleItemSelect(item.id)"
+              @click="toggleItemSelect(item.repairItemId || item.id)"
             >
               <div class="item-checkbox">
-                <div class="checkbox-icon" :class="{ checked: item.selected }">
-                  <van-icon v-if="item.selected" name="success" />
+                <div class="checkbox-icon" :class="{ checked: item._selected }">
+                  <van-icon v-if="item._selected" name="success" />
                 </div>
               </div>
               <div class="item-content">
-                <div class="item-name">{{ item.name }}</div>
+                <div class="item-name">{{ item.repairItemName }}</div>
                 <div class="item-info">
-                  <span class="info-text">工位：{{ item.station }}</span>
-                  <span class="info-text">技师：{{ item.technician }}</span>
+                  <span v-if="item.repairItemTypeName" class="info-text">{{
+                    item.repairItemTypeName
+                  }}</span>
+                  <span v-if="item.checkoutTypeName" class="info-text">{{
+                    item.checkoutTypeName
+                  }}</span>
                 </div>
               </div>
             </div>
@@ -118,6 +128,13 @@
             >
               <span>作业开始</span>
             </div>
+            <div
+              class="action-btn dispatch-btn"
+              :class="{ disabled: !hasSelectedItems }"
+              @click="showBatchDispatch"
+            >
+              <span>派工</span>
+            </div>
           </div>
         </div>
         <!-- 底部安全区域 -->
@@ -131,13 +148,11 @@
 </template>
 
 <script setup>
-/**
- * 批量操作弹窗组件 - 作业开始
- * 根据设计稿实现: https://mastergo.com/file/175060511907951?layer_id=1212:194749
- */
 import { ref, computed, watch } from 'vue'
-import { showConfirmDialog } from 'vant'
+import { showConfirmDialog, showToast } from 'vant'
+import DispatchWorkPopup from './DispatchWorkPopup.vue'
 import CancelWorkPopup from './CancelWorkPopup.vue'
+import { deleteWorkers, startWork, cancel } from '../../../api/repairWork'
 
 const props = defineProps({
   modelValue: {
@@ -146,103 +161,42 @@ const props = defineProps({
   },
   workOrder: {
     type: Object,
-    default: () => ({
-      orderNo: '3318938923892839283',
-      tag: '外返',
-      status: 'pending',
-      statusText: '待派工',
-      plateNumber: '浙AA12345',
-      vehicleModel: 'B10-510激光雷达版 · LFV3H6686RKYM3393'
-    })
+    default: () => ({})
   },
   repairItems: {
     type: Array,
-    default: () => [
-      {
-        id: '1',
-        name: '更换或拆装左迁门电动防夹玻璃升降器总成更换或拆装左或拆装左或拆装左或拆装左或拆…',
-        station: '0001',
-        technician: '云佩玉',
-        status: 'pending'
-      },
-      {
-        id: '2',
-        name: '更换或拆装气门嘴总成',
-        station: '0002',
-        technician: '汤杨',
-        status: 'working'
-      },
-      {
-        id: '3',
-        name: '更换刹车片',
-        station: '0003',
-        technician: '昌瑞堂',
-        status: 'pending'
-      }
-    ]
-  },
-  statusTags: {
-    type: Array,
-    default: () => [
-      { label: '待派工', active: false },
-      { label: '未作业', active: true },
-      { label: '作业中', active: false },
-      { label: '待质检', active: false },
-      { label: '待终检', active: false }
-    ]
-  },
-  showVoidBtn: {
-    type: Boolean,
-    default: true
+    default: () => []
   }
 })
 
-const emit = defineEmits([
-  'update:modelValue',
-  'batch-dispatch',
-  'batch-start',
-  'refresh',
-  'add-repair',
-  'void'
-])
+const emit = defineEmits(['update:modelValue', 'refresh'])
 
 const visible = ref(props.modelValue)
-
-// 作废弹窗显示状态
 const showCancelPopup = ref(false)
+const showDispatchPopup = ref(false)
 
-// 内部维修项目列表
+// 内部维修项目列表（带选中状态）
 const internalRepairItems = ref([])
 
-// 内部状态标签
-const internalStatusTags = ref([])
+// 状态标签列表
+const statusTagList = ref([
+  { label: '待派工' },
+  { label: '未作业' },
+  { label: '作业中' },
+  { label: '待质检' },
+  { label: '待终检' }
+])
 
 // 当前选中的标签索引
 const activeTagIndex = ref(0)
 
-// 状态映射：标签名称 -> 维修项目状态
-const tagStatusMap = {
-  待派工: 'pending',
-  未作业: 'unworked',
-  作业中: 'working',
-  待质检: 'quality',
-  待终检: 'final'
-}
-
 // 根据状态过滤的维修项目
 const filteredRepairItems = computed(() => {
   if (internalRepairItems.value.length === 0) return []
-  const activeTag = internalStatusTags.value[activeTagIndex.value]
-  if (!activeTag) return internalRepairItems.value
-
-  // 如果是"未作业"标签，显示所有未完成的项目
-  if (activeTag.label === '未作业') {
-    return internalRepairItems.value
-  }
-
-  // 其他标签按状态过滤
-  const targetStatus = tagStatusMap[activeTag.label]
-  return internalRepairItems.value.filter((item) => item.status === targetStatus)
+  // "未作业"标签显示所有项目
+  if (activeTagIndex.value === 1) return internalRepairItems.value
+  // 其他标签暂不按状态过滤，显示全部
+  return internalRepairItems.value
 })
 
 // 监听 modelValue 变化
@@ -251,15 +205,9 @@ watch(
   (newVal) => {
     visible.value = newVal
     if (newVal) {
-      // 打开时初始化维修项目列表
       internalRepairItems.value = props.repairItems.map((item) => ({
         ...item,
-        selected: false
-      }))
-      // 初始化状态标签
-      internalStatusTags.value = props.statusTags.map((tag, index) => ({
-        ...tag,
-        active: index === 0
+        _selected: false
       }))
       activeTagIndex.value = 0
     }
@@ -275,45 +223,42 @@ watch(visible, (newVal) => {
 
 // 是否有选中项目
 const hasSelectedItems = computed(() => {
-  return internalRepairItems.value.some((item) => item.selected)
+  return internalRepairItems.value.some((item) => item._selected)
 })
 
-// 是否全选（基于过滤后的列表）
+// 是否全选
 const isAllSelected = computed(() => {
   if (filteredRepairItems.value.length === 0) return false
-  return filteredRepairItems.value.every((item) => item.selected)
+  return filteredRepairItems.value.every((item) => item._selected)
 })
 
 // 切换状态标签
 const handleTagClick = (index) => {
   activeTagIndex.value = index
-  internalStatusTags.value.forEach((tag, i) => {
-    tag.active = i === index
-  })
 }
 
 // 切换单个选中
 const toggleItemSelect = (itemId) => {
-  const item = internalRepairItems.value.find((i) => i.id === itemId)
+  const item = internalRepairItems.value.find((i) => (i.repairItemId || i.id) === itemId)
   if (item) {
-    item.selected = !item.selected
+    item._selected = !item._selected
   }
 }
 
-// 切换全选（只操作过滤后的列表）
+// 切换全选
 const toggleSelectAll = () => {
   const newState = !isAllSelected.value
   filteredRepairItems.value.forEach((item) => {
-    item.selected = newState
+    item._selected = newState
   })
 }
 
 // 获取选中的项目
 const getSelectedItems = () => {
-  return internalRepairItems.value.filter((item) => item.selected)
+  return internalRepairItems.value.filter((item) => item._selected)
 }
 
-// 显示删除确认弹窗
+// 删除确认
 const showDeleteConfirm = () => {
   const selectedItems = getSelectedItems()
   if (selectedItems.length === 0) return
@@ -322,16 +267,23 @@ const showDeleteConfirm = () => {
     title: '确认删除',
     message: `确定要删除选中的 ${selectedItems.length} 个派工项目吗？`
   })
-    .then(() => {
-      // TODO: 调用删除派工接口
-      console.log('确认删除派工:', selectedItems)
-      emit('batch-dispatch', selectedItems)
-      handleClose()
+    .then(async() => {
+      try {
+        await deleteWorkers({
+          serviceProxyId: props.workOrder.id,
+          repairItemIds: selectedItems.map((item) => item.repairItemId || item.id)
+        })
+        showToast('删除成功')
+        emit('refresh')
+        handleClose()
+      } catch {
+        showToast('删除失败')
+      }
     })
     .catch(() => {})
 }
 
-// 显示作业开始确认弹窗
+// 作业开始确认
 const showStartConfirm = () => {
   const selectedItems = getSelectedItems()
   if (selectedItems.length === 0) return
@@ -340,18 +292,50 @@ const showStartConfirm = () => {
     title: '确认作业开始',
     message: `确定要对选中的 ${selectedItems.length} 个项目开始作业吗？`
   })
-    .then(() => {
-      // TODO: 调用作业开始接口
-      console.log('确认作业开始:', selectedItems)
-      emit('batch-start', selectedItems)
-      handleClose()
+    .then(async() => {
+      try {
+        await startWork({
+          serviceProxyId: props.workOrder.id,
+          repairItemIds: selectedItems.map((item) => item.repairItemId || item.id)
+        })
+        showToast('作业开始成功')
+        emit('refresh')
+        handleClose()
+      } catch {
+        showToast('操作失败')
+      }
     })
     .catch(() => {})
 }
 
+// 批量派工
+const showBatchDispatch = () => {
+  if (!hasSelectedItems.value) return
+  showDispatchPopup.value = true
+}
+
+// 批量派工提交
+const handleBatchDispatchSubmit = async(data) => {
+  showDispatchPopup.value = false
+  const selectedItems = getSelectedItems()
+  try {
+    // TODO: 派工 API 端点待确认，暂时占位
+    console.log('batch dispatch:', {
+      serviceProxyId: props.workOrder.id,
+      repairItemIds: selectedItems.map((item) => item.repairItemId || item.id),
+      ...data
+    })
+    showToast('派工成功')
+    emit('refresh')
+    handleClose()
+  } catch {
+    showToast('派工失败')
+  }
+}
+
 // 添加维修项目
 const handleAddRepair = () => {
-  emit('add-repair')
+  // 跳转添加维修项目页面
 }
 
 // 作废
@@ -360,11 +344,15 @@ const handleVoid = () => {
 }
 
 // 确认作废
-const handleVoidConfirm = (reason) => {
-  // TODO: 调用作废接口
-  console.log('确认作废工单:', props.workOrder, '原因:', reason)
-  emit('void', { ...props.workOrder, reason })
-  handleClose()
+const handleVoidConfirm = async(reason) => {
+  try {
+    await cancel({ id: props.workOrder.id, remark: reason })
+    showToast('作废成功')
+    emit('refresh')
+    handleClose()
+  } catch {
+    showToast('作废失败')
+  }
 }
 
 // 关闭弹窗
@@ -481,14 +469,7 @@ const handleClose = () => {
             font-size: 12px;
             font-weight: 600;
             line-height: 17px;
-
-            &.status-pending {
-              color: var(--leap-color-warning);
-            }
-
-            &.status-working {
-              color: var(--leap-color-primary);
-            }
+            color: var(--leap-color-warning);
           }
         }
 
@@ -732,7 +713,7 @@ const handleClose = () => {
           display: flex;
           align-items: center;
           justify-content: center;
-          width: 100px;
+          width: 80px;
           height: 40px;
           border-radius: 8px;
           cursor: pointer;
@@ -756,6 +737,14 @@ const handleClose = () => {
 
             span {
               color: #fff;
+            }
+          }
+
+          &.dispatch-btn {
+            border: 1px solid var(--leap-color-primary);
+
+            span {
+              color: var(--leap-color-primary);
             }
           }
 
