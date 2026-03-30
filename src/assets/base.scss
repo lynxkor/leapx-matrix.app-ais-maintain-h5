@@ -62,7 +62,8 @@
   font-weight: normal;
 }
 
-html, body {
+html,
+body {
   height: 100vh;
   color: var(--color-text);
   background: var(--color-background);
@@ -87,4 +88,25 @@ html, body {
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+.custom-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #191a1b;
+}
+.van-tab {
+  color: #545454;
+}
+.van-tab--active {
+  color: #009100;
+  font-weight: 500;
+}
+
+.van-tabs__line {
+  background: #009100;
+  height: 2px;
+}
+
+.van-nav-bar .van-icon {
+  color: #191a1b;
 }
