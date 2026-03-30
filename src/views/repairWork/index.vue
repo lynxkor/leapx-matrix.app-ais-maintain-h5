@@ -59,6 +59,7 @@ import RepairWorkCard from './components/RepairWorkCard.vue'
 import Empty from './components/Empty.vue'
 import { getList } from '../../api/repairWork'
 import { TabStatusMap, PAGESIZE } from './constant'
+import { formatDateTime } from '@/libs/utils'
 
 const router = useRouter()
 
@@ -81,17 +82,6 @@ const finished = ref(false)
 const refreshing = ref(false)
 const currentPage = ref(1)
 
-// 格式化日期为 YYYY-MM-DD HH:mm:ss
-const formatDateTime = (date) => {
-  const y = date.getFullYear()
-  const m = String(date.getMonth() + 1).padStart(2, '0')
-  const d = String(date.getDate()).padStart(2, '0')
-  const h = String(date.getHours()).padStart(2, '0')
-  const min = String(date.getMinutes()).padStart(2, '0')
-  const s = String(date.getSeconds()).padStart(2, '0')
-  return `${y}-${m}-${d} ${h}:${min}:${s}`
-}
-
 // 根据筛选条件获取额外参数
 const getFilterParams = (filterValue) => {
   const now = new Date()
@@ -104,8 +94,10 @@ const getFilterParams = (filterValue) => {
     }
   }
   if (filterValue === 'week') {
-    const end = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1)
+    const end = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    end.setHours(23, 59, 59, 999)
     const start = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+    start.setHours(0, 0, 0, 0)
     return {
       createTimeStart: formatDateTime(start),
       createTimeEnd: formatDateTime(end)

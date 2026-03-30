@@ -198,7 +198,7 @@ import {
   qualityInspection,
   finalInspection
 } from '../../../api/repairWork'
-import { WorkRecordStatusEnum } from '../constant'
+import { WorkRecordStatusEnum, RepairOrderStatusEnum } from '../constant'
 import { formatDateTime } from '@/libs/utils'
 
 const props = defineProps({
@@ -292,6 +292,11 @@ watch(
     visible.value = newVal
     if (newVal) {
       loadRepairWorkRecord()
+      if (props.workOrder.orderStatus === RepairOrderStatusEnum.PENDING_DISPATCH || props.workOrder.orderStatus === RepairOrderStatusEnum.UNDER_CONSTRUCTION) {
+        statusTagList.value = statusTagList.value.slice(0, 3)
+      } else if (props.workOrder.orderStatus === RepairOrderStatusEnum.PENDING_FINAL_INSPECTION) {
+        statusTagList.value = statusTagList.value.slice(3, 5)
+      }
     }
   }
 )

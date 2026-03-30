@@ -148,8 +148,8 @@ const selectedTechnician = ref(null)
 const loadOptions = async() => {
   try {
     const [stationData, teamData] = await Promise.all([
-      getDealerStation({}),
-      getDealerWorkTeam({})
+      getDealerStation(),
+      getDealerWorkTeam()
     ])
     stations.value = stationData || []
     teams.value = teamData || []
