@@ -41,13 +41,6 @@
             :work-order="item"
             :repair-items="item.repairItems || []"
             :activeTab="activeTab"
-            @delete-item="handleDeleteItem(item, $event)"
-            @start-item="handleStartItem(item, $event)"
-            @end-item="handleEndItem(item, $event)"
-            @quality-item="handleQualityItem(item, $event)"
-            @delete-work="handleDeleteWork(item)"
-            @start-work="handleStartWork(item)"
-            @dispatch="handleDispatch(item)"
           />
         </div>
 
@@ -63,6 +56,7 @@ import { ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import RepairWorkCard from './components/RepairWorkCard.vue'
 import Empty from './components/Empty.vue'
+import { getList } from '../../api/repairWork'
 
 const router = useRouter()
 
@@ -249,36 +243,12 @@ const handleSearch = () => {
   router.push('/repairWork/search')
 }
 
-// 维修项目操作
-const handleDeleteItem = (workOrder, item) => {
-  console.log('删除维修项目:', workOrder, item)
-}
-
-const handleStartItem = (workOrder, item) => {
-  console.log('开始维修项目:', workOrder, item)
-}
-
-const handleEndItem = (workOrder, item) => {
-  console.log('结束维修项目:', workOrder, item)
-}
-
-const handleQualityItem = (workOrder, item) => {
-  console.log('质检维修项目:', workOrder, item)
-}
-
-// 工单操作
-const handleDeleteWork = (workOrder) => {
-  console.log('删除工单:', workOrder)
-}
-
-const handleStartWork = (workOrder) => {
-  console.log('开始工单:', workOrder)
-}
-
-const handleDispatch = (workOrder) => {
-  console.log('派工:', workOrder)
-  // TODO: 打开派工弹窗
-}
+getList({
+  pageNum: 1,
+  pageSize: 20
+}).then(res => {
+  console.log(res)
+})
 
 // 监听标签页切换
 watch(activeTab, () => {

@@ -68,7 +68,7 @@
 import RepariItemList from './RepariItemList.vue'
 import RepairWorkActions from './RepairWorkActions.vue'
 
-defineProps({
+const props = defineProps({
   workOrder: {
     type: Object,
     default: () => ({
@@ -94,42 +94,35 @@ defineProps({
   }
 })
 
-const emit = defineEmits([
-  'delete-item',
-  'start-item',
-  'end-item',
-  'quality-item',
-  'delete-work',
-  'start-work',
-  'dispatch'
-])
-
+// 维修项目操作
 const handleDeleteItem = (item) => {
-  emit('delete-item', item)
+  console.log('删除维修项目:', props.workOrder, item)
 }
 
 const handleStartItem = (item) => {
-  emit('start-item', item)
+  console.log('开始维修项目:', props.workOrder, item)
 }
 
 const handleEndItem = (item) => {
-  emit('end-item', item)
+  console.log('结束维修项目:', props.workOrder, item)
 }
 
 const handleQualityItem = (item) => {
-  emit('quality-item', item)
+  console.log('质检维修项目:', props.workOrder, item)
 }
 
+// 工单操作
 const handleDeleteWork = () => {
-  emit('delete-work')
+  console.log('删除工单:', props.workOrder)
 }
 
 const handleStartWork = () => {
-  emit('start-work')
+  console.log('开始工单:', props.workOrder)
 }
 
 const handleDispatch = () => {
-  emit('dispatch')
+  console.log('派工:', props.workOrder)
+  // TODO: 打开派工弹窗
 }
 </script>
 

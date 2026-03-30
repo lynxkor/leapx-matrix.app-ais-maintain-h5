@@ -42,13 +42,6 @@
               :work-order="item"
               :repair-items="item.repairItems || []"
               :active-tab="activeTab"
-              @delete-item="handleDeleteItem"
-              @start-item="handleStartItem"
-              @end-item="handleEndItem"
-              @quality-item="handleQualityItem"
-              @delete-work="handleDeleteWork"
-              @start-work="handleStartWork"
-              @dispatch="handleDispatch"
             />
           </div>
         </van-list>
@@ -253,36 +246,6 @@ const onLoad = () => {
     loading.value = true
     loadData()
   }
-}
-
-// 维修项目操作
-const handleDeleteItem = (item) => {
-  console.log('删除维修项目:', item)
-}
-
-const handleStartItem = (item) => {
-  console.log('开始维修项目:', item)
-}
-
-const handleEndItem = (item) => {
-  console.log('结束维修项目:', item)
-}
-
-const handleQualityItem = (item) => {
-  console.log('质检维修项目:', item)
-}
-
-// 工单操作
-const handleDeleteWork = () => {
-  console.log('删除工单')
-}
-
-const handleStartWork = () => {
-  console.log('开始工单')
-}
-
-const handleDispatch = () => {
-  console.log('派工')
 }
 </script>
 
