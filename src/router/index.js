@@ -40,6 +40,48 @@ const router = createRouter({
           meta: {
             title: 'Demo-商品详情'
           }
+        },
+        {
+          path: '/pre-authorization',
+          name: 'preAuthorization',
+          component: () => import('../views/preAuthorization/PreAuthorizationDashboard.vue'),
+          meta: {
+            title: '预授权管理',
+            keepAlive: true
+          }
+        },
+        {
+          path: '/pre-authorization/list',
+          name: 'preAuthorizationList',
+          component: () => import('../views/preAuthorization/PreAuthorizationList.vue'),
+          meta: {
+            title: '预授权管理',
+            keepAlive: true
+          }
+        },
+        {
+          path: '/pre-authorization/:id',
+          name: 'preAuthorizationDetail',
+          component: () => import('../views/preAuthorization/PreAuthorizationDetail.vue'),
+          meta: {
+            title: '预授权详情'
+          }
+        },
+        {
+          path: '/pre-authorization/create',
+          name: 'createPreAuthorization',
+          component: () => import('../views/preAuthorization/CreatePreAuthorization.vue'),
+          meta: {
+            title: '新建预授权'
+          }
+        },
+        {
+          path: '/pre-authorization/edit/:id',
+          name: 'editPreAuthorization',
+          component: () => import('../views/preAuthorization/CreatePreAuthorization.vue'),
+          meta: {
+            title: '编辑预授权'
+          }
         }
       ]
     }

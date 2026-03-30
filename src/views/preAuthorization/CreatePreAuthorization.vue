@@ -245,7 +245,7 @@ const removeItem = (index) => {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 0 16px 16px 16px;
+    padding: 0 16px 16px;
 
     .card-title {
       font-weight: bold;

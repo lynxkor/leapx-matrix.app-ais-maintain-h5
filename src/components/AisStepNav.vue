@@ -59,7 +59,7 @@ defineProps({
 
       .step-title {
         font-size: 12px;
-        color: #888888;
+        color: #888;
         text-align: center;
         transition: all 0.3s ease;
 

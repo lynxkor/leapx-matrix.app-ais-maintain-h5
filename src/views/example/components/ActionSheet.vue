@@ -38,10 +38,10 @@ const innerShow = computed({
 const validators = {
   // 正则校验
   pattern: (val) => /1\d{10}/.test(val),
-  
+
   // 自定义校验提示
   message: (val) => `${val} 不合法，请重新输入`,
-  
+
   // 异步校验
   async: (val) => new Promise((resolve) => {
     showLoadingToast('验证中...')
@@ -130,7 +130,7 @@ const onFailed = (errorInfo) => {
 .m-example-action-sheet {
   position: relative;
   height: 70vh;
-  
+
   .g-btns {
     position: absolute;
     width: 100%;

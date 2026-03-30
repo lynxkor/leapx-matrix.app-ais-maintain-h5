@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp___master_mastergo-magic-mcp__mcp__getDsl",
+      "mcp___master_mastergo-magic-mcp__mcp__getMeta",
+      "Bash(cat .stylelintrc*)",
+      "Bash(cat stylelint.config.*)",
+      "Bash(npx stylelint:*)",
+      "Bash(git add:*)",
+      "Bash(npx lint-staged:*)",
+      "Bash(npx eslint:*)",
+      "Bash(git commit:*)"
+    ]
+  }
+}

@@ -80,3 +80,10 @@ This is a Vue 3 mobile/H5 application built with Vite for Leap Motor's AIS maint
 - API integration with aisapi service (different endpoints per environment)
 - Mobile-first design with consideration for touch interactions
 - Performance optimization important for mobile devices (code splitting, keep-alive)
+
+## 注意事项
+1. 所有创建的页面、模块都不用考虑添加页面头部, 首先是因为在路由router/index.js中添加meta属性中包含了页面头部的名称, 然后在组件libs/layout/baseLayout.vue中添加了页面头部的代码, 所以不需要在页面中添加页面头部.
+2. 所有涉及到页面需要有搜索过滤的都需要使用libs/components/FilterHeader.vue组件
+3. 所有列表页面, 多条数据展示的, 都推荐使用src/components/ListItem.vue组件
+4. 步骤条相关的组件使用src/components/AisStepNav.vue组件
+5. 所有涉及从页面底部弹出展示popup的页面, 都需要使用src/components/AisPopup.vue组件

@@ -82,14 +82,17 @@ watch(showValue, (newValue) => {
     text-align: center;
   }
 }
+
 .popup {
   background: #f4f4f4;
 }
+
 .popup-container {
   padding: 0 1.3rem 1rem;
   flex: 1;
   overflow: auto;
 }
+
 .popup-footer {
   height: 85px;
   padding: 0.8rem 1rem;

@@ -202,28 +202,32 @@ watch(
 
 </style>
 
-<style style="scss" scoped>
+<style lang="scss" scoped>
 .collapse-content{
   margin: 12px;
   border-radius: 6px;
   overflow: hidden;
+
   .check-item{
     display: flex;
     align-items: center;
     justify-content: space-between;
     padding: 8px 12px;
+
     .check-item-text{
-      font-family: PingFang SC;
+      font-family: "PingFang SC";
       font-size: 14px;
       color: #191A1B;
     }
   }
+
   .switch-inner{
     display: flex;
     align-items: center;
     justify-content: space-between;
+
     span{
-      font-family: PingFang SC;
+      font-family: "PingFang SC";
       font-size: 12px;
       color: #E43122;
       margin-right: 4px;
@@ -234,18 +238,22 @@ watch(
     border-top: 1px solid #E6E6E5;
     width: 100%;
     padding-top: 12px;
+
     .file-title{
       font-size: 14px;
       letter-spacing: 0.7px;
       color: #191A1B;
       margin-bottom: 8px;
+
       .require-text{
         color: #E43122;
       }
+
       .grey-text{
-        color: #888888;
+        color: #888;
       }
     }
+
     .textarea-content{
       width: 100%;
       height: 80px;
@@ -255,12 +263,14 @@ watch(
       border-radius: 7px;
       margin-bottom: 16px;
     }
+
     .upload-content{
       display: flex;
       align-items: center;
       justify-content: flex-start;
       flex-wrap: wrap;
       gap: 2.13vw;
+
       .upload-item{
         width: 21.3vw;
         height: 21.3vw;
@@ -271,15 +281,18 @@ watch(
         align-items: center;
         justify-content: center;
         position: relative;
+
         .upload-img{
           width: 24px;
           height: 24px;
           margin-bottom: 12px;
         }
+
         .upload-text{
           font-size: 12px;
-          color: #888888;
+          color: #888;
         }
+
         .delete_icon{
           position: absolute;
           top: 0;

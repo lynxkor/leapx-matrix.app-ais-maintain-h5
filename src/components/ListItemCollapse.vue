@@ -27,7 +27,7 @@ const activeNames = ref(['1'])
 
 <style lang="scss" scoped>
 .list-item-collapse {
-  background: #ffffff;
+  background: #fff;
   border-radius: 7px;
   margin-top: 12px;
   overflow: hidden;
