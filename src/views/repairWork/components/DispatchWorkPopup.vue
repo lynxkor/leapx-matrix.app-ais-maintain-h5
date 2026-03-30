@@ -239,7 +239,7 @@ const handleSubmit = async() => {
 
   try {
     const now = new Date().toISOString()
-    await dispatchWorkers({
+    const res = await dispatchWorkers({
       serviceProxyId: props.workOrder.id,
       repairItemIds: props.selectedItemIds,
       dealerStationId: selectedStation.value.id || selectedStation.value.dealerStationId,
@@ -251,9 +251,11 @@ const handleSubmit = async() => {
       dispatchTime: now,
       startAt: now
     })
-    showToast('派工成功')
-    emit('submit')
-    handleClose()
+    if (res.code === 200) {
+      showToast('派工成功')
+      emit('submit')
+      handleClose()
+    }
   } catch {
     showToast('派工失败')
   }

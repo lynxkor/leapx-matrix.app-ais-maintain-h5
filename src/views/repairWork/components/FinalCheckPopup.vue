@@ -17,18 +17,23 @@
       </div>
 
       <!-- 内容区域 -->
-      <div class="popup-content">
+      <div class="popup-content" v-loading="loadingDetail">
         <!-- 电池更换信息 -->
-        <div class="info-card">
+        <div v-if="detailData?.batteryFlag" class="info-card">
           <div class="card-title">电池更换信息</div>
           <div class="form-item">
             <div class="form-label">去向单位</div>
-            <van-field
-              v-model="formData.targetUnit"
-              placeholder="请输入"
-              :border="false"
-              input-align="right"
-            />
+            <div class="form-field">
+              <SearchDropdown
+                v-model="formData.batteryUnitId"
+                :search-keyword="formData.batteryUnitName"
+                :options="batteryUnitOptions"
+                placeholder="请搜索去向单位"
+                @onSearch="searchBatteryUnit"
+                @focus="onBatteryUnitFocus"
+                @select="handleBatteryUnitSelect"
+              />
+            </div>
           </div>
           <div class="form-item">
             <div class="form-label">去向单位统一代码</div>
@@ -42,7 +47,7 @@
           <div class="form-item">
             <div class="form-label">更换前编号</div>
             <van-field
-              v-model="formData.beforeCode"
+              v-model="formData.beforeChangeCode"
               placeholder="请输入"
               :border="false"
               input-align="right"
@@ -51,7 +56,7 @@
           <div class="form-item last-item">
             <div class="form-label">更换后编号</div>
             <van-field
-              v-model="formData.afterCode"
+              v-model="formData.afterChangeCode"
               placeholder="请输入"
               :border="false"
               input-align="right"
@@ -60,18 +65,18 @@
         </div>
 
         <!-- 维修配件追溯 -->
-        <div class="info-card parts-card">
+        <div v-if="detailData?.tranceFlag" class="info-card parts-card">
           <div class="card-title">维修配件追溯</div>
           <div class="parts-list">
             <div v-for="(part, index) in partsList" :key="index" class="part-item">
               <div class="part-header">
-                <div class="part-name">{{ part.name }}</div>
-                <div class="part-trace-code">追溯编码：{{ part.traceCode }}</div>
+                <div class="part-name">{{ part.partsName }}</div>
+                <div v-if="part.code" class="part-trace-code">追溯编码：{{ part.code }}</div>
               </div>
               <div class="part-form-item">
                 <div class="form-label">更换前编号</div>
                 <van-field
-                  v-model="part.beforeCode"
+                  v-model="part.beforeChangeCode"
                   placeholder="请输入"
                   :border="false"
                   input-align="right"
@@ -80,7 +85,7 @@
               <div class="part-form-item last-item">
                 <div class="form-label">更换后编号</div>
                 <van-field
-                  v-model="part.afterCode"
+                  v-model="part.afterChangeCode"
                   placeholder="请输入"
                   :border="false"
                   input-align="right"
@@ -111,28 +116,51 @@
 
 <script setup>
 import { ref, computed, watch } from 'vue'
+import { showToast } from 'vant'
+import SearchDropdown from '@/libs/components/SearchDropdown.vue'
+import { finalInspectionDetail, getBatteryUnitList } from '../../../api/repairWork'
+import { formatDateTime } from '@/libs/utils'
 
 const props = defineProps({
   modelValue: {
     type: Boolean,
     default: false
   },
-  // 配件列表数据
-  parts: {
-    type: Array,
-    default: () => []
+  serviceProxyId: {
+    type: String,
+    default: ''
   }
 })
 
 const emit = defineEmits(['update:modelValue', 'submit', 'close'])
 
 const visible = ref(props.modelValue)
+const loadingDetail = ref(false)
+const detailData = ref(null)
+
+// 电池单位搜索选项
+const batteryUnitOptions = ref([])
+
+// 电池更换信息表单
+const formData = ref({
+  batteryUnitId: '',
+  batteryUnitName: '',
+  targetUnitCode: '',
+  beforeChangeCode: '',
+  afterChangeCode: ''
+})
+
+// 维修配件列表
+const partsList = ref([])
 
 // 监听 modelValue 变化
 watch(
   () => props.modelValue,
   (newVal) => {
     visible.value = newVal
+    if (newVal && props.serviceProxyId) {
+      loadDetail()
+    }
   }
 )
 
@@ -144,38 +172,69 @@ watch(visible, (newVal) => {
   }
 })
 
-// 电池更换信息表单
-const formData = ref({
-  targetUnit: '',
-  targetUnitCode: '',
-  beforeCode: '',
-  afterCode: ''
-})
-
-// 维修配件列表
-const partsList = ref([
-  {
-    name: '电池包',
-    traceCode: 'TR20260317194900123456',
-    beforeCode: '',
-    afterCode: ''
-  },
-  {
-    name: '这是一个很长很长的很长很长的很长很长的很长很长的零件名称',
-    traceCode: 'TR20260317194900123456',
-    beforeCode: '',
-    afterCode: ''
+// 加载终检详情
+const loadDetail = async() => {
+  loadingDetail.value = true
+  try {
+    const res = await finalInspectionDetail({ id: props.serviceProxyId })
+    if (res.code === 200) {
+      const data = res.data || {}
+      detailData.value = data
+      // 填充电池信息
+      formData.value = {
+        batteryUnitId: data.batteryUnitId || '',
+        batteryUnitName: data.batteryUnitName || '',
+        targetUnitCode: data.targetUnitCode || '',
+        beforeChangeCode: data.beforeChangeCode || '',
+        afterChangeCode: data.afterChangeCode || ''
+      }
+      // 填充配件追溯列表
+      partsList.value = (data.partsTraceRecordResps || []).map((item) => ({
+        ...item,
+        beforeChangeCode: item.beforeChangeCode || '',
+        afterChangeCode: item.afterChangeCode || ''
+      }))
+    }
+  } catch {
+    showToast('获取终检详情失败')
+  } finally {
+    loadingDetail.value = false
   }
-])
+}
+
+// 搜索电池去向单位
+const searchBatteryUnit = async(keyword) => {
+  try {
+    const res = await getBatteryUnitList({ name: keyword })
+    batteryUnitOptions.value = (res.data || []).map((item) => ({
+      label: item.name,
+      value: item.id
+    }))
+  } catch {
+    batteryUnitOptions.value = []
+  }
+}
+
+// 聚焦时加载默认列表
+const onBatteryUnitFocus = () => {
+  searchBatteryUnit('')
+}
+
+// 选择电池去向单位
+const handleBatteryUnitSelect = (option) => {
+  formData.value.batteryUnitId = option.value
+  formData.value.batteryUnitName = option.label
+}
 
 // 是否可以提交
 const canSubmit = computed(() => {
-  // 电池更换信息必填项
-  const batteryValid =
-    formData.value.targetUnit && formData.value.beforeCode && formData.value.afterCode
+  // 电池更换信息必填项（如果展示了电池区域）
+  const batteryValid = !detailData.value?.batteryFlag ||
+    (formData.value.batteryUnitId && formData.value.beforeChangeCode && formData.value.afterChangeCode)
 
-  // 配件追溯必填项
-  const partsValid = partsList.value.every((part) => part.beforeCode && part.afterCode)
+  // 配件追溯必填项（如果展示了追溯区域）
+  const partsValid = !detailData.value?.tranceFlag ||
+    partsList.value.every((part) => part.beforeChangeCode && part.afterChangeCode)
 
   return batteryValid && partsValid
 })
@@ -189,12 +248,31 @@ const handleClose = () => {
 const handleSubmit = () => {
   if (!canSubmit.value) return
 
-  emit('submit', {
-    batteryInfo: { ...formData.value },
-    partsList: partsList.value.map((part) => ({ ...part }))
-  })
+  const submitData = {
+    id: props.serviceProxyId,
+    finalCheckAt: formatDateTime(new Date()),
+    finalCheckerId: '',
+    finalChecker: ''
+  }
 
-  handleClose()
+  // 电池信息
+  if (detailData.value?.batteryFlag) {
+    submitData.batteryUnitId = formData.value.batteryUnitId
+    submitData.targetUnitCode = formData.value.targetUnitCode
+    submitData.beforeChangeCode = formData.value.beforeChangeCode
+    submitData.afterChangeCode = formData.value.afterChangeCode
+  }
+
+  // 配件追溯
+  if (detailData.value?.tranceFlag) {
+    submitData.traceRecordParams = partsList.value.map((part) => ({
+      id: part.id,
+      beforeChangeCode: part.beforeChangeCode,
+      afterChangeCode: part.afterChangeCode
+    }))
+  }
+
+  emit('submit', submitData)
 }
 </script>
 
@@ -268,7 +346,7 @@ const handleSubmit = () => {
       .form-item {
         display: flex;
         align-items: center;
-        height: 50px;
+        min-height: 50px;
         border-bottom: 0.5px solid var(--leap-color-default-light-4);
 
         &.last-item {
@@ -282,6 +360,11 @@ const handleSubmit = () => {
           font-weight: 400;
           color: var(--leap-color-default);
           line-height: 20px;
+        }
+
+        .form-field {
+          flex: 1;
+          min-width: 0;
         }
 
         :deep(.van-cell) {

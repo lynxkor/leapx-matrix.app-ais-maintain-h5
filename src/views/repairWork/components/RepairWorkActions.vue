@@ -1,12 +1,13 @@
 <template>
   <!-- 终检确认弹窗 -->
-  <FinalCheckPopup v-model="showFinalCheckPopup" @submit="handleFinalCheckSubmit" />
+  <FinalCheckPopup v-model="showFinalCheckPopup" :service-proxy-id="workOrder.id" @submit="handleFinalCheckSubmit" />
 
   <!-- 批量操作弹窗 -->
   <BatchOperate
     v-model="showBatchOperate"
     :work-order="workOrder"
     :repair-items="repairItems"
+    :default-tag-index="defaultTagIndex"
     @refresh="handleRefresh"
   />
 
@@ -148,24 +149,29 @@ const emit = defineEmits(['refresh'])
 
 const showBatchOperate = ref(false)
 const showFinalCheckPopup = ref(false)
+const defaultTagIndex = ref(0)
 
 const serviceProxyId = computed(() => props.workOrder.id)
 
 // 批量操作按钮 → 打开 BatchOperate 弹窗
 const handleDelete = () => {
+  defaultTagIndex.value = 2
   showBatchOperate.value = true
 }
 
 const handleStart = () => {
+  defaultTagIndex.value = 1
   showBatchOperate.value = true
 }
 
 const handleEnd = () => {
+  defaultTagIndex.value = 2
   showBatchOperate.value = true
 }
 
 // 派工弹窗
 const handleDispatch = () => {
+  defaultTagIndex.value = 0
   showBatchOperate.value = true
 }
 
@@ -184,9 +190,11 @@ const handleRework = () => {
   })
     .then(async() => {
       try {
-        await repaired({ serviceProxyId: serviceProxyId.value })
-        showToast('返修成功')
-        emit('refresh')
+        const res = await repaired({ serviceProxyId: serviceProxyId.value })
+        if (res.code === 200) {
+          showToast('返修成功')
+          emit('refresh')
+        }
       } catch {
         showToast('操作失败')
       }
@@ -196,16 +204,19 @@ const handleRework = () => {
 
 // 更多 → 批量操作
 const handleMore = () => {
+  defaultTagIndex.value = 0
   showBatchOperate.value = true
 }
 
 // 终检弹窗提交
 const handleFinalCheckSubmit = async(data) => {
   try {
-    await finalInspection({ serviceProxyId: serviceProxyId.value, ...data })
-    showToast('终检成功')
-    showFinalCheckPopup.value = false
-    emit('refresh')
+    const res = await finalInspection(data)
+    if (res.code === 200) {
+      showToast('终检成功')
+      showFinalCheckPopup.value = false
+      emit('refresh')
+    }
   } catch {
     showToast('终检失败')
   }

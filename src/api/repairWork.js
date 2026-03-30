@@ -99,6 +99,14 @@ export function finalInspection(data) {
 }
 
 /**
+ * 维修项目--终检详情
+ * @param {Object} data
+ */
+export function finalInspectionDetail(data) {
+  return post(prefix + '/finalInspectionDetail', data)
+}
+
+/**
  * 维修项目--质检
  * @param {Object} data
  */
@@ -152,4 +160,12 @@ export function getDealerTeamUserRelation(data) {
  */
 export function getDealerWorkTeam(data) {
   return post('maintain/app/basic/dealerWorkTeam/list/v2', data)
+}
+
+/**
+ * 获取电池去向单位
+ * @param {Object} data
+ */
+export function getBatteryUnitList(data) {
+  return post('maintain/web/basic/batteryUnit/list', data)
 }

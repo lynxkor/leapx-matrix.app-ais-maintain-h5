@@ -213,6 +213,10 @@ const props = defineProps({
   repairItems: {
     type: Array,
     default: () => []
+  },
+  defaultTagIndex: {
+    type: Number,
+    default: 0
   }
 })
 
@@ -276,7 +280,7 @@ const loadRepairWorkRecord = async() => {
       ...item,
       _selected: false
     }))
-    activeTagIndex.value = 0
+    activeTagIndex.value = props.defaultTagIndex
   } catch {
     showToast('获取维修记录失败')
     internalRepairItems.value = []
@@ -356,13 +360,15 @@ const showDeleteConfirm = () => {
   })
     .then(async() => {
       try {
-        await deleteWorkers({
+        const res = await deleteWorkers({
           serviceProxyId: props.workOrder.id,
           ids: getSelectedItemIds()
         })
-        showToast('删除成功')
-        emit('refresh')
-        handleClose()
+        if (res.code === 200) {
+          showToast('删除成功')
+          emit('refresh')
+          handleClose()
+        }
       } catch {
         showToast('删除失败')
       }
@@ -381,14 +387,16 @@ const showStartConfirm = () => {
   })
     .then(async() => {
       try {
-        await startWork({
+        const res = await startWork({
           serviceProxyId: props.workOrder.id,
           timeSpend: formatDateTime(new Date()),
           ids: getSelectedItemIds()
         })
-        showToast('作业开始成功')
-        emit('refresh')
-        handleClose()
+        if (res.code === 200) {
+          showToast('作业开始成功')
+          emit('refresh')
+          handleClose()
+        }
       } catch {
         showToast('操作失败')
       }
@@ -407,14 +415,16 @@ const showEndConfirm = () => {
   })
     .then(async() => {
       try {
-        await endWork({
+        const res = await endWork({
           serviceProxyId: props.workOrder.id,
           ids: getSelectedItemIds(),
           finishAt: formatDateTime(new Date())
         })
-        showToast('作业结束成功')
-        emit('refresh')
-        handleClose()
+        if (res.code === 200) {
+          showToast('作业结束成功')
+          emit('refresh')
+          handleClose()
+        }
       } catch {
         showToast('操作失败')
       }
@@ -433,13 +443,15 @@ const showQualityConfirm = () => {
   })
     .then(async() => {
       try {
-        await qualityInspection({
+        const res = await qualityInspection({
           serviceProxyId: props.workOrder.id,
           ids: getSelectedItemIds()
         })
-        showToast('质检成功')
-        emit('refresh')
-        handleClose()
+        if (res.code === 200) {
+          showToast('质检成功')
+          emit('refresh')
+          handleClose()
+        }
       } catch {
         showToast('操作失败')
       }
@@ -458,13 +470,15 @@ const showFinalConfirm = () => {
   })
     .then(async() => {
       try {
-        await finalInspection({
+        const res = await finalInspection({
           serviceProxyId: props.workOrder.id,
           ids: getSelectedItemIds()
         })
-        showToast('终检成功')
-        emit('refresh')
-        handleClose()
+        if (res.code === 200) {
+          showToast('终检成功')
+          emit('refresh')
+          handleClose()
+        }
       } catch {
         showToast('操作失败')
       }
@@ -498,10 +512,12 @@ const handleVoid = () => {
 // 确认作废
 const handleVoidConfirm = async(reason) => {
   try {
-    await cancel({ id: props.workOrder.id, remark: reason })
-    showToast('作废成功')
-    emit('refresh')
-    handleClose()
+    const res = await cancel({ id: props.workOrder.id, invaildDesc: reason })
+    if (res.code === 200) {
+      showToast('作废成功')
+      emit('refresh')
+      handleClose()
+    }
   } catch {
     showToast('作废失败')
   }
