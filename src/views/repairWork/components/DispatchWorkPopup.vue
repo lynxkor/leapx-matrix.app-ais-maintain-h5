@@ -86,11 +86,26 @@
 
 <script setup>
 import { ref, computed, watch } from 'vue'
+import { showToast } from 'vant'
+import {
+  dispatchWorkers,
+  getDealerStation,
+  getDealerWorkTeam,
+  getDealerTeamUserRelation
+} from '../../../api/repairWork'
 
 const props = defineProps({
   modelValue: {
     type: Boolean,
     default: false
+  },
+  workOrder: {
+    type: Object,
+    default: () => ({})
+  },
+  selectedItemIds: {
+    type: Array,
+    default: () => []
   }
 })
 
@@ -103,6 +118,9 @@ watch(
   () => props.modelValue,
   (newVal) => {
     visible.value = newVal
+    if (newVal) {
+      loadOptions()
+    }
   }
 )
 
@@ -115,47 +133,73 @@ watch(visible, (newVal) => {
 })
 
 // 工位列表
-const stations = ref([
-  { id: 1, name: 'PDI工位' },
-  { id: 2, name: '钣金工位' },
-  { id: 3, name: '打磨工位' },
-  { id: 4, name: '大保养工位' },
-  { id: 5, name: '四轮定位工位' },
-  { id: 6, name: '待修工位' },
-  { id: 7, name: '轮胎工位' },
-  { id: 8, name: '喷漆工位' },
-  { id: 9, name: '高压工位' }
-])
-
+const stations = ref([])
 // 班组列表
-const teams = ref([
-  { id: 1, name: '钣金001' },
-  { id: 2, name: '钣金002' },
-  { id: 3, name: '钣金003' },
-  { id: 4, name: '钣金004' },
-  { id: 5, name: '钣金004李伟光' },
-  { id: 6, name: '钣金005' },
-  { id: 7, name: '钣金005荣誉维修之星团队李大齐' }
-])
-
+const teams = ref([])
 // 技师列表
-const technicians = ref([
-  { id: 1, name: '云佩玉' },
-  { id: 2, name: '汤杨' },
-  { id: 3, name: '昌瑞堂' },
-  { id: 4, name: '何欣欣' },
-  { id: 5, name: '时翔' },
-  { id: 6, name: '邬浩晨' }
-])
+const technicians = ref([])
 
 // 选中的项
 const selectedStation = ref(null)
 const selectedTeam = ref(null)
 const selectedTechnician = ref(null)
 
-// 是否可以提交
+// 加载工位和班组
+const loadOptions = async() => {
+  try {
+    const [stationData, teamData] = await Promise.all([
+      getDealerStation({}),
+      getDealerWorkTeam({})
+    ])
+    stations.value = stationData || []
+    teams.value = teamData || []
+    // 默认选中第一项
+    if (stations.value.length > 0) {
+      selectedStation.value = stations.value[0]
+    }
+    if (teams.value.length > 0) {
+      selectedTeam.value = teams.value[0]
+    }
+  } catch {
+    showToast('获取选项失败')
+  }
+}
+
+// 加载技师（根据班组联动）
+const loadTechnicians = async(teamId) => {
+  if (!teamId) {
+    technicians.value = []
+    selectedTechnician.value = null
+    return
+  }
+  try {
+    const data = await getDealerTeamUserRelation({ dealerWorkTeamId: teamId })
+    technicians.value = data || []
+    // 默认选中第一项
+    if (technicians.value.length > 0) {
+      selectedTechnician.value = technicians.value[0]
+    } else {
+      selectedTechnician.value = null
+    }
+  } catch {
+    technicians.value = []
+    selectedTechnician.value = null
+  }
+}
+
+// 监听班组变化，联动技师
+watch(selectedTeam, (newTeam) => {
+  if (newTeam) {
+    loadTechnicians(newTeam.id || newTeam.dealerWorkTeamId)
+  } else {
+    technicians.value = []
+    selectedTechnician.value = null
+  }
+})
+
+// 是否可以提交：工位必选，班组和技师任选其一
 const canSubmit = computed(() => {
-  return selectedStation.value && selectedTeam.value && selectedTechnician.value
+  return selectedStation.value && (selectedTeam.value || selectedTechnician.value)
 })
 
 // 选择工位
@@ -184,19 +228,35 @@ const resetSelection = () => {
   selectedStation.value = null
   selectedTeam.value = null
   selectedTechnician.value = null
+  stations.value = []
+  teams.value = []
+  technicians.value = []
 }
 
-// 提交
-const handleSubmit = () => {
+// 提交派工
+const handleSubmit = async() => {
   if (!canSubmit.value) return
 
-  emit('submit', {
-    station: selectedStation.value,
-    team: selectedTeam.value,
-    technician: selectedTechnician.value
-  })
-
-  handleClose()
+  try {
+    const now = new Date().toISOString()
+    await dispatchWorkers({
+      serviceProxyId: props.workOrder.id,
+      repairItemIds: props.selectedItemIds,
+      dealerStationId: selectedStation.value.id || selectedStation.value.dealerStationId,
+      dealerStationName: selectedStation.value.name || selectedStation.value.dealerStationName,
+      dealerWorkTeamId: selectedTeam.value?.id || selectedTeam.value?.dealerWorkTeamId,
+      dealerWorkTeamName: selectedTeam.value?.name || selectedTeam.value?.dealerWorkTeamName,
+      repairTechnicianId: selectedTechnician.value?.id || selectedTechnician.value?.userId,
+      repairTechnicianName: selectedTechnician.value?.name || selectedTechnician.value?.userName,
+      dispatchTime: now,
+      startAt: now
+    })
+    showToast('派工成功')
+    emit('submit')
+    handleClose()
+  } catch {
+    showToast('派工失败')
+  }
 }
 </script>
 

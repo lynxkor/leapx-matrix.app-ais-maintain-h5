@@ -41,15 +41,13 @@
                   @click="handleAction('delete', item)"
                   >删除派工</span
                 >
-                <template v-if="item.allowDelete === 1">
-                  <van-divider vertical />
-                </template>
-                <span class="action-text start" @click="handleAction('start', item)"
-                  >作业开始</span
+                <van-divider vertical />
+                <span class="action-text start" @click="handleAction('end', item)"
+                  >作业结束</span
                 >
                 <van-divider vertical />
-                <span class="action-text quality" @click="handleAction('quality', item)"
-                  >质检</span
+                <span class="action-text start" @click="handleAction('start', item)"
+                  >作业开始</span
                 >
               </template>
 
@@ -330,13 +328,13 @@ const handleDispatchSubmit = async(data) => {
       cursor: pointer;
 
       .view-all-text {
-        font-size: 13px;
+        font-size: 14px;
         font-family: 'PingFang SC', sans-serif;
-        color: var(--leap-color-primary);
+        color: #545454;
       }
 
       .van-icon {
-        color: var(--leap-color-primary);
+        color: #545454;
       }
     }
   }

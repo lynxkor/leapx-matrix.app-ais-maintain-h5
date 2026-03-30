@@ -47,6 +47,7 @@
  * 根据设计稿实现: https://mastergo.com/file/175060511907951?layer_id=1212:313964
  */
 import { ref, watch } from 'vue'
+import { showToast } from 'vant'
 
 const props = defineProps({
   modelValue: {
@@ -82,6 +83,7 @@ watch(visible, (newVal) => {
 // 确认作废
 const handleConfirm = () => {
   if (!reason.value.trim()) {
+    showToast('请输入作废原因')
     return
   }
   emit('confirm', reason.value.trim())

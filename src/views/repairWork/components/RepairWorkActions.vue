@@ -1,7 +1,4 @@
 <template>
-  <!-- 派工弹层 -->
-  <DispatchWorkPopup v-model="showDispatchPopup" @submit="handleDispatchSubmit" />
-
   <!-- 终检确认弹窗 -->
   <FinalCheckPopup v-model="showFinalCheckPopup" @submit="handleFinalCheckSubmit" />
 
@@ -20,7 +17,7 @@
     <div class="actions-right">
       <!-- 派工tab按钮 -->
       <template v-if="activeTab === 'dispatch'">
-        <van-button
+        <!-- <van-button
           class="action-btn delete-btn"
           plain
           type="primary"
@@ -39,8 +36,8 @@
           @click="handleStart"
         >
           作业开始
-        </van-button>
-        <van-button
+        </van-button> -->
+        <!-- <van-button
           v-if="showEndBtn"
           class="action-btn end-btn"
           plain
@@ -50,7 +47,7 @@
           @click="handleEnd"
         >
           作业结束
-        </van-button>
+        </van-button> -->
         <van-button
           class="action-btn dispatch-btn"
           type="primary"
@@ -86,7 +83,6 @@
         </van-button>
         <van-button
           class="action-btn start-btn"
-          plain
           type="primary"
           size="small"
           round
@@ -125,8 +121,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { showConfirmDialog, showToast } from 'vant'
-import DispatchWorkPopup from './DispatchWorkPopup.vue'
-import BatchOperate from './BatchOperate.vue'
+import BatchOperate from './BatchOperatePopup.vue'
 import FinalCheckPopup from './FinalCheckPopup.vue'
 import { repaired, finalInspection } from '../../../api/repairWork'
 
@@ -151,7 +146,6 @@ const props = defineProps({
 
 const emit = defineEmits(['refresh'])
 
-const showDispatchPopup = ref(false)
 const showBatchOperate = ref(false)
 const showFinalCheckPopup = ref(false)
 
@@ -172,7 +166,7 @@ const handleEnd = () => {
 
 // 派工弹窗
 const handleDispatch = () => {
-  showDispatchPopup.value = true
+  showBatchOperate.value = true
 }
 
 // 终检弹窗
@@ -203,15 +197,6 @@ const handleRework = () => {
 // 更多 → 批量操作
 const handleMore = () => {
   showBatchOperate.value = true
-}
-
-// 派工弹窗提交
-const handleDispatchSubmit = (data) => {
-  showDispatchPopup.value = false
-  // TODO: 派工 API 端点待确认
-  console.log('dispatch submit:', { serviceProxyId: serviceProxyId.value, ...data })
-  showToast('派工成功')
-  emit('refresh')
 }
 
 // 终检弹窗提交
@@ -275,7 +260,6 @@ const handleRefresh = () => {
   border-width: 1px;
 
   &.delete-btn,
-  &.start-btn,
   &.end-btn,
   &.rework-btn {
     color: var(--leap-color-primary);
@@ -283,6 +267,7 @@ const handleRefresh = () => {
     background: transparent;
   }
 
+  &.start-btn,
   &.dispatch-btn,
   &.final-check-btn {
     background: var(--leap-color-primary);

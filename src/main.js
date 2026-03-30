@@ -23,7 +23,8 @@ import {
   DatePicker,
   TimePicker,
   Tabs,
-  Tab
+  Tab,
+  Sticky
 } from 'vant'
 import * as Sentry from '@sentry/vue'
 
@@ -90,6 +91,7 @@ app.use(DatePicker)
 app.use(TimePicker)
 app.use(Tabs)
 app.use(Tab)
+app.use(Sticky)
 
 // 注册时可以配置额外的选项
 app.use(Lazyload, {

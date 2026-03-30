@@ -113,8 +113,19 @@ const loadData = async(isRefresh = false) => {
     const params = {
       pageNum: currentPage.value,
       pageSize: PAGESIZE,
-      searchKey: searchValue.value.trim(),
-      itemFlag: 1
+      appSearchKeyWord: searchValue.value.trim(),
+      itemFlag: 1,
+      sortColumns: [
+        {
+          'column': 'order_status',
+          'sort': 'ASC'
+        },
+        {
+          'column': 'create_time',
+          'sort': 'DESC'
+        }
+      ],
+      orderStatusList: [RepairOrderStatusEnum.PENDING_DISPATCH, RepairOrderStatusEnum.UNDER_CONSTRUCTION, RepairOrderStatusEnum.PENDING_FINAL_INSPECTION]
     }
 
     const resData = await getList(params)

@@ -67,7 +67,15 @@ export function repaired(data) {
 }
 
 /**
- * 维修项目--派工--维修作业记录
+ * 维修项目--派工
+ * @param {Object} data
+ */
+export function dispatchWorkers(data) {
+  return post(prefix + '/dispatchWorkers', data)
+}
+
+/**
+ * 维修项目--维修作业记录
  * @param {Object} data
  */
 export function getRepairWorkRecord(data) {
@@ -75,7 +83,7 @@ export function getRepairWorkRecord(data) {
 }
 
 /**
- * 维修项目--派工--搜索故障模块
+ * 维修项目--搜索故障模块
  * @param {Object} data
  */
 export function cccList(data) {
@@ -112,4 +120,36 @@ export function cancelFinal(data) {
  */
 export function cancel(data) {
   return post(prefix + '/cancel', data)
+}
+
+/**
+ * 维修项目--维修作业列表
+ * @param {Object} data
+ */
+export function repairWorkRecord(data) {
+  return post(prefix + '/repairWorkRecord', data)
+}
+
+/**
+ * 工位
+ * @param {Object} data
+ */
+export function getDealerStation(data) {
+  return post('maintain/app/basic/dealerStation/list/v2', data)
+}
+
+/**
+ * 技师
+ * @param {Object} data
+ */
+export function getDealerTeamUserRelation(data) {
+  return post('maintain/app/basic/dealerRelationUser/list/v2', data)
+}
+
+/**
+ * 班组
+ * @param {Object} data
+ */
+export function getDealerWorkTeam(data) {
+  return post('maintain/app/basic/dealerWorkTeam/list/v2', data)
 }

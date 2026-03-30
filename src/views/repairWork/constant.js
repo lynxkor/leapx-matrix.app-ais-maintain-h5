@@ -124,5 +124,19 @@ export const MaintenanceTypeEnum = {
   MAINTENANCE: '6EA3066F-82AC-E911-B0BB-FC82BA5F9EDF'
 }
 
+// 维修作业记录状态枚举 (repairWorkRecord.status)
+export const WorkRecordStatusEnum = {
+  /** 作业未开始 */
+  NOT_STARTED: 10,
+  /** 作业中 */
+  IN_PROGRESS: 20,
+  /** 中断 */
+  SUSPEND: 30,
+  /** 作业完成 */
+  COMPLETED: 40,
+  /** 作业作废 */
+  CANCELLED: 50
+}
+
 export const PAGESIZE = 20
 
