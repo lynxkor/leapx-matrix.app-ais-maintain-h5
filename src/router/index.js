@@ -72,7 +72,7 @@ const router = createRouter({
           name: 'createPreAuthorization',
           component: () => import('../views/preAuthorization/CreatePreAuthorization.vue'),
           meta: {
-            title: '新建预授权'
+            title: '预授权申请'
           }
         },
         {
@@ -81,6 +81,14 @@ const router = createRouter({
           component: () => import('../views/preAuthorization/CreatePreAuthorization.vue'),
           meta: {
             title: '编辑预授权'
+          }
+        },
+        {
+          path: '/pre-authorization/search',
+          name: 'preAuthorizationSearch',
+          component: () => import('../views/preAuthorization/PreAuthorizationSearchPage.vue'),
+          meta: {
+            title: ''
           }
         }
       ]

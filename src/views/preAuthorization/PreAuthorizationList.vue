@@ -1,107 +1,132 @@
 <template>
   <div class="pre-auth-list">
-    <!-- 搜索过滤头部 -->
-    <FilterHeader
-      :showSort="false"
-      :showScan="false"
-      :placeholder="'请输入VIN码或客户姓名'"
-      :filter-list="filterList"
-      @search="onSearch"
-      @filterSearch="onFilterSearch"
-    />
+    <!-- 搜索过滤头部 - 固定定位 -->
+    <div class="filter-fixed">
+      <FilterHeader
+        ref="filterHeaderRef"
+        :showSort="false"
+        :showScan="false"
+        :placeholder="'请输入预授权单号/预警信息/门店名称'"
+        :filter-list="filterList"
+        :search-page-route="'preAuthorizationSearch'"
+        @search="onSearch"
+        @filterSearch="onFilterSearch"
+      />
 
-    <!-- 筛选标签 -->
-    <div class="filter-tabs">
-      <van-tabs v-model:active="activeTab" @change="onTabChange" color="#2261DD">
-        <van-tab name="all" title="全部"></van-tab>
-        <van-tab name="pending" title="待处理"></van-tab>
-        <van-tab name="approved" title="已批准"></van-tab>
-        <van-tab name="rejected" title="已拒绝"></van-tab>
-      </van-tabs>
+      <!-- 筛选标签 -->
+      <div class="filter-tabs">
+        <van-tabs v-model:active="activeTab" @change="onTabChange" color="#2261DD">
+          <van-tab name="all" title="全部"></van-tab>
+          <van-tab name="pending" title="待处理"></van-tab>
+          <van-tab name="approved" title="已批准"></van-tab>
+          <van-tab name="rejected" title="已拒绝"></van-tab>
+        </van-tabs>
+      </div>
     </div>
 
     <!-- 预授权列表 -->
     <div class="list-container">
-      <van-list
-        v-model:error="error"
-        :loading="loading"
-        :finished="finished"
-        finished-text="没有更多了"
-        @load="onLoad"
+      <!-- 空状态 -->
+      <div v-if="showEmpty" class="empty-state">
+        <img class="empty-image" src="@/libs/assets/image/no-data.png" alt="没有数据" />
+        <p class="empty-text">没有找到相关内容</p>
+        <van-button plain type="primary" size="normal" class="reset-btn" @click="handleResetFilter">
+          重置筛选
+        </van-button>
+      </div>
+
+      <RefreshList
+        v-else
+        :requestData="requestData"
+        :has-no-data="dataList.length === 0"
+        @setData="setData"
+        @resetFilters="resetFilters"
       >
         <ListItem
-          v-for="item in list"
+          v-for="item in dataList"
           :key="item.id"
           @click="goToDetail(item)"
         >
           <template #header>
             <div class="item-header">
-              <div class="item-title">{{ item.customerName }}</div>
-              <div class="item-status" :class="getStatusClass(item.status)">
+              <span class="order-no">{{ item.orderNo }}</span>
+              <span class="status-tag" :class="getStatusClass(item.status)">
                 {{ getStatusText(item.status) }}
-              </div>
+              </span>
             </div>
           </template>
 
           <template #card-info>
-            <div class="item-content">
-              <div class="item-row">
-                <span class="label">VIN码：</span>
-                <span class="value">{{ item.vin }}</span>
-              </div>
-              <div class="item-row">
-                <span class="label">车型：</span>
-                <span class="value">{{ item.model }}</span>
-              </div>
-              <div class="item-row">
-                <span class="label">申请时间：</span>
-                <span class="value">{{ formatDate(item.applyTime) }}</span>
-              </div>
-            </div>
+            <van-row class="card-info">
+              <van-col span="24" class="card-info-col">
+                <span class="card-info-title">VIN</span>
+                <span class="card-info-des">{{ item.vin }}</span>
+              </van-col>
+              <van-col span="24" class="card-info-col">
+                <span class="card-info-title">门店名称</span>
+                <span class="card-info-des">{{ item.storeName }}</span>
+              </van-col>
+              <van-col span="24" class="card-info-col">
+                <span class="card-info-title">保修时间</span>
+                <span class="card-info-des">{{ item.warrantyTime }}</span>
+              </van-col>
+              <van-col span="24" class="card-info-col">
+                <span class="card-info-title">进店里程</span>
+                <span class="card-info-des">{{ item.mileage }}</span>
+              </van-col>
+              <van-col span="24" class="card-info-col">
+                <span class="card-info-title">创建时间</span>
+                <span class="card-info-des">{{ item.createTime }}</span>
+              </van-col>
+              <van-col span="24" class="card-info-col">
+                <span class="card-info-title">缴定金时间</span>
+                <span class="card-info-des">{{ item.depositTime }}</span>
+              </van-col>
+              <van-col span="24" class="card-info-col">
+                <span class="card-info-title">销售门店</span>
+                <span class="card-info-des">{{ item.salesStore }}</span>
+              </van-col>
+            </van-row>
+          </template>
 
-            <div class="item-footer">
-              <span class="amount">预授权金额：¥{{ item.amount }}</span>
-              <van-button
-                size="small"
-                :type="getButtonVariant(item.status)"
-                @click.stop="handleAction(item)"
-              >
-                {{ getButtonText(item.status) }}
-              </van-button>
-            </div>
+          <template #btn-content>
+            <ais-button type="default" round size="large" @click.stop="handleContact(item)">
+              联系创建人
+            </ais-button>
           </template>
         </ListItem>
-      </van-list>
+      </RefreshList>
     </div>
 
-    <!-- 浮动操作按钮 -->
-    <van-button
-      class="fab-button"
-      type="primary"
-      icon="plus"
-      round
-      @click="createAuthorization"
-    >
-      新建预授权
-    </van-button>
+    <!-- 底部操作栏 -->
+    <div class="action-bar">
+      <van-button
+        class="create-btn"
+        type="primary"
+        @click="createAuthorization"
+      >
+        新建
+      </van-button>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
-import { Toast } from 'vant'
+import { showToast } from 'vant'
 import FilterHeader from '@/libs/components/FilterHeader.vue'
+import RefreshList from '@/libs/components/RefreshList.vue'
 import ListItem from '@/components/ListItem.vue'
+import AisButton from '@/components/AisButton.vue'
 
 const router = useRouter()
 
 // 响应式数据
 const activeTab = ref('all')
-const loading = ref(false)
-const finished = ref(false)
-const error = ref(false)
-const list = ref([])
+const dataList = ref([])
+const showEmpty = ref(false)
+const filterHeaderRef = ref(null)
 
 // FilterHeader 配置
 const filterList = ref([
@@ -121,7 +146,8 @@ const filterList = ref([
     options: [
       { label: 'Leapmotor C10', value: 'c10' },
       { label: 'Leapmotor T03', value: 't03' },
-      { label: '其他', value: 'other' }
+      { label: '其他', value: 'other' },
+      { label: '测试空结果', value: 'empty' }
     ]
   },
   {
@@ -141,179 +167,210 @@ const filterList = ref([
 const mockData = [
   {
     id: 1,
-    customerName: '张三',
-    vin: 'LSJA24U72JF234567',
-    model: 'Leapmotor C10',
-    applyTime: '2024-12-01 10:30:25',
-    amount: '2,800.00',
-    status: 'pending'
+    orderNo: 'YS-260313141948383402',
+    status: 'pending',
+    vin: 'LFV3H6686RKYM3393',
+    storeName: '2358446753543340032',
+    warrantyTime: 'B10-510激光雷达版',
+    mileage: '2025款',
+    createTime: 'LFV3H6686RKYM3393',
+    depositTime: '2025-12-30 13:15:00',
+    salesStore: '杭州服务中心芯图大厦店'
   },
   {
     id: 2,
-    customerName: '李四',
-    vin: 'LSJA24U72JF234568',
-    model: 'Leapmotor T03',
-    applyTime: '2024-12-01 14:20:10',
-    amount: '3,200.00',
-    status: 'approved'
+    orderNo: 'YS-260313141948383403',
+    status: 'submitted',
+    vin: 'LFV3H6686RKYM3394',
+    storeName: '2358446753543340033',
+    warrantyTime: 'C11-200增程版',
+    mileage: '2024款',
+    createTime: 'LFV3H6686RKYM3394',
+    depositTime: '2025-12-29 10:00:00',
+    salesStore: '上海浦东店'
   },
   {
     id: 3,
-    customerName: '王五',
-    vin: 'LSJA24U72JF234569',
-    model: 'Leapmotor C10',
-    applyTime: '2024-12-02 09:15:33',
-    amount: '1,500.00',
-    status: 'rejected'
+    orderNo: 'YS-260313141948383404',
+    status: 'approved',
+    vin: 'LFV3H6686RKYM3395',
+    storeName: '测试门店001',
+    warrantyTime: 'C10-525舒享版',
+    mileage: '2024款',
+    createTime: 'LFV3H6686RKYM3395',
+    depositTime: '2025-12-28 09:00:00',
+    salesStore: '北京朝阳店'
   },
   {
     id: 4,
-    customerName: '赵六',
-    vin: 'LSJA24U72JF234570',
-    model: 'Leapmotor T03',
-    applyTime: '2024-12-02 16:45:12',
-    amount: '4,200.00',
-    status: 'pending'
+    orderNo: 'YS-260313141948383405',
+    status: 'rejected',
+    vin: 'LFV3H6686RKYM3396',
+    storeName: '深圳南山店',
+    warrantyTime: 'T03-400轻享版',
+    mileage: '2023款',
+    createTime: 'LFV3H6686RKYM3396',
+    depositTime: '2025-12-27 14:30:00',
+    salesStore: '深圳南山店'
+  },
+  {
+    id: 5,
+    orderNo: 'YS-260313141948383406',
+    status: 'pending',
+    vin: 'LFV3H6686RKYM3397',
+    storeName: '成都武侯店',
+    warrantyTime: 'C11-605纯电版',
+    mileage: '2025款',
+    createTime: 'LFV3H6686RKYM3397',
+    depositTime: '2025-12-26 11:20:00',
+    salesStore: '成都武侯店'
   }
 ]
 
 // 初始化数据
-list.value = [...mockData]
+dataList.value = [...mockData]
+
+// requestData 配置
+const requestData = reactive({
+  data: {
+    keyWord: '',
+    pageNum: 1,
+    pageSize: 10
+  },
+  api: () => Promise.resolve({ code: 200, data: mockData })
+})
 
 // 方法定义
 const onSearch = (params) => {
-  Toast(`搜索：${params.searchValue}`)
-  // 实现搜索逻辑
-  filterListByParams(params.searchValue, activeTab.value, {})
+  showToast(`搜索：${params.searchValue}`)
+  requestData.data.keyWord = params.searchValue
+  requestData.data.pageNum = 1
+  dataList.value = [...mockData]
 }
 
 const onFilterSearch = (filterParams) => {
-  Toast('应用筛选条件')
-  filterListByParams('', activeTab.value, filterParams)
-}
+  showToast('应用筛选条件')
 
-const onTabChange = (name) => {
-  filterListByParams('', name, {})
-}
-
-const onLoad = () => {
-  // 模拟异步加载
-  setTimeout(() => {
-    loading.value = false
-    finished.value = true
-  }, 1000)
-}
-
-const filterListByParams = (search, tab, filters) => {
   let filtered = [...mockData]
 
-  // 按搜索值过滤
-  if (search && search.searchValue) {
-    const searchValue = search.searchValue
-    filtered = filtered.filter(item =>
-      item.vin.includes(searchValue) || item.customerName.includes(searchValue)
-    )
-  }
-
-  // 按标签过滤
-  if (tab !== 'all') {
-    filtered = filtered.filter(item => item.status === tab)
-  }
-
-  // 按高级筛选过滤
-  if (filters.customerType) {
-    filtered = filtered.filter(item =>
-      filters.customerType === 'individual' ? !item.isEnterprise : item.isEnterprise
-    )
-  }
-
-  if (filters.brand && filters.brand !== 'all') {
-    if (filters.brand === 'c10') {
-      filtered = filtered.filter(item => item.model.includes('C10'))
-    } else if (filters.brand === 't03') {
-      filtered = filtered.filter(item => item.model.includes('T03'))
-    } else if (filters.brand === 'other') {
-      filtered = filtered.filter(item => !item.model.includes('C10') && !item.model.includes('T03'))
+  // 根据筛选条件过滤
+  if (filterParams.brand === 'empty') {
+    // 选择"测试空结果"时返回空数组
+    filtered = []
+  } else if (filterParams.brand && filterParams.brand !== 'all') {
+    if (filterParams.brand === 'c10') {
+      filtered = filtered.filter(item => item.warrantyTime.includes('C10'))
+    } else if (filterParams.brand === 't03') {
+      filtered = filtered.filter(item => item.warrantyTime.includes('T03'))
+    } else if (filterParams.brand === 'other') {
+      filtered = filtered.filter(item =>
+        !item.warrantyTime.includes('C10') &&
+        !item.warrantyTime.includes('T03') &&
+        !item.warrantyTime.includes('C11')
+      )
     }
   }
 
-  list.value = filtered
+  requestData.data = { ...requestData.data }
+  dataList.value = filtered
+  showEmpty.value = filtered.length === 0
 }
 
-const getStatusClass = (status) => {
-  switch (status) {
-    case 'pending': return 'status-pending'
-    case 'approved': return 'status-approved'
-    case 'rejected': return 'status-rejected'
-    default: return ''
+const onTabChange = (name) => {
+  activeTab.value = name
+  requestData.data.pageNum = 1
+  dataList.value = [...mockData]
+}
+
+const setData = (res) => {
+  const list = Array.isArray(res.list) ? res.list : []
+  if (res.isRefresh) {
+    dataList.value = [...list]
+  } else {
+    dataList.value.push(...list)
+  }
+}
+
+const resetFilters = () => {
+  activeTab.value = 'all'
+  requestData.data = {
+    keyWord: '',
+    pageNum: 1,
+    pageSize: 10
+  }
+  dataList.value = [...mockData]
+  showEmpty.value = false
+}
+
+const handleResetFilter = () => {
+  activeTab.value = 'all'
+  requestData.data = {
+    keyWord: '',
+    pageNum: 1,
+    pageSize: 10
+  }
+  dataList.value = [...mockData]
+  showEmpty.value = false
+  // 重置 FilterHeader 的筛选条件
+  if (filterHeaderRef.value) {
+    filterHeaderRef.value.resetFilters()
   }
 }
 
 const getStatusText = (status) => {
   switch (status) {
-    case 'pending': return '待处理'
+    case 'pending': return '未提交'
+    case 'submitted': return '已提交'
     case 'approved': return '已批准'
     case 'rejected': return '已拒绝'
+    default: return '未知'
+  }
+}
+
+const getStatusClass = (status) => {
+  switch (status) {
+    case 'pending': return 'status-blue'
+    case 'submitted':
+    case 'approved': return 'status-green'
+    case 'rejected': return 'status-red'
     default: return ''
   }
 }
 
-const getButtonVariant = (status) => {
-  switch (status) {
-    case 'pending': return 'warning'
-    case 'approved': return 'primary'
-    case 'rejected': return 'default'
-    default: return 'primary'
-  }
-}
-
-const getButtonText = (status) => {
-  switch (status) {
-    case 'pending': return '处理'
-    case 'approved': return '详情'
-    case 'rejected': return '重新申请'
-    default: return '查看'
-  }
+const handleContact = (item) => {
+  showToast(`联系创建人: ${item.orderNo}`)
 }
 
 const goToDetail = (item) => {
   router.push(`/pre-authorization/${item.id}`)
 }
 
-const handleAction = (item) => {
-  switch (item.status) {
-    case 'pending':
-      // 处理待办事项
-      Toast(`处理预授权 ${item.id}`)
-      break
-    case 'approved':
-      goToDetail(item)
-      break
-    case 'rejected':
-      Toast(`重新申请预授权 ${item.id}`)
-      break
-  }
-}
-
 const createAuthorization = () => {
   router.push('/pre-authorization/create')
-}
-
-const formatDate = (dateString) => {
-  // 格式化日期的简单实现
-  return dateString.split(' ')[0]
 }
 </script>
 
 <style lang="scss" scoped>
 .pre-auth-list {
-  padding-bottom: 80px; /* 为浮动按钮留出空间 */
+  padding-bottom: 89px;
   min-height: 100vh;
   background-color: #f5f5f5;
+  overflow-y: auto;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+
+  .filter-fixed {
+    position: fixed;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    background: #fff;
+  }
 
   .filter-tabs {
-    background-color: #fff;
-    margin-top: 10px;
+    background: #fff;
 
     :deep(.van-tab) {
       font-size: 14px;
@@ -321,83 +378,128 @@ const formatDate = (dateString) => {
   }
 
   .list-container {
-    margin-top: 10px;
-    padding: 0 10px;
+    padding: 0 12px;
+    padding-bottom: 77px;
+    margin-top: 58px;
+  }
+
+  .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 66px 0;
+
+    .empty-image {
+      width: 230px;
+      height: 142px;
+      margin-bottom: 16px;
+    }
+
+    .empty-text {
+      font-family: 'PingFang SC';
+      font-size: 14px;
+      color: #6c6e6c;
+      margin: 0 0 20px 0;
+    }
+
+    .reset-btn {
+      width: 88px;
+      height: 32px;
+      font-size: 14px;
+      color: #009100 !important;
+      border: 1px solid #009100 !important;
+      border-radius: 4px;
+    }
   }
 
   .item-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 10px;
+    width: 100%;
 
-    .item-title {
+    .order-no {
+      font-family: 'PingFang SC';
       font-size: 16px;
-      font-weight: bold;
-      color: #333;
+      font-weight: 500;
+      color: #191a1b;
     }
 
-    .item-status {
+    .status-tag {
+      font-family: 'PingFang SC';
       font-size: 12px;
-      padding: 4px 8px;
-      border-radius: 12px;
-      color: #fff;
+      font-weight: 500;
+      padding: 2px 8px;
+      border-radius: 4px;
 
-      &.status-pending {
-        background-color: #ff976a;
+      &.status-blue {
+        color: #2261dd;
+        background: rgba(34, 97, 221, 0.1);
       }
 
-      &.status-approved {
-        background-color: #00c48f;
+      &.status-green {
+        color: #009100;
+        background: rgba(0, 145, 0, 0.1);
       }
 
-      &.status-rejected {
-        background-color: #ee0a24;
+      &.status-red {
+        color: #ee0a24;
+        background: rgba(238, 10, 36, 0.1);
       }
     }
   }
 
-  .item-content {
-    margin-bottom: 10px;
+  .card-info {
+    box-sizing: border-box;
+    margin-top: 6px;
+    padding-bottom: 6px;
 
-    .item-row {
+    .card-info-col {
+      font-family: 'PingFang SC';
+      font-size: 14px;
+      padding: 6px 12px 0 0;
       display: flex;
-      margin-bottom: 5px;
-      font-size: 14px;
-      color: #666;
+      gap: 12px;
 
-      .label {
-        min-width: 80px;
-        color: #999;
+      .card-info-title {
+        color: #545454;
+        width: 70px;
+        flex-shrink: 0;
       }
 
-      .value {
+      .card-info-des {
+        color: #191a1b;
         flex: 1;
-        color: #333;
+        word-break: break-all;
       }
     }
   }
 
-  .item-footer {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-
-    .amount {
-      font-size: 14px;
-      color: #ff5000;
-      font-weight: bold;
-    }
-  }
-
-  .fab-button {
+  .action-bar {
     position: fixed;
-    bottom: 20px;
-    right: 20px;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 48px;
+    background: #ffffff;
+    border-top: 0.5px solid #e0e0e0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 12px;
+    padding-bottom: 29px;
+    box-sizing: content-box;
     z-index: 100;
-    width: auto;
-    height: 50px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+
+    .create-btn {
+      width: 100%;
+      height: 40px;
+      background: #009100;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      color: #ffffff;
+    }
   }
 }
 </style>
