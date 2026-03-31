@@ -66,11 +66,11 @@
           <!-- 状态标签栏 -->
           <div class="status-tags">
             <div
-              v-for="(tag, index) in statusTagList"
+              v-for="(tag, index) in statusTags"
               :key="index"
               class="status-tag-item"
-              :class="{ active: activeTagIndex === index }"
-              @click="handleTagClick(index)"
+              :class="{ active: activeTagIndex === tag.index }"
+              @click="handleTagClick(tag.index)"
             >
               {{ tag.label }}
             </div>
@@ -166,6 +166,14 @@
               </div>
             </template>
             <!-- 待质检: 质检 -->
+             <div
+              v-if="activeTagIndex === 3"
+              class="action-btn delete-btn"
+              :class="{ disabled: !hasSelectedItems }"
+              @click="showReworkConfirm"
+            >
+              <span>返修</span>
+            </div>
             <div
               v-if="activeTagIndex === 3"
               class="action-btn primary-btn"
@@ -178,7 +186,6 @@
             <div
               v-if="activeTagIndex === 4"
               class="action-btn primary-btn"
-              :class="{ disabled: !hasSelectedItems }"
               @click="showFinalConfirm"
             >
               <span>终检</span>
@@ -197,20 +204,13 @@
 
 <script setup>
 import { ref, computed, watch } from 'vue'
-import { showConfirmDialog, showToast } from 'vant'
+import { showToast } from 'vant'
 import DispatchWorkPopup from './DispatchWorkPopup.vue'
 import CancelWorkPopup from './CancelWorkPopup.vue'
-import {
-  deleteWorkers,
-  startWork,
-  endWork,
-  cancel,
-  repairWorkRecord,
-  qualityInspection,
-  finalInspection
-} from '../../../api/repairWork'
+import { cancel, repairWorkRecord } from '../../../api/repairWork'
 import { WorkRecordStatusEnum, RepairOrderStatusEnum } from '../constant'
 import { formatDateTime } from '@/libs/utils'
+import { executeBatchOperation } from '../utils'
 
 const props = defineProps({
   modelValue: {
@@ -243,11 +243,11 @@ const internalRepairItems = ref([])
 
 // 状态标签列表
 const statusTagList = ref([
-  { label: '待派工' },
-  { label: '未作业' },
-  { label: '作业中' },
-  { label: '待质检' },
-  { label: '待终检' }
+  { label: '待派工', index: 0 },
+  { label: '未作业', index: 1 },
+  { label: '作业中', index: 2 },
+  { label: '待质检', index: 3 },
+  { label: '待终检', index: 4 }
 ])
 
 // 当前选中的标签索引
@@ -263,9 +263,9 @@ const filterByTag = (item, tagIndex) => {
     case 2: // 作业中
       return item.status === WorkRecordStatusEnum.IN_PROGRESS
     case 3: // 待质检
-      return item.status === WorkRecordStatusEnum.COMPLETED
+      return item.status === WorkRecordStatusEnum.COMPLETED && item.qualityCheckStatus !== 30
     case 4: // 待终检
-      return item.qualityCheckStatus === 1
+      return item.qualityCheckStatus === 30
     default:
       return true
   }
@@ -277,10 +277,14 @@ const filteredRepairItems = computed(() => {
   return internalRepairItems.value.filter((item) => filterByTag(item, activeTagIndex.value))
 })
 
-// 获取选中的项目ID列表
-const getSelectedItemIds = () => {
-  return getSelectedItems().map((item) => item.id)
-}
+const statusTags = computed(() => {
+  if (props.workOrder.orderStatus === RepairOrderStatusEnum.PENDING_DISPATCH || props.workOrder.orderStatus === RepairOrderStatusEnum.UNDER_CONSTRUCTION) {
+    return statusTagList.value.slice(0, 3)
+  } else if (props.workOrder.orderStatus === RepairOrderStatusEnum.PENDING_FINAL_INSPECTION) {
+    return statusTagList.value.slice(3, 5)
+  }
+  return statusTagList.value
+})
 
 // 加载维修作业记录
 const loadRepairWorkRecord = async() => {
@@ -307,11 +311,6 @@ watch(
     visible.value = newVal
     if (newVal) {
       loadRepairWorkRecord()
-      if (props.workOrder.orderStatus === RepairOrderStatusEnum.PENDING_DISPATCH || props.workOrder.orderStatus === RepairOrderStatusEnum.UNDER_CONSTRUCTION) {
-        statusTagList.value = statusTagList.value.slice(0, 3)
-      } else if (props.workOrder.orderStatus === RepairOrderStatusEnum.PENDING_FINAL_INSPECTION) {
-        statusTagList.value = statusTagList.value.slice(3, 5)
-      }
     }
   }
 )
@@ -360,140 +359,50 @@ const getSelectedItems = () => {
   return filteredRepairItems.value.filter((item) => item._selected)
 }
 
-// 删除确认
-const showDeleteConfirm = () => {
+// 执行批量操作
+const handleBatchAction = async(action) => {
   const selectedItems = getSelectedItems()
   if (selectedItems.length === 0) return
 
-  showConfirmDialog({
-    title: '确认删除',
-    message: `确定要删除选中的 ${selectedItems.length} 个派工项目吗？`
+  const ids = selectedItems.map((item) => item.id)
+  const extraParams = {}
+
+  // 作业开始需要 timeSpend
+  if (action === 'start') {
+    extraParams.timeSpend = formatDateTime(new Date())
+  }
+  // 作业结束需要 finishAt
+  if (action === 'end') {
+    extraParams.finishAt = formatDateTime(new Date())
+  }
+
+  await executeBatchOperation(action, {
+    serviceProxyId: props.workOrder.id,
+    ids,
+    selectedItems,
+    extraParams,
+    onRefresh: () => emit('refresh'),
+    onSuccess: () => handleClose()
   })
-    .then(async() => {
-      try {
-        const ids = getSelectedItemIds()
-        const res = await deleteWorkers(ids)
-        if (res.code === 200) {
-          showToast('删除成功')
-          emit('refresh')
-          handleClose()
-        }
-      } catch {
-        showToast('删除失败')
-      }
-    })
-    .catch(() => {})
 }
+
+// 删除确认
+const showDeleteConfirm = () => handleBatchAction('delete')
 
 // 作业开始确认
-const showStartConfirm = () => {
-  const selectedItems = getSelectedItems()
-  if (selectedItems.length === 0) return
-
-  showConfirmDialog({
-    title: '确认作业开始',
-    message: `确定要对选中的 ${selectedItems.length} 个项目开始作业吗？`
-  })
-    .then(async() => {
-      try {
-        const res = await startWork({
-          serviceProxyId: props.workOrder.id,
-          timeSpend: formatDateTime(new Date()),
-          ids: getSelectedItemIds()
-        })
-        if (res.code === 200) {
-          showToast('作业开始成功')
-          emit('refresh')
-          handleClose()
-        }
-      } catch {
-        showToast('操作失败')
-      }
-    })
-    .catch(() => {})
-}
+const showStartConfirm = () => handleBatchAction('start')
 
 // 作业结束确认
-const showEndConfirm = () => {
-  const selectedItems = getSelectedItems()
-  if (selectedItems.length === 0) return
+const showEndConfirm = () => handleBatchAction('end')
 
-  showConfirmDialog({
-    title: '确认作业结束',
-    message: `确定要对选中的 ${selectedItems.length} 个项目结束作业吗？`
-  })
-    .then(async() => {
-      try {
-        const res = await endWork({
-          serviceProxyId: props.workOrder.id,
-          ids: getSelectedItemIds(),
-          finishAt: formatDateTime(new Date())
-        })
-        if (res.code === 200) {
-          showToast('作业结束成功')
-          emit('refresh')
-          handleClose()
-        }
-      } catch {
-        showToast('操作失败')
-      }
-    })
-    .catch(() => {})
-}
+// 返修
+const showReworkConfirm = () => handleBatchAction('rework')
 
 // 质检确认
-const showQualityConfirm = () => {
-  const selectedItems = getSelectedItems()
-  if (selectedItems.length === 0) return
-
-  showConfirmDialog({
-    title: '确认质检',
-    message: `确定要对选中的 ${selectedItems.length} 个项目进行质检吗？`
-  })
-    .then(async() => {
-      try {
-        const res = await qualityInspection({
-          serviceProxyId: props.workOrder.id,
-          ids: getSelectedItemIds()
-        })
-        if (res.code === 200) {
-          showToast('质检成功')
-          emit('refresh')
-          handleClose()
-        }
-      } catch {
-        showToast('操作失败')
-      }
-    })
-    .catch(() => {})
-}
+const showQualityConfirm = () => handleBatchAction('quality')
 
 // 终检确认
-const showFinalConfirm = () => {
-  const selectedItems = getSelectedItems()
-  if (selectedItems.length === 0) return
-
-  showConfirmDialog({
-    title: '确认终检',
-    message: `确定要对选中的 ${selectedItems.length} 个项目进行终检吗？`
-  })
-    .then(async() => {
-      try {
-        const res = await finalInspection({
-          serviceProxyId: props.workOrder.id,
-          ids: getSelectedItemIds()
-        })
-        if (res.code === 200) {
-          showToast('终检成功')
-          emit('refresh')
-          handleClose()
-        }
-      } catch {
-        showToast('操作失败')
-      }
-    })
-    .catch(() => {})
-}
+const showFinalConfirm = () => handleBatchAction('finalCheck')
 
 // 批量派工
 const showBatchDispatch = () => {

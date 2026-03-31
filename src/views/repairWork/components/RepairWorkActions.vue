@@ -114,6 +114,16 @@
           返修
         </van-button>
         <van-button
+          class="action-btn rework-btn"
+          plain
+          type="primary"
+          size="small"
+          round
+          @click="handleRework"
+        >
+          质检
+        </van-button>
+        <van-button
           class="action-btn final-check-btn"
           type="primary"
           size="small"
@@ -129,11 +139,12 @@
 
 <script setup>
 import { ref, computed } from 'vue'
-import { showConfirmDialog, showToast } from 'vant'
+import { showToast } from 'vant'
 import BatchOperate from './BatchOperatePopup.vue'
 import FinalCheckPopup from './FinalCheckPopup.vue'
-import FaultInfoPopup from '../faultInfo.vue'
-import { repaired, finalInspection, addOrUpdate } from '../../../api/repairWork'
+import FaultInfoPopup from './FaultInfoPopup.vue'
+import { finalInspection } from '../../../api/repairWork'
+import { showFaultCheckDialog } from '../utils'
 
 const props = defineProps({
   workOrder: {
@@ -196,26 +207,10 @@ const handleFinalCheck = () => {
   showFinalCheckPopup.value = true
 }
 
-// 返修
-const handleRework = () => {
-  showConfirmDialog({
-    title: '确认返修',
-    message: '确定要对该工单进行返修吗？',
-    confirmButtonText: '确定',
-    cancelButtonText: '取消'
-  })
-    .then(async() => {
-      try {
-        const res = await repaired({ serviceProxyId: serviceProxyId.value })
-        if (res.code === 200) {
-          showToast('返修成功')
-          emit('refresh')
-        }
-      } catch {
-        showToast('操作失败')
-      }
-    })
-    .catch(() => {})
+// 返修和质检
+const handleRework = async() => {
+  defaultTagIndex.value = 3
+  showBatchOperate.value = true
 }
 
 // 更多 → 批量操作
@@ -227,54 +222,20 @@ const handleMore = () => {
 // 终检弹窗提交
 const handleFinalCheckSubmit = async(data) => {
   try {
-    const res = await finalInspection(data)
-    if (res.code === 200) {
-      showToast('终检成功')
-      showFinalCheckPopup.value = false
-      emit('refresh')
-      // 终检成功后检查是否有故障
-      if (hasFault.value) {
-        showFaultCheckDialog()
+    await finalInspection(data)
+    showToast('终检成功')
+    showFinalCheckPopup.value = false
+    emit('refresh')
+    // 终检成功后检查是否有故障
+    if (hasFault.value) {
+      const result = await showFaultCheckDialog(serviceProxyId.value, () => emit('refresh'))
+      if (result?.action === 'fillFault') {
+        showFaultInfoPopup.value = true
       }
     }
   } catch {
     showToast('终检失败')
   }
-}
-
-// 故障检查弹窗
-const showFaultCheckDialog = () => {
-  showConfirmDialog({
-    title: '提示',
-    message: '系统检测到本次进店是否存在故障为"是，有故障"，请填写故障模块信息。',
-    confirmButtonText: '去填写故障信息',
-    cancelButtonText: '无故障'
-  })
-    .then(() => {
-      showFaultInfoPopup.value = true
-    })
-    .catch(() => {
-      // 点击"无故障" → 二次确认
-      showConfirmDialog({
-        title: '提示',
-        message: '若本次无故障，将清空"故障模块、故障描述"，请确认无故障。',
-        confirmButtonText: '确认无故障',
-        cancelButtonText: '取消'
-      })
-        .then(async() => {
-          try {
-            await addOrUpdate({ serviceProxyId: serviceProxyId.value, faultModules: [], faultDescription: '' })
-            showToast('已确认无故障')
-            emit('refresh')
-          } catch {
-            showToast('操作失败')
-          }
-        })
-        .catch(() => {
-          // 取消 → 回到故障检查弹窗
-          showFaultCheckDialog()
-        })
-    })
 }
 
 // 刷新回调

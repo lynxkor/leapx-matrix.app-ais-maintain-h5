@@ -99,8 +99,8 @@
 <script setup>
 import { ref, watch } from 'vue'
 import { showToast, showSuccessToast } from 'vant'
-import AddFaultInfoPopup from './components/AddFaultInfoPopup.vue'
-import { addOrUpdate } from '../../api/repairWork'
+import AddFaultInfoPopup from './AddFaultInfoPopup.vue'
+import { addOrUpdate } from '../../../api/repairWork'
 
 const props = defineProps({
   modelValue: {
