@@ -4,6 +4,7 @@
     position="bottom"
     :style="{ height: '60%' }"
     round
+    teleport="body"
     @close="handleClose"
   >
     <div class="cancel-work-popup">

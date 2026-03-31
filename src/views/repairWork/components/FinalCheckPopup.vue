@@ -4,6 +4,7 @@
     position="bottom"
     :style="{ height: '90%' }"
     round
+    teleport="body"
     @close="handleClose"
   >
     <div class="final-check-popup">

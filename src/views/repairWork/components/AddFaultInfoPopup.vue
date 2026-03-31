@@ -3,6 +3,7 @@
     v-model:show="innerVisible"
     position="bottom"
     round
+    teleport="body"
     :style="{ height: '80vh' }"
     class="add-fault-info-popup"
   >

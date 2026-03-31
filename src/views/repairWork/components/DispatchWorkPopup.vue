@@ -4,6 +4,7 @@
     position="bottom"
     :style="{ height: '80%' }"
     round
+    teleport="body"
     @close="handleClose"
   >
     <div class="dispatch-work-popup">
@@ -61,7 +62,7 @@
               :class="{ active: selectedTechnician?.id === technician.id }"
               @click="selectTechnician(technician)"
             >
-              {{ technician.name }}
+              {{ technician.userName }}
             </div>
           </div>
         </div>
@@ -151,8 +152,8 @@ const loadOptions = async() => {
       getDealerStation(),
       getDealerWorkTeam()
     ])
-    stations.value = stationData || []
-    teams.value = teamData || []
+    stations.value = stationData?.data || []
+    teams.value = teamData?.data || []
     // 默认选中第一项
     if (stations.value.length > 0) {
       selectedStation.value = stations.value[0]
@@ -173,8 +174,8 @@ const loadTechnicians = async(teamId) => {
     return
   }
   try {
-    const data = await getDealerTeamUserRelation({ dealerWorkTeamId: teamId })
-    technicians.value = data || []
+    const data = await getDealerTeamUserRelation({ teamId: teamId })
+    technicians.value = data?.data || []
     // 默认选中第一项
     if (technicians.value.length > 0) {
       selectedTechnician.value = technicians.value[0]
@@ -238,19 +239,12 @@ const handleSubmit = async() => {
   if (!canSubmit.value) return
 
   try {
-    const now = new Date().toISOString()
-    const res = await dispatchWorkers({
-      serviceProxyId: props.workOrder.id,
-      repairItemIds: props.selectedItemIds,
-      dealerStationId: selectedStation.value.id || selectedStation.value.dealerStationId,
-      dealerStationName: selectedStation.value.name || selectedStation.value.dealerStationName,
-      dealerWorkTeamId: selectedTeam.value?.id || selectedTeam.value?.dealerWorkTeamId,
-      dealerWorkTeamName: selectedTeam.value?.name || selectedTeam.value?.dealerWorkTeamName,
-      repairTechnicianId: selectedTechnician.value?.id || selectedTechnician.value?.userId,
-      repairTechnicianName: selectedTechnician.value?.name || selectedTechnician.value?.userName,
-      dispatchTime: now,
-      startAt: now
-    })
+    const res = await dispatchWorkers([{
+      ...props.workOrder,
+      dealerStationId: selectedStation.value?.id,
+      dealerWorkTeamId: selectedTeam.value?.id,
+      repairTechnicianId: selectedTechnician.value?.id
+    }])
     if (res.code === 200) {
       showToast('派工成功')
       emit('submit')
@@ -333,13 +327,14 @@ const handleSubmit = async() => {
         display: flex;
         flex-wrap: wrap;
         gap: 8px;
+        max-height: 200px;
+        overflow-y: auto;
 
         .tag-item {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          min-width: 101px;
+          min-width: 30%;
           height: 32px;
+          line-height: 32px;
+          text-align: center;
           padding: 0 16px;
           background-color: var(--leap-color-default-light-5);
           border-radius: 4px;
@@ -347,11 +342,12 @@ const handleSubmit = async() => {
           font-family: 'PingFang SC', sans-serif;
           font-weight: 400;
           color: var(--leap-color-default);
-          line-height: 20px;
           cursor: pointer;
           transition: all 0.3s;
           border: 1px solid transparent;
-
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
           &.active {
             background-color: transparent;
             border-color: var(--leap-color-primary);

@@ -1,7 +1,7 @@
 <template>
   <div class="repair-item-list">
     <!-- 派工弹窗 -->
-    <DispatchWorkPopup v-model="showDispatchPopup" @submit="handleDispatchSubmit" />
+    <DispatchWorkPopup v-model="showDispatchPopup" @submit="handleDispatchSubmit"/>
 
     <!-- 折叠头部 -->
     <div class="collapse-header" @click="toggleExpand">

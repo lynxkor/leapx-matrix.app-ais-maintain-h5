@@ -143,7 +143,7 @@ export function repairWorkRecord(data) {
  * @param {Object} data
  */
 export function getDealerStation(data) {
-  return post('maintain/app/basic/dealerStation/list/v2', data)
+  return post(prefix + '/listStation', data)
 }
 
 /**
@@ -151,7 +151,7 @@ export function getDealerStation(data) {
  * @param {Object} data
  */
 export function getDealerTeamUserRelation(data) {
-  return post('maintain/app/basic/dealerRelationUser/list/v2', data)
+  return post(prefix + '/listTeamUser', data)
 }
 
 /**
@@ -159,7 +159,7 @@ export function getDealerTeamUserRelation(data) {
  * @param {Object} data
  */
 export function getDealerWorkTeam(data) {
-  return post('maintain/app/basic/dealerWorkTeam/list/v2', data)
+  return post(prefix + '/listWorkTeam', data)
 }
 
 /**
