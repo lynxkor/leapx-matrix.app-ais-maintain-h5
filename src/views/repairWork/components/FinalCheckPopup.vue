@@ -492,13 +492,13 @@ const handleSubmit = () => {
       align-items: center;
       justify-content: center;
 
-      &::before {
-        content: '';
-        width: 134px;
-        height: 5px;
-        background-color: #000;
-        border-radius: 2.5px;
-      }
+      // &::before {
+      //   content: '';
+      //   width: 134px;
+      //   height: 5px;
+      //   background-color: #000;
+      //   border-radius: 2.5px;
+      // }
     }
 
     .van-button {

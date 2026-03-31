@@ -6,7 +6,7 @@ import {
   repaired,
   finalInspection,
   qualityInspection,
-  updateFaultAlertRecord
+  addOrUpdate
 } from '@/api/repairWork'
 import { formatDateTime } from '@/libs/utils'
 import { useUserStore } from '@/stores/user'
@@ -146,7 +146,7 @@ export async function showFaultCheckDialog(serviceProxyId, onRefresh, workOrder)
       })
       // 确认无故障，清空故障信息
       try {
-        await updateFaultAlertRecord({
+        await addOrUpdate({
           ...workOrder,
           serviceProxyId,
           faultAlertRecordRespList: [],

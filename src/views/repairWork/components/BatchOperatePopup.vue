@@ -203,7 +203,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, nextTick } from 'vue'
 import { showToast } from 'vant'
 import DispatchWorkPopup from './DispatchWorkPopup.vue'
 import CancelWorkPopup from './CancelWorkPopup.vue'
@@ -296,6 +296,9 @@ const loadRepairWorkRecord = async() => {
       _selected: false
     }))
     activeTagIndex.value = props.defaultTagIndex
+    nextTick(() => {
+      toggleSelectAll()
+    })
   } catch {
     showToast('获取维修记录失败')
     internalRepairItems.value = []
@@ -849,13 +852,13 @@ const handleClose = () => {
       justify-content: center;
       align-items: center;
 
-      &::after {
-        content: '';
-        width: 134px;
-        height: 5px;
-        background-color: #000;
-        border-radius: 2.5px;
-      }
+      // &::after {
+      //   content: '';
+      //   width: 134px;
+      //   height: 5px;
+      //   background-color: #000;
+      //   border-radius: 2.5px;
+      // }
     }
   }
 }

@@ -209,13 +209,13 @@ const handleClose = () => {
       justify-content: center;
       align-items: center;
 
-      &::after {
-        content: '';
-        width: 134px;
-        height: 5px;
-        background-color: #000;
-        border-radius: 2.5px;
-      }
+      // &::after {
+      //   content: '';
+      //   width: 134px;
+      //   height: 5px;
+      //   background-color: #000;
+      //   border-radius: 2.5px;
+      // }
     }
   }
 }
