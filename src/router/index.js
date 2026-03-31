@@ -64,17 +64,6 @@ const router = createRouter({
             title: '维修作业搜索',
             hideHeader: true
           }
-        },
-        {
-          path: '/repairWork/fault',
-          name: 'repairWorkFault',
-          // route level code-splitting
-          // this generates a separate chunk (About.[hash].js) for this route
-          // which is lazy-loaded when the route is visited.
-          component: () => import('../views/repairWork/faultInfo.vue'),
-          meta: {
-            title: '填写故障信息'
-          }
         }
       ]
     }

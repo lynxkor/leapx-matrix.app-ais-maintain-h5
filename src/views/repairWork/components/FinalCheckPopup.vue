@@ -177,7 +177,7 @@ watch(visible, (newVal) => {
 const loadDetail = async() => {
   loadingDetail.value = true
   try {
-    const res = await finalInspectionDetail({ id: props.serviceProxyId })
+    const res = await finalInspectionDetail(props.serviceProxyId)
     if (res.code === 200) {
       const data = res.data || {}
       detailData.value = data

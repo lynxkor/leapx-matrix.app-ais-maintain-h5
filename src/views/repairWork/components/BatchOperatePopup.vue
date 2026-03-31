@@ -12,7 +12,8 @@
       <DispatchWorkPopup
         v-model="showDispatchPopup"
         :work-order="workOrder"
-        :selected-item-ids="getSelectedItemIds()"
+        :selected-item-ids="getSelectedItems()"
+        :service-proxy-id="workOrder.id"
         @submit="handleBatchDispatchSubmit"
       />
 
@@ -130,14 +131,23 @@
               <span>派工</span>
             </div>
             <!-- 未作业: 作业开始 -->
-            <div
-              v-if="activeTagIndex === 1"
-              class="action-btn primary-btn"
-              :class="{ disabled: !hasSelectedItems }"
-              @click="showStartConfirm"
-            >
-              <span>作业开始</span>
-            </div>
+            <template v-if="activeTagIndex === 1">
+              <div
+                  class="action-btn delete-btn"
+                  :class="{ disabled: !hasSelectedItems }"
+                  @click="showDeleteConfirm"
+                >
+                  <span>删除派工</span>
+              </div>
+              <div
+                v-if="activeTagIndex === 1"
+                class="action-btn primary-btn"
+                :class="{ disabled: !hasSelectedItems }"
+                @click="showStartConfirm"
+              >
+                <span>作业开始</span>
+              </div>
+            </template>
             <!-- 作业中: 作业结束 + 删除派工 -->
             <template v-if="activeTagIndex === 2">
               <div
@@ -361,10 +371,8 @@ const showDeleteConfirm = () => {
   })
     .then(async() => {
       try {
-        const res = await deleteWorkers({
-          serviceProxyId: props.workOrder.id,
-          ids: getSelectedItemIds()
-        })
+        const ids = getSelectedItemIds()
+        const res = await deleteWorkers(ids)
         if (res.code === 200) {
           showToast('删除成功')
           emit('refresh')

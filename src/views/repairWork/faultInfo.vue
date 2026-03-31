@@ -1,92 +1,140 @@
 <template>
-  <div class="fault-info-page">
-    <!-- 施工单编号 -->
-    <div class="order-number-section">
-      <div class="order-number">
-        施工单编号：{{ orderNo }}
+  <van-popup
+    v-model:show="visible"
+    :style="{ width: '100%', height: '100%' }"
+    teleport="body"
+    @close="handleClose"
+  >
+    <div class="fault-info-page">
+      <!-- 标题栏 -->
+      <div class="page-header">
+        <div class="close-btn" @click="handleClose">
+          <van-icon name="cross" />
+        </div>
+        <div class="header-title">故障信息</div>
+        <div class="header-right"></div>
       </div>
-    </div>
 
-    <!-- 本次进店是否存在故障 -->
-    <div class="section-card">
-      <div class="section-row">
-        <span class="section-label">本次进店是否存在故障</span>
-        <div class="radio-group">
-          <div
-            class="radio-item"
-            :class="{ active: hasFault === true }"
-            @click="hasFault = true"
-          >
-            <van-icon v-if="hasFault === true" name="checked" color="var(--leap-color-primary)" size="20" />
-            <span>是</span>
+      <!-- 施工单编号 -->
+      <div class="order-number-section">
+        <div class="order-number">
+          施工单编号：{{ orderNo }}
+        </div>
+      </div>
+
+      <!-- 本次进店是否存在故障 -->
+      <div class="section-card">
+        <div class="section-row">
+          <span class="section-label">本次进店是否存在故障</span>
+          <div class="radio-group">
+            <div
+              class="radio-item"
+              :class="{ active: hasFault === true }"
+              @click="hasFault = true"
+            >
+              <van-icon v-if="hasFault === true" name="checked" color="var(--leap-color-primary)" size="20" />
+              <span>是</span>
+            </div>
           </div>
         </div>
       </div>
-    </div>
 
-    <!-- 故障模块 -->
-    <div class="section-card">
-      <div class="section-header-row">
-        <span class="section-title">故障模块</span>
-      </div>
-      <div class="module-content">
-        <!-- 添加故障模块按钮 -->
-        <div class="add-module-btn" @click="showAddModulePopup = true">
-          <van-icon name="add-o" size="20" color="var(--leap-color-primary)" />
-          <span class="add-text">添加故障模块</span>
+      <!-- 故障模块 -->
+      <div class="section-card">
+        <div class="section-header-row">
+          <span class="section-title">故障模块</span>
         </div>
-        <!-- 故障模块列表 -->
-        <div
-          v-for="(item, index) in faultModules"
-          :key="index"
-          class="module-item"
-        >
-          <span class="module-text">{{ item.label }}</span>
-          <van-icon name="delete-o" size="16" color="#3B3E3B" @click="handleDeleteModule(index)" />
+        <div class="module-content">
+          <!-- 添加故障模块按钮 -->
+          <div class="add-module-btn" @click="showAddModulePopup = true">
+            <van-icon name="add-o" size="20" color="var(--leap-color-primary)" />
+            <span class="add-text">添加故障模块</span>
+          </div>
+          <!-- 故障模块列表 -->
+          <div
+            v-for="(item, index) in faultModules"
+            :key="index"
+            class="module-item"
+          >
+            <span class="module-text">{{ item.cccName || item.label }}</span>
+            <van-icon name="delete-o" size="16" color="#3B3E3B" @click="handleDeleteModule(index)" />
+          </div>
         </div>
       </div>
-    </div>
 
-    <!-- 故障描述 -->
-    <div class="section-card">
-      <div class="section-header-row">
-        <span class="section-title">故障描述</span>
+      <!-- 故障描述 -->
+      <div class="section-card">
+        <div class="section-header-row">
+          <span class="section-title">故障描述</span>
+        </div>
+        <div class="textarea-wrapper">
+          <van-field
+            v-model="faultDescription"
+            type="textarea"
+            placeholder="请输入"
+            rows="3"
+            autosize
+            :maxlength="500"
+            class="fault-textarea"
+          />
+        </div>
       </div>
-      <div class="textarea-wrapper">
-        <van-field
-          v-model="faultDescription"
-          type="textarea"
-          placeholder="请输入"
-          rows="3"
-          autosize
-          :maxlength="500"
-          class="fault-textarea"
-        />
-      </div>
-    </div>
 
-    <!-- 底部保存按钮 -->
-    <div class="bottom-bar">
-      <div class="save-btn" @click="handleSubmit">
-        保存
+      <!-- 底部保存按钮 -->
+      <div class="bottom-bar">
+        <div class="save-btn" @click="handleSubmit">
+          保存
+        </div>
       </div>
-    </div>
 
-    <!-- 添加故障模块弹窗 -->
-    <AddFaultInfoPopup
-      v-model:visible="showAddModulePopup"
-      @change="handleModuleChange"
-    />
-  </div>
+      <!-- 添加故障模块弹窗 -->
+      <AddFaultInfoPopup
+        v-model:visible="showAddModulePopup"
+        @change="handleModuleChange"
+      />
+    </div>
+  </van-popup>
 </template>
 
 <script setup>
-import { ref } from 'vue'
-import { showSuccessToast } from 'vant'
+import { ref, watch } from 'vue'
+import { showToast, showSuccessToast } from 'vant'
 import AddFaultInfoPopup from './components/AddFaultInfoPopup.vue'
+import { addOrUpdate } from '../../api/repairWork'
 
-// 施工单编号
-const orderNo = ref('3318938923892839283')
+const props = defineProps({
+  modelValue: {
+    type: Boolean,
+    default: false
+  },
+  serviceProxyId: {
+    type: String,
+    default: ''
+  },
+  orderNo: {
+    type: String,
+    default: ''
+  }
+})
+
+const emit = defineEmits(['update:modelValue', 'submit'])
+
+const visible = ref(props.modelValue)
+
+// 监听 modelValue 变化
+watch(
+  () => props.modelValue,
+  (newVal) => {
+    visible.value = newVal
+  }
+)
+
+// 监听 visible 变化
+watch(visible, (newVal) => {
+  if (!newVal) {
+    emit('update:modelValue', false)
+  }
+})
 
 // 是否存在故障
 const hasFault = ref(true)
@@ -113,24 +161,78 @@ const handleModuleChange = (modules) => {
 }
 
 // 提交保存
-const handleSubmit = () => {
-  const submitData = {
-    orderNo: orderNo.value,
-    hasFault: hasFault.value,
-    faultModules: faultModules.value,
-    faultDescription: faultDescription.value
+const handleSubmit = async() => {
+  try {
+    // 逐个提交故障模块
+    for (const module of faultModules.value) {
+      await addOrUpdate({
+        serviceProxyId: props.serviceProxyId,
+        ...module
+      })
+    }
+    showSuccessToast('保存成功')
+    emit('submit')
+    handleClose()
+  } catch {
+    showToast('保存失败')
   }
+}
 
-  console.log('提交数据:', submitData)
-  showSuccessToast('保存成功')
+// 关闭弹窗
+const handleClose = () => {
+  visible.value = false
+  // 重置状态
+  hasFault.value = true
+  faultModules.value = []
+  faultDescription.value = ''
 }
 </script>
 
 <style lang="scss" scoped>
 .fault-info-page {
-  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
   background-color: #f7f7f7;
-  padding-bottom: 88px;
+
+  // 标题栏
+  .page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 44px;
+    background-color: #fff;
+    padding: 0 16px;
+    flex-shrink: 0;
+
+    .close-btn {
+      width: 20px;
+      height: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-color: var(--leap-color-default-light-2);
+      border-radius: 50%;
+      cursor: pointer;
+
+      .van-icon {
+        font-size: 12px;
+        color: #fff;
+      }
+    }
+
+    .header-title {
+      font-size: 16px;
+      font-family: 'PingFang SC', sans-serif;
+      font-weight: 500;
+      color: var(--leap-color-default);
+      line-height: 22px;
+    }
+
+    .header-right {
+      width: 20px;
+    }
+  }
 
   // 施工单编号区域
   .order-number-section {
@@ -279,13 +381,11 @@ const handleSubmit = () => {
 
   // 底部按钮
   .bottom-bar {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
+    margin-top: auto;
     background-color: #fff;
     padding: 7px 12px;
     padding-bottom: 34px;
+    flex-shrink: 0;
 
     .save-btn {
       height: 40px;

@@ -2,6 +2,14 @@
   <!-- 终检确认弹窗 -->
   <FinalCheckPopup v-model="showFinalCheckPopup" :service-proxy-id="workOrder.id" @submit="handleFinalCheckSubmit" />
 
+  <!-- 故障信息弹窗 -->
+  <FaultInfoPopup
+    v-model="showFaultInfoPopup"
+    :service-proxy-id="workOrder.id"
+    :order-no="workOrder.code"
+    @submit="handleRefresh"
+  />
+
   <!-- 批量操作弹窗 -->
   <BatchOperate
     v-model="showBatchOperate"
@@ -18,7 +26,7 @@
     <div class="actions-right">
       <!-- 派工tab按钮 -->
       <template v-if="activeTab === 'dispatch'">
-        <!-- <van-button
+        <van-button
           class="action-btn delete-btn"
           plain
           type="primary"
@@ -29,7 +37,7 @@
           删除派工
         </van-button>
         <van-button
-          class="action-btn start-btn"
+          class="action-btn"
           plain
           type="primary"
           size="small"
@@ -37,7 +45,7 @@
           @click="handleStart"
         >
           作业开始
-        </van-button> -->
+        </van-button>
         <!-- <van-button
           v-if="showEndBtn"
           class="action-btn end-btn"
@@ -124,7 +132,8 @@ import { ref, computed } from 'vue'
 import { showConfirmDialog, showToast } from 'vant'
 import BatchOperate from './BatchOperatePopup.vue'
 import FinalCheckPopup from './FinalCheckPopup.vue'
-import { repaired, finalInspection } from '../../../api/repairWork'
+import FaultInfoPopup from '../faultInfo.vue'
+import { repaired, finalInspection, addOrUpdate } from '../../../api/repairWork'
 
 const props = defineProps({
   workOrder: {
@@ -149,9 +158,16 @@ const emit = defineEmits(['refresh'])
 
 const showBatchOperate = ref(false)
 const showFinalCheckPopup = ref(false)
+const showFaultInfoPopup = ref(false)
 const defaultTagIndex = ref(0)
 
 const serviceProxyId = computed(() => props.workOrder.id)
+
+// 工单是否存在故障（currentSituation > 10 表示有故障）
+const hasFault = computed(() => {
+  const situation = props.workOrder.currentSituation
+  return situation && situation > 10
+})
 
 // 批量操作按钮 → 打开 BatchOperate 弹窗
 const handleDelete = () => {
@@ -216,15 +232,55 @@ const handleFinalCheckSubmit = async(data) => {
       showToast('终检成功')
       showFinalCheckPopup.value = false
       emit('refresh')
+      // 终检成功后检查是否有故障
+      if (hasFault.value) {
+        showFaultCheckDialog()
+      }
     }
   } catch {
     showToast('终检失败')
   }
 }
 
+// 故障检查弹窗
+const showFaultCheckDialog = () => {
+  showConfirmDialog({
+    title: '提示',
+    message: '系统检测到本次进店是否存在故障为"是，有故障"，请填写故障模块信息。',
+    confirmButtonText: '去填写故障信息',
+    cancelButtonText: '无故障'
+  })
+    .then(() => {
+      showFaultInfoPopup.value = true
+    })
+    .catch(() => {
+      // 点击"无故障" → 二次确认
+      showConfirmDialog({
+        title: '提示',
+        message: '若本次无故障，将清空"故障模块、故障描述"，请确认无故障。',
+        confirmButtonText: '确认无故障',
+        cancelButtonText: '取消'
+      })
+        .then(async() => {
+          try {
+            await addOrUpdate({ serviceProxyId: serviceProxyId.value, faultModules: [], faultDescription: '' })
+            showToast('已确认无故障')
+            emit('refresh')
+          } catch {
+            showToast('操作失败')
+          }
+        })
+        .catch(() => {
+          // 取消 → 回到故障检查弹窗
+          showFaultCheckDialog()
+        })
+    })
+}
+
 // 刷新回调
 const handleRefresh = () => {
   showBatchOperate.value = false
+  showFaultInfoPopup.value = false
   emit('refresh')
 }
 </script>

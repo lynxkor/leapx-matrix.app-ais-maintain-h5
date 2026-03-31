@@ -19,6 +19,14 @@ export function getDetail(data) {
 }
 
 /**
+ * 施工单详情更新
+ * @param {Object} data
+ */
+export function addOrUpdate(data) {
+  return post(prefix + '/addOrUpdate', data)
+}
+
+/**
  * 下拉选择施工单
  * @param {Object} data
  */
@@ -167,5 +175,13 @@ export function getDealerWorkTeam(data) {
  * @param {Object} data
  */
 export function getBatteryUnitList(data) {
-  return post('maintain/web/basic/batteryUnit/list', data)
+  return post('maintain/app/basic/batteryUnit/list', data)
+}
+
+/**
+ * 更新故障模块
+ * @param {Object} data
+ */
+export function updateFaultAlertRecord(data) {
+  return post('maintain/app/sp/spFaultAlertRecord/addOrUpdate', data)
 }

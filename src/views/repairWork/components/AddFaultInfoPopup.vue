@@ -8,7 +8,7 @@
     class="add-fault-info-popup"
   >
     <div class="popup-container">
-      <!-- 标题栏 - 参考 CancelWorkPopup.vue -->
+      <!-- 标题栏 -->
       <div class="popup-header">
         <div class="close-btn" @click="handleClose">
           <van-icon name="cross" />
@@ -19,7 +19,7 @@
 
       <!-- 内容区域 -->
       <div class="popup-content">
-        <!-- 搜索输入框 - 参考 search.vue -->
+        <!-- 搜索输入框 -->
         <div class="search-input-wrapper">
           <div class="search-input-container">
             <van-icon name="search" size="16" color="#191A1B" class="search-icon" />
@@ -48,7 +48,7 @@
             :key="index"
             class="module-item"
           >
-            <span class="module-text">{{ item.label }}</span>
+            <span class="module-text">{{ item.cccName }}</span>
             <van-icon name="delete-o" size="16" color="#3B3E3B" @click="handleDeleteModule(index)" />
           </div>
         </div>
@@ -59,7 +59,9 @@
 
 <script setup>
 import { ref, computed, watch } from 'vue'
+import { showToast } from 'vant'
 import SearchDropdown from '@/libs/components/SearchDropdown.vue'
+import { cccList } from '../../../api/repairWork'
 
 const props = defineProps({
   visible: {
@@ -88,52 +90,46 @@ const faultModules = ref([])
 // 模块选项列表
 const moduleOptions = ref([])
 
-// 模拟模块数据（实际应从 API 获取）
-const mockModuleData = [
-  { label: 'F02-电子电器 V21-热管理系统零跑机电', value: 'F02_V21' },
-  { label: 'F03-底盘系统 V31-悬挂系统', value: 'F03_V31' },
-  { label: 'F04-车身系统 V41-车门系统', value: 'F04_V41' },
-  { label: 'F05-动力系统 V51-发动机系统', value: 'F05_V51' },
-  { label: 'F06-传动系统 V61-变速箱系统', value: 'F06_V61' }
-]
+// 搜索故障模块
+const searchFaultModules = async(keyword) => {
+  try {
+    const data = await cccList(keyword || '')
+    const list = data?.data || data || []
+    moduleOptions.value = list.map((item) => ({
+      label: item.cccName,
+      value: item
+    }))
+  } catch {
+    moduleOptions.value = []
+    showToast('搜索故障模块失败')
+  }
+}
 
 // 处理模块搜索下拉框聚焦
 const handleModuleFocus = () => {
-  // 聚焦时加载默认数据
-  moduleOptions.value = mockModuleData.slice(0, 10)
+  searchFaultModules('')
 }
 
 // 处理模块搜索
 const handleModuleSearch = (keyword) => {
-  if (!keyword) {
-    moduleOptions.value = mockModuleData
-    return
-  }
-  moduleOptions.value = mockModuleData.filter(item =>
-    item.label.toLowerCase().includes(keyword.toLowerCase())
-  )
+  searchFaultModules(keyword)
 }
 
 // 处理模块选择
 const handleModuleSelect = (option) => {
+  const moduleData = option.value
   // 避免重复添加
-  const exists = faultModules.value.some(item => item.value === option.value)
+  const exists = faultModules.value.some(item => item.id === moduleData.id)
   if (!exists) {
-    faultModules.value.push({
-      label: option.label,
-      value: option.value
-    })
+    faultModules.value.push(moduleData)
   }
   // 清空搜索框
   searchKeyword.value = ''
   selectedModuleValue.value = ''
-  // 关闭弹窗并通知父组件
-  innerVisible.value = false
 }
 
-// 搜索按钮点击（可选：点击搜索按钮时聚焦下拉框）
+// 搜索按钮点击
 const handleSearchBtn = () => {
-  // 点击搜索按钮时，如果有内容则添加第一个匹配项
   if (!searchKeyword.value.trim()) {
     return
   }
@@ -145,7 +141,6 @@ const handleSearchBtn = () => {
 
 // 监听弹窗关闭事件，关闭时传递已选择的模块列表
 watch(innerVisible, (newVal, oldVal) => {
-  // 只在关闭时触发，且避免重复触发（handleModuleSelect 已处理选择后关闭）
   if (!newVal && oldVal) {
     emit('change', faultModules.value)
   }
@@ -171,7 +166,7 @@ const handleClose = () => {
     background-color: #f4f4f4;
   }
 
-  // 标题栏 - 参考 CancelWorkPopup.vue
+  // 标题栏
   .popup-header {
     display: flex;
     align-items: center;
@@ -213,12 +208,12 @@ const handleClose = () => {
   // 内容区域
   .popup-content {
     flex: 1;
-    padding:0 12px 12px 12px;
+    padding: 0 12px 12px 12px;
     overflow-y: auto;
     overflow-x: hidden;
   }
 
-  // 搜索输入框 - 参考 search.vue
+  // 搜索输入框
   .search-input-wrapper {
     flex: 1;
     height: 30px;
@@ -257,21 +252,6 @@ const handleClose = () => {
       font-size: 12px;
       background: transparent;
       padding: 0;
-    }
-  }
-
-  .search-input {
-    flex: 1;
-    height: 100%;
-    border: none;
-    outline: none;
-    background: transparent;
-    font-size: 12px;
-    font-family: 'PingFang SC', -apple-system, BlinkMacSystemFont, sans-serif;
-    color: var(--leap-color-default);
-
-    &::placeholder {
-      color: var(--leap-color-default-light-2);
     }
   }
 

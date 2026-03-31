@@ -23,15 +23,18 @@
         <div class="selection-section">
           <div class="section-title">工位</div>
           <div class="tags-container">
-            <div
-              v-for="station in stations"
-              :key="station.id"
-              class="tag-item"
-              :class="{ active: selectedStation?.id === station.id }"
-              @click="selectStation(station)"
-            >
-              {{ station.name }}
-            </div>
+            <template v-if="stations.length > 0">
+              <div
+                v-for="station in stations"
+                :key="station.id"
+                class="tag-item"
+                :class="{ active: selectedStation?.id === station.id }"
+                @click="selectStation(station)"
+              >
+                {{ station.name }}
+              </div>
+            </template>
+            <div v-else class="empty-tip">暂无工位数据</div>
           </div>
         </div>
 
@@ -39,15 +42,18 @@
         <div class="selection-section">
           <div class="section-title">班组</div>
           <div class="tags-container">
-            <div
-              v-for="team in teams"
-              :key="team.id"
-              class="tag-item"
-              :class="{ active: selectedTeam?.id === team.id }"
-              @click="selectTeam(team)"
-            >
-              {{ team.name }}
-            </div>
+            <template v-if="teams.length > 0">
+              <div
+                v-for="team in teams"
+                :key="team.id"
+                class="tag-item"
+                :class="{ active: selectedTeam?.id === team.id }"
+                @click="selectTeam(team)"
+              >
+                {{ team.name }}
+              </div>
+            </template>
+            <div v-else class="empty-tip">暂无班组数据</div>
           </div>
         </div>
 
@@ -55,15 +61,18 @@
         <div class="selection-section">
           <div class="section-title">技师</div>
           <div class="tags-container">
-            <div
-              v-for="technician in technicians"
-              :key="technician.id"
-              class="tag-item"
-              :class="{ active: selectedTechnician?.id === technician.id }"
-              @click="selectTechnician(technician)"
-            >
-              {{ technician.userName }}
-            </div>
+            <template v-if="technicians.length > 0">
+              <div
+                v-for="technician in technicians"
+                :key="technician.userId"
+                class="tag-item"
+                :class="{ active: selectedTechnician?.userId === technician.userId }"
+                @click="selectTechnician(technician)"
+              >
+                {{ technician.userName }}
+              </div>
+            </template>
+            <div v-else class="empty-tip">暂无技师数据</div>
           </div>
         </div>
       </div>
@@ -107,6 +116,14 @@ const props = defineProps({
   selectedItemIds: {
     type: Array,
     default: () => []
+  },
+  singleItem: {
+    type: Object,
+    default: () => null
+  },
+  serviceProxyId: {
+    type: String,
+    default: ''
   }
 })
 
@@ -234,17 +251,46 @@ const resetSelection = () => {
   technicians.value = []
 }
 
+// 构建派工基础数据
+const buildDispatchBase = () => {
+  const dealerStationName = stations.value.find(item => item.id === selectedStation.value?.id)
+  const dealerWorkTeamName = teams.value.find(item => item.id === selectedTeam.value?.id)
+  const repairTechnicianName = technicians.value.find(item => item.userId === selectedTechnician.value?.userId)
+  return {
+    serviceProxyId: props.serviceProxyId || props.workOrder?.id,
+    dealerStationId: selectedStation.value?.id,
+    dealerStationName: dealerStationName?.name,
+    dealerWorkTeamId: selectedTeam.value?.id,
+    dealerWorkTeamName: dealerWorkTeamName?.name,
+    repairTechnicianId: selectedTechnician.value?.userId,
+    repairTechnicianName: repairTechnicianName?.userName
+  }
+}
+
 // 提交派工
 const handleSubmit = async() => {
   if (!canSubmit.value) return
 
   try {
-    const res = await dispatchWorkers([{
-      ...props.workOrder,
-      dealerStationId: selectedStation.value?.id,
-      dealerWorkTeamId: selectedTeam.value?.id,
-      repairTechnicianId: selectedTechnician.value?.id
-    }])
+    let dispatchItems = []
+
+    if (props.selectedItemIds.length > 0) {
+      // 批量模式
+      dispatchItems = props.selectedItemIds.map(item => ({
+        ...item,
+        ...buildDispatchBase()
+      }))
+    } else if (props.singleItem) {
+      // 单个模式
+      dispatchItems = [{
+        ...props.singleItem,
+        ...buildDispatchBase()
+      }]
+    }
+
+    if (dispatchItems.length === 0) return
+
+    const res = await dispatchWorkers(dispatchItems)
     if (res.code === 200) {
       showToast('派工成功')
       emit('submit')
@@ -329,6 +375,15 @@ const handleSubmit = async() => {
         gap: 8px;
         max-height: 200px;
         overflow-y: auto;
+
+        .empty-tip {
+          width: 100%;
+          text-align: center;
+          padding: 16px 0;
+          font-size: 14px;
+          font-family: 'PingFang SC', sans-serif;
+          color: var(--leap-color-default-light-2);
+        }
 
         .tag-item {
           min-width: 30%;

@@ -54,6 +54,8 @@
       :repair-items="repairItems"
       :active-tab="activeTab"
       :service-proxy-id="workOrder.id"
+      :order-no="workOrder.code"
+      :has-fault="hasFault"
       @refresh="handleRefresh"
     />
 
@@ -90,7 +92,13 @@ const emit = defineEmits(['refresh'])
 
 // 维修项目列表
 const repairItems = computed(() => {
-  return props.workOrder.costCountResp?.repairItemRespList || []
+  return props.workOrder.workRecordRespList || []
+})
+
+// 工单是否存在故障
+const hasFault = computed(() => {
+  const situation = props.workOrder.currentSituation
+  return situation && situation > 10
 })
 
 // 状态样式映射

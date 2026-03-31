@@ -1,7 +1,20 @@
 <template>
   <div class="repair-item-list">
     <!-- 派工弹窗 -->
-    <DispatchWorkPopup v-model="showDispatchPopup" @submit="handleDispatchSubmit"/>
+    <DispatchWorkPopup
+      v-model="showDispatchPopup"
+      :single-item="currentDispatchItem"
+      :service-proxy-id="serviceProxyId"
+      @submit="handleDispatchSubmit"
+    />
+
+    <!-- 故障信息弹窗 -->
+    <FaultInfoPopup
+      v-model="showFaultInfoPopup"
+      :service-proxy-id="serviceProxyId"
+      :order-no="orderNo"
+      @submit="handleRefresh"
+    />
 
     <!-- 折叠头部 -->
     <div class="collapse-header" @click="toggleExpand">
@@ -17,50 +30,49 @@
             <div class="item-left">
               <div class="item-name">{{ item.repairItemName }}</div>
               <div class="item-meta">
-                <span v-if="item.repairItemTypeName" class="meta-text"
-                  >{{ item.repairItemTypeName }}</span
-                >
-                <span v-if="item.checkoutTypeName" class="meta-text"
-                  >{{ item.checkoutTypeName }}</span
-                >
+                <span v-if="item.repairItemTypeName" class="meta-text">{{
+                  item.repairItemTypeName
+                }}</span>
+                <span v-if="item.checkoutTypeName" class="meta-text">{{
+                  item.checkoutTypeName
+                }}</span>
               </div>
             </div>
             <div class="item-actions">
               <!-- 派工tab：显示派工操作 -->
-              <template v-if="activeTab === 'dispatch'">
+              <template
+                v-if="item.status === WorkRecordStatusEnum.NOT_STARTED && item.isDispatch !== 1"
+              >
                 <span class="action-text dispatch" @click="handleAction('dispatch', item)"
                   >派工</span
                 >
               </template>
 
               <!-- 施工tab：删除派工 + 作业开始/结束 + 质检 -->
-              <template v-else-if="activeTab === 'working'">
-                <span
-                  v-if="item.allowDelete === 1"
-                  class="action-text delete"
-                  @click="handleAction('delete', item)"
-                  >删除派工</span
-                >
-                <van-divider vertical />
-                <span class="action-text start" @click="handleAction('end', item)"
-                  >作业结束</span
-                >
-                <van-divider vertical />
-                <span class="action-text start" @click="handleAction('start', item)"
-                  >作业开始</span
-                >
-              </template>
+              <span
+                v-if="item.isDispatch === 1 && item.status !== WorkRecordStatusEnum.COMPLETED"
+                class="action-text delete"
+                @click="handleAction('delete', item)"
+                >删除派工</span
+              >
+              <span
+                v-if="item.status === WorkRecordStatusEnum.IN_PROGRESS"
+                class="action-text start"
+                @click="handleAction('end', item)"
+                >作业结束</span
+              >
+              <span
+                v-if="item.status === WorkRecordStatusEnum.NOT_STARTED && item.isDispatch === 1"
+                class="action-text start"
+                @click="handleAction('start', item)"
+                >作业开始</span
+              >
 
               <!-- 终检tab：返修 + 终检 -->
-              <template v-else-if="activeTab === 'inspection'">
-                <span class="action-text rework" @click="handleAction('rework', item)"
-                  >返修</span
-                >
-                <van-divider vertical />
-                <span class="action-text final-check" @click="handleAction('finalCheck', item)"
-                  >终检</span
-                >
-              </template>
+              <span v-if="item.status === WorkRecordStatusEnum.COMPLETED" class="action-text rework" @click="handleAction('rework', item)">返修</span>
+              <span v-if="item.status === WorkRecordStatusEnum.COMPLETED" class="action-text final-check" @click="handleAction('finalCheck', item)"
+                >终检</span
+              >
             </div>
           </div>
         </div>
@@ -83,14 +95,17 @@
 import { ref, computed } from 'vue'
 import { showConfirmDialog, showToast } from 'vant'
 import DispatchWorkPopup from './DispatchWorkPopup.vue'
+import FaultInfoPopup from '../faultInfo.vue'
 import {
   startWork,
   endWork,
   deleteWorkers,
   repaired,
   finalInspection,
-  qualityInspection
+  qualityInspection,
+  addOrUpdate
 } from '../../../api/repairWork'
+import { WorkRecordStatusEnum } from '../constant'
 
 const props = defineProps({
   repairItems: {
@@ -104,6 +119,14 @@ const props = defineProps({
   serviceProxyId: {
     type: String,
     default: ''
+  },
+  orderNo: {
+    type: String,
+    default: ''
+  },
+  hasFault: {
+    type: Boolean,
+    default: false
   }
 })
 
@@ -115,6 +138,9 @@ const expandState = ref('collapsed')
 // 派工弹窗
 const showDispatchPopup = ref(false)
 const currentDispatchItem = ref(null)
+
+// 故障信息弹窗
+const showFaultInfoPopup = ref(false)
 
 const displayItems = computed(() => {
   if (expandState.value === 'collapsed') return []
@@ -136,14 +162,54 @@ const actionConfirmMap = {
   finalCheck: { title: '确认终检', message: '确定要进行终检吗？' }
 }
 
-// API 函数映射
-const apiFnMap = {
-  delete: deleteWorkers,
-  start: startWork,
-  end: endWork,
-  quality: qualityInspection,
-  rework: repaired,
-  finalCheck: finalInspection
+// API 调用函数
+const callDeleteApi = (item) => {
+  return deleteWorkers([item.id])
+}
+
+const callStartApi = (item) => {
+  return startWork({
+    serviceProxyId: props.serviceProxyId,
+    repairItemId: item.repairItemId || item.id
+  })
+}
+
+const callEndApi = (item) => {
+  return endWork({
+    serviceProxyId: props.serviceProxyId,
+    repairItemId: item.repairItemId || item.id
+  })
+}
+
+const callQualityApi = (item) => {
+  return qualityInspection({
+    serviceProxyId: props.serviceProxyId,
+    repairItemId: item.repairItemId || item.id
+  })
+}
+
+const callReworkApi = (item) => {
+  return repaired({
+    serviceProxyId: props.serviceProxyId,
+    repairItemId: item.repairItemId || item.id
+  })
+}
+
+const callFinalCheckApi = (item) => {
+  return finalInspection({
+    serviceProxyId: props.serviceProxyId,
+    repairItemId: item.repairItemId || item.id
+  })
+}
+
+// API 调用函数映射
+const apiCallMap = {
+  delete: callDeleteApi,
+  start: callStartApi,
+  end: callEndApi,
+  quality: callQualityApi,
+  rework: callReworkApi,
+  finalCheck: callFinalCheckApi
 }
 
 // 统一操作处理
@@ -170,32 +236,67 @@ const handleAction = async(action, item) => {
   }
 
   try {
-    await apiFnMap[action]({
-      serviceProxyId: props.serviceProxyId,
-      repairItemId: item.repairItemId || item.id
-    })
+    await apiCallMap[action](item)
     showToast('操作成功')
     emit('refresh')
+
+    // 终检成功后检查是否有故障
+    if (action === 'finalCheck' && props.hasFault) {
+      showFaultCheckDialog()
+    }
   } catch {
     showToast('操作失败')
   }
 }
 
-// 派工弹窗提交
-const handleDispatchSubmit = async(data) => {
-  showDispatchPopup.value = false
-  try {
-    // TODO: 派工 API 端点待确认，暂时占位
-    console.log('dispatch submit:', {
-      serviceProxyId: props.serviceProxyId,
-      repairItemId: currentDispatchItem.value?.repairItemId || currentDispatchItem.value?.id,
-      ...data
+// 故障检查弹窗
+const showFaultCheckDialog = () => {
+  showConfirmDialog({
+    title: '提示',
+    message: '系统检测到本次进店是否存在故障为"是，有故障"，请填写故障模块信息。',
+    confirmButtonText: '去填写故障信息',
+    cancelButtonText: '无故障'
+  })
+    .then(() => {
+      showFaultInfoPopup.value = true
     })
-    showToast('派工成功')
-    emit('refresh')
-  } catch {
-    showToast('派工失败')
-  }
+    .catch(() => {
+      showConfirmDialog({
+        title: '提示',
+        message: '若本次无故障，将清空"故障模块、故障描述"，请确认无故障。',
+        confirmButtonText: '确认无故障',
+        cancelButtonText: '取消'
+      })
+        .then(async() => {
+          try {
+            await addOrUpdate({
+              serviceProxyId: props.serviceProxyId,
+              faultModules: [],
+              faultDescription: ''
+            })
+            showToast('已确认无故障')
+            emit('refresh')
+          } catch {
+            showToast('操作失败')
+          }
+        })
+        .catch(() => {
+          showFaultCheckDialog()
+        })
+    })
+}
+
+// 派工弹窗提交
+const handleDispatchSubmit = async() => {
+  showDispatchPopup.value = false
+  showToast('派工成功')
+  emit('refresh')
+}
+
+// 刷新
+const handleRefresh = () => {
+  showFaultInfoPopup.value = false
+  emit('refresh')
 }
 </script>
 
