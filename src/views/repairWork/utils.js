@@ -6,7 +6,7 @@ import {
   repaired,
   finalInspection,
   qualityInspection,
-  addOrUpdate
+  updateFaultAlertRecord
 } from '@/api/repairWork'
 import { formatDateTime } from '@/libs/utils'
 import { useUserStore } from '@/stores/user'
@@ -77,7 +77,7 @@ export async function callSingleItemApi(action, { serviceProxyId, item }) {
       Object.assign(params, { ...item,
         qualityCheckAt: formatDateTime(new Date()),
         qualityCheckerId: userStore.userId,
-        qualityCheckerName: userStore.userId
+        qualityCheckerName: userStore.userName
       })
       return qualityInspection(params)
     case 'rework':
@@ -126,10 +126,10 @@ export async function callBatchApi(action, { serviceProxyId, ids, extraParams = 
  * @param {Function} onRefresh - 刷新回调函数
  * @returns {Promise<Object>} - 返回操作结果 { action: 'fillFault' | 'noFault' }
  */
-export async function showFaultCheckDialog(serviceProxyId, onRefresh) {
+export async function showFaultCheckDialog(serviceProxyId, onRefresh, workOrder) {
   try {
     await showConfirmDialog({
-      title: '提示',
+      title: '确认存在故障？',
       message: '系统检测到本次进店是否存在故障为"是，有故障"，请填写故障模块信息。',
       confirmButtonText: '去填写故障信息',
       cancelButtonText: '无故障'
@@ -139,17 +139,19 @@ export async function showFaultCheckDialog(serviceProxyId, onRefresh) {
     // 点击"无故障" → 二次确认
     try {
       await showConfirmDialog({
-        title: '提示',
+        title: '确认无故障？',
         message: '若本次无故障，将清空"故障模块、故障描述"，请确认无故障。',
         confirmButtonText: '确认无故障',
         cancelButtonText: '取消'
       })
       // 确认无故障，清空故障信息
       try {
-        await addOrUpdate({
+        await updateFaultAlertRecord({
+          ...workOrder,
           serviceProxyId,
-          faultModules: [],
-          faultDescription: ''
+          faultAlertRecordRespList: [],
+          currentFault: 0,
+          customerContent: ''
         })
         showToast('已确认无故障')
         onRefresh?.()
@@ -160,7 +162,7 @@ export async function showFaultCheckDialog(serviceProxyId, onRefresh) {
       }
     } catch {
       // 取消 → 重新显示故障检查弹窗
-      return showFaultCheckDialog(serviceProxyId, onRefresh)
+      return false
     }
   }
 }

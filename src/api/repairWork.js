@@ -1,4 +1,4 @@
-import { post } from './request'
+import { post, postJson } from './request'
 
 const prefix = 'maintain/app/sp/serviceProxy'
 
@@ -111,7 +111,7 @@ export function finalInspection(data) {
  * @param {Object} data
  */
 export function finalInspectionDetail(data) {
-  return post(prefix + '/finalInspectionDetail', data)
+  return postJson(prefix + '/finalInspectionDetail', data)
 }
 
 /**

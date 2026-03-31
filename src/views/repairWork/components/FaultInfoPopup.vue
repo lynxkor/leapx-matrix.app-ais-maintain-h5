@@ -1,15 +1,17 @@
 <template>
   <van-popup
     v-model:show="visible"
-    :style="{ width: '100%', height: '100%' }"
+    overlay-class="fullScreen-popup"
+    :style="{ width: '100vw', height: '100%' }"
     teleport="body"
+    position="bottom"
     @close="handleClose"
   >
     <div class="fault-info-page">
       <!-- 标题栏 -->
       <div class="page-header">
         <div class="close-btn" @click="handleClose">
-          <van-icon name="cross" />
+          <van-icon name="arrow-left" />
         </div>
         <div class="header-title">故障信息</div>
         <div class="header-right"></div>
@@ -114,6 +116,10 @@ const props = defineProps({
   orderNo: {
     type: String,
     default: ''
+  },
+  order: {
+    type: Object,
+    default: () => {}
   }
 })
 
@@ -164,15 +170,17 @@ const handleModuleChange = (modules) => {
 const handleSubmit = async() => {
   try {
     // 逐个提交故障模块
-    for (const module of faultModules.value) {
-      await addOrUpdate({
-        serviceProxyId: props.serviceProxyId,
-        ...module
-      })
+    const res = await addOrUpdate({
+      ...props.order,
+      faultAlertRecordRespList: faultModules.value,
+      customerContent: faultDescription.value,
+      serviceProxyId: props.serviceProxyId
+    })
+    if (res.code === 200) {
+      showSuccessToast('保存成功')
+      emit('submit')
+      handleClose()
     }
-    showSuccessToast('保存成功')
-    emit('submit')
-    handleClose()
   } catch {
     showToast('保存失败')
   }
@@ -189,6 +197,9 @@ const handleClose = () => {
 </script>
 
 <style lang="scss" scoped>
+.fullScreen-popup {
+  max-width: 100%!important;
+}
 .fault-info-page {
   display: flex;
   flex-direction: column;
@@ -206,18 +217,10 @@ const handleClose = () => {
     flex-shrink: 0;
 
     .close-btn {
-      width: 20px;
-      height: 20px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background-color: var(--leap-color-default-light-2);
-      border-radius: 50%;
       cursor: pointer;
-
       .van-icon {
-        font-size: 12px;
-        color: #fff;
+        font-size: 16px;
+        color: var(--leap-color-default-dark-1);
       }
     }
 

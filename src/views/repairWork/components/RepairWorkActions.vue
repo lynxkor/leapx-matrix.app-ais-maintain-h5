@@ -7,6 +7,7 @@
     v-model="showFaultInfoPopup"
     :service-proxy-id="workOrder.id"
     :order-no="workOrder.code"
+    :order="workOrder"
     @submit="handleRefresh"
   />
 
@@ -128,7 +129,7 @@
           type="primary"
           size="small"
           round
-          @click="handleFinalCheck"
+          @click="handleFinalCheckSubmit"
         >
           终检
         </van-button>
@@ -139,12 +140,14 @@
 
 <script setup>
 import { ref, computed } from 'vue'
-import { showToast } from 'vant'
+import { showToast, showConfirmDialog } from 'vant'
 import BatchOperate from './BatchOperatePopup.vue'
 import FinalCheckPopup from './FinalCheckPopup.vue'
 import FaultInfoPopup from './FaultInfoPopup.vue'
-import { finalInspection } from '../../../api/repairWork'
+import { finalInspection, finalInspectionDetail } from '../../../api/repairWork'
 import { showFaultCheckDialog } from '../utils'
+import { useUserStore } from '@/stores/user'
+import { formatDateTime } from '@/libs/utils'
 
 const props = defineProps({
   workOrder: {
@@ -173,12 +176,6 @@ const showFaultInfoPopup = ref(false)
 const defaultTagIndex = ref(0)
 
 const serviceProxyId = computed(() => props.workOrder.id)
-
-// 工单是否存在故障（currentSituation > 10 表示有故障）
-const hasFault = computed(() => {
-  const situation = props.workOrder.currentSituation
-  return situation && situation > 10
-})
 
 // 批量操作按钮 → 打开 BatchOperate 弹窗
 const handleDelete = () => {
@@ -222,15 +219,47 @@ const handleMore = () => {
 // 终检弹窗提交
 const handleFinalCheckSubmit = async(data) => {
   try {
-    await finalInspection(data)
-    showToast('终检成功')
-    showFinalCheckPopup.value = false
-    emit('refresh')
-    // 终检成功后检查是否有故障
-    if (hasFault.value) {
-      const result = await showFaultCheckDialog(serviceProxyId.value, () => emit('refresh'))
+    const resdata = await finalInspectionDetail(serviceProxyId.value)
+    const res = resdata?.data || {}
+    if (res.faultFlag && res.faultAlertRecordResps?.length === 0) {
+      const result = await showFaultCheckDialog(serviceProxyId.value, () => emit('refresh'), props.workOrder)
       if (result?.action === 'fillFault') {
         showFaultInfoPopup.value = true
+      }
+    } else {
+      // 有电池信息和追溯信息需要填写
+      if (res.batteryFlag || res.tranceFlag) {
+        handleFinalCheck()
+      } else {
+        // 不需要填写，直接终检
+        showConfirmDialog({
+          title: '提示',
+          message: '确认要终检吗？'
+        }).then(e => {
+          const userStore = useUserStore()
+          const submitData = {
+            ...res,
+            repairWorkRecordResps: res.repairWorkRecordResps,
+            faultAlertRecordParams: res.faultAlertRecordResps,
+            traceRecordParams: res.partsTraceRecordResps,
+            currentFault: res.faultFlag === 1 ? 0 : 1,
+            id: serviceProxyId.value,
+            finalCheckAt: formatDateTime(new Date()),
+            finalCheckerId: userStore.userId,
+            finalChecker: userStore.userName
+          }
+          finalInspection(submitData).then(target => {
+            if (target.code === 200) {
+              showToast('终检成功')
+              emit('refresh')
+            } else {
+              showToast(target.message)
+            }
+          }).catch(res => {
+            showToast(res.message)
+            emit('refresh')
+          })
+        })
       }
     }
   } catch {
