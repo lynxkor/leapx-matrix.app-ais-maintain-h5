@@ -9,7 +9,20 @@
       "Bash(git add:*)",
       "Bash(npx lint-staged:*)",
       "Bash(npx eslint:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "mcp__MiniMax__understand_image",
+      "Bash(jq -r .[0].text)",
+      "Bash(jq -r \".dsl.topology[0].children[] | select\\(.type==\"\"Frame\"\"\\) | .children[] | select\\(.type==\"\"Group\"\"\\) | .children[] | select\\(.type==\"\"Text\"\"\\) | .text\")",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\([x for x in str\\(d\\).split\\(''''\\\\n''''\\) if ''''客户'''' in x or ''''预授权'''' in x or ''''施工单'''' in x][:10]\\)\")",
+      "mcp___master_mastergo-magic-mcp__mcp__getComponentLink",
+      "Bash(grep -o \"\"nodeText\"\":\"\"[^\"\"]*\"\" C:Users990900.claudeprojectsD--leapmotor-app-ais-maintenance-h5cc005174-2c3a-40ed-b5b8-4c8142eed86dtool-resultsmcp-_master_mastergo-magic-mcp-mcp__getDsl-1774953204329.txt)",
+      "Bash(powershell -Command \"Get-Content 'C:\\\\Users\\\\990900\\\\.claude\\\\projects\\\\D--leapmotor-app-ais-maintenance-h5\\\\cc005174-2c3a-40ed-b5b8-4c8142eed86d\\\\tool-results\\\\mcp-_master_mastergo-magic-mcp-mcp__getDsl-1774953204329.txt' -Raw | Select-String -Pattern '客户|预授权|VIN|施工单' | ForEach-Object { $_.Matches.Value }\")",
+      "Bash(python:*)",
+      "Bash(node:*)",
+      "mcp___master_mastergo-magic-mcp__mcp__getD2c",
+      "mcp__ide__getDiagnostics",
+      "WebFetch(domain:mastergo.com)",
+      "Bash(npm run:*)"
     ]
   }
 }

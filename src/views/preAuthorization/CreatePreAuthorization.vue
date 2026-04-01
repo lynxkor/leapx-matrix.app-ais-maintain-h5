@@ -1,295 +1,345 @@
 <template>
   <div class="create-pre-auth">
-    <!-- 固定顶部导航 -->
-    <div class="nav-header">
-      <van-icon name="arrow-left" size="22" color="#333333" @click="goBack" />
-      <span class="nav-title">预授权申请</span>
-      <van-icon name="ellipsis" size="24" color="#333333" @click="showMore" />
-    </div>
-
-    <!-- 标签页 -->
-    <div class="tabs-container">
+    <!-- Tab 导航 - 吸顶 -->
+    <div ref="tabsNavRef" class="detail-tabs-nav">
       <div
         v-for="tab in tabs"
         :key="tab.name"
-        class="tab-item"
-        :class="{ 'tab-active': activeTab === tab.name }"
-        @click="onTabChange(tab.name)"
+        :class="['tab-item', { active: activeTab == tab.name }]"
+        @click="switchTab(tab.name)"
       >
-        <span class="tab-text">{{ tab.title }}</span>
+        {{ tab.title }}
       </div>
     </div>
-
-    <!-- 内容区域 -->
-    <div class="content-area">
-      <!-- 基础信息 -->
-      <div v-show="activeTab === 'basic'" class="tab-content">
-        <!-- 接车施工单卡片 -->
-        <div class="main-card">
+    <!-- 基础信息区域 -->
+    <div id="tab-basic" class="tab-content-section">
+      <!-- 接车施工单卡片 -->
+      <div class="main-card">
+        <!-- 施工单 -->
+        <div class="card-row work_order" @click="showConstructionPicker = true">
           <div class="section-title">接车施工单</div>
-
-          <!-- 施工单 -->
-          <div class="card-row" @click="showConstructionPicker = true">
+          <div class="work_box">
             <span class="row-label">施工单</span>
             <span class="row-value">
               {{ constructionNo || '请选择' }}
               <van-icon name="arrow" size="14" color="#888888" />
             </span>
           </div>
+        </div>
 
-          <!-- 预授权类型 -->
-          <div class="card-row auth-type-row">
-            <span class="row-label">预授权类型</span>
-            <div class="type-chips">
-              <div
-                class="type-chip"
-                :class="{ 'type-chip-active': authType === 'tech' }"
-                @click="onAuthTypeChange('tech')"
-              >
-                技术预授权
-              </div>
-              <div
-                class="type-chip"
-                :class="{ 'type-chip-active': authType === 'warranty' }"
-                @click="onAuthTypeChange('warranty')"
-              >
-                保修预授权
-              </div>
+        <!-- 预授权类型 -->
+        <div class="card-row auth-type-row">
+          <span class="row-label">预授权类型</span>
+          <div class="type-chips">
+            <div
+              class="type-chip"
+              :class="{ 'type-chip-active': authType === 'tech' }"
+              @click="onAuthTypeChange('tech')"
+            >
+              技术预授权
+            </div>
+            <div
+              class="type-chip"
+              :class="{ 'type-chip-active': authType === 'warranty' }"
+              @click="onAuthTypeChange('warranty')"
+            >
+              保修预授权
             </div>
           </div>
         </div>
+      </div>
 
-        <!-- 车辆信息卡片 -->
-        <div v-if="showVehicleInfo" class="vehicle-info-card">
-          <div class="vehicle-info-item">
-            <span class="info-label">VIN</span>
-            <span class="info-value">{{ vehicleInfo.vin }}</span>
-          </div>
-          <div class="vehicle-info-item">
-            <span class="info-label">保修时间</span>
-            <span class="info-value">{{ vehicleInfo.warrantyTime }}</span>
-          </div>
-          <div class="vehicle-info-item">
-            <span class="info-label">进店里程</span>
-            <span class="info-value">{{ vehicleInfo.mileage }}</span>
-          </div>
-          <div class="vehicle-info-item">
-            <span class="info-label">车辆用途</span>
-            <span class="info-value">{{ vehicleInfo.vehicleUse }}</span>
-          </div>
-          <div class="vehicle-info-item">
-            <span class="info-label">终身质保</span>
-            <span class="info-value">{{ vehicleInfo.lifetimeWarranty }}</span>
-          </div>
-          <div class="vehicle-info-item">
-            <span class="info-label">服务门店</span>
-            <span class="info-value">{{ vehicleInfo.serviceStore }}</span>
-          </div>
-          <div class="vehicle-info-item">
-            <span class="info-label">门店所属区域</span>
-            <span class="info-value">{{ vehicleInfo.storeArea }}</span>
-          </div>
-          <div class="vehicle-info-item" @click="showWarningInfo">
-            <span class="info-label">预警信息</span>
-            <span class="info-value warning-value">{{ vehicleInfo.warningInfo }}</span>
+      <!-- 车辆信息卡片 -->
+      <div v-if="showVehicleInfo" class="vehicle-info-card">
+        <div class="vehicle-info-item">
+          <span class="info-label">VIN</span>
+          <span class="info-value">{{ vehicleInfo.vin }}</span>
+        </div>
+        <div class="vehicle-info-item">
+          <span class="info-label">保修时间</span>
+          <span class="info-value">{{ vehicleInfo.warrantyTime }}</span>
+        </div>
+        <div class="vehicle-info-item">
+          <span class="info-label">进店里程</span>
+          <span class="info-value">{{ vehicleInfo.mileage }}</span>
+        </div>
+        <div class="vehicle-info-item">
+          <span class="info-label">车辆用途</span>
+          <span class="info-value">{{ vehicleInfo.vehicleUse }}</span>
+        </div>
+        <div class="vehicle-info-item">
+          <span class="info-label">终身质保</span>
+          <span class="info-value">{{ vehicleInfo.lifetimeWarranty }}</span>
+        </div>
+        <div class="vehicle-info-item">
+          <span class="info-label">服务门店</span>
+          <span class="info-value">{{ vehicleInfo.serviceStore }}</span>
+        </div>
+        <div class="vehicle-info-item">
+          <span class="info-label">门店所属区域</span>
+          <span class="info-value">{{ vehicleInfo.storeArea }}</span>
+        </div>
+        <div class="vehicle-info-item" @click="showWarningInfo">
+          <span class="info-label">预警信息</span>
+          <span class="info-value warning-value">{{ vehicleInfo.warningInfo }}</span>
+          <van-icon name="arrow" size="14" color="#888888" />
+        </div>
+      </div>
+
+      <!-- 质量反馈报告卡片 -->
+      <div class="feedback-card">
+        <div class="section-title">质量反馈报告</div>
+        <div class="card-row" @click="showFeedbackPicker = true">
+          <span class="row-label">质量反馈单号</span>
+          <span class="row-value">
+            {{ feedbackNo || '请选择' }}
             <van-icon name="arrow" size="14" color="#888888" />
-          </div>
+          </span>
         </div>
-
-        <!-- 质量反馈报告卡片 -->
-        <div class="feedback-card">
-          <div class="section-title">质量反馈报告</div>
-          <div class="card-row" @click="showFeedbackPicker = true">
-            <span class="row-label">质量反馈单号</span>
-            <span class="row-value">
-              {{ feedbackNo || '请选择' }}
-              <van-icon name="arrow" size="14" color="#888888" />
-            </span>
-          </div>
-          <div v-if="qualityFeedback.title" class="feedback-content">
-            <div class="feedback-label">报告类型</div>
-            <div class="feedback-text">{{ qualityFeedback.title }}</div>
-          </div>
-          <div v-if="qualityFeedback.description" class="feedback-content">
-            <div class="feedback-label">故障描述</div>
-            <div
-              class="feedback-text"
-              :class="{ 'text-collapsed': !faultDescExpanded }"
-              @click="faultDescExpanded = !faultDescExpanded"
-            >
-              {{ qualityFeedback.description }}
-              <van-icon
-                v-if="qualityFeedback.description && qualityFeedback.description.length > 30"
-                :name="faultDescExpanded ? 'arrow-up' : 'arrow-down'"
-                size="14"
-                color="#888888"
-              />
-            </div>
-          </div>
-          <div v-if="qualityFeedback.faultProcess" class="feedback-content no-border">
-            <div class="feedback-label">故障排查流程</div>
-            <div
-              class="feedback-text"
-              :class="{ 'text-collapsed': !faultProcessExpanded }"
-              @click="faultProcessExpanded = !faultProcessExpanded"
-            >
-              {{ qualityFeedback.faultProcess }}
-              <van-icon
-                v-if="qualityFeedback.faultProcess && qualityFeedback.faultProcess.length > 30"
-                :name="faultProcessExpanded ? 'arrow-up' : 'arrow-down'"
-                size="14"
-                color="#888888"
-              />
-            </div>
-          </div>
+        <div v-if="qualityFeedback.title" class="feedback-content">
+          <div class="feedback-label">报告类型</div>
+          <div class="feedback-text">{{ qualityFeedback.title }}</div>
         </div>
-
-        <!-- 申请原因卡片 -->
-        <div class="reason-card">
-          <div class="reason-header">申请原因</div>
-          <van-field
-            v-model="applyReason"
-            type="textarea"
-            placeholder="请输入申请原因"
-            :rows="4"
-            autosize
-            class="reason-textarea"
-          />
-        </div>
-
-        <!-- 维修项目卡片 -->
-        <div class="repair-card">
-          <div class="repair-card-header">维修项目</div>
+        <div v-if="qualityFeedback.description" class="feedback-content">
+          <div class="feedback-label">故障描述</div>
           <div
-            v-for="(item, index) in repairItems"
-            :key="index"
-            class="repair-item"
+            class="feedback-text"
+            :class="{ 'text-collapsed': !faultDescExpanded }"
+            @click="faultDescExpanded = !faultDescExpanded"
           >
-            <div class="repair-item-main">
-              <div class="repair-item-left">
-                <div class="repair-item-top">
-                  <span class="repair-name">{{ item.name }}</span>
-                  <span v-if="item.tag" class="repair-tag">{{ item.tag }}</span>
-                </div>
-                <div class="repair-part-no">{{ item.partNo }}</div>
-                <div class="repair-type">{{ item.type }}</div>
-              </div>
-              <div class="repair-item-right">
-                <div class="repair-price">¥{{ item.price }}</div>
-                <div class="repair-discount">优惠 ¥{{ item.discount }}</div>
-              </div>
-            </div>
-            <div class="repair-item-bottom">
-              <span class="repair-subtotal">¥{{ item.subtotal }}</span>
-              <span class="repair-actual">实际领料 {{ item.actualQuantity }}</span>
-              <span class="repair-return">退料 {{ item.returnQuantity }}</span>
-              <span class="repair-quantity">x{{ item.quantity }}</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- 维修配件卡片 -->
-        <div class="parts-card">
-          <div class="parts-card-header">维修配件</div>
-          <div
-            class="parts-content"
-            :class="{ 'parts-content-collapsed': !partsExpanded }"
-            @click="partsExpanded = !partsExpanded"
-          >
-            <div class="parts-text">
-              <span
-                v-for="(item, index) in partsList"
-                :key="index"
-                class="parts-item-inline"
-              >
-                <span class="parts-name">{{ item.name }}</span>
-                <span class="parts-separator" v-if="index < partsList.length - 1">、</span>
-              </span>
-            </div>
+            {{ qualityFeedback.description }}
             <van-icon
-              :name="partsExpanded ? 'arrow-up' : 'arrow-down'"
+              v-if="qualityFeedback.description && qualityFeedback.description.length > 30"
+              :name="faultDescExpanded ? 'arrow-up' : 'arrow-down'"
               size="14"
               color="#888888"
             />
           </div>
-          <div v-if="partsExpanded" class="parts-detail">
-            <div
-              v-for="(item, index) in partsList"
-              :key="index"
-              class="parts-item"
-            >
-              <div class="parts-item-main">
-                <div class="parts-item-left">
-                  <div class="parts-item-top">
-                    <span class="parts-name">{{ item.name }}</span>
-                    <span v-if="item.tag" class="parts-tag">{{ item.tag }}</span>
-                  </div>
-                  <div class="parts-part-no">{{ item.partNo }}</div>
-                  <div class="parts-type">{{ item.type }}</div>
-                </div>
-                <div class="parts-item-right">
-                  <div class="parts-price">¥{{ item.price }}</div>
-                  <div class="parts-discount">优惠 ¥{{ item.discount }}</div>
-                </div>
-              </div>
-              <div class="parts-item-bottom">
-                <span class="parts-subtotal">¥{{ item.subtotal }}</span>
-                <span class="parts-actual">实际领料 {{ item.actualQuantity }}</span>
-                <span class="parts-return">退料 {{ item.returnQuantity }}</span>
-                <span class="parts-quantity">x{{ item.quantity }}</span>
-              </div>
-            </div>
-          </div>
         </div>
-      </div>
-
-      <!-- 项目零件 -->
-      <div v-show="activeTab === 'parts'" class="tab-content">
-        <div class="repair-card">
-          <div class="repair-card-header">维修项目</div>
+        <div v-if="qualityFeedback.faultProcess" class="feedback-content no-border">
+          <div class="feedback-label">故障排查流程</div>
           <div
-            v-for="(item, index) in repairItems"
-            :key="index"
-            class="repair-item"
+            class="feedback-text"
+            :class="{ 'text-collapsed': !faultProcessExpanded }"
+            @click="faultProcessExpanded = !faultProcessExpanded"
           >
-            <div class="repair-item-main">
-              <div class="repair-item-left">
-                <div class="repair-item-top">
-                  <span class="repair-name">{{ item.name }}</span>
-                  <span v-if="item.tag" class="repair-tag">{{ item.tag }}</span>
-                </div>
-                <div class="repair-part-no">{{ item.partNo }}</div>
-                <div class="repair-type">{{ item.type }}</div>
-              </div>
-              <div class="repair-item-right">
-                <div class="repair-price">¥{{ item.price }}</div>
-                <div class="repair-discount">优惠 ¥{{ item.discount }}</div>
-              </div>
-            </div>
-            <div class="repair-item-bottom">
-              <span class="repair-subtotal">¥{{ item.subtotal }}</span>
-              <span class="repair-actual">实际领料 {{ item.actualQuantity }}</span>
-              <span class="repair-return">退料 {{ item.returnQuantity }}</span>
-              <span class="repair-quantity">x{{ item.quantity }}</span>
-            </div>
+            {{ qualityFeedback.faultProcess }}
+            <van-icon
+              v-if="qualityFeedback.faultProcess && qualityFeedback.faultProcess.length > 30"
+              :name="faultProcessExpanded ? 'arrow-up' : 'arrow-down'"
+              size="14"
+              color="#888888"
+            />
           </div>
         </div>
       </div>
 
-      <!-- 附件信息 -->
-      <div v-show="activeTab === 'attachments'" class="tab-content">
-        <div class="empty-attachments">
-          <van-icon name="photo-o" size="48" color="#cccccc" />
-          <span>暂无附件信息</span>
+      <!-- 申请原因卡片 -->
+      <div class="reason-card">
+        <div class="reason-header">申请原因</div>
+        <van-field
+          v-model="applyReason"
+          type="textarea"
+          placeholder="请输入申请原因"
+          :rows="4"
+          autosize
+          class="reason-textarea"
+        />
+      </div>
+
+      <!-- 维修配件卡片 -->
+      <div id="parts-card" class="parts-card">
+        <div class="parts-card-header">维修配件</div>
+        <div v-for="(item, index) in partsList" :key="index" class="parts-item">
+          <div class="parts-item-main">
+            <div class="parts-item-left">
+              <div class="parts-item-top">
+                <span class="parts-name">{{ item.name }}</span>
+                <span v-if="item.tag" class="parts-tag">{{ item.tag }}</span>
+              </div>
+              <div class="parts-part-no">{{ item.partNo }}</div>
+              <div class="parts-type">{{ item.type }}</div>
+            </div>
+            <div class="parts-item-right">
+              <div class="parts-price">¥{{ item.price }}</div>
+              <div class="parts-discount">优惠 ¥{{ item.discount }}</div>
+            </div>
+          </div>
+          <div class="parts-item-bottom">
+            <span class="parts-subtotal">¥{{ item.subtotal }}</span>
+            <span class="parts-actual">实际领料 {{ item.actualQuantity }}</span>
+            <span class="parts-return">退料 {{ item.returnQuantity }}</span>
+            <span class="parts-quantity">x{{ item.quantity }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 附件信息卡片 -->
+      <div id="attachments-card" class="attachments-card">
+        <div class="attachments-card-header">附件信息</div>
+
+        <!-- 车辆信息 -->
+        <div class="attachment-section">
+          <div class="attachment-section-title">车辆信息</div>
+          <div class="attachment-list">
+            <!-- 已上传的图片 -->
+            <div v-for="(img, index) in vehicleImages" :key="index" class="attachment-item">
+              <img :src="img.url" class="attachment-img" />
+              <div class="attachment-delete" @click="deleteVehicleImage(index)">
+                <van-icon name="cross" size="12" color="#ffffff" />
+              </div>
+            </div>
+            <!-- 上传按钮 -->
+            <div
+              class="attachment-upload"
+              @click="uploadVehicleImage"
+              v-if="vehicleImages.length < 3"
+            >
+              <van-icon name="photograph" size="24" color="#d8d8d8" />
+              <span class="upload-text">上传</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 行驶证 -->
+        <div class="attachment-section">
+          <div class="attachment-section-title">行驶证</div>
+          <div class="attachment-list">
+            <!-- 已上传的图片 -->
+            <div v-for="(img, index) in licenseImages" :key="index" class="attachment-item">
+              <img :src="img.url" class="attachment-img" />
+              <div class="attachment-delete" @click="deleteLicenseImage(index)">
+                <van-icon name="cross" size="12" color="#ffffff" />
+              </div>
+            </div>
+            <!-- 上传按钮 -->
+            <div
+              class="attachment-upload"
+              @click="uploadLicenseImage"
+              v-if="licenseImages.length < 3"
+            >
+              <van-icon name="photograph" size="24" color="#d8d8d8" />
+              <span class="upload-text">上传</span>
+            </div>
+          </div>
         </div>
       </div>
     </div>
 
+    <!-- 项目零件区域 -->
+    <div id="tab-parts" class="tab-content-section">
+      <!-- 维修项目卡片 -->
+      <div class="repair-card">
+        <div class="repair-card-header">维修项目</div>
+        <div v-for="(item, index) in repairItems" :key="index" class="repair-item">
+          <div class="repair-item-main">
+            <div class="repair-item-left">
+              <div class="repair-item-top">
+                <span class="repair-name">{{ item.name }}</span>
+                <span v-if="item.tag" class="repair-tag">{{ item.tag }}</span>
+              </div>
+              <div class="repair-part-no">{{ item.partNo }}</div>
+              <div class="repair-type">{{ item.type }}</div>
+            </div>
+            <div class="repair-item-right">
+              <div class="repair-price">¥{{ item.price }}</div>
+              <div class="repair-discount">优惠 ¥{{ item.discount }}</div>
+            </div>
+          </div>
+          <div class="repair-item-bottom">
+            <span class="repair-subtotal">¥{{ item.subtotal }}</span>
+            <span class="repair-actual">实际领料 {{ item.actualQuantity }}</span>
+            <span class="repair-return">退料 {{ item.returnQuantity }}</span>
+            <span class="repair-quantity">x{{ item.quantity }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 维修配件卡片 -->
+      <div class="parts-card">
+        <div class="parts-card-header">维修配件</div>
+        <div v-for="(item, index) in partsList" :key="index" class="parts-item">
+          <div class="parts-item-main">
+            <div class="parts-item-left">
+              <div class="parts-item-top">
+                <span class="parts-name">{{ item.name }}</span>
+                <span v-if="item.tag" class="parts-tag">{{ item.tag }}</span>
+              </div>
+              <div class="parts-part-no">{{ item.partNo }}</div>
+              <div class="parts-type">{{ item.type }}</div>
+            </div>
+            <div class="parts-item-right">
+              <div class="parts-price">¥{{ item.price }}</div>
+              <div class="parts-discount">优惠 ¥{{ item.discount }}</div>
+            </div>
+          </div>
+          <div class="parts-item-bottom">
+            <span class="parts-subtotal">¥{{ item.subtotal }}</span>
+            <span class="parts-actual">实际领料 {{ item.actualQuantity }}</span>
+            <span class="parts-return">退料 {{ item.returnQuantity }}</span>
+            <span class="parts-quantity">x{{ item.quantity }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 附件信息区域 -->
+    <div id="tab-attachments" class="tab-content-section">
+      <div class="attachments-card">
+        <div class="attachments-card-header">附件信息</div>
+
+        <!-- 车辆信息 -->
+        <div class="attachment-section">
+          <div class="attachment-section-title">车辆信息</div>
+          <div class="attachment-list">
+            <!-- 已上传的图片 -->
+            <div v-for="(img, index) in vehicleImages" :key="index" class="attachment-item">
+              <img :src="img.url" class="attachment-img" />
+              <div class="attachment-delete" @click="deleteVehicleImage(index)">
+                <van-icon name="cross" size="12" color="#ffffff" />
+              </div>
+            </div>
+            <!-- 上传按钮 -->
+            <div
+              class="attachment-upload"
+              @click="uploadVehicleImage"
+              v-if="vehicleImages.length < 3"
+            >
+              <van-icon name="photograph" size="24" color="#d8d8d8" />
+              <span class="upload-text">上传</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 行驶证 -->
+        <div class="attachment-section">
+          <div class="attachment-section-title">行驶证</div>
+          <div class="attachment-list">
+            <!-- 已上传的图片 -->
+            <div v-for="(img, index) in licenseImages" :key="index" class="attachment-item">
+              <img :src="img.url" class="attachment-img" />
+              <div class="attachment-delete" @click="deleteLicenseImage(index)">
+                <van-icon name="cross" size="12" color="#ffffff" />
+              </div>
+            </div>
+            <!-- 上传按钮 -->
+            <div
+              class="attachment-upload"
+              @click="uploadLicenseImage"
+              v-if="licenseImages.length < 3"
+            >
+              <van-icon name="photograph" size="24" color="#d8d8d8" />
+              <span class="upload-text">上传</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div style="height: 70vh"></div>
+    </div>
+
     <!-- 底部提交按钮 -->
     <div class="bottom-action">
-      <div class="submit-btn" :class="{ 'submit-btn-disabled': !canSubmit }">
-        提交申请
-      </div>
+      <div class="submit-btn" :class="{ 'submit-btn-disabled': !canSubmit }">提交申请</div>
     </div>
 
     <!-- 施工单选择弹窗 -->
@@ -326,34 +376,85 @@
               >
                 <div class="construction-header">
                   <span class="construction-no">{{ item.constructionNo }}</span>
-                  <span class="construction-status" :class="'status-' + item.status">{{ item.statusText }}</span>
+                  <span class="construction-status" :class="'status-' + item.status">{{
+                    item.statusText
+                  }}</span>
                 </div>
                 <div class="construction-vehicle">
                   <span class="vehicle-plate">{{ item.plate }}</span>
                   <div class="vehicle-icons">
                     <svg class="icon" viewBox="0 0 16 16">
-                      <path fill="#C8A12B" stroke="#C8A12B" stroke-width="4" stroke-linejoin="round" d="M8 2L14 13H2Z"/>
-                      <text x="8" y="12" text-anchor="middle" fill="#ffffff" font-size="9" font-weight="bold">!</text>
+                      <path
+                        fill="#C8A12B"
+                        stroke="#C8A12B"
+                        stroke-width="4"
+                        stroke-linejoin="round"
+                        d="M8 2L14 13H2Z"
+                      />
+                      <text
+                        x="8"
+                        y="12"
+                        text-anchor="middle"
+                        fill="#ffffff"
+                        font-size="9"
+                        font-weight="bold"
+                      >
+                        !
+                      </text>
                     </svg>
                     <svg class="icon" viewBox="0 0 16 16">
-                      <path fill="#009100" stroke="#009100" stroke-width="4" stroke-linejoin="round" d="M8 2L14 13H2Z"/>
-                      <text x="8" y="12" text-anchor="middle" fill="#ffffff" font-size="9" font-weight="bold">!</text>
+                      <path
+                        fill="#009100"
+                        stroke="#009100"
+                        stroke-width="4"
+                        stroke-linejoin="round"
+                        d="M8 2L14 13H2Z"
+                      />
+                      <text
+                        x="8"
+                        y="12"
+                        text-anchor="middle"
+                        fill="#ffffff"
+                        font-size="9"
+                        font-weight="bold"
+                      >
+                        !
+                      </text>
                     </svg>
                     <svg class="icon" viewBox="0 0 16 16">
-                      <path fill="#B91919" stroke="#B91919" stroke-width="4" stroke-linejoin="round" d="M8 2L14 13H2Z"/>
-                      <text x="8" y="12" text-anchor="middle" fill="#ffffff" font-size="9" font-weight="bold">!</text>
+                      <path
+                        fill="#B91919"
+                        stroke="#B91919"
+                        stroke-width="4"
+                        stroke-linejoin="round"
+                        d="M8 2L14 13H2Z"
+                      />
+                      <text
+                        x="8"
+                        y="12"
+                        text-anchor="middle"
+                        fill="#ffffff"
+                        font-size="9"
+                        font-weight="bold"
+                      >
+                        !
+                      </text>
                     </svg>
                   </div>
                   <div class="vehicle-tags">
                     <span v-for="tag in item.tags" :key="tag" class="vehicle-tag">{{ tag }}</span>
                   </div>
                 </div>
-                <div class="construction-vehicle-info">{{ item.vehicleModel }} · {{ item.vin }}</div>
+                <div class="construction-vehicle-info">
+                  {{ item.vehicleModel }} · {{ item.vin }}
+                </div>
                 <div class="construction-detail">
                   <div class="detail-row">
                     <span class="detail-label">送修人</span>
                     <span class="detail-value">{{ item.customerName }}</span>
-                    <span v-if="item.customerType" class="customer-tag">{{ item.customerType }}</span>
+                    <span v-if="item.customerType" class="customer-tag">{{
+                      item.customerType
+                    }}</span>
                   </div>
                   <div class="detail-row">
                     <span class="detail-label">客户经理</span>
@@ -409,7 +510,9 @@
               >
                 <div class="feedback-item-serial">
                   <span class="serial-text">
-                    {{ getSerialPrefix(item.serialNumber) }}<span class="date-part">{{ getSerialDate(item.serialNumber) }}</span>{{ getSerialRest(item.serialNumber) }}
+                    {{ getSerialPrefix(item.serialNumber)
+                    }}<span class="date-part">{{ getSerialDate(item.serialNumber) }}</span
+                    >{{ getSerialRest(item.serialNumber) }}
                   </span>
                 </div>
                 <div class="feedback-item-info">
@@ -427,40 +530,255 @@
       </template>
     </AisPopup>
 
-    <!-- 更多操作弹窗 -->
-    <AisPopup
-      v-model:show="showMorePopup"
-      title="更多操作"
-      :closeable="true"
-      position="top"
-      :round="false"
+    <!-- 保存确认弹窗 -->
+    <van-dialog
+      v-model:show="showSaveConfirmDialog"
+      show-cancel-button
+      confirm-button-text="保存"
+      cancel-button-text="不保存"
+      confirm-button-color="#009100"
+      @confirm="onSaveConfirm"
+      @cancel="onSaveCancel"
+      class="save-confirm-dialog"
     >
-      <template #content>
-        <div class="more-popup-content">
-          <div class="more-item" @click="handleSaveDraft">保存草稿</div>
-          <div class="more-item" @click="handleCancel">取消申请</div>
-        </div>
-      </template>
-    </AisPopup>
+      <div class="dialog-content">是否保存此次编辑？</div>
+    </van-dialog>
   </div>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { showToast } from 'vant'
 import AisPopup from '@/components/AisPopup.vue'
 
 const router = useRouter()
 
-// 标签页配置
+const activeTab = ref('basic')
+const tabsNavRef = ref(null)
+const isHeaderVisible = ref(true)
+const navBarHeight = ref(43)
+
+// Tab 配置
 const tabs = [
   { name: 'basic', title: '基础信息' },
   { name: 'parts', title: '项目零件' },
   { name: 'attachments', title: '附件信息' }
 ]
 
-const activeTab = ref('basic')
+// IntersectionObserver 实例
+let headerObserver = null
+let scrollContainer = null
+
+/**
+ * 获取滚动容器
+ */
+const getScrollContainer = () => {
+  if (scrollContainer) return scrollContainer
+  const container = document.querySelector('.layout-content')
+  if (container) {
+    scrollContainer = container
+    return scrollContainer
+  }
+  return window
+}
+
+/**
+ * 获取当前滚动位置
+ */
+const getScrollTop = () => {
+  const container = getScrollContainer()
+  if (container === window) {
+    return window.scrollY || document.documentElement.scrollTop
+  }
+  return container.scrollTop
+}
+
+/**
+ * 滚动到指定位置
+ */
+const scrollToPosition = (targetScrollTop, behavior = 'smooth') => {
+  const container = getScrollContainer()
+  if (container === window) {
+    window.scrollTo({
+      top: targetScrollTop,
+      behavior
+    })
+  } else {
+    container.scrollTo({
+      top: targetScrollTop,
+      behavior
+    })
+  }
+}
+
+onMounted(async() => {
+  await nextTick()
+  // 获取 nav-bar 的真实高度
+  const navBarEl = document.querySelector('.base-container header')
+  if (navBarEl) {
+    navBarHeight.value = navBarEl.getBoundingClientRect().height
+  }
+  setupHeaderObserver()
+  setupScrollListener()
+})
+
+onUnmounted(() => {
+  if (headerObserver) {
+    headerObserver.disconnect()
+  }
+  const container = getScrollContainer()
+  if (container === window) {
+    window.removeEventListener('scroll', handleScroll)
+  } else if (scrollContainer) {
+    scrollContainer.removeEventListener('scroll', handleScroll)
+  }
+})
+
+// 监听滚动
+const setupScrollListener = () => {
+  const container = getScrollContainer()
+  if (container === window) {
+    window.addEventListener('scroll', handleScroll)
+  } else {
+    container.addEventListener('scroll', handleScroll)
+  }
+}
+
+const handleScroll = () => {
+  const tabsNavEl = document.querySelector('.detail-tabs-nav')
+  if (!tabsNavEl) return
+
+  const currentScrollTop = getScrollTop()
+  // 当滚动到顶部时，恢复 tab 导航栏初始样式
+  if (currentScrollTop <= 0) {
+    tabsNavEl.style.position = ''
+    tabsNavEl.style.top = ''
+    tabsNavEl.style.left = ''
+    tabsNavEl.style.right = ''
+    isHeaderVisible.value = true
+  }
+
+  // 根据滚动位置同步切换 tab
+  syncTabByScroll()
+}
+
+// 根据滚动位置同步切换 tab
+let lastScrollTop = 0
+const scrollSyncTimeout = null
+const syncTabByScroll = () => {
+  const scrollTop = getScrollTop()
+  const tabNavHeight = document.querySelector('.detail-tabs-nav')?.offsetHeight || 50
+  const offset = navBarHeight.value + tabNavHeight + 20
+
+  // 判断滚动方向
+  const isScrollingDown = scrollTop > lastScrollTop
+  lastScrollTop = scrollTop
+
+  // 清除之前的定时器
+  if (scrollSyncTimeout) {
+    clearTimeout(scrollSyncTimeout)
+  }
+
+  // 找到当前应该激活的 tab
+  let targetTab = null
+  for (let i = tabs.length - 1; i >= 0; i--) {
+    const tabEl = document.getElementById(`tab-${tabs[i].name}`)
+    if (!tabEl) continue
+
+    const tabTop = tabEl.offsetTop
+    if (scrollTop + offset >= tabTop) {
+      targetTab = tabs[i].name
+      break
+    }
+  }
+
+  // 如果目标 tab 和当前 tab 不同，更新
+  if (targetTab !== null && activeTab.value !== targetTab) {
+    activeTab.value = targetTab
+    scrollTabIntoView(targetTab)
+  }
+}
+
+// 滚动指定 tab 到可视区域
+const scrollTabIntoView = (tabName) => {
+  const tabsNavEl = document.querySelector('.detail-tabs-nav')
+  if (!tabsNavEl) return
+
+  const tabIndex = tabs.findIndex((tab) => tab.name === tabName)
+  if (tabIndex === -1) return
+
+  const tabItems = tabsNavEl.querySelectorAll('.tab-item')
+  if (!tabItems[tabIndex]) return
+
+  const targetTabEl = tabItems[tabIndex]
+  const containerWidth = tabsNavEl.clientWidth
+  const tabLeft = targetTabEl.offsetLeft
+  const tabWidth = targetTabEl.offsetWidth
+  const tabRight = tabLeft + tabWidth
+  const currentScrollLeft = tabsNavEl.scrollLeft
+
+  // 判断 tab 是否在可视区域内
+  if (tabLeft < currentScrollLeft || tabRight > currentScrollLeft + containerWidth) {
+    const targetScrollLeft = tabLeft - (containerWidth - tabWidth) / 2
+    tabsNavEl.scrollTo({
+      left: Math.max(0, targetScrollLeft),
+      behavior: 'smooth'
+    })
+  }
+}
+
+// 监听 header 可见性，控制 tab 导航栏是否 fixed
+const setupHeaderObserver = () => {
+  // 监听第一个内容区域的可见性
+  const firstTabEl = document.getElementById('tab-basic')
+  const tabsNavEl = document.querySelector('.detail-tabs-nav')
+  if (!firstTabEl || !tabsNavEl) return
+
+  headerObserver = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          // 第一个tab可见，tab导航栏在原位
+          if (!isHeaderVisible.value) {
+            tabsNavEl.style.position = ''
+            tabsNavEl.style.top = ''
+            tabsNavEl.style.left = ''
+            tabsNavEl.style.right = ''
+            isHeaderVisible.value = true
+          }
+        } else {
+          // 第一个tab不可见，tab导航栏 fixed
+          if (isHeaderVisible.value) {
+            tabsNavEl.style.position = 'fixed'
+            tabsNavEl.style.top = `${navBarHeight.value}px`
+            tabsNavEl.style.left = '0'
+            tabsNavEl.style.right = '0'
+            isHeaderVisible.value = false
+          }
+        }
+      })
+    },
+    {
+      root: getScrollContainer(),
+      threshold: 0
+    }
+  )
+
+  headerObserver.observe(firstTabEl)
+}
+
+// 切换 Tab
+const switchTab = async(tabName) => {
+  activeTab.value = tabName
+  const targetEl = document.getElementById(`tab-${tabName}`)
+  if (!targetEl) return
+
+  // Tab 导航栏始终是 fixed，直接滚动到目标位置
+  const targetOffsetTop = targetEl.offsetTop
+  const tabNavHeight = 42
+  scrollToPosition(targetOffsetTop - navBarHeight.value - tabNavHeight, 'smooth')
+}
 
 // 表单数据
 const constructionNo = ref('')
@@ -468,17 +786,28 @@ const authType = ref('')
 const feedbackNo = ref('')
 const applyReason = ref('')
 
+// 监听申请原因变化
+watch(applyReason, () => {
+  hasEdited.value = true
+})
+
 // 是否显示车辆信息
 const showVehicleInfo = ref(false)
 
 // 折叠状态
 const faultDescExpanded = ref(false)
 const faultProcessExpanded = ref(false)
-const partsExpanded = ref(false)
+
+// 附件图片数据
+const vehicleImages = ref([
+  { url: 'https://example.com/car1.jpg' },
+  { url: 'https://example.com/car2.jpg' }
+])
+const licenseImages = ref([])
 
 // 车辆信息数据
 const vehicleInfo = ref({
-  vin: '2358446753543340032',
+  vin: '2358436753543340032',
   warrantyTime: '2026-01-01 至 2029-12-31',
   mileage: '47007km',
   vehicleUse: '非营运',
@@ -555,9 +884,10 @@ const partsList = ref([
 // 选择器配置
 const showConstructionPicker = ref(false)
 const showFeedbackPicker = ref(false)
-const showMorePopup = ref(false)
+const showSaveConfirmDialog = ref(false)
 
-// 施工单搜索
+// 页面是否有编辑
+const hasEdited = ref(false)
 const constructionSearchText = ref('')
 const constructionList = ref([
   {
@@ -608,9 +938,10 @@ const constructionList = ref([
 const filteredConstructionList = computed(() => {
   if (!constructionSearchText.value) return constructionList.value
   const search = constructionSearchText.value.toLowerCase()
-  return constructionList.value.filter(item =>
-    item.constructionNo.toLowerCase().includes(search) ||
-    item.constructionName.toLowerCase().includes(search)
+  return constructionList.value.filter(
+    (item) =>
+      item.constructionNo.toLowerCase().includes(search) ||
+      item.constructionName.toLowerCase().includes(search)
   )
 })
 
@@ -626,7 +957,7 @@ const feedbackList = [
     hasError: false
   },
   {
-    serialNumber: 'ZLR-251219132442675085',
+    serialNumber: 'ZLR-251219132432675085',
     title: '技术支持申请报告',
     description: '电池包高温告警',
     faultDescription: '电池包高温告警,温度传感器信号异常',
@@ -657,10 +988,11 @@ const feedbackList = [
 const filteredFeedbackList = computed(() => {
   if (!feedbackSearchText.value) return feedbackList
   const search = feedbackSearchText.value.toLowerCase()
-  return feedbackList.filter(item =>
-    item.serialNumber.toLowerCase().includes(search) ||
-    item.title.toLowerCase().includes(search) ||
-    item.description.toLowerCase().includes(search)
+  return feedbackList.filter(
+    (item) =>
+      item.serialNumber.toLowerCase().includes(search) ||
+      item.title.toLowerCase().includes(search) ||
+      item.description.toLowerCase().includes(search)
   )
 })
 
@@ -687,44 +1019,21 @@ const canSubmit = computed(() => {
 })
 
 // 方法
-const goBack = () => {
-  router.back()
-}
-
-const onTabChange = (tabName) => {
-  activeTab.value = tabName
-}
-
 const onAuthTypeChange = (type) => {
   authType.value = type
   showVehicleInfo.value = true
+  hasEdited.value = true
 }
 
 const showWarningInfo = () => {
   showToast('查看预警信息')
 }
 
-const showMore = () => {
-  showMorePopup.value = true
-}
-
-const onConstructionConfirm = ({ selectedOptions }) => {
-  constructionNo.value = selectedOptions[0].text
-  showConstructionPicker.value = false
-  showVehicleInfo.value = true
-}
-
 const onConstructionSelect = (item) => {
   constructionNo.value = item.constructionNo
   showConstructionPicker.value = false
   showVehicleInfo.value = true
-}
-
-const onFeedbackConfirm = ({ selectedOptions }) => {
-  feedbackNo.value = selectedOptions[0].text
-  qualityFeedback.value.faultDescription = selectedOptions[0].faultDescription || ''
-  qualityFeedback.value.faultProcess = selectedOptions[0].faultProcess || ''
-  showFeedbackPicker.value = false
+  hasEdited.value = true
 }
 
 const onFeedbackSelect = (item) => {
@@ -734,1024 +1043,1029 @@ const onFeedbackSelect = (item) => {
   qualityFeedback.value.faultDescription = item.faultDescription || ''
   qualityFeedback.value.faultProcess = item.faultProcess || ''
   showFeedbackPicker.value = false
+  hasEdited.value = true
 }
 
-const handleSaveDraft = () => {
-  showMorePopup.value = false
+// 附件相关方法
+const uploadVehicleImage = () => {
+  showToast('上传车辆信息图片')
+  hasEdited.value = true
+}
+
+const deleteVehicleImage = (index) => {
+  vehicleImages.value.splice(index, 1)
+  hasEdited.value = true
+}
+
+const uploadLicenseImage = () => {
+  showToast('上传行驶证图片')
+  hasEdited.value = true
+}
+
+const deleteLicenseImage = (index) => {
+  licenseImages.value.splice(index, 1)
+  hasEdited.value = true
+}
+
+const onSaveConfirm = () => {
+  showSaveConfirmDialog.value = false
   showToast('已保存草稿')
-}
-
-const handleCancel = () => {
-  showMorePopup.value = false
+  hasEdited.value = false
   router.back()
 }
+
+const onSaveCancel = () => {
+  showSaveConfirmDialog.value = false
+  router.back()
+}
+
+// 暴露给 baseLayout 的返回拦截方法
+defineExpose({
+  onBeforeBack: () => {
+    if (hasEdited.value) {
+      showSaveConfirmDialog.value = true
+    } else {
+      router.back()
+    }
+  }
+})
 </script>
 
 <style lang="scss" scoped>
 .create-pre-auth {
-  min-height: 100vh;
-  background-color: #f5f5f5;
-  padding-bottom: 89px;
+  background: #f5f5f5;
+  min-height: calc(100vh - 46px);
+  padding-top: 56px;
+  padding-left: 12px;
+  padding-right: 12px;
+  padding-bottom: 100px;
+}
 
-  // 导航头部
-  .nav-header {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 44px;
-    background: #ffffff;
+// Tab 导航 - 固定在顶部
+.detail-tabs-nav {
+  background: #fff;
+  display: flex;
+  border-bottom: 1px solid #eee;
+  position: fixed;
+  top: 43px;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  overflow-x: auto;
+  white-space: nowrap;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+
+  .tab-item {
+    flex: 0 0 auto;
+    text-align: center;
+    padding: 12px 0;
+    margin: 0 12px;
+    font-size: 14px;
+    color: #666;
+    position: relative;
+    cursor: pointer;
+    transition: color 0.2s;
+
+    &.active {
+      color: #009100;
+      font-weight: 600;
+
+      &::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 100%;
+        height: 3px;
+        background: #009100;
+        border-radius: 2px;
+      }
+    }
+  }
+}
+
+// 内容滚动区域
+.tab-content-section {
+  border-radius: 8px;
+  box-sizing: border-box;
+  margin-bottom: 12px;
+}
+
+// 主卡片（接车施工单）
+.main-card {
+  background: #ffffff;
+  border-radius: 6px;
+  padding: 12px;
+
+  .section-title {
+    font-family: 'PingFang SC';
+    font-size: 14px;
+    font-weight: 500;
+    color: #191a1b;
+    margin-bottom: 12px;
+  }
+
+  .card-row {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0 15px;
-    z-index: 100;
-    box-sizing: border-box;
-
-    .nav-title {
-      font-family: 'PingFang SC';
-      font-size: 17px;
-      font-weight: 500;
-      color: #333333;
-    }
-  }
-
-  // 标签页容器
-  .tabs-container {
-    position: fixed;
-    top: 44px;
-    left: 0;
-    right: 0;
-    height: 42px;
-    background: #ffffff;
-    display: flex;
-    align-items: center;
+    padding: 15px 0;
     border-bottom: 0.5px solid #e6e6e5;
-    z-index: 99;
 
-    .tab-item {
-      flex: 1;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      height: 100%;
-      position: relative;
-
-      .tab-text {
-        font-family: 'PingFang SC';
-        font-size: 14px;
-        color: #545454;
-      }
-
-      &.tab-active {
-        .tab-text {
-          color: #009100;
-          font-weight: 500;
-        }
-
-        &::after {
-          content: '';
-          position: absolute;
-          bottom: 0;
-          left: 50%;
-          transform: translateX(-50%);
-          width: 56px;
-          height: 2px;
-          background: #009100;
-        }
-      }
+    &:last-child {
+      border-bottom: none;
     }
-  }
 
-  // 内容区域
-  .content-area {
-    padding-top: 42px;
-    padding-bottom: 66px;
-    min-height: calc(100vh - 86px - 89px);
-    overflow-y: auto;
-
-    &::-webkit-scrollbar {
-      display: none;
+    &.auth-type-row {
+      align-items: flex-start;
+      padding: 12px 0;
     }
-  }
 
-  // 标签内容
-  .tab-content {
-    padding: 12px;
-  }
-
-  // 卡片区块
-  .card-section {
-    background: #ffffff;
-    border-radius: 6px;
-    margin-bottom: 12px;
-    overflow: hidden;
-  }
-
-  // 主卡片（接车施工单）
-  .main-card {
-    background: #ffffff;
-    border-radius: 6px;
-    padding: 12px;
-
-    .section-title {
+    .row-label {
       font-family: 'PingFang SC';
       font-size: 14px;
-      font-weight: 500;
       color: #191a1b;
-      margin-bottom: 12px;
+      flex-shrink: 0;
     }
 
-    .card-row {
+    .row-value {
       display: flex;
       align-items: center;
-      justify-content: space-between;
-      padding: 15px 0;
-      border-bottom: 0.5px solid #e6e6e5;
-
-      &:last-child {
-        border-bottom: none;
-      }
-
-      &.auth-type-row {
-        align-items: flex-start;
-        padding: 12px 0;
-      }
-
-      &.textarea-row {
-        align-items: flex-start;
-        padding: 12px 0;
-        flex-direction: column;
-
-        .row-label {
-          margin-bottom: 8px;
-        }
-
-        .reason-textarea {
-          width: 100%;
-          padding: 0;
-          background: transparent;
-
-          :deep(.van-field__control) {
-            font-family: 'PingFang SC';
-            font-size: 14px;
-            color: #191a1b;
-            text-align: left;
-          }
-
-          :deep(.van-field__word-limit) {
-            display: none;
-          }
-        }
-      }
-
-      .row-label {
-        font-family: 'PingFang SC';
-        font-size: 14px;
-        color: #191a1b;
-        flex-shrink: 0;
-      }
-
-      .row-value {
-        display: flex;
-        align-items: center;
-        gap: 4px;
-        font-family: 'PingFang SC';
-        font-size: 14px;
-        color: #888888;
-      }
+      gap: 4px;
+      font-family: 'PingFang SC';
+      font-size: 14px;
+      color: #888888;
     }
   }
-
-  // 预授权类型选择
-  .type-chips {
+  .work_order {
     display: flex;
-    gap: 6px;
-
-    .type-chip {
-      padding: 6px 16px;
-      border-radius: 4px;
-      font-family: 'PingFang SC';
-      font-size: 14px;
-      background: #f8f7f7;
-      color: #191a1b;
-
-      &.type-chip-active {
-        background: rgba(0, 145, 0, 0.1);
-        border: 1px solid #009100;
-        color: #009100;
-      }
-    }
-  }
-
-  // 申请原因卡片
-  .reason-card {
-    background: #ffffff;
-    border-radius: 6px;
-    margin-bottom: 12px;
-    overflow: hidden;
-
-    .reason-header {
-      padding: 12px;
-      border-bottom: 0.5px solid #e6e6e5;
-      font-family: 'PingFang SC';
-      font-size: 14px;
-      font-weight: 500;
-      color: #191a1b;
-    }
-
-    .reason-textarea {
-      padding: 12px;
-
-      :deep(.van-field__control) {
-        font-family: 'PingFang SC';
-        font-size: 14px;
-        color: #191a1b;
-        line-height: 1.5;
-      }
-
-      :deep(.van-field__placeholder) {
-        color: #888888;
-      }
-    }
-  }
-
-  // 维修项目卡片
-  .repair-card {
-    background: #ffffff;
-    border-radius: 6px;
-    margin-bottom: 12px;
-    overflow: hidden;
-
-    .repair-card-header {
-      padding: 12px;
-      border-bottom: 0.5px solid #e6e6e5;
-      font-family: 'PingFang SC';
-      font-size: 14px;
-      font-weight: 500;
-      color: #191a1b;
-    }
-
-    .repair-item {
-      padding: 12px;
-      border-bottom: 0.5px solid #e6e6e5;
-
-      &:last-child {
-        border-bottom: none;
-      }
-
-      .repair-item-main {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-
-        .repair-item-left {
-          .repair-item-top {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-
-            .repair-name {
-              font-family: 'PingFang SC';
-              font-size: 14px;
-              font-weight: 500;
-              color: #191a1b;
-            }
-
-            .repair-tag {
-              font-family: 'PingFang SC';
-              font-size: 12px;
-              color: #009100;
-              background: rgba(0, 145, 0, 0.1);
-              padding: 2px 6px;
-              border-radius: 4px;
-            }
-          }
-
-          .repair-part-no {
-            font-family: 'PingFang SC';
-            font-size: 12px;
-            color: #545454;
-            margin-bottom: 2px;
-          }
-
-          .repair-type {
-            font-family: 'PingFang SC';
-            font-size: 12px;
-            color: #888888;
-          }
-        }
-
-        .repair-item-right {
-          text-align: right;
-
-          .repair-price {
-            font-family: 'PingFang SC';
-            font-size: 14px;
-            font-weight: 500;
-            color: #191a1b;
-            margin-bottom: 2px;
-          }
-
-          .repair-discount {
-            font-family: 'PingFang SC';
-            font-size: 12px;
-            color: #545454;
-          }
-        }
-      }
-
-      .repair-item-bottom {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        color: #545454;
-        font-size: 12px;
-        font-weight: 400;
-        font-family: 'PingFang SC';
-
-        .repair-quantity {
-          margin-left: auto;
-          font-family: 'PingFang SC';
-        }
-      }
-    }
-  }
-
-  // 维修配件卡片
-  .parts-card {
-    background: #ffffff;
-    border-radius: 6px;
-    margin-bottom: 12px;
-    overflow: hidden;
-
-    .parts-card-header {
-      padding: 12px;
-      border-bottom: 0.5px solid #e6e6e5;
-      font-family: 'PingFang SC';
-      font-size: 14px;
-      font-weight: 500;
-      color: #191a1b;
-    }
-
-    .parts-content {
+    flex-direction: column;
+    align-items: flex-start;
+    .work_box {
+      width: 100%;
       display: flex;
-      align-items: center;
       justify-content: space-between;
-      padding: 12px;
-      cursor: pointer;
+    }
+  }
+}
 
-      &.parts-content-collapsed {
-        .parts-text {
-          overflow: hidden;
-          text-overflow: ellipsis;
-          white-space: nowrap;
-        }
-      }
+// 预授权类型选择
+.type-chips {
+  display: flex;
+  gap: 6px;
 
-      .parts-text {
-        flex: 1;
-        font-family: 'PingFang SC';
-        font-size: 14px;
-        color: #191a1b;
-        line-height: 1.5;
-        padding-right: 8px;
+  .type-chip {
+    padding: 6px 16px;
+    border-radius: 4px;
+    font-family: 'PingFang SC';
+    font-size: 14px;
+    background: #f8f7f7;
+    color: #191a1b;
 
-        .parts-item-inline {
-          .parts-name {
-            color: #191a1b;
-          }
+    &.type-chip-active {
+      background: rgba(0, 145, 0, 0.1);
+      border: 1px solid #009100;
+      color: #009100;
+    }
+  }
+}
 
-          .parts-separator {
-            color: #888888;
-          }
-        }
-      }
+// 申请原因卡片
+.reason-card {
+  background: #ffffff;
+  border-radius: 6px;
+  overflow: hidden;
+
+  .reason-header {
+    padding: 12px;
+    font-family: 'PingFang SC';
+    font-size: 14px;
+    font-weight: 500;
+    color: #191a1b;
+  }
+
+  .reason-textarea {
+    padding: 12px;
+
+    :deep(.van-field__control) {
+      font-family: 'PingFang SC';
+      font-size: 14px;
+      color: #191a1b;
+      line-height: 1.5;
     }
 
-    .parts-detail {
-      .parts-item {
-        padding: 12px;
-        border-top: 0.5px solid #e6e6e5;
+    :deep(.van-field__placeholder) {
+      color: #888888;
+    }
+  }
+}
 
-        &:last-child {
-          border-bottom: none;
-        }
+// 维修项目卡片
+.repair-card {
+  background: #ffffff;
+  border-radius: 6px;
+  overflow: hidden;
 
-        .parts-item-main {
-          display: flex;
-          justify-content: space-between;
-          align-items: flex-start;
-          margin-bottom: 8px;
+  .repair-card-header {
+    padding: 12px;
+    font-family: 'PingFang SC';
+    font-size: 14px;
+    font-weight: 500;
+    color: #191a1b;
+  }
 
-          .parts-item-left {
-            .parts-item-top {
-              display: flex;
-              align-items: center;
-              gap: 8px;
-              margin-bottom: 4px;
+  .repair-item {
+    padding: 12px;
+    border-bottom: 0.5px solid #e6e6e5;
 
-              .parts-name {
-                font-family: 'PingFang SC';
-                font-size: 14px;
-                font-weight: 500;
-                color: #191a1b;
-              }
+    &:last-child {
+      border-bottom: none;
+    }
 
-              .parts-tag {
-                font-family: 'PingFang SC';
-                font-size: 12px;
-                color: #009100;
-                background: rgba(0, 145, 0, 0.1);
-                padding: 2px 6px;
-                border-radius: 4px;
-              }
-            }
+    .repair-item-main {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
 
-            .parts-part-no {
-              font-family: 'PingFang SC';
-              font-size: 12px;
-              color: #545454;
-              margin-bottom: 2px;
-            }
-
-            .parts-type {
-              font-family: 'PingFang SC';
-              font-size: 12px;
-              color: #888888;
-            }
-          }
-
-          .parts-item-right {
-            text-align: right;
-
-            .parts-price {
-              font-family: 'PingFang SC';
-              font-size: 14px;
-              font-weight: 500;
-              color: #191a1b;
-              margin-bottom: 2px;
-            }
-
-            .parts-discount {
-              font-family: 'PingFang SC';
-              font-size: 12px;
-              color: #545454;
-            }
-          }
-        }
-
-        .parts-item-bottom {
+      .repair-item-left {
+        .repair-item-top {
           display: flex;
           align-items: center;
-          gap: 12px;
-          padding-top: 8px;
-          border-top: 0.5px dashed #e6e6e5;
+          gap: 8px;
 
-          .parts-subtotal {
+          .repair-name {
             font-family: 'PingFang SC';
             font-size: 14px;
             font-weight: 500;
             color: #191a1b;
           }
 
-          .parts-actual,
-          .parts-return {
+          .repair-tag {
             font-family: 'PingFang SC';
             font-size: 12px;
-            color: #888888;
+            color: #009100;
+            background: rgba(0, 145, 0, 0.1);
+            padding: 2px 6px;
+            border-radius: 4px;
           }
+        }
 
-          .parts-quantity {
-            margin-left: auto;
+        .repair-part-no {
+          font-family: 'PingFang SC';
+          font-size: 12px;
+          color: #545454;
+          margin-bottom: 2px;
+        }
+
+        .repair-type {
+          font-family: 'PingFang SC';
+          font-size: 12px;
+          color: #888888;
+        }
+      }
+
+      .repair-item-right {
+        text-align: right;
+
+        .repair-price {
+          font-family: 'PingFang SC';
+          font-size: 14px;
+          font-weight: 500;
+          color: #191a1b;
+          margin-bottom: 2px;
+        }
+
+        .repair-discount {
+          font-family: 'PingFang SC';
+          font-size: 12px;
+          color: #545454;
+        }
+      }
+    }
+
+    .repair-item-bottom {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: #545454;
+      font-size: 12px;
+      font-weight: 400;
+      font-family: 'PingFang SC';
+
+      .repair-quantity {
+        margin-left: auto;
+        font-family: 'PingFang SC';
+      }
+    }
+  }
+}
+
+// 维修配件卡片
+.parts-card {
+  background: #ffffff;
+  border-radius: 6px;
+  overflow: hidden;
+  margin-top: 12px;
+
+  .parts-card-header {
+    padding: 12px;
+    font-family: 'PingFang SC';
+    font-size: 14px;
+    font-weight: 500;
+    color: #191a1b;
+  }
+
+  .parts-item {
+    padding: 15px 12px;
+    border-bottom: 0.5px solid #e6e6e5;
+
+    &:last-child {
+      border-bottom: none;
+    }
+
+    .parts-item-main {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 4px;
+
+      .parts-item-left {
+        .parts-item-top {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          margin-bottom: 2px;
+
+          .parts-name {
             font-family: 'PingFang SC';
             font-size: 14px;
+            font-weight: 500;
             color: #191a1b;
           }
+
+          .parts-tag {
+            font-family: 'PingFang SC';
+            font-size: 12px;
+            color: #191a1b;
+            background: rgba(25, 26, 27, 0.06);
+            padding: 1px 4px;
+            border-radius: 4px;
+          }
+        }
+
+        .parts-part-no {
+          font-family: 'PingFang SC';
+          font-size: 12px;
+          color: #545454;
+          margin-bottom: 2px;
+        }
+
+        .parts-type {
+          font-family: 'PingFang SC';
+          font-size: 12px;
+          color: #545454;
+        }
+      }
+
+      .parts-item-right {
+        text-align: right;
+
+        .parts-price {
+          font-family: 'PingFang SC';
+          font-size: 14px;
+          font-weight: 500;
+          color: #191a1b;
+          margin-bottom: 2px;
+        }
+
+        .parts-discount {
+          font-family: 'PingFang SC';
+          font-size: 12px;
+          color: #545454;
         }
       }
     }
-  }
 
-  // 质量反馈报告卡片
-  .feedback-card {
-    background: #ffffff;
-    border-radius: 6px;
+    .parts-item-bottom {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding-top: 4px;
+
+      .parts-subtotal {
+        font-family: 'PingFang SC';
+        font-size: 12px;
+        color: #545454;
+      }
+
+      .parts-actual,
+      .parts-return {
+        font-family: 'PingFang SC';
+        font-size: 12px;
+        color: #545454;
+      }
+
+      .parts-quantity {
+        margin-left: auto;
+        font-family: 'PingFang SC';
+        font-size: 14px;
+        color: #191a1b;
+      }
+    }
+  }
+}
+
+// 附件信息卡片
+.attachments-card {
+  background: #ffffff;
+  border-radius: 6px;
+  overflow: hidden;
+
+  .attachments-card-header {
     padding: 12px;
-    margin-bottom: 12px;
+    font-family: 'PingFang SC';
+    font-size: 14px;
+    font-weight: 500;
+    color: #191a1b;
+  }
 
-    .section-title {
-      font-family: 'PingFang SC';
-      font-size: 14px;
-      font-weight: 500;
-      color: #191a1b;
-      margin-bottom: 12px;
-    }
+  .attachment-section {
+    padding: 10px 12px 20px;
 
-    .card-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 15px 0;
+    &:not(:last-child) {
       border-bottom: 0.5px solid #e6e6e5;
-
-      &:last-child {
-        border-bottom: none;
-      }
-
-      .row-label {
-        font-family: 'PingFang SC';
-        font-size: 14px;
-        color: #191a1b;
-        flex-shrink: 0;
-      }
-
-      .row-value {
-        display: flex;
-        align-items: center;
-        gap: 4px;
-        font-family: 'PingFang SC';
-        font-size: 14px;
-        color: #888888;
-
-        &.warning-value {
-          color: #ee0a24;
-        }
-      }
     }
 
-    .feedback-content {
-      padding: 12px 0;
-
-      &.no-border {
-        padding-top: 0;
-      }
-
-      .feedback-label {
-        font-family: 'PingFang SC';
-        font-size: 14px;
-        color: #545454;
-        margin-bottom: 8px;
-      }
-
-      .feedback-text {
-        font-family: 'PingFang SC';
-        font-size: 14px;
-        color: #191a1b;
-        line-height: 1.5;
-        display: flex;
-        align-items: center;
-        gap: 4px;
-
-        &.text-collapsed {
-          display: -webkit-box;
-          -webkit-line-clamp: 2;
-          -webkit-box-orient: vertical;
-          overflow: hidden;
-        }
-      }
-    }
-  }
-
-  // 车辆信息卡片
-  .vehicle-info-card {
-    background: #ffffff;
-    border-radius: 0 0 6px 6px;
-    margin-bottom: 12px;
-
-    .vehicle-info-item {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 3px 12px;
-
-      &:last-child {
-        border-bottom: none;
-        padding-bottom: 8px;
-      }
-
-      .info-label {
-        font-family: 'PingFang SC';
-        font-size: 14px;
-        color: #545454;
-        flex-shrink: 0;
-      }
-
-      .info-value {
-        font-family: 'PingFang SC';
-        font-size: 14px;
-        color: #191a1b;
-        flex-shrink: 0;
-
-        &.warning-value {
-          color: #ee0a24;
-        }
-      }
-    }
-  }
-
-  // 附件信息空状态
-  .empty-attachments {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 60px 0;
-    color: #cccccc;
-    font-family: 'PingFang SC';
-    font-size: 14px;
-    gap: 12px;
-  }
-
-  // 搜索无结果空状态
-  .empty-state {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 60px 0;
-    color: #cccccc;
-    font-family: 'PingFang SC';
-    font-size: 14px;
-    gap: 12px;
-  }
-
-  // 底部提交按钮
-  .bottom-action {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 48px;
-    background: #ffffff;
-    border-top: 0.5px solid #e0e0e0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0 12px;
-    padding-bottom: 29px;
-    box-sizing: content-box;
-    z-index: 100;
-
-    .submit-btn {
-      width: 100%;
-      height: 40px;
-      background: #009100;
-      border-radius: 8px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+    .attachment-section-title {
       font-family: 'PingFang SC';
       font-size: 14px;
-      color: #ffffff;
+      color: #191a1b;
+      margin-bottom: 8px;
+    }
 
-      &.submit-btn-disabled {
-        background: rgba(0, 145, 0, 0.3);
-        color: rgba(255, 255, 255, 0.6);
+    .attachment-list {
+      display: flex;
+      gap: 8px;
+
+      .attachment-item {
+        position: relative;
+        width: 80px;
+        height: 80px;
+        border-radius: 6px;
+        overflow: hidden;
+
+        .attachment-img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+        }
+
+        .attachment-delete {
+          position: absolute;
+          top: 0;
+          right: 0;
+          width: 24px;
+          height: 24px;
+          background: rgba(0, 0, 0, 0.4);
+          border-radius: 0 6px 0 0;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+        }
+      }
+
+      .attachment-upload {
+        width: 80px;
+        height: 80px;
+        background: #f5f5f5;
+        border-radius: 6px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        cursor: pointer;
+
+        .upload-text {
+          font-family: 'PingFang SC';
+          font-size: 12px;
+          color: #888888;
+        }
       }
     }
   }
+}
 
-  // 更多操作弹窗
-  .more-popup-content {
-    padding: 20px 0;
+// 质量反馈报告卡片
+.feedback-card {
+  background: #ffffff;
+  border-radius: 6px;
+  padding: 12px;
+  margin-bottom: 12px;
 
-    .more-item {
-      height: 48px;
+  .section-title {
+    font-family: 'PingFang SC';
+    font-size: 14px;
+    font-weight: 500;
+    color: #191a1b;
+    margin-bottom: 12px;
+  }
+
+  .card-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 15px 0;
+    border-bottom: 0.5px solid #e6e6e5;
+
+    &:last-child {
+      border-bottom: none;
+    }
+
+    .row-label {
+      font-family: 'PingFang SC';
+      font-size: 14px;
+      color: #191a1b;
+      flex-shrink: 0;
+    }
+
+    .row-value {
       display: flex;
       align-items: center;
-      justify-content: center;
+      gap: 4px;
       font-family: 'PingFang SC';
-      font-size: 16px;
-      color: #333333;
-      background: #ffffff;
-      border-bottom: 0.5px solid #f5f5f5;
+      font-size: 14px;
+      color: #888888;
 
-      &:last-child {
-        border-bottom: none;
+      &.warning-value {
         color: #ee0a24;
       }
     }
   }
 
-  // 施工单弹窗
-  .construction-popup {
-    height: 727px;
-    background: #F4F4F4;
-    border-radius: 16px 16px 0 0;
-    display: flex;
-    flex-direction: column;
+  .feedback-content {
+    padding: 12px 0;
 
-    .popup-header {
-      padding-bottom: 12px;
+    &.no-border {
+      padding-top: 0;
+    }
+
+    .feedback-label {
+      font-family: 'PingFang SC';
+      font-size: 14px;
+      color: #545454;
+      margin-bottom: 8px;
+    }
+
+    .feedback-text {
+      font-family: 'PingFang SC';
+      font-size: 14px;
+      color: #191a1b;
+      line-height: 1.5;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+
+      &.text-collapsed {
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+      }
+    }
+  }
+}
+
+// 车辆信息卡片
+.vehicle-info-card {
+  background: #ffffff;
+  border-radius: 0 0 6px 6px;
+  margin-bottom: 12px;
+
+  .vehicle-info-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 3px 12px;
+
+    &:last-child {
+      border-bottom: none;
+      padding-bottom: 8px;
+    }
+
+    .info-label {
+      font-family: 'PingFang SC';
+      font-size: 14px;
+      color: #545454;
+      flex-shrink: 0;
+    }
+
+    .info-value {
+      font-family: 'PingFang SC';
+      font-size: 14px;
+      color: #191a1b;
       flex-shrink: 0;
 
-      .search-box {
-        display: flex;
-        align-items: center;
-        height: 30px;
-        padding: 0 12px;
-        background: rgba(216, 216, 216, 0.3);
-        border-radius: 15px;
-        gap: 8px;
+      &.warning-value {
+        color: #ee0a24;
       }
+    }
+  }
+}
 
-      .search-icon-wrap {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 20px;
-        height: 20px;
-        flex-shrink: 0;
-      }
+// 搜索无结果空状态
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 0;
+  color: #cccccc;
+  font-family: 'PingFang SC';
+  font-size: 14px;
+  gap: 12px;
+}
 
-      .search-icon {
-        width: 20px;
-        height: 20px;
-      }
+// 底部提交按钮
+.bottom-action {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: #ffffff;
+  padding: 6px 12px;
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.05);
+  z-index: 100;
+  box-sizing: border-box;
+  height: 75px;
 
-      .search-input {
-        flex: 1;
-        height: 30px;
-        padding: 0;
-        border: none;
-        background: transparent;
-        font-family: 'PingFang SC';
-        font-size: 14px;
-        outline: none;
-        color: #191A1B;
+  .submit-btn {
+    width: 100%;
+    height: 40px;
+    background: #009100;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'PingFang SC';
+    font-size: 14px;
+    color: #ffffff;
 
-        &::placeholder {
-          color: #888888;
-        }
-      }
+    &.submit-btn-disabled {
+      background: rgba(0, 145, 0, 0.3);
+      color: rgba(255, 255, 255, 0.6);
+    }
+  }
+}
 
-      .search-btn {
-        padding: 4px 12px;
-        height: 22px;
-        background: #009100;
-        color: #ffffff;
-        border-radius: 11px;
-        font-family: 'PingFang SC';
-        font-size: 12px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        flex-shrink: 0;
+// 保存确认弹窗
+.save-confirm-dialog {
+  width: 295px;
+  height: 150px;
+  border-radius: 12px;
+
+  .dialog-content {
+    font-family: 'PingFang SC';
+    font-size: 16px;
+    color: #222222;
+    text-align: center;
+    line-height: 24px;
+    height: 96px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  :deep(.van-dialog__footer) {
+    border-top: 0.5px solid #e6e6e5;
+    border-radius: 0 0 8px 8px;
+  }
+
+  :deep(.van-dialog__cancel) {
+    font-family: 'PingFang SC';
+    font-size: 14px;
+    color: #222222;
+  }
+
+  :deep(.van-dialog__confirm) {
+    font-family: 'PingFang SC';
+    font-size: 14px;
+    color: #009100;
+  }
+}
+
+// 施工单弹窗
+.construction-popup {
+  height: 727px;
+  background: #f4f4f4;
+  border-radius: 16px 16px 0 0;
+  display: flex;
+  flex-direction: column;
+
+  .popup-header {
+    padding-bottom: 12px;
+    flex-shrink: 0;
+
+    .search-box {
+      display: flex;
+      align-items: center;
+      height: 30px;
+      padding: 0 12px;
+      background: rgba(216, 216, 216, 0.3);
+      border-radius: 15px;
+      gap: 8px;
+    }
+
+    .search-icon-wrap {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 20px;
+      height: 20px;
+      flex-shrink: 0;
+    }
+
+    .search-input {
+      flex: 1;
+      height: 30px;
+      padding: 0;
+      border: none;
+      background: transparent;
+      font-family: 'PingFang SC';
+      font-size: 14px;
+      outline: none;
+      color: #191a1b;
+
+      &::placeholder {
+        color: #888888;
       }
     }
 
-    .popup-content-list {
-      flex: 1;
-      overflow-y: auto;
+    .search-btn {
+      padding: 4px 12px;
+      height: 22px;
+      background: #009100;
+      color: #ffffff;
+      border-radius: 11px;
+      font-family: 'PingFang SC';
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+  }
 
-      .construction-item {
-        background: #ffffff;
-        border-radius: 6px;
-        padding: 12px;
+  .popup-content-list {
+    flex: 1;
+    overflow-y: auto;
+
+    .construction-item {
+      background: #ffffff;
+      border-radius: 6px;
+      padding: 12px;
+      margin-bottom: 8px;
+
+      &:last-child {
+        margin-bottom: 0;
+      }
+
+      .construction-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border-bottom: 0.5px solid #e6e6e5;
+        padding-bottom: 12px;
         margin-bottom: 8px;
 
-        &:last-child {
-          margin-bottom: 0;
+        .construction-no {
+          font-family: 'PingFang SC';
+          font-size: 14px;
+          color: #191a1b;
         }
 
-        .construction-header {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          border-bottom: 0.5px solid #E6E6E5;
-          padding-bottom: 12px;
-          margin-bottom: 8px;
-
-          .construction-no {
-            font-family: 'PingFang SC';
-            font-size: 14px;
-            color: #191A1B;
-          }
-
-          .construction-status {
-            font-family: 'PingFang SC';
-            font-size: 12px;
-            font-weight: 500;
-
-            &.status-pending {
-              color: #C8A12B;
-            }
-
-            &.status-processing {
-              color: #009100;
-            }
-
-            &.status-completed {
-              color: #888888;
-            }
-          }
-        }
-
-        .construction-vehicle {
-          display: flex;
-          align-items: center;
-          flex-wrap: wrap;
-          gap: 8px;
-          margin-bottom: 8px;
-
-          .vehicle-plate {
-            font-family: 'PingFang SC';
-            font-size: 16px;
-            font-weight: 500;
-            color: #191A1B;
-          }
-
-          .vehicle-icons {
-            display: flex;
-            gap: 4px;
-
-            .icon {
-              width: 16px;
-              height: 16px;
-            }
-          }
-
-          .vehicle-tags {
-            display: flex;
-            gap: 4px;
-            margin-left: auto;
-
-            .vehicle-tag {
-              font-family: 'PingFang SC';
-              font-size: 12px;
-              color: #191A1B;
-              border: 0.5px solid #191A1B;
-              border-radius: 4px;
-              padding: 1px 4px;
-            }
-          }
-        }
-
-        .construction-vehicle-info {
+        .construction-status {
           font-family: 'PingFang SC';
           font-size: 12px;
-          color: #545454;
-          margin-bottom: 8px;
+          font-weight: 500;
+
+          &.status-pending {
+            color: #c8a12b;
+          }
+
+          &.status-processing {
+            color: #009100;
+          }
+
+          &.status-completed {
+            color: #888888;
+          }
+        }
+      }
+
+      .construction-vehicle {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-bottom: 8px;
+
+        .vehicle-plate {
+          font-family: 'PingFang SC';
+          font-size: 16px;
+          font-weight: 500;
+          color: #191a1b;
         }
 
-        .construction-detail {
+        .vehicle-icons {
+          display: flex;
+          gap: 4px;
 
-          .detail-row {
-            display: flex;
-            align-items: center;
-            margin-bottom: 6px;
+          .icon {
+            width: 16px;
+            height: 16px;
+          }
+        }
 
-            &:last-child {
-              margin-bottom: 0;
-            }
+        .vehicle-tags {
+          display: flex;
+          gap: 4px;
+          margin-left: auto;
 
-            .detail-label {
-              font-family: 'PingFang SC';
-              font-size: 12px;
-              color: #545454;
-              width: 56px;
-            }
+          .vehicle-tag {
+            font-family: 'PingFang SC';
+            font-size: 12px;
+            color: #191a1b;
+            border: 0.5px solid #191a1b;
+            border-radius: 4px;
+            padding: 1px 4px;
+          }
+        }
+      }
 
-            .detail-value {
-              font-family: 'PingFang SC';
-              font-size: 12px;
-              color: #191A1B;
-            }
+      .construction-vehicle-info {
+        font-family: 'PingFang SC';
+        font-size: 12px;
+        color: #545454;
+        margin-bottom: 8px;
+      }
 
-            .customer-tag {
-              font-family: 'PingFang SC';
-              font-size: 12px;
-              color: #191A1B;
-              background: rgba(25, 26, 27, 0.06);
-              border-radius: 4px;
-              padding: 1px 4px;
-              margin-left: 4px;
-            }
+      .construction-detail {
+        .detail-row {
+          display: flex;
+          align-items: center;
+          margin-bottom: 6px;
+
+          &:last-child {
+            margin-bottom: 0;
+          }
+
+          .detail-label {
+            font-family: 'PingFang SC';
+            font-size: 12px;
+            color: #545454;
+            width: 56px;
+          }
+
+          .detail-value {
+            font-family: 'PingFang SC';
+            font-size: 12px;
+            color: #191a1b;
+          }
+
+          .customer-tag {
+            font-family: 'PingFang SC';
+            font-size: 12px;
+            color: #191a1b;
+            background: rgba(25, 26, 27, 0.06);
+            border-radius: 4px;
+            padding: 1px 4px;
+            margin-left: 4px;
           }
         }
       }
     }
   }
+}
 
-  // 质量反馈弹窗
-  .feedback-popup {
-    height: 727px;
-    background: #F4F4F4;
-    display: flex;
-    flex-direction: column;
+// 质量反馈弹窗
+.feedback-popup {
+  height: 727px;
+  background: #f4f4f4;
+  display: flex;
+  flex-direction: column;
 
-    .popup-header {
-      padding-bottom: 12px;
+  .popup-header {
+    padding-bottom: 12px;
+    flex-shrink: 0;
+
+    .search-box {
+      display: flex;
+      align-items: center;
+      height: 30px;
+      padding: 0 12px;
+      background: rgba(216, 216, 216, 0.3);
+      border-radius: 15px;
+      gap: 8px;
+    }
+
+    .search-icon-wrap {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 20px;
+      height: 20px;
       flex-shrink: 0;
+    }
 
-      .search-box {
-        display: flex;
-        align-items: center;
-        height: 30px;
-        padding: 0 12px;
-        background: rgba(216, 216, 216, 0.3);
-        border-radius: 15px;
-        gap: 8px;
-      }
+    .search-input {
+      flex: 1;
+      height: 30px;
+      padding: 0;
+      border: none;
+      background: transparent;
+      font-family: 'PingFang SC';
+      font-size: 14px;
+      outline: none;
+      color: #191a1b;
 
-      .search-icon-wrap {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 20px;
-        height: 20px;
-        flex-shrink: 0;
-      }
-
-      .search-icon {
-        width: 20px;
-        height: 20px;
-      }
-
-      .search-input {
-        flex: 1;
-        height: 30px;
-        padding: 0;
-        border: none;
-        background: transparent;
-        font-family: 'PingFang SC';
-        font-size: 14px;
-        outline: none;
-        color: #191A1B;
-
-        &::placeholder {
-          color: #888888;
-        }
-      }
-
-      .search-btn {
-        padding: 4px 12px;
-        width: 52px;
-        height: 26px;
-        background: #009100;
-        color: #ffffff;
-        border-radius: 15px;
-        font-family: 'PingFang SC';
-        font-size: 12px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        flex-shrink: 0;
+      &::placeholder {
+        color: #888888;
       }
     }
 
-    .popup-content-list {
-      flex: 1;
-      overflow-y: auto;
+    .search-btn {
+      padding: 4px 12px;
+      width: 52px;
+      height: 26px;
+      background: #009100;
+      color: #ffffff;
+      border-radius: 15px;
+      font-family: 'PingFang SC';
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+  }
 
-      .feedback-item {
-        border: 0.5px solid #E6E6E5;
-        background-color: #fff;
-        border-radius: 4px;
-        margin-bottom: 8px;
-        overflow: hidden;
+  .popup-content-list {
+    flex: 1;
+    overflow-y: auto;
 
-        &:last-child {
-          margin-bottom: 0;
-        }
+    .feedback-item {
+      border: 0.5px solid #e6e6e5;
+      background-color: #fff;
+      border-radius: 4px;
+      margin-bottom: 8px;
+      overflow: hidden;
 
-        .feedback-item-serial {
-          padding: 12px 0;
-          border-bottom: 0.5px solid #E6E6E5;
-          border-radius: 6px 6px 0 0;
+      &:last-child {
+        margin-bottom: 0;
+      }
 
-          .serial-text {
-            display: block;
-            font-family: 'PingFang SC';
-            font-size: 14px;
-            color: #191A1B;
-            padding: 0 8px;
+      .feedback-item-serial {
+        padding: 12px 0;
+        border-bottom: 0.5px solid #e6e6e5;
+        border-radius: 6px 6px 0 0;
 
-            .date-part {
-              color: #009100;
-            }
+        .serial-text {
+          display: block;
+          font-family: 'PingFang SC';
+          font-size: 14px;
+          color: #191a1b;
+          padding: 0 8px;
+
+          .date-part {
+            color: #009100;
           }
         }
+      }
 
-        .feedback-item-info {
-          padding: 12px 0;
+      .feedback-item-info {
+        padding: 12px 0;
 
-          .info-title {
-            font-family: 'PingFang SC';
-            font-size: 14px;
-            font-weight: 500;
-            color: #191A1B;
-            margin-bottom: 8px;
-            padding: 0 8px;
-          }
+        .info-title {
+          font-family: 'PingFang SC';
+          font-size: 14px;
+          font-weight: 500;
+          color: #191a1b;
+          margin-bottom: 8px;
+          padding: 0 8px;
+        }
 
-          .info-desc {
-            font-family: 'PingFang SC';
-            font-size: 14px;
-            color: #191A1B;
-            padding: 0 8px;
-          }
+        .info-desc {
+          font-family: 'PingFang SC';
+          font-size: 14px;
+          color: #191a1b;
+          padding: 0 8px;
         }
       }
     }

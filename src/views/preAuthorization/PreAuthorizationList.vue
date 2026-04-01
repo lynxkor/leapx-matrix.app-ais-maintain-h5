@@ -12,16 +12,6 @@
         @search="onSearch"
         @filterSearch="onFilterSearch"
       />
-
-      <!-- 筛选标签 -->
-      <div class="filter-tabs">
-        <van-tabs v-model:active="activeTab" @change="onTabChange" color="#2261DD">
-          <van-tab name="all" title="全部"></van-tab>
-          <van-tab name="pending" title="待处理"></van-tab>
-          <van-tab name="approved" title="已批准"></van-tab>
-          <van-tab name="rejected" title="已拒绝"></van-tab>
-        </van-tabs>
-      </div>
     </div>
 
     <!-- 预授权列表 -->
@@ -46,6 +36,7 @@
           v-for="item in dataList"
           :key="item.id"
           @click="goToDetail(item)"
+          class="list_item_contaniner"
         >
           <template #header>
             <div class="item-header">
@@ -79,8 +70,8 @@
                 <span class="card-info-des">{{ item.createTime }}</span>
               </van-col>
               <van-col span="24" class="card-info-col">
-                <span class="card-info-title">缴定金时间</span>
-                <span class="card-info-des">{{ item.depositTime }}</span>
+                <span class="card-info-title">创建人</span>
+                <span class="card-info-des">{{ item.creator }}</span>
               </van-col>
               <van-col span="24" class="card-info-col">
                 <span class="card-info-title">销售门店</span>
@@ -90,7 +81,7 @@
           </template>
 
           <template #btn-content>
-            <ais-button type="default" round size="large" @click.stop="handleContact(item)">
+            <ais-button type="primary" round size="large" plain @click.stop="handleContact(item)">
               联系创建人
             </ais-button>
           </template>
@@ -100,13 +91,7 @@
 
     <!-- 底部操作栏 -->
     <div class="action-bar">
-      <van-button
-        class="create-btn"
-        type="primary"
-        @click="createAuthorization"
-      >
-        新建
-      </van-button>
+      <van-button class="create-btn" type="primary" @click="createAuthorization"> 新建 </van-button>
     </div>
   </div>
 </template>
@@ -173,8 +158,8 @@ const mockData = [
     storeName: '2358446753543340032',
     warrantyTime: 'B10-510激光雷达版',
     mileage: '2025款',
-    createTime: 'LFV3H6686RKYM3393',
-    depositTime: '2025-12-30 13:15:00',
+    createTime: '2025-12-30 13:15:00',
+    creator: '王小虎',
     salesStore: '杭州服务中心芯图大厦店'
   },
   {
@@ -185,8 +170,8 @@ const mockData = [
     storeName: '2358446753543340033',
     warrantyTime: 'C11-200增程版',
     mileage: '2024款',
-    createTime: 'LFV3H6686RKYM3394',
-    depositTime: '2025-12-29 10:00:00',
+    createTime: '2025-12-29 10:00:00',
+    creator: '李小明',
     salesStore: '上海浦东店'
   },
   {
@@ -197,8 +182,8 @@ const mockData = [
     storeName: '测试门店001',
     warrantyTime: 'C10-525舒享版',
     mileage: '2024款',
-    createTime: 'LFV3H6686RKYM3395',
-    depositTime: '2025-12-28 09:00:00',
+    createTime: '2025-12-28 09:00:00',
+    creator: '张三',
     salesStore: '北京朝阳店'
   },
   {
@@ -209,8 +194,8 @@ const mockData = [
     storeName: '深圳南山店',
     warrantyTime: 'T03-400轻享版',
     mileage: '2023款',
-    createTime: 'LFV3H6686RKYM3396',
-    depositTime: '2025-12-27 14:30:00',
+    createTime: '2025-12-27 14:30:00',
+    creator: '李四',
     salesStore: '深圳南山店'
   },
   {
@@ -221,9 +206,21 @@ const mockData = [
     storeName: '成都武侯店',
     warrantyTime: 'C11-605纯电版',
     mileage: '2025款',
-    createTime: 'LFV3H6686RKYM3397',
-    depositTime: '2025-12-26 11:20:00',
+    createTime: '2025-12-26 11:20:00',
+    creator: '王五',
     salesStore: '成都武侯店'
+  },
+  {
+    id: 6,
+    orderNo: 'YS-260313141948383407',
+    status: 'audit',
+    vin: 'LFV3H6686RKYM3398',
+    storeName: '广州天河店',
+    warrantyTime: 'C10-510激光雷达版',
+    mileage: '2025款',
+    createTime: '2025-12-25 09:30:00',
+    creator: '赵六',
+    salesStore: '广州天河店'
   }
 ]
 
@@ -259,14 +256,15 @@ const onFilterSearch = (filterParams) => {
     filtered = []
   } else if (filterParams.brand && filterParams.brand !== 'all') {
     if (filterParams.brand === 'c10') {
-      filtered = filtered.filter(item => item.warrantyTime.includes('C10'))
+      filtered = filtered.filter((item) => item.warrantyTime.includes('C10'))
     } else if (filterParams.brand === 't03') {
-      filtered = filtered.filter(item => item.warrantyTime.includes('T03'))
+      filtered = filtered.filter((item) => item.warrantyTime.includes('T03'))
     } else if (filterParams.brand === 'other') {
-      filtered = filtered.filter(item =>
-        !item.warrantyTime.includes('C10') &&
-        !item.warrantyTime.includes('T03') &&
-        !item.warrantyTime.includes('C11')
+      filtered = filtered.filter(
+        (item) =>
+          !item.warrantyTime.includes('C10') &&
+          !item.warrantyTime.includes('T03') &&
+          !item.warrantyTime.includes('C11')
       )
     }
   }
@@ -277,9 +275,8 @@ const onFilterSearch = (filterParams) => {
 }
 
 const onTabChange = (name) => {
-  activeTab.value = name
-  requestData.data.pageNum = 1
-  dataList.value = [...mockData]
+  // Tab 切换功能已移除，保留此方法避免报错
+  console.log('Tab change:', name)
 }
 
 const setData = (res) => {
@@ -319,21 +316,35 @@ const handleResetFilter = () => {
 
 const getStatusText = (status) => {
   switch (status) {
-    case 'pending': return '未提交'
-    case 'submitted': return '已提交'
-    case 'approved': return '已批准'
-    case 'rejected': return '已拒绝'
-    default: return '未知'
+    case 'pending':
+      return '未提交'
+    case 'submitted':
+      return '已提交'
+    case 'audit':
+      return '待审核'
+    case 'approved':
+      return '已通过'
+    case 'rejected':
+      return '已驳回'
+    default:
+      return '未知'
   }
 }
 
 const getStatusClass = (status) => {
   switch (status) {
-    case 'pending': return 'status-blue'
+    case 'pending':
+      return 'status-blue'
     case 'submitted':
-    case 'approved': return 'status-green'
-    case 'rejected': return 'status-red'
-    default: return ''
+      return 'status-green'
+    case 'audit':
+      return 'status-yellow'
+    case 'approved':
+      return 'status-green'
+    case 'rejected':
+      return 'status-red'
+    default:
+      return ''
   }
 }
 
@@ -380,7 +391,7 @@ const createAuthorization = () => {
   .list-container {
     padding: 0 12px;
     padding-bottom: 77px;
-    margin-top: 58px;
+    margin-top: 56px;
   }
 
   .empty-state {
@@ -440,6 +451,11 @@ const createAuthorization = () => {
       &.status-green {
         color: #009100;
         background: rgba(0, 145, 0, 0.1);
+      }
+
+      &.status-yellow {
+        color: #c8a12b;
+        background: rgba(200, 161, 43, 0.1);
       }
 
       &.status-red {
