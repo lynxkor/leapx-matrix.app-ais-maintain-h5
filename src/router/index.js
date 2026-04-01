@@ -90,6 +90,35 @@ const router = createRouter({
           meta: {
             title: ''
           }
+        },
+        // 结算报表模块路由
+        {
+          path: '/settlement-statement',
+          name: 'settlementStatement',
+          component: () => import('../views/settlementStatement/SettlementStatementList.vue'),
+          meta: {
+            title: '结算交车',
+            keepAlive: true
+          }
+        },
+        {
+          path: '/settlement-statement/search',
+          name: 'settlementStatementSearch',
+          component: () => import('../views/settlementStatement/SettlementStatementSearch.vue'),
+          meta: {
+            title: '搜索结算单',
+            hideHeader: true
+          }
+        },
+        // 售后结算单列表
+        {
+          path: '/settlement-statement/after-sales',
+          name: 'afterSalesSettlementList',
+          component: () => import('../views/settlementStatement/AfterSalesSettlementList.vue'),
+          meta: {
+            title: '售后结算单',
+            keepAlive: true
+          }
         }
       ]
     }

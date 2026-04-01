@@ -22,7 +22,17 @@
       "mcp___master_mastergo-magic-mcp__mcp__getD2c",
       "mcp__ide__getDiagnostics",
       "WebFetch(domain:mastergo.com)",
-      "Bash(npm run:*)"
+      "Bash(npm run:*)",
+      "mcp___master_mastergo-magic-mcp__mcp__getComponentGenerator",
+      "Bash(curl -s \"https://mastergo.com/file/175060511907951\" -H \"User-Agent: Mozilla/5.0\")",
+      "Bash(git clone:*)",
+      "Bash(curl -s \"https://api.github.com\")",
+      "Bash(curl -sL \"https://mastergo.com/file/175060511907951\" -H \"User-Agent: Mozilla/5.0 \\(Windows NT 10.0; Win64; x64\\) AppleWebKit/537.36\")",
+      "Bash(curl -sL \"https://mastergo.com\" -H \"User-Agent: Mozilla/5.0 \\(Windows NT 10.0; Win64; x64\\) AppleWebKit/537.36\" --connect-timeout 10)",
+      "Bash(ping -c 1 mastergo.com)",
+      "Bash(curl -v https://mastergo.com/file/175060511907951)",
+      "Read(//tmp/**)",
+      "Bash(python3:*)"
     ]
   }
 }
