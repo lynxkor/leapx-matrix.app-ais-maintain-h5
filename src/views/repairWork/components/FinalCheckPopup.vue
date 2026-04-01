@@ -43,6 +43,7 @@
               placeholder="选填，请输入"
               :border="false"
               input-align="right"
+              disabled
             />
           </div>
           <div class="form-item">
@@ -119,8 +120,9 @@
 import { ref, computed, watch } from 'vue'
 import { showToast } from 'vant'
 import SearchDropdown from '@/libs/components/SearchDropdown.vue'
-import { finalInspectionDetail, getBatteryUnitList } from '../../../api/repairWork'
+import { finalInspectionDetail, getBatteryUnitList, finalInspection } from '../../../api/repairWork'
 import { formatDateTime } from '@/libs/utils'
+import { useUserStore } from '@/stores/user'
 
 const props = defineProps({
   modelValue: {
@@ -208,6 +210,7 @@ const searchBatteryUnit = async(keyword) => {
   try {
     const res = await getBatteryUnitList({ name: keyword })
     batteryUnitOptions.value = (res.data || []).map((item) => ({
+      ...item,
       label: item.name,
       value: item.id
     }))
@@ -225,6 +228,7 @@ const onBatteryUnitFocus = () => {
 const handleBatteryUnitSelect = (option) => {
   formData.value.batteryUnitId = option.value
   formData.value.batteryUnitName = option.label
+  formData.value.targetUnitCode = option.buinessLicense
 }
 
 // 是否可以提交
@@ -248,12 +252,16 @@ const handleClose = () => {
 // 提交
 const handleSubmit = () => {
   if (!canSubmit.value) return
+  const userStore = useUserStore()
 
   const submitData = {
     id: props.serviceProxyId,
     finalCheckAt: formatDateTime(new Date()),
-    finalCheckerId: '',
-    finalChecker: ''
+    finalCheckerId: userStore.userId,
+    finalChecker: userStore.userName,
+    faultAlertRecordParams: detailData.value.faultAlertRecordResps || [],
+    repairWorkRecordResps: detailData.value.repairWorkRecordResps || [],
+    currentFault: detailData.value.faultFlag === 1 ? 0 : 1
   }
 
   // 电池信息
@@ -273,7 +281,18 @@ const handleSubmit = () => {
     }))
   }
 
-  emit('submit', submitData)
+  finalInspection(submitData).then(target => {
+    if (target.code === 200) {
+      showToast('终检成功')
+      emit('refresh')
+      emit('update:modelValue', false)
+    } else {
+      showToast(target.message)
+    }
+  }).catch(res => {
+    showToast(res.message)
+    emit('refresh')
+  })
 }
 </script>
 
@@ -361,6 +380,7 @@ const handleSubmit = () => {
           font-weight: 400;
           color: var(--leap-color-default);
           line-height: 20px;
+          margin-right: 10px;
         }
 
         .form-field {
@@ -382,6 +402,7 @@ const handleSubmit = () => {
             font-size: 14px;
             font-family: 'PingFang SC', sans-serif;
             font-weight: 400;
+            background-color: #fff;
           }
 
           .van-field__control::placeholder {

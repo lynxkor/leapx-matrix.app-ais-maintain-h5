@@ -32,7 +32,7 @@
       <van-list
         v-model:loading="loading"
         :finished="finished"
-        finished-text="没有更多了"
+        :finished-text="workOrderList.length > 0 ? '没有更多了' : ''"
         @load="onLoad"
       >
         <div class="card-list">
@@ -193,7 +193,6 @@ watch(activeTab, () => {
 
 <style lang="scss" scoped>
 .repair-work-page {
-  min-height: 100vh;
   background-color: #f5f5f5;
 
   :deep(.work-tabs) {
@@ -280,7 +279,7 @@ watch(activeTab, () => {
   }
 
   .refresh-container {
-    min-height: calc(100vh - 100px);
+    min-height: calc(100vh - 140px);
     padding: 12px;
 
     .card-list {

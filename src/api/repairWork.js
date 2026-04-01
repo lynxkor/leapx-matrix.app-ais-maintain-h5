@@ -175,7 +175,7 @@ export function getDealerWorkTeam(data) {
  * @param {Object} data
  */
 export function getBatteryUnitList(data) {
-  return post('maintain/app/basic/batteryUnit/list', data)
+  return post(prefix + '/battery/list', data)
 }
 
 /**

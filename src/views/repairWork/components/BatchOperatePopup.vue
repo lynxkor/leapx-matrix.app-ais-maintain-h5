@@ -118,7 +118,7 @@
             <div class="checkbox-icon" :class="{ checked: isAllSelected }">
               <van-icon v-if="isAllSelected" name="success" />
             </div>
-            <span class="select-text">全选</span>
+            <span class="select-text">{{isAllSelected ? '取消全选' : '全选'}}</span>
           </div>
           <div class="action-buttons">
             <!-- 待派工: 派工 -->
@@ -167,7 +167,7 @@
             </template>
             <!-- 待质检: 质检 -->
              <div
-              v-if="activeTagIndex === 3"
+              v-if="activeTagIndex === 3 || activeTagIndex === 4"
               class="action-btn delete-btn"
               :class="{ disabled: !hasSelectedItems }"
               @click="showReworkConfirm"

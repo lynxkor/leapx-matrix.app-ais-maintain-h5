@@ -123,7 +123,7 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['update:modelValue', 'submit'])
+const emit = defineEmits(['update:modelValue', 'refresh'])
 
 const visible = ref(props.modelValue)
 
@@ -178,7 +178,7 @@ const handleSubmit = async() => {
     })
     if (res.code === 200) {
       showSuccessToast('保存成功')
-      emit('submit')
+      emit('refresh')
       handleClose()
     }
   } catch {

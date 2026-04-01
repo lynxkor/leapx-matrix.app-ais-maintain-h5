@@ -33,7 +33,7 @@
         <van-list
           v-model:loading="loading"
           :finished="finished"
-          finished-text="没有更多了"
+          :finished-text="workOrderList.length > 0 ? '没有更多了' : ''"
           @load="onLoad"
         >
           <div class="card-list">

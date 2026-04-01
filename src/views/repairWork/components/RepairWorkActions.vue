@@ -1,6 +1,6 @@
 <template>
   <!-- 终检确认弹窗 -->
-  <FinalCheckPopup v-model="showFinalCheckPopup" :service-proxy-id="workOrder.id" @submit="handleFinalCheckSubmit" />
+  <FinalCheckPopup v-model="showFinalCheckPopup" :service-proxy-id="workOrder.id" @submit="handleRefresh" />
 
   <!-- 故障信息弹窗 -->
   <FaultInfoPopup
@@ -8,7 +8,7 @@
     :service-proxy-id="workOrder.id"
     :order-no="workOrder.code"
     :order="workOrder"
-    @submit="handleRefresh"
+    @refresh="handleRefresh"
   />
 
   <!-- 批量操作弹窗 -->

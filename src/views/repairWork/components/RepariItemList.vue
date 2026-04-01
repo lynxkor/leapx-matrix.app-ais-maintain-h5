@@ -8,14 +8,6 @@
       @submit="handleDispatchSubmit"
     />
 
-    <!-- 故障信息弹窗 -->
-    <FaultInfoPopup
-      v-model="showFaultInfoPopup"
-      :service-proxy-id="serviceProxyId"
-      :order-no="orderNo"
-      @submit="handleRefresh"
-    />
-
     <!-- 折叠头部 -->
     <div class="collapse-header" @click="toggleExpand">
       <span class="header-title">查看维修项目</span>
@@ -94,7 +86,6 @@
 import { ref, computed } from 'vue'
 import { showToast } from 'vant'
 import DispatchWorkPopup from './DispatchWorkPopup.vue'
-import FaultInfoPopup from './FaultInfoPopup.vue'
 import { WorkRecordStatusEnum } from '../constant'
 import { executeSingleItemOperation } from '../utils'
 
@@ -130,9 +121,6 @@ const expandState = ref('collapsed')
 const showDispatchPopup = ref(false)
 const currentDispatchItem = ref(null)
 
-// 故障信息弹窗
-const showFaultInfoPopup = ref(false)
-
 const displayItems = computed(() => {
   if (expandState.value === 'collapsed') return []
   if (expandState.value === 'partial') return props.repairItems.slice(0, 2)
@@ -167,11 +155,6 @@ const handleDispatchSubmit = async() => {
   emit('refresh')
 }
 
-// 刷新
-const handleRefresh = () => {
-  showFaultInfoPopup.value = false
-  emit('refresh')
-}
 </script>
 
 <style lang="scss" scoped>
