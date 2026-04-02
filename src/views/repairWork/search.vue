@@ -58,7 +58,7 @@
 import { ref } from 'vue'
 import { useGlobalStore } from '@/stores/global'
 import { goBack } from '@/libs/utils/app'
-import { getList } from '../../api/repairWork'
+import { getRecord } from '../../api/repairWork'
 import { RepairOrderStatusEnum, PAGESIZE } from './constant'
 import RepairWorkCard from './components/RepairWorkCard.vue'
 import Empty from './components/Empty.vue'
@@ -125,10 +125,10 @@ const loadData = async(isRefresh = false) => {
           'sort': 'DESC'
         }
       ],
-      orderStatusList: [RepairOrderStatusEnum.PENDING_DISPATCH, RepairOrderStatusEnum.UNDER_CONSTRUCTION, RepairOrderStatusEnum.PENDING_FINAL_INSPECTION]
+      workStatusList: [RepairOrderStatusEnum.PENDING_DISPATCH, RepairOrderStatusEnum.UNDER_CONSTRUCTION, RepairOrderStatusEnum.PENDING_FINAL_INSPECTION]
     }
 
-    const resData = await getList(params)
+    const resData = await getRecord(params)
     const res = resData.data || {}
     const records = res.records || []
 

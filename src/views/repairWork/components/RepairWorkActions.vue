@@ -1,12 +1,12 @@
 <template>
   <!-- 终检确认弹窗 -->
-  <FinalCheckPopup v-model="showFinalCheckPopup" :service-proxy-id="workOrder.id" @submit="handleRefresh" />
+  <FinalCheckPopup v-model="showFinalCheckPopup" :service-proxy-id="workOrder.serviceProxyId" @submit="handleRefresh" />
 
   <!-- 故障信息弹窗 -->
   <FaultInfoPopup
     v-model="showFaultInfoPopup"
-    :service-proxy-id="workOrder.id"
-    :order-no="workOrder.code"
+    :service-proxy-id="workOrder.serviceProxyId"
+    :order-no="workOrder.serviceProxyCode"
     :order="workOrder"
     @refresh="handleRefresh"
   />
@@ -26,7 +26,7 @@
     </div>
     <div class="actions-right">
       <!-- 派工tab按钮 -->
-      <template v-if="activeTab === 'dispatch'">
+      <template v-if="workOrder.orderStatus === RepairOrderStatusEnum.PENDING_DISPATCH">
         <van-button
           class="action-btn delete-btn"
           plain
@@ -70,7 +70,7 @@
       </template>
 
       <!-- 施工tab按钮 -->
-      <template v-else-if="activeTab === 'working'">
+      <template v-else-if="workOrder.orderStatus === RepairOrderStatusEnum.UNDER_CONSTRUCTION">
         <van-button
           class="action-btn delete-btn"
           plain
@@ -103,7 +103,7 @@
       </template>
 
       <!-- 终检tab按钮 -->
-      <template v-else-if="activeTab === 'inspection'">
+      <template v-else-if="workOrder.orderStatus === RepairOrderStatusEnum.PENDING_FINAL_INSPECTION">
         <van-button
           class="action-btn rework-btn"
           plain
@@ -148,6 +148,7 @@ import { finalInspection, finalInspectionDetail } from '../../../api/repairWork'
 import { showFaultCheckDialog } from '../utils'
 import { useUserStore } from '@/stores/user'
 import { formatDateTime } from '@/libs/utils'
+import { RepairOrderStatusEnum } from '../constant'
 
 const props = defineProps({
   workOrder: {
@@ -175,7 +176,7 @@ const showFinalCheckPopup = ref(false)
 const showFaultInfoPopup = ref(false)
 const defaultTagIndex = ref(0)
 
-const serviceProxyId = computed(() => props.workOrder.id)
+const serviceProxyId = computed(() => props.workOrder.serviceProxyId)
 
 // 批量操作按钮 → 打开 BatchOperate 弹窗
 const handleDelete = () => {

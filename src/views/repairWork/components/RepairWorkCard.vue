@@ -5,10 +5,8 @@
       <!-- 顶部：工单号 + 状态标签 -->
       <div class="order-header">
         <div class="order-number-wrapper">
-          <span class="order-number">{{ workOrder.code }}</span>
-          <span v-if="workOrder.businessTypeLabel" class="order-tag">{{
-            workOrder.businessTypeLabel
-          }}</span>
+          <span class="order-number">{{ workOrder.serviceProxyCode }}</span>
+          <span class="order-tag">{{ workOrder.haveRework === '1' ? '内返' : '外返' }}</span>
         </div>
         <span class="order-status" :class="getStatusClass(workOrder.orderStatus)">{{
           workOrder.orderStatusLabel
@@ -19,7 +17,7 @@
       <div class="vehicle-info">
         <div class="plate-number">
           <span class="plate-text">{{ workOrder.carPlate }}</span>
-          <van-icon v-if="workOrder.alarmLevel >= 30" name="warning" color="#B91919" size="16" />
+          <span v-for="item in (workOrder.alarmLevelList || [])" :key="item" :class="{'icon-label':true, 'warn': item === AlarmLevelEnum.WARNING, 'danger': item === AlarmLevelEnum.CRITICAL}"></span>
         </div>
         <div class="vehicle-model">
           {{ workOrder.vehModelName
@@ -35,7 +33,7 @@
         </div>
         <div class="info-row">
           <span class="info-label">客户经理</span>
-          <span class="info-value">{{ workOrder.dedicatedServiceManager }}</span>
+          <span class="info-value">{{ workOrder.serviceAdvisorName }}</span>
         </div>
         <div class="info-row">
           <span class="info-label">预计交车</span>
@@ -52,9 +50,8 @@
     <RepariItemList
       v-if="repairItems.length > 0"
       :repair-items="repairItems"
-      :active-tab="activeTab"
-      :service-proxy-id="workOrder.id"
-      :order-no="workOrder.code"
+      :service-proxy-id="workOrder.serviceProxyId"
+      :order-no="workOrder.serviceProxyCode"
       :has-fault="hasFault"
       @refresh="handleRefresh"
     />
@@ -75,7 +72,7 @@
 import { computed } from 'vue'
 import RepariItemList from './RepariItemList.vue'
 import RepairWorkActions from './RepairWorkActions.vue'
-import { RepairOrderStatusEnum } from '../constant'
+import { RepairOrderStatusEnum, AlarmLevelEnum } from '../constant'
 
 const props = defineProps({
   workOrder: {
@@ -92,7 +89,7 @@ const emit = defineEmits(['refresh'])
 
 // 维修项目列表
 const repairItems = computed(() => {
-  return props.workOrder.workRecordRespList || []
+  return props.workOrder.repairWorkRecordList || []
 })
 
 // 工单是否存在故障
@@ -258,6 +255,17 @@ const handleRefresh = () => emit('refresh')
           line-height: 20px;
         }
       }
+    }
+  }
+  .icon-label {
+    background: url('../../../assets/images/icon_label_20.svg') no-repeat center;
+    width: 16px;
+    height: 16px;
+    &.warn {
+      background: url('../../../assets/images/icon_label_30.svg') no-repeat center;
+    }
+    &.danger {
+      background: url('../../../assets/images/icon_label_40.svg') no-repeat center;
     }
   }
 

@@ -12,7 +12,7 @@ export default defineConfig({
     vueDevTools()
     // basicSsl()
   ],
-  base: '/maintain/',
+  base: '/maintenance/',
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url))

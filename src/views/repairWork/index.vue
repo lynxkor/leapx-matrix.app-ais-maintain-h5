@@ -57,7 +57,7 @@ import { ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import RepairWorkCard from './components/RepairWorkCard.vue'
 import Empty from './components/Empty.vue'
-import { getList } from '../../api/repairWork'
+import { getRecord } from '../../api/repairWork'
 import { TabStatusMap, PAGESIZE } from './constant'
 import { formatDateTime } from '@/libs/utils'
 
@@ -120,7 +120,7 @@ const loadData = async(isRefresh = false) => {
     const params = {
       pageNum: currentPage.value,
       pageSize: PAGESIZE,
-      orderStatus: TabStatusMap[activeTab.value],
+      workStatus: TabStatusMap[activeTab.value],
       itemFlag: 1,
       sortColumns: [
         {
@@ -135,7 +135,7 @@ const loadData = async(isRefresh = false) => {
       ...getFilterParams(activeFilter.value)
     }
 
-    const resData = await getList(params)
+    const resData = await getRecord(params)
     const res = resData.data || {}
     const records = res.records || []
     if (isRefresh) {

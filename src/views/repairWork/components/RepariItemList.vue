@@ -94,10 +94,6 @@ const props = defineProps({
     type: Array,
     default: () => []
   },
-  activeTab: {
-    type: String,
-    default: 'dispatch'
-  },
   serviceProxyId: {
     type: String,
     default: ''

@@ -11,6 +11,14 @@ export function getList(data) {
 }
 
 /**
+ * 施工单分页查询
+ * @param {Object} data
+ */
+export function getRecord(data) {
+  return post(prefix + '/repairWorkRecordPage', data)
+}
+
+/**
  * 施工单详情信息
  * @param {Object} data
  */

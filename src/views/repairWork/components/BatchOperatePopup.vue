@@ -13,7 +13,7 @@
         v-model="showDispatchPopup"
         :work-order="workOrder"
         :selected-item-ids="getSelectedItems()"
-        :service-proxy-id="workOrder.id"
+        :service-proxy-id="workOrder.serviceProxyId"
         @submit="handleBatchDispatchSubmit"
       />
 
@@ -23,10 +23,8 @@
           <van-icon name="cross" />
         </div>
         <div class="header-center">
-          <span class="order-number">{{ workOrder.code }}</span>
-          <span v-if="workOrder.businessTypeLabel" class="order-tag">{{
-            workOrder.businessTypeLabel
-          }}</span>
+          <span class="order-number">{{ workOrder.serviceProxyCode }}</span>
+          <span class="order-tag">{{ workOrder.haveRework === '1' ? '内返' : '外返' }}</span>
         </div>
         <div class="header-right"></div>
       </div>
@@ -211,6 +209,7 @@ import { cancel, repairWorkRecord } from '../../../api/repairWork'
 import { WorkRecordStatusEnum, RepairOrderStatusEnum } from '../constant'
 import { formatDateTime } from '@/libs/utils'
 import { executeBatchOperation } from '../utils'
+import { useUserStore } from '@/stores/user'
 
 const props = defineProps({
   modelValue: {
@@ -233,6 +232,7 @@ const props = defineProps({
 
 const emit = defineEmits(['update:modelValue', 'refresh'])
 
+const userStore = useUserStore()
 const visible = ref(props.modelValue)
 const showCancelPopup = ref(false)
 const showDispatchPopup = ref(false)
@@ -290,7 +290,7 @@ const statusTags = computed(() => {
 const loadRepairWorkRecord = async() => {
   loading.value = true
   try {
-    const data = await repairWorkRecord({ serviceProxyId: props.workOrder.id })
+    const data = await repairWorkRecord({ serviceProxyId: props.workOrder.serviceProxyId })
     internalRepairItems.value = (data?.data || []).map((item) => ({
       ...item,
       _selected: false
@@ -378,9 +378,17 @@ const handleBatchAction = async(action) => {
   if (action === 'end') {
     extraParams.finishAt = formatDateTime(new Date())
   }
+  // 质检
+  if (action === 'quality') {
+    Object.assign(extraParams, {
+      qualityCheckAt: formatDateTime(new Date()),
+      qualityCheckerId: userStore.userId,
+      qualityCheckerName: userStore.userName
+    })
+  }
 
   await executeBatchOperation(action, {
-    serviceProxyId: props.workOrder.id,
+    serviceProxyId: props.workOrder.serviceProxyId,
     ids,
     selectedItems,
     extraParams,
@@ -433,7 +441,7 @@ const handleVoid = () => {
 // 确认作废
 const handleVoidConfirm = async(reason) => {
   try {
-    const res = await cancel({ id: props.workOrder.id, invaildDesc: reason })
+    const res = await cancel({ id: props.workOrder.serviceProxyId, invaildDesc: reason })
     if (res.code === 200) {
       showToast('作废成功')
       emit('refresh')

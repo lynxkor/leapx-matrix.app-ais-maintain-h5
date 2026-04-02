@@ -172,7 +172,7 @@ const handleSubmit = async() => {
     // 逐个提交故障模块
     const res = await addOrUpdate({
       ...props.order,
-      faultAlertRecordRespList: faultModules.value,
+      faultAlertRecordParams: faultModules.value,
       customerContent: faultDescription.value,
       serviceProxyId: props.serviceProxyId
     })
