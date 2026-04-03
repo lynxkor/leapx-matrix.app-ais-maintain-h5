@@ -21,14 +21,10 @@ console.log(id)
     </van-swipe>
     <van-action-bar>
       <van-action-bar-button color="#999" type="warning" text="取消" />
-      <van-action-bar-button type="danger" text="立即下单" @click="show = true"/>
+      <van-action-bar-button type="danger" text="立即下单" @click="show = true" />
     </van-action-bar>
 
-    <example-action-sheet
-      v-model:show="show"
-      title="标题"
-      @cancel="show = false"
-    />
+    <example-action-sheet v-model:show="show" title="标题" @cancel="show = false" />
   </div>
 </template>
 
@@ -45,7 +41,7 @@ console.log(id)
   .m-content {
     position: relative;
     height: 70vh;
-    
+
     .g-btns {
       position: absolute;
       width: 100%;
@@ -59,6 +55,5 @@ console.log(id)
       margin-left: 50px;
     }
   }
-
 }
 </style>

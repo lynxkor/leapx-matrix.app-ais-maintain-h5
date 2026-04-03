@@ -1,6 +1,31 @@
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
-import { List, Cell, Search, NavBar, PullRefresh, Image as VanImage, Lazyload, Swipe, SwipeItem, ActionSheet, ActionBar, ActionBarButton, Button, Form, Field, CellGroup, Icon, Dialog, Popup, DatePicker, TimePicker } from 'vant'
+import {
+  List,
+  Cell,
+  Search,
+  NavBar,
+  PullRefresh,
+  Image as VanImage,
+  Lazyload,
+  Swipe,
+  SwipeItem,
+  ActionSheet,
+  ActionBar,
+  ActionBarButton,
+  Button,
+  Form,
+  Field,
+  CellGroup,
+  Icon,
+  Dialog,
+  Popup,
+  DatePicker,
+  TimePicker,
+  Tabs,
+  Tab,
+  Sticky
+} from 'vant'
 import * as Sentry from '@sentry/vue'
 
 import App from './App.vue'
@@ -9,12 +34,14 @@ import router from './router'
 import 'vant/lib/index.css'
 // 必须写在vant样式后，覆盖vant样式
 import './assets/main.css'
+// 引入全局样式变量
+import '@/libs/assets/styles/variables.scss'
 
 const setHtmlFontsize = () => {
   var htmlWidth = document.documentElement.clientWidth || document.body.clientWidth
   console.log('width：', htmlWidth)
   var htmlDom = document.getElementsByTagName('html')[0]
-  htmlDom.style.fontSize = (htmlWidth / 37.5) + 'px'
+  htmlDom.style.fontSize = htmlWidth / 37.5 + 'px'
 }
 window.onresize = setHtmlFontsize
 setHtmlFontsize()
@@ -62,6 +89,9 @@ app.use(Dialog)
 app.use(Popup)
 app.use(DatePicker)
 app.use(TimePicker)
+app.use(Tabs)
+app.use(Tab)
+app.use(Sticky)
 
 // 注册时可以配置额外的选项
 app.use(Lazyload, {
