@@ -49,7 +49,7 @@ setHtmlFontsize()
 const app = createApp(App)
 
 // 初始化 Sentry 错误追踪
-const environment = import.meta.env.VITE_SENTRY_ENV
+const environment = window.APP_AIS_H5_CONFIG.VITE_SENTRY_ENV
 if (environment) {
   Sentry.init({
     app,
