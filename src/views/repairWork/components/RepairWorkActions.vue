@@ -1,6 +1,6 @@
 <template>
   <!-- 终检确认弹窗 -->
-  <FinalCheckPopup v-model="showFinalCheckPopup" :service-proxy-id="workOrder.serviceProxyId" @submit="handleRefresh" />
+  <FinalCheckPopup v-model="showFinalCheckPopup" :service-proxy-id="workOrder.serviceProxyId" @refresh="handleRefresh" />
 
   <!-- 故障信息弹窗 -->
   <FaultInfoPopup
@@ -25,115 +25,83 @@
       <span class="more-text" @click="handleMore">更多</span>
     </div>
     <div class="actions-right">
-      <!-- 派工tab按钮 -->
-      <template v-if="workOrder.orderStatus === RepairOrderStatusEnum.PENDING_DISPATCH">
-        <van-button
-          class="action-btn delete-btn"
-          plain
-          type="primary"
-          size="small"
-          round
-          @click="handleDelete"
-        >
-          删除派工
-        </van-button>
-        <van-button
-          class="action-btn"
-          plain
-          type="primary"
-          size="small"
-          round
-          @click="handleStart"
-        >
-          作业开始
-        </van-button>
-        <!-- <van-button
-          v-if="showEndBtn"
-          class="action-btn end-btn"
-          plain
-          type="primary"
-          size="small"
-          round
-          @click="handleEnd"
-        >
-          作业结束
-        </van-button> -->
-        <van-button
-          class="action-btn dispatch-btn"
-          type="primary"
-          size="small"
-          round
-          @click="handleDispatch"
-        >
-          派工
-        </van-button>
-      </template>
-
-      <!-- 施工tab按钮 -->
-      <template v-else-if="workOrder.orderStatus === RepairOrderStatusEnum.UNDER_CONSTRUCTION">
-        <van-button
-          class="action-btn delete-btn"
-          plain
-          type="primary"
-          size="small"
-          round
-          @click="handleDelete"
-        >
-          删除派工
-        </van-button>
-        <van-button
-          class="action-btn end-btn"
-          plain
-          type="primary"
-          size="small"
-          round
-          @click="handleEnd"
-        >
-          作业结束
-        </van-button>
-        <van-button
-          class="action-btn start-btn"
-          type="primary"
-          size="small"
-          round
-          @click="handleStart"
-        >
-          作业开始
-        </van-button>
-      </template>
-
-      <!-- 终检tab按钮 -->
-      <template v-else-if="workOrder.orderStatus === RepairOrderStatusEnum.PENDING_FINAL_INSPECTION">
-        <van-button
-          class="action-btn rework-btn"
-          plain
-          type="primary"
-          size="small"
-          round
-          @click="handleRework"
-        >
-          返修
-        </van-button>
-        <van-button
-          class="action-btn rework-btn"
-          plain
-          type="primary"
-          size="small"
-          round
-          @click="handleRework"
-        >
-          质检
-        </van-button>
-        <van-button
-          class="action-btn final-check-btn"
-          type="primary"
-          size="small"
-          round
-          @click="handleFinalCheckSubmit"
-        >
-          终检
-        </van-button>
-      </template>
+      <van-button
+        v-if="hasNotStarted || hasInProgress"
+        class="action-btn"
+        plain
+        type="primary"
+        size="small"
+        round
+        @click="handleDelete"
+      >
+        删除派工
+      </van-button>
+      <van-button
+        v-if="hasInProgress"
+        class="action-btn"
+        plain
+        type="primary"
+        size="small"
+        round
+        @click="handleEnd"
+      >
+        作业结束
+      </van-button>
+      <van-button
+        v-if="hasNotStarted"
+        class="action-btn"
+        plain
+        type="primary"
+        size="small"
+        round
+        @click="handleStart"
+      >
+        作业开始
+      </van-button>
+      <van-button
+        v-if="(hasPendingQuality || hasPendingFinal) && activeTab === 'inspection'"
+        class="action-btn rework-btn"
+        plain
+        type="primary"
+        size="small"
+        round
+        @click="handleRework"
+      >
+        返修
+      </van-button>
+      <van-button
+        v-if="hasPendingQuality && activeTab === 'inspection'"
+        class="action-btn"
+        plain
+        type="primary"
+        size="small"
+        round
+        @click="handleRework"
+      >
+        质检
+      </van-button>
+      <van-button
+        v-if="hasPendingFinal && activeTab === 'inspection'"
+        class="action-btn"
+        plain
+        type="primary"
+        size="small"
+        round
+        @click="handleFinalCheckSubmit"
+      >
+        终检
+      </van-button>
+      <van-button
+        v-if="hasPendingDispatch"
+        class="action-btn"
+        plain
+        type="primary"
+        size="small"
+        round
+        @click="handleDispatch"
+      >
+        派工
+      </van-button>
     </div>
   </div>
 </template>
@@ -145,10 +113,9 @@ import BatchOperate from './BatchOperatePopup.vue'
 import FinalCheckPopup from './FinalCheckPopup.vue'
 import FaultInfoPopup from './FaultInfoPopup.vue'
 import { finalInspection, finalInspectionDetail } from '../../../api/repairWork'
-import { showFaultCheckDialog } from '../utils'
+import { showFaultCheckDialog, filterByTag } from '../utils'
 import { useUserStore } from '@/stores/user'
 import { formatDateTime } from '@/libs/utils'
-import { RepairOrderStatusEnum } from '../constant'
 
 const props = defineProps({
   workOrder: {
@@ -177,6 +144,16 @@ const showFaultInfoPopup = ref(false)
 const defaultTagIndex = ref(0)
 
 const serviceProxyId = computed(() => props.workOrder.serviceProxyId)
+
+// 根据维修项目数据判断各分类是否存在
+const recordList = computed(() => props.workOrder.repairWorkRecordList || [])
+const hasItem = (tagIndex) => recordList.value.some(item => filterByTag(item, tagIndex))
+
+const hasPendingDispatch = computed(() => hasItem(0))
+const hasNotStarted = computed(() => hasItem(1))
+const hasInProgress = computed(() => hasItem(2))
+const hasPendingQuality = computed(() => hasItem(3))
+const hasPendingFinal = computed(() => hasItem(4))
 
 // 批量操作按钮 → 打开 BatchOperate 弹窗
 const handleDelete = () => {
@@ -272,6 +249,7 @@ const handleFinalCheckSubmit = async(data) => {
 const handleRefresh = () => {
   showBatchOperate.value = false
   showFaultInfoPopup.value = false
+  showFinalCheckPopup.value = false
   emit('refresh')
 }
 </script>
@@ -325,9 +303,7 @@ const handleRefresh = () => {
     background: transparent;
   }
 
-  &.start-btn,
-  &.dispatch-btn,
-  &.final-check-btn {
+  &:last-child{
     background: var(--leap-color-primary);
     border-color: var(--leap-color-primary);
     color: #fff;

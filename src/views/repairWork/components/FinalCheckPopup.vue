@@ -33,6 +33,7 @@
                 @onSearch="searchBatteryUnit"
                 @focus="onBatteryUnitFocus"
                 @select="handleBatteryUnitSelect"
+                @clear="handleBatteryUnitClear"
               />
             </div>
           </div>
@@ -74,6 +75,31 @@
               <div class="part-header">
                 <div class="part-name">{{ part.partsName }}</div>
                 <div v-if="part.code" class="part-trace-code">追溯编码：{{ part.code }}</div>
+              </div>
+              <div class="part-form-item">
+                <div class="form-label">去向单位</div>
+                <div class="form-field">
+                  <SearchDropdown
+                    v-model="part.batteryUnitId"
+                    :search-keyword="part.batteryUnitName"
+                    :options="batteryUnitOptions"
+                    placeholder="请搜索去向单位"
+                    @onSearch="searchBatteryUnit"
+                    @focus="onBatteryUnitFocus"
+                    @select="(option) => handlePartUnitSelect(option, part)"
+                    @clear="handlePartUnitClear(part)"
+                  />
+                </div>
+              </div>
+              <div class="part-form-item">
+                <div class="form-label">去向单位统一代码</div>
+                <van-field
+                  v-model="part.targetUnitCode"
+                  placeholder="选填，请输入"
+                  :border="false"
+                  input-align="right"
+                  disabled
+                />
               </div>
               <div class="part-form-item">
                 <div class="form-label">更换前编号</div>
@@ -231,6 +257,27 @@ const handleBatteryUnitSelect = (option) => {
   formData.value.targetUnitCode = option.buinessLicense
 }
 
+// 清除电池去向单位
+const handleBatteryUnitClear = () => {
+  formData.value.batteryUnitId = ''
+  formData.value.batteryUnitName = ''
+  formData.value.targetUnitCode = ''
+}
+
+// 选择零件去向单位
+const handlePartUnitSelect = (option, part) => {
+  part.targetUnitId = option.value
+  part.targetUnitName = option.label
+  part.targetUnitCode = option.buinessLicense
+}
+
+// 清除零件去向单位
+const handlePartUnitClear = (part) => {
+  part.targetUnitId = ''
+  part.targetUnitName = ''
+  part.targetUnitCode = ''
+}
+
 // 是否可以提交
 const canSubmit = computed(() => {
   // 电池更换信息必填项（如果展示了电池区域）
@@ -274,11 +321,7 @@ const handleSubmit = () => {
 
   // 配件追溯
   if (detailData.value?.tranceFlag) {
-    submitData.traceRecordParams = partsList.value.map((part) => ({
-      id: part.id,
-      beforeChangeCode: part.beforeChangeCode,
-      afterChangeCode: part.afterChangeCode
-    }))
+    submitData.traceRecordParams = partsList.value
   }
 
   finalInspection(submitData).then(target => {
@@ -403,6 +446,7 @@ const handleSubmit = () => {
             font-family: 'PingFang SC', sans-serif;
             font-weight: 400;
             background-color: #fff;
+            padding-right: 0;
           }
 
           .van-field__control::placeholder {
@@ -419,7 +463,6 @@ const handleSubmit = () => {
         .part-item {
           background-color: var(--leap-color-default-light-5);
           border-radius: 4px;
-          overflow: hidden;
           margin-bottom: 8px;
 
           &:last-child {
@@ -462,6 +505,11 @@ const handleSubmit = () => {
               border-bottom: none;
             }
 
+            .form-field {
+              flex: 1;
+              min-width: 0;
+            }
+
             .form-label {
               flex-shrink: 0;
               font-size: 14px;
@@ -485,6 +533,7 @@ const handleSubmit = () => {
                 font-size: 14px;
                 font-family: 'PingFang SC', sans-serif;
                 font-weight: 400;
+                padding-right: 0;
               }
 
               .van-field__control::placeholder {

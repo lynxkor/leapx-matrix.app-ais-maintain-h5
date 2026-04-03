@@ -138,5 +138,21 @@ export const WorkRecordStatusEnum = {
   CANCELLED: 50
 }
 
+// 质检状态枚举
+export const QualityCheckStatusEnum = {
+  /** 待质检 */
+  PENDING: 10,
+  /** 质检完成 */
+  COMPLETED: 30
+}
+
+// 派工状态枚举
+export const DispatchStatusEnum = {
+  /** 未派工 */
+  NOT_DISPATCHED: 0,
+  /** 已派工 */
+  DISPATCHED: 1
+}
+
 export const PAGESIZE = 20
 

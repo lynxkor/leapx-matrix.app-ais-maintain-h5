@@ -125,7 +125,7 @@ const loadData = async(isRefresh = false) => {
           'sort': 'DESC'
         }
       ],
-      workStatusList: [RepairOrderStatusEnum.PENDING_DISPATCH, RepairOrderStatusEnum.UNDER_CONSTRUCTION, RepairOrderStatusEnum.PENDING_FINAL_INSPECTION]
+      orderStatusList: [RepairOrderStatusEnum.PENDING_DISPATCH, RepairOrderStatusEnum.UNDER_CONSTRUCTION, RepairOrderStatusEnum.PENDING_FINAL_INSPECTION]
     }
 
     const resData = await getRecord(params)

@@ -102,7 +102,7 @@
 import { ref, watch } from 'vue'
 import { showToast, showSuccessToast } from 'vant'
 import AddFaultInfoPopup from './AddFaultInfoPopup.vue'
-import { addOrUpdate } from '../../../api/repairWork'
+import { updateFaultAlertRecord } from '../../../api/repairWork'
 
 const props = defineProps({
   modelValue: {
@@ -169,12 +169,11 @@ const handleModuleChange = (modules) => {
 // 提交保存
 const handleSubmit = async() => {
   try {
-    // 逐个提交故障模块
-    const res = await addOrUpdate({
+    const res = await updateFaultAlertRecord({
       ...props.order,
       faultAlertRecordParams: faultModules.value,
       customerContent: faultDescription.value,
-      serviceProxyId: props.serviceProxyId
+      id: props.serviceProxyId
     })
     if (res.code === 200) {
       showSuccessToast('保存成功')

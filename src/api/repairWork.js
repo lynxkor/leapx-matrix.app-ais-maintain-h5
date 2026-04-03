@@ -191,5 +191,5 @@ export function getBatteryUnitList(data) {
  * @param {Object} data
  */
 export function updateFaultAlertRecord(data) {
-  return post('maintain/app/sp/spFaultAlertRecord/addOrUpdate', data)
+  return post(prefix + '/addFaultRecord', data)
 }

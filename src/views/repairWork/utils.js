@@ -10,6 +10,24 @@ import {
 } from '@/api/repairWork'
 import { formatDateTime } from '@/libs/utils'
 import { useUserStore } from '@/stores/user'
+import { WorkRecordStatusEnum, QualityCheckStatusEnum, DispatchStatusEnum } from './constant'
+/**
+ * 根据tab索引判断维修项目是否属于该分类
+ * @param {Object} item - 维修项目对象
+ * @param {number} tagIndex - tab索引 (0:待派工, 1:未作业, 2:作业中, 3:待质检, 4:待终检)
+ * @returns {boolean}
+ */
+export function filterByTag(item, tagIndex) {
+  switch (tagIndex) {
+    case 0: return item.isDispatch !== DispatchStatusEnum.DISPATCHED
+    case 1: return item.isDispatch === DispatchStatusEnum.DISPATCHED && item.status === WorkRecordStatusEnum.NOT_STARTED
+    case 2: return item.status === WorkRecordStatusEnum.IN_PROGRESS
+    case 3: return item.status === WorkRecordStatusEnum.COMPLETED && item.qualityCheckStatus !== QualityCheckStatusEnum.COMPLETED
+    case 4: return item.qualityCheckStatus === QualityCheckStatusEnum.COMPLETED
+    default: return true
+  }
+}
+
 /**
  * 操作确认弹窗配置
  */

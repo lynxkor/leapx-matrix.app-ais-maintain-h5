@@ -112,7 +112,7 @@
       <!-- 底部操作栏 -->
       <div class="popup-footer">
         <div class="footer-content">
-          <div class="select-all" @click="toggleSelectAll">
+          <div class="select-all" @click="() => toggleSelectAll()">
             <div class="checkbox-icon" :class="{ checked: isAllSelected }">
               <van-icon v-if="isAllSelected" name="success" />
             </div>
@@ -206,9 +206,8 @@ import { showToast } from 'vant'
 import DispatchWorkPopup from './DispatchWorkPopup.vue'
 import CancelWorkPopup from './CancelWorkPopup.vue'
 import { cancel, repairWorkRecord } from '../../../api/repairWork'
-import { WorkRecordStatusEnum, RepairOrderStatusEnum } from '../constant'
 import { formatDateTime } from '@/libs/utils'
-import { executeBatchOperation } from '../utils'
+import { executeBatchOperation, filterByTag } from '../utils'
 import { useUserStore } from '@/stores/user'
 
 const props = defineProps({
@@ -253,24 +252,6 @@ const statusTagList = ref([
 // 当前选中的标签索引
 const activeTagIndex = ref(0)
 
-// 根据状态过滤维修项目的函数
-const filterByTag = (item, tagIndex) => {
-  switch (tagIndex) {
-    case 0: // 待派工
-      return item.isDispatch !== 1
-    case 1: // 未作业
-      return item.isDispatch === 1 && item.status === WorkRecordStatusEnum.NOT_STARTED
-    case 2: // 作业中
-      return item.status === WorkRecordStatusEnum.IN_PROGRESS
-    case 3: // 待质检
-      return item.status === WorkRecordStatusEnum.COMPLETED && item.qualityCheckStatus !== 30
-    case 4: // 待终检
-      return item.qualityCheckStatus === 30
-    default:
-      return true
-  }
-}
-
 // 根据状态过滤的维修项目
 const filteredRepairItems = computed(() => {
   if (internalRepairItems.value.length === 0) return []
@@ -278,12 +259,9 @@ const filteredRepairItems = computed(() => {
 })
 
 const statusTags = computed(() => {
-  if (props.workOrder.orderStatus === RepairOrderStatusEnum.PENDING_DISPATCH || props.workOrder.orderStatus === RepairOrderStatusEnum.UNDER_CONSTRUCTION) {
-    return statusTagList.value.slice(0, 3)
-  } else if (props.workOrder.orderStatus === RepairOrderStatusEnum.PENDING_FINAL_INSPECTION) {
-    return statusTagList.value.slice(3, 5)
-  }
-  return statusTagList.value
+  const items = internalRepairItems.value
+  if (items.length === 0) return statusTagList.value
+  return statusTagList.value.filter((tag) => items.some((item) => filterByTag(item, tag.index)))
 })
 
 // 加载维修作业记录
@@ -297,7 +275,7 @@ const loadRepairWorkRecord = async() => {
     }))
     activeTagIndex.value = props.defaultTagIndex
     nextTick(() => {
-      toggleSelectAll()
+      toggleSelectAll(true)
     })
   } catch {
     showToast('获取维修记录失败')
@@ -325,6 +303,14 @@ watch(visible, (newVal) => {
   }
 })
 
+// 监听 statusTagList 变化
+watch(statusTags, (newVal) => {
+  const sel = newVal.some(item => item.index === activeTagIndex.value)
+  if (!sel) {
+    activeTagIndex.value = newVal?.[newVal.length - 1]?.index
+  }
+})
+
 // 是否有选中项目
 const hasSelectedItems = computed(() => {
   return filteredRepairItems.value.some((item) => item._selected)
@@ -339,6 +325,9 @@ const isAllSelected = computed(() => {
 // 切换状态标签
 const handleTagClick = (index) => {
   activeTagIndex.value = index
+  nextTick(() => {
+    toggleSelectAll(true)
+  })
 }
 
 // 切换单个选中
@@ -350,8 +339,8 @@ const toggleItemSelect = (itemId) => {
 }
 
 // 切换全选
-const toggleSelectAll = () => {
-  const newState = !isAllSelected.value
+const toggleSelectAll = (v) => {
+  const newState = v ?? !isAllSelected.value
   filteredRepairItems.value.forEach((item) => {
     item._selected = newState
   })

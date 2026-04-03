@@ -74,6 +74,7 @@ const filters = [
   { label: '我的', value: 'mine' }
 ]
 const activeFilter = ref('all')
+import { useUserStore } from '@/stores/user'
 
 // 列表数据
 const workOrderList = ref([])
@@ -103,8 +104,9 @@ const getFilterParams = (filterValue) => {
       createTimeEnd: formatDateTime(end)
     }
   }
-  if (filterValue === 'mine') {
-    return { mineFlag: 1 }
+  if (filterValue === 'mine' && activeTab.value !== 'dispatch') {
+    const userStore = useUserStore()
+    return { repairTechnicianId: userStore.userId }
   }
   return {}
 }
@@ -120,7 +122,7 @@ const loadData = async(isRefresh = false) => {
     const params = {
       pageNum: currentPage.value,
       pageSize: PAGESIZE,
-      workStatus: TabStatusMap[activeTab.value],
+      orderStatusList: [TabStatusMap[activeTab.value]],
       itemFlag: 1,
       sortColumns: [
         {
