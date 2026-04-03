@@ -5,6 +5,7 @@ import {
   deleteWorkers,
   repaired,
   finalInspection,
+  finalInspectionDetail,
   qualityInspection,
   addOrUpdate
 } from '@/api/repairWork'
@@ -50,9 +51,7 @@ export async function showOperationConfirm(action, count = 1) {
   const config = actionConfirmConfig[action]
   if (!config) return false
 
-  const message = count > 1
-    ? `确定要对选中的 ${count} 个项目${config.message.replace('确定要', '')}`
-    : config.message
+  const message = config.message
 
   try {
     await showConfirmDialog({
@@ -92,17 +91,16 @@ export async function callSingleItemApi(action, { serviceProxyId, item }) {
       params.finishAt = formatDateTime(new Date())
       return endWork(params)
     case 'quality':
-      Object.assign(params, { ...item,
+      Object.assign(params, {
+        ids: [repairItemId],
         qualityCheckAt: formatDateTime(new Date()),
         qualityCheckerId: userStore.userId,
         qualityCheckerName: userStore.userName
       })
       return qualityInspection(params)
     case 'rework':
-      Object.assign(params, { ...item })
+      Object.assign(params, { ...item, ids: [repairItemId] })
       return repaired(params)
-    case 'finalCheck':
-      return finalInspection(params)
     default:
       throw new Error(`Unknown action: ${action}`)
   }
@@ -131,8 +129,6 @@ export async function callBatchApi(action, { serviceProxyId, ids, extraParams = 
       return repaired(params)
     case 'quality':
       return qualityInspection(params)
-    case 'finalCheck':
-      return finalInspection(params)
     default:
       throw new Error(`Unknown action: ${action}`)
   }
@@ -239,5 +235,59 @@ export async function executeBatchOperation(action, { serviceProxyId, ids, selec
   } catch {
     showToast('操作失败')
     return false
+  }
+}
+
+/**
+ * 终检完整流程：查询终检详情 → 故障检查 → 电池/追溯判断 → 确认提交
+ * @param {Object} options
+ * @param {string} options.serviceProxyId - 施工单ID
+ * @param {Object} options.workOrder - 工单对象（用于 showFaultCheckDialog）
+ * @param {Function} options.onRefresh - 刷新回调
+ * @param {Function} options.onShowFinalCheckPopup - 需要填写电池/追溯信息时的回调
+ * @param {Function} options.onShowFaultInfoPopup - 需要填写故障信息时的回调
+ * @returns {Promise<void>}
+ */
+export async function handleFinalCheckFlow({ serviceProxyId, workOrder, onRefresh, onShowFinalCheckPopup, onShowFaultInfoPopup }) {
+  try {
+    const resdata = await finalInspectionDetail(serviceProxyId)
+    const res = resdata?.data || {}
+    if (res.faultFlag && res.faultAlertRecordResps?.length === 0) {
+      const result = await showFaultCheckDialog(serviceProxyId, onRefresh, workOrder)
+      if (result?.action === 'fillFault') {
+        onShowFaultInfoPopup?.()
+      }
+    } else {
+      if (res.batteryFlag || res.tranceFlag) {
+        onShowFinalCheckPopup?.()
+      } else {
+        await showConfirmDialog({
+          title: '提示',
+          message: '确认要终检吗？'
+        })
+        const userStore = useUserStore()
+        const submitData = {
+          ...res,
+          repairWorkRecordResps: res.repairWorkRecordResps,
+          faultAlertRecordParams: res.faultAlertRecordResps,
+          traceRecordParams: res.partsTraceRecordResps,
+          currentFault: res.faultFlag === 1 ? 0 : 1,
+          id: serviceProxyId,
+          finalCheckAt: formatDateTime(new Date()),
+          finalCheckerId: userStore.userId,
+          finalChecker: userStore.userName
+        }
+        try {
+          await finalInspection(submitData)
+          showToast('终检成功')
+          onRefresh?.()
+        } catch (e) {
+          showToast(e?.message || '终检失败')
+          onRefresh?.()
+        }
+      }
+    }
+  } catch {
+    showToast('终检失败')
   }
 }

@@ -108,14 +108,10 @@
 
 <script setup>
 import { ref, computed } from 'vue'
-import { showToast, showConfirmDialog } from 'vant'
 import BatchOperate from './BatchOperatePopup.vue'
 import FinalCheckPopup from './FinalCheckPopup.vue'
 import FaultInfoPopup from './FaultInfoPopup.vue'
-import { finalInspection, finalInspectionDetail } from '../../../api/repairWork'
-import { showFaultCheckDialog, filterByTag } from '../utils'
-import { useUserStore } from '@/stores/user'
-import { formatDateTime } from '@/libs/utils'
+import { filterByTag, handleFinalCheckFlow } from '../utils'
 
 const props = defineProps({
   workOrder: {
@@ -177,11 +173,6 @@ const handleDispatch = () => {
   showBatchOperate.value = true
 }
 
-// 终检弹窗
-const handleFinalCheck = () => {
-  showFinalCheckPopup.value = true
-}
-
 // 返修和质检
 const handleRework = async() => {
   defaultTagIndex.value = 3
@@ -195,54 +186,14 @@ const handleMore = () => {
 }
 
 // 终检弹窗提交
-const handleFinalCheckSubmit = async(data) => {
-  try {
-    const resdata = await finalInspectionDetail(serviceProxyId.value)
-    const res = resdata?.data || {}
-    if (res.faultFlag && res.faultAlertRecordResps?.length === 0) {
-      const result = await showFaultCheckDialog(serviceProxyId.value, () => emit('refresh'), props.workOrder)
-      if (result?.action === 'fillFault') {
-        showFaultInfoPopup.value = true
-      }
-    } else {
-      // 有电池信息和追溯信息需要填写
-      if (res.batteryFlag || res.tranceFlag) {
-        handleFinalCheck()
-      } else {
-        // 不需要填写，直接终检
-        showConfirmDialog({
-          title: '提示',
-          message: '确认要终检吗？'
-        }).then(e => {
-          const userStore = useUserStore()
-          const submitData = {
-            ...res,
-            repairWorkRecordResps: res.repairWorkRecordResps,
-            faultAlertRecordParams: res.faultAlertRecordResps,
-            traceRecordParams: res.partsTraceRecordResps,
-            currentFault: res.faultFlag === 1 ? 0 : 1,
-            id: serviceProxyId.value,
-            finalCheckAt: formatDateTime(new Date()),
-            finalCheckerId: userStore.userId,
-            finalChecker: userStore.userName
-          }
-          finalInspection(submitData).then(target => {
-            if (target.code === 200) {
-              showToast('终检成功')
-              emit('refresh')
-            } else {
-              showToast(target.message)
-            }
-          }).catch(res => {
-            showToast(res.message)
-            emit('refresh')
-          })
-        })
-      }
-    }
-  } catch {
-    showToast('终检失败')
-  }
+const handleFinalCheckSubmit = async() => {
+  await handleFinalCheckFlow({
+    serviceProxyId: serviceProxyId.value,
+    workOrder: props.workOrder,
+    onRefresh: () => emit('refresh'),
+    onShowFinalCheckPopup: () => { showFinalCheckPopup.value = true },
+    onShowFaultInfoPopup: () => { showFaultInfoPopup.value = true }
+  })
 }
 
 // 刷新回调
@@ -307,6 +258,9 @@ const handleRefresh = () => {
     background: var(--leap-color-primary);
     border-color: var(--leap-color-primary);
     color: #fff;
+  }
+  &:not(:nth-last-child(-n+3)) {
+    display: none;
   }
 
   :deep(.van-button__text) {

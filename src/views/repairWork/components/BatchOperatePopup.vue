@@ -131,7 +131,7 @@
             <!-- 未作业: 作业开始 -->
             <template v-if="activeTagIndex === 1">
               <div
-                  class="action-btn delete-btn"
+                  class="action-btn"
                   :class="{ disabled: !hasSelectedItems }"
                   @click="showDeleteConfirm"
                 >
@@ -149,14 +149,14 @@
             <!-- 作业中: 作业结束 + 删除派工 -->
             <template v-if="activeTagIndex === 2">
               <div
-                class="action-btn delete-btn"
+                class="action-btn"
                 :class="{ disabled: !hasSelectedItems }"
                 @click="showDeleteConfirm"
               >
                 <span>删除派工</span>
               </div>
               <div
-                class="action-btn primary-btn"
+                class="action-btn"
                 :class="{ disabled: !hasSelectedItems }"
                 @click="showEndConfirm"
               >
@@ -166,7 +166,7 @@
             <!-- 待质检: 质检 -->
              <div
               v-if="activeTagIndex === 3 || activeTagIndex === 4"
-              class="action-btn delete-btn"
+              class="action-btn"
               :class="{ disabled: !hasSelectedItems }"
               @click="showReworkConfirm"
             >
@@ -174,20 +174,20 @@
             </div>
             <div
               v-if="activeTagIndex === 3"
-              class="action-btn primary-btn"
+              class="action-btn"
               :class="{ disabled: !hasSelectedItems }"
               @click="showQualityConfirm"
             >
               <span>质检</span>
             </div>
             <!-- 待终检: 终检 -->
-            <div
+            <!-- <div
               v-if="activeTagIndex === 4"
-              class="action-btn primary-btn"
+              class="action-btn"
               @click="showFinalConfirm"
             >
               <span>终检</span>
-            </div>
+            </div> -->
           </div>
         </div>
         <!-- 底部安全区域 -->
@@ -207,7 +207,7 @@ import DispatchWorkPopup from './DispatchWorkPopup.vue'
 import CancelWorkPopup from './CancelWorkPopup.vue'
 import { cancel, repairWorkRecord } from '../../../api/repairWork'
 import { formatDateTime } from '@/libs/utils'
-import { executeBatchOperation, filterByTag } from '../utils'
+import { executeBatchOperation, filterByTag /* handleFinalCheckFlow*/ } from '../utils'
 import { useUserStore } from '@/stores/user'
 
 const props = defineProps({
@@ -402,7 +402,15 @@ const showReworkConfirm = () => handleBatchAction('rework')
 const showQualityConfirm = () => handleBatchAction('quality')
 
 // 终检确认
-const showFinalConfirm = () => handleBatchAction('finalCheck')
+// const showFinalConfirm = () => {
+//   handleFinalCheckFlow({
+//     serviceProxyId: props.workOrder.serviceProxyId,
+//     workOrder: props.workOrder,
+//     onRefresh: () => { emit('refresh'); handleClose() },
+//     onShowFinalCheckPopup: () => { showToast('请先填写电池或追溯信息') },
+//     onShowFaultInfoPopup: () => { showToast('请先填写故障信息') }
+//   })
+// }
 
 // 批量派工
 const showBatchDispatch = () => {
@@ -804,33 +812,20 @@ const handleClose = () => {
           border-radius: 8px;
           cursor: pointer;
 
+          border: 1px solid var(--leap-color-primary);
+          span {
+            color: var(--leap-color-primary);
+          }
           span {
             font-family: 'PingFang SC', sans-serif;
             font-size: 14px;
             font-weight: 400;
           }
 
-          &.delete-btn {
-            border: 1px solid var(--leap-color-primary);
-
-            span {
-              color: var(--leap-color-primary);
-            }
-          }
-
-          &.primary-btn {
+          &:last-child {
             background-color: var(--leap-color-primary);
-
             span {
               color: #fff;
-            }
-          }
-
-          &.dispatch-btn {
-            border: 1px solid var(--leap-color-primary);
-
-            span {
-              color: var(--leap-color-primary);
             }
           }
 
