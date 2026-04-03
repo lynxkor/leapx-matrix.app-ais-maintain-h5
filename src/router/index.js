@@ -49,7 +49,7 @@ const router = createRouter({
           // which is lazy-loaded when the route is visited.
           component: () => import('../views/repairWork/index.vue'),
           meta: {
-            title: '维修作业列表',
+            title: '维修作业',
             keepAlive: true
           }
         },

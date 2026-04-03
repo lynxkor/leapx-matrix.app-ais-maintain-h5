@@ -1,4 +1,4 @@
-import { post, postJson } from './request'
+import { post, postJson } from '@/libs/api/request'
 
 const prefix = 'maintain/app/sp/serviceProxy'
 
