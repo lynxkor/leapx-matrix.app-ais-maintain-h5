@@ -1,6 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useGlobalStore } from '@/stores/global'
-import HomeView from '../views/HomeView.vue'
+// import HomeView from '../views/HomeView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -10,37 +10,37 @@ const router = createRouter({
       name: 'baseLayout',
       component: () => import('@/libs/layout/baseLayout.vue'),
       children: [
-        {
-          path: '/home',
-          name: 'home',
-          component: HomeView,
-          meta: {
-            title: 'Demo-首页'
-          }
-        },
-        {
-          path: '/example',
-          name: 'example',
-          // route level code-splitting
-          // this generates a separate chunk (About.[hash].js) for this route
-          // which is lazy-loaded when the route is visited.
-          component: () => import('../views/example/ListView.vue'),
-          meta: {
-            title: 'Demo-商品列表',
-            keepAlive: true
-          }
-        },
-        {
-          path: '/example/detail',
-          name: 'exampleDetail',
-          // route level code-splitting
-          // this generates a separate chunk (About.[hash].js) for this route
-          // which is lazy-loaded when the route is visited.
-          component: () => import('../views/example/DetailView.vue'),
-          meta: {
-            title: 'Demo-商品详情'
-          }
-        },
+        // {
+        //   path: '/home',
+        //   name: 'home',
+        //   component: HomeView,
+        //   meta: {
+        //     title: 'Demo-首页'
+        //   }
+        // },
+        // {
+        //   path: '/example',
+        //   name: 'example',
+        //   // route level code-splitting
+        //   // this generates a separate chunk (About.[hash].js) for this route
+        //   // which is lazy-loaded when the route is visited.
+        //   component: () => import('../views/example/ListView.vue'),
+        //   meta: {
+        //     title: 'Demo-商品列表',
+        //     keepAlive: true
+        //   }
+        // },
+        // {
+        //   path: '/example/detail',
+        //   name: 'exampleDetail',
+        //   // route level code-splitting
+        //   // this generates a separate chunk (About.[hash].js) for this route
+        //   // which is lazy-loaded when the route is visited.
+        //   component: () => import('../views/example/DetailView.vue'),
+        //   meta: {
+        //     title: 'Demo-商品详情'
+        //   }
+        // },
         {
           path: '/repairWork/list',
           name: 'repairWork',
