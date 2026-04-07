@@ -165,12 +165,22 @@ const selectedTechnician = ref(null)
 // 加载工位和班组
 const loadOptions = async() => {
   try {
-    const [stationData, teamData] = await Promise.all([
+    const [stationRes, teamRes] = await Promise.all([
       getDealerStation(),
       getDealerWorkTeam()
     ])
-    stations.value = stationData?.data || []
-    teams.value = teamData?.data || []
+    if (stationRes.code === 200) {
+      stations.value = stationRes?.data || []
+    } else {
+      stations.value = []
+      showToast(stationRes.message)
+    }
+    if (teamRes.code === 200) {
+      teams.value = teamRes?.data || []
+    } else {
+      teams.value = []
+      showToast(teamRes.message)
+    }
     // 默认选中第一项
     if (stations.value.length > 0) {
       selectedStation.value = stations.value[0]
@@ -191,13 +201,19 @@ const loadTechnicians = async(teamId) => {
     return
   }
   try {
-    const data = await getDealerTeamUserRelation({ teamId: teamId })
-    technicians.value = data?.data || []
-    // 默认选中第一项
-    if (technicians.value.length > 0) {
-      selectedTechnician.value = technicians.value[0]
+    const res = await getDealerTeamUserRelation({ teamId: teamId })
+    if (res.code === 200) {
+      technicians.value = res?.data || []
+      // 默认选中第一项
+      if (technicians.value.length > 0) {
+        selectedTechnician.value = technicians.value[0]
+      } else {
+        selectedTechnician.value = null
+      }
     } else {
+      technicians.value = []
       selectedTechnician.value = null
+      showToast(res.message)
     }
   } catch {
     technicians.value = []
@@ -295,6 +311,8 @@ const handleSubmit = async() => {
       showToast('派工成功')
       emit('submit')
       handleClose()
+    } else {
+      showToast(res.message)
     }
   } catch {
     showToast('派工失败')

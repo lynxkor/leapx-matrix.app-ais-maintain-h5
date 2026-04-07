@@ -268,15 +268,20 @@ const statusTags = computed(() => {
 const loadRepairWorkRecord = async() => {
   loading.value = true
   try {
-    const data = await repairWorkRecord({ serviceProxyId: props.workOrder.serviceProxyId })
-    internalRepairItems.value = (data?.data || []).map((item) => ({
-      ...item,
-      _selected: false
-    }))
-    activeTagIndex.value = props.defaultTagIndex
-    nextTick(() => {
-      toggleSelectAll(true)
-    })
+    const res = await repairWorkRecord({ serviceProxyId: props.workOrder.serviceProxyId })
+    if (res.code === 200) {
+      internalRepairItems.value = (res?.data || []).map((item) => ({
+        ...item,
+        _selected: false
+      }))
+      activeTagIndex.value = props.defaultTagIndex
+      nextTick(() => {
+        toggleSelectAll(true)
+      })
+    } else {
+      showToast(res.message)
+      internalRepairItems.value = []
+    }
   } catch {
     showToast('获取维修记录失败')
     internalRepairItems.value = []
@@ -443,6 +448,8 @@ const handleVoidConfirm = async(reason) => {
       showToast('作废成功')
       emit('refresh')
       handleClose()
+    } else {
+      showToast(res.message)
     }
   } catch {
     showToast('作废失败')

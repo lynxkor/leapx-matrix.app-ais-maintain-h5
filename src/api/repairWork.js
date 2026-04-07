@@ -103,7 +103,7 @@ export function getRepairWorkRecord(data) {
  * @param {Object} data
  */
 export function cccList(data) {
-  return post(prefix + '/cccList', data)
+  return postJson(prefix + '/cccList', data)
 }
 
 /**

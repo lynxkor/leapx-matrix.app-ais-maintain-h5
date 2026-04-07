@@ -56,6 +56,7 @@
 
 <script setup>
 import { ref } from 'vue'
+import { showToast } from 'vant'
 import { useGlobalStore } from '@/stores/global'
 import { goBack } from '@/libs/utils/app'
 import { getRecord } from '../../api/repairWork'
@@ -129,20 +130,25 @@ const loadData = async(isRefresh = false) => {
     }
 
     const resData = await getRecord(params)
-    const res = resData.data || {}
-    const records = res.records || []
+    if (resData.code === 200) {
+      const res = resData.data || {}
+      const records = res.records || []
 
-    if (isRefresh) {
-      workOrderList.value = records
+      if (isRefresh) {
+        workOrderList.value = records
+      } else {
+        workOrderList.value.push(...records)
+      }
+
+      const totalPage = res.totalPage || res.pages || 1
+      if (currentPage.value >= totalPage || records.length < PAGESIZE) {
+        finished.value = true
+      } else {
+        currentPage.value++
+      }
     } else {
-      workOrderList.value.push(...records)
-    }
-
-    const totalPage = res.totalPage || res.pages || 1
-    if (currentPage.value >= totalPage || records.length < PAGESIZE) {
+      showToast(resData.message)
       finished.value = true
-    } else {
-      currentPage.value++
     }
   } catch (error) {
     console.error('搜索失败:', error)
