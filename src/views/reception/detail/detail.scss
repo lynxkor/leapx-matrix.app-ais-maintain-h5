@@ -174,44 +174,19 @@
   bottom: 0;
   left: 0;
   right: 0;
-  height: 88px;
+  height: 70px;
   background: #ffffff;
   display: flex;
   align-items: center;
   padding: 0 12px;
   gap: 12px;
-  box-shadow: 0px -1px 0px 0px rgba(230, 230, 229, 1);
+  justify-content: center;
 
   .more-btn {
     width: 52px;
-    font-size: 14px;
-    color: #545454;
+    font-size: 16px;
+    color: #191a1b;
     text-align: center;
-  }
-
-  .save-btn {
-    flex: 1;
-    height: 40px;
-    background: #ffffff;
-    border: 1px solid #009100;
-    border-radius: 8px;
-    font-size: 14px;
-    color: #009100;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .complete-btn {
-    flex: 1;
-    height: 40px;
-    background: #009100;
-    border-radius: 8px;
-    font-size: 14px;
-    color: #ffffff;
-    display: flex;
-    align-items: center;
-    justify-content: center;
   }
 }
 
@@ -260,7 +235,11 @@
   }
 
   .package-card {
-    margin-bottom: 10px;
+    background: #ffffff;
+    border-radius: 8px;
+    padding: 15px 12px;
+    border: 0.5px solid #e6e6e5;
+    margin-bottom: 8px;
     .package-header {
       display: flex;
       justify-content: space-between;
@@ -280,7 +259,8 @@
     background: #ffffff;
     border-radius: 8px;
     padding: 15px 12px;
-    border-bottom: 0.5px solid #e6e6e5;
+    border: 0.5px solid #e6e6e5;
+    margin-bottom: 8px;
 
     .item-main {
       display: flex;
@@ -291,12 +271,34 @@
         display: flex;
         flex-direction: column;
         gap: 2px;
+        flex: 1;
 
         .item-name {
           font-size: 14px;
           font-weight: 500;
           color: #191a1b;
           line-height: 20px;
+        }
+
+        .item-name-row {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+
+          .item-name {
+            font-size: 14px;
+            font-weight: 500;
+            color: #191a1b;
+            line-height: 20px;
+          }
+
+          .oem-tag {
+            font-size: 10px;
+            padding: 1px 4px;
+            background: rgba(25, 26, 27, 0.06);
+            border-radius: 4px;
+            color: #191a1b;
+          }
         }
 
         .item-code {
@@ -338,10 +340,27 @@
       justify-content: space-between;
       align-items: center;
 
-      .item-subtotal {
-        font-size: 12px;
-        color: #545454;
-        line-height: 17px;
+      .footer-info {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+
+        .item-subtotal {
+          font-size: 12px;
+          color: #545454;
+          line-height: 17px;
+        }
+
+        .footer-divider {
+          font-size: 12px;
+          color: #e6e6e5;
+        }
+
+        .footer-text {
+          font-size: 12px;
+          color: #545454;
+          line-height: 17px;
+        }
       }
 
       .item-quantity {
@@ -375,6 +394,7 @@
       .label {
         font-size: 14px;
         color: #191a1b;
+        width: 150px;
       }
 
       .value {
@@ -506,8 +526,4 @@
       color: #191a1b;
     }
   }
-}
-
-:deep(.van-action-sheet__cancel) {
-  color: #191a1b;
 }

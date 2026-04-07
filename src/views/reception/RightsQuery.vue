@@ -2,8 +2,8 @@
   <div class="rights-query">
     <!-- Tab 导航 -->
     <van-tabs v-model:active="activeTab" sticky offset-top="0px" @change="onTabChange">
-      <van-tab title="未使用" name="unused"></van-tab>
-      <van-tab title="已失效" name="expired"></van-tab>
+      <van-tab title="未使用" :name="2"></van-tab>
+      <van-tab title="已失效" :name="5"></van-tab>
     </van-tabs>
 
     <!-- 列表内容 -->
@@ -14,17 +14,21 @@
             <div class="card-main">
               <div class="card-left">
                 <div class="card-top">
-                  <span class="rights-name">{{ item.name }}</span>
+                  <span
+                    class="rights-name"
+                    :style="{ color: activeTab == 2 ? '#191a1b' : '#888' }"
+                    >{{ item.rightsName }}</span
+                  >
                 </div>
                 <div class="card-bottom">
-                  <span class="validity-period">{{ item.validityPeriod }}</span>
+                  <span v-if="item.forever == 1" class="validity-period">永久有效</span>
+                  <span v-else>{{ item.effectDate }} 至 {{ item.expireDate }}</span>
                 </div>
               </div>
               <div class="card-divider"></div>
               <div class="card-right">
-                <span class="status-tag" :class="getStatusClass(item.status)">{{
-                  item.statusText
-                }}</span>
+                <span v-if="activeTab == 2" class="status-tag status-usable">可使用</span>
+                <span v-if="activeTab == 5" class="status-tag status-expired">已失效</span>
               </div>
             </div>
           </div>
@@ -34,15 +38,25 @@
         </div>
       </RefreshList>
     </div>
+
+    <!-- 全屏Loading -->
+    <van-overlay :show="loading">
+      <div class="loading-wrapper">
+        <van-loading size="24px" vertical color="#009100">请稍候...</van-loading>
+      </div>
+    </van-overlay>
   </div>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, reactive } from 'vue'
 import RefreshList from '@/libs/components/RefreshList.vue'
-import { getRightsQueryList } from '@/api/workOrder'
+import { getRightsList } from '@/api/reception'
+import { useRoute } from 'vue-router'
 
 const needRefresh = ref(false)
+const loading = ref(false)
+const route = useRoute()
 
 // Tab 状态
 const activeTab = ref('unused')
@@ -51,17 +65,20 @@ const activeTab = ref('unused')
 const list = ref([])
 
 // 请求参数
-const requestData = computed(() => ({
-  api: getRightsQueryList,
+const requestData = reactive({
   data: {
-    tabType: activeTab.value,
-    pageNum: 1,
-    pageSize: 10
-  }
-}))
+    rightsTypeList: [1, 3],
+    serviceProxyId: route.query.id,
+    status: 2,
+  },
+  api: getRightsList,
+})
 
 // Tab 切换
-const onTabChange = (name) => {
+const onTabChange = (val) => {
+  activeTab.value = val
+  requestData.data.status = val
+  loading.value = true
   needRefresh.value = true
 }
 
@@ -73,15 +90,7 @@ const onSetData = (data) => {
     list.value.push(...data.list)
   }
   needRefresh.value = false
-}
-
-// 获取状态样式类
-const getStatusClass = (status) => {
-  const statusMap = {
-    usable: 'status-usable',
-    expired: 'status-expired'
-  }
-  return statusMap[status] || 'status-usable'
+  loading.value = false
 }
 </script>
 
@@ -117,6 +126,7 @@ const getStatusClass = (status) => {
 
 .card-list {
   padding: 12px;
+  height: auto;
 }
 
 .rights-card {
@@ -154,7 +164,6 @@ const getStatusClass = (status) => {
         .rights-name {
           font-size: 16px;
           font-weight: 500;
-          color: #191a1b;
           flex: 1;
           overflow: hidden;
           text-overflow: ellipsis;
@@ -213,5 +222,12 @@ const getStatusClass = (status) => {
   img {
     max-width: 200px;
   }
+}
+
+.loading-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
 }
 </style>

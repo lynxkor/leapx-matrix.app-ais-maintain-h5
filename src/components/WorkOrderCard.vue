@@ -10,21 +10,23 @@
     <!-- 车辆信息 -->
     <div class="vehicle-info">
       <div class="plate-row">
-        <span class="plate-no">{{ item.plateNo || '无车牌' }}</span>
+        <span class="plate-no">{{ item.carPlate || '无车牌' }}</span>
         <div class="tag-list">
-          <span>
-            <img src="@/assets/image/warning-red.png" alt="" />
-          </span>
-          <span>
-            <img src="@/assets/image/warning-yellow.png" alt="" />
-          </span>
-          <span style="height: 20px">
+          <span v-if="item.alarmLevel == 20" style="height: 20px">
             <img src="@/assets/image/warning-green.png" alt="" />
           </span>
-          <span v-for="tag in item.tags" :key="tag" class="info-tag">{{ tag }}</span>
+          <span v-if="item.alarmLevel == 30">
+            <img src="@/assets/image/warning-yellow.png" alt="" />
+          </span>
+          <span v-if="item.alarmLevel == 40">
+            <img src="@/assets/image/warning-red.png" alt="" />
+          </span>
+          <span v-if="item.repairItemTypeDetailCollect" class="info-tag">{{
+            item.repairItemTypeDetailCollect
+          }}</span>
         </div>
       </div>
-      <div class="vehicle-model">{{ item.vehicleModel }} · {{ item.vin }}</div>
+      <div class="vehicle-model">{{ item.vehModelName }} · {{ item.vehProfileVin }}</div>
     </div>
 
     <!-- 详细信息 -->
@@ -32,17 +34,17 @@
       <div class="info-row">
         <span class="label">车主</span>
         <div class="value-wrapper">
-          <span class="value">{{ item.owner }}</span>
+          <span class="value">{{ item.customerName }}</span>
           <span v-if="item.isAppointment" class="appointment-tag">预约客户</span>
         </div>
       </div>
       <div class="info-row">
         <span class="label">客户经理</span>
-        <span class="value">{{ item.manager }}</span>
+        <span class="value">{{ item.dedicatedServiceManager }}</span>
       </div>
       <div class="info-row">
         <span class="label">预计交车</span>
-        <span class="value">{{ item.expectedDelivery }}</span>
+        <span class="value">{{ item.expectFinishAt }}</span>
       </div>
     </div>
   </div>
@@ -56,8 +58,8 @@ const props = defineProps({
   item: {
     type: Object,
     required: true,
-    default: () => ({})
-  }
+    default: () => ({}),
+  },
 })
 
 // 定义 emits

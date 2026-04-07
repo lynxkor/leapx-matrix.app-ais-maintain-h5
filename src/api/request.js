@@ -60,6 +60,15 @@ export function post(url, data) {
   })
 }
 
+export function postText(url, data) {
+  return service({
+    url,
+    headers: { 'Content-Type': 'text/plain' },
+    method: 'post',
+    data
+  })
+}
+
 export function get(url, params) {
   return service({
     url,

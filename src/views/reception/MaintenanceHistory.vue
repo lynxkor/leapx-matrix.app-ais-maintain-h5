@@ -10,24 +10,29 @@
 
     <!-- 列表内容 -->
     <div class="common-scroll-content" ref="scrollEle">
-      <RefreshList :requestData="requestData" :needRefresh="needRefresh" @setData="onSetData">
+      <RefreshList
+        ref="refreshListRef"
+        :requestData="requestData"
+        :needRefresh="needRefresh"
+        @setData="onSetData"
+      >
         <div v-if="list.length > 0" class="list-wrapper">
           <div v-for="item in list" :key="item.id" class="history-card" @click="onCardClick(item)">
             <div class="card-header">
-              <span class="order-no">{{ item.orderNo }}</span>
+              <span class="order-no">{{ item.serviceProxyCode }}</span>
               <div class="status-wrapper">
-                <span class="status-text">{{ item.status }}</span>
+                <span class="status-text">{{ item.statusDesc }}</span>
                 <van-icon name="arrow" size="12" color="#6C6E6C" />
               </div>
             </div>
             <div class="card-content">
               <div class="info-row">
                 <span class="label">服务门店</span>
-                <span class="value">{{ item.serviceStore }}</span>
+                <span class="value">{{ item.dealerName }}</span>
               </div>
               <div class="info-row">
                 <span class="label">工单时间</span>
-                <span class="value">{{ item.workOrderTime }}</span>
+                <span class="value">{{ item.orderTime }}</span>
               </div>
               <div class="info-row">
                 <span class="label">进店里程</span>
@@ -35,7 +40,7 @@
               </div>
               <div class="info-row">
                 <span class="label">客户经理</span>
-                <span class="value">{{ item.customerManager }}</span>
+                <span class="value">{{ item.creatorName }}</span>
               </div>
             </div>
           </div>
@@ -53,17 +58,17 @@
           <!-- 顶部信息卡片 -->
           <div class="info-card">
             <div class="card-header">
-              <span class="order-no">{{ popupData.orderNo }}</span>
+              <span class="order-no">{{ popupData.serviceProxyCode }}</span>
               <span class="status-text">{{ popupData.status }}</span>
             </div>
             <div class="card-info-list">
               <div class="info-row">
                 <span class="label">服务门店</span>
-                <span class="value">{{ popupData.serviceStore }}</span>
+                <span class="value">{{ popupData.dealerName }}</span>
               </div>
               <div class="info-row">
                 <span class="label">工单时间</span>
-                <span class="value">{{ popupData.workOrderTime }}</span>
+                <span class="value">{{ popupData.orderTime }}</span>
               </div>
               <div class="info-row">
                 <span class="label">进店里程</span>
@@ -71,7 +76,7 @@
               </div>
               <div class="info-row">
                 <span class="label">客户经理</span>
-                <span class="value">{{ popupData.customerManager }}</span>
+                <span class="value">{{ detailData.creatorName }}</span>
               </div>
             </div>
           </div>
@@ -122,58 +127,86 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import RefreshList from '@/libs/components/RefreshList.vue'
 import AisPopup from '@/libs/components/AisPopup.vue'
-import { getMaintenanceHistoryList } from '@/api/workOrder'
+import { getDetail, getHistory } from '@/api/reception'
 
 const route = useRoute()
 const needRefresh = ref(false)
+const refreshListRef = ref(null)
 
 // 车辆信息
 const vehicleInfo = reactive({
   vin: '',
   plateNo: '',
-  vehicleModel: ''
+  vehicleModel: '',
 })
 
-// 列表数据
-const list = ref([])
+// 详情数据
+const detailData = reactive({
+  carPlate: '',
+  vehModelName: '',
+  vehProfileVin: '',
+  code: '',
+  status: '',
+  statusDesc: '',
+  dealerName: '',
+  mileage: '',
+  netMileage: '',
+  netMileageExtend: '',
+  serviceAdvisorName: '',
+  createTime: '',
+  historyList: [],
+})
 
 // 弹框控制
 const showPopup = ref(false)
 const popupData = reactive({
-  orderNo: '',
+  serviceProxyCode: '',
   status: '',
-  serviceStore: '',
-  workOrderTime: '',
+  statusDesc: '',
+  dealerName: '',
+  orderTime: '',
   mileage: '',
-  customerManager: '',
+  netMileage: '',
+  serviceAdvisorName: '',
   repairItems: [],
-  repairParts: []
+  repairParts: [],
 })
+const list = ref([])
 
-// 请求参数
-const requestData = computed(() => ({
-  api: getMaintenanceHistoryList,
-  data: {
-    vin: vehicleInfo.vin,
-    pageNum: 1,
-    pageSize: 10
-  }
-}))
+// 请求详情
+const fetchDetail = () => {
+  const id = route.query.id
+  if (!id) return
+  // getDetail(id).then((res) => {
+  //   if (res.code === 200) {
+  //     const data = res.data
+  //     detailData.carPlate = data.carPlate || ''
+  //     detailData.vehModelName = data.vehModelName || ''
+  //     detailData.vehProfileVin = data.vehProfileVin || ''
+  //     detailData.code = data.code || ''
+  //     detailData.status = data.status || ''
+  //     detailData.statusDesc = data.statusDesc || ''
+  //     detailData.dealerName = data.dealerName || ''
+  //     detailData.mileage = data.mileage || ''
+  //     detailData.netMileage = data.netMileage || ''
+  //     detailData.netMileageExtend = data.netMileageExtend || ''
+  //     detailData.serviceAdvisorName = data.serviceAdvisorName || ''
+  //     detailData.createTime = data.createTime || ''
+  //     detailData.historyList = data.historyList || []
+  //     list.value = data.historyList || []
+  //   }
+  // })
+}
 
-// 页面加载时获取车辆信息
-onMounted(() => {
-  const { vin, plateNo, vehicleModel } = route.query
-  if (vin) {
-    vehicleInfo.vin = vin
-    vehicleInfo.plateNo = plateNo || ''
-    vehicleInfo.vehicleModel = vehicleModel || ''
-  }
+// RefreshList适配：包装api使其接受对象但内部提取id
+const requestData = reactive({
+  api: (params) => getDetail(params.id),
+  data: { id: route.query.id },
 })
-
 // 设置列表数据
 const onSetData = (data) => {
   if (data.isRefresh) {
@@ -183,18 +216,31 @@ const onSetData = (data) => {
   }
   needRefresh.value = false
 }
+// 页面加载时获取详情
+onMounted(() => {
+  const { vin, plateNo, vehicleModel } = route.query
+  if (vin) {
+    vehicleInfo.vin = vin
+    vehicleInfo.plateNo = plateNo || ''
+    vehicleInfo.vehicleModel = vehicleModel || ''
+  }
+  fetchDetail()
+})
 
 // 卡片点击 - 显示弹框
 const onCardClick = (item) => {
-  popupData.orderNo = item.orderNo || ''
+  popupData.serviceProxyCode = item.code || item.serviceProxyCode || ''
   popupData.status = item.status || ''
-  popupData.serviceStore = item.serviceStore || ''
-  popupData.workOrderTime = item.workOrderTime || ''
+  popupData.statusDesc = item.statusDesc || ''
+  popupData.dealerName = item.dealerName || ''
+  popupData.orderTime = item.createTime || ''
   popupData.mileage = item.mileage || ''
-  popupData.customerManager = item.customerManager || ''
-  popupData.repairItems = item.repairItems || []
-  popupData.repairParts = item.repairParts || []
+  popupData.netMileage = item.netMileage || ''
+  popupData.serviceAdvisorName = item.serviceAdvisorName || ''
+  popupData.repairItems = item.repairItemRespList || []
+  popupData.repairParts = item.partsRespList || []
   showPopup.value = true
+  getHistory(item.serviceProxyId).then((res) => {})
 }
 </script>
 

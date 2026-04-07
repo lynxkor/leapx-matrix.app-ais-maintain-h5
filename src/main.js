@@ -2,7 +2,7 @@ import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import {
   List, Cell, Search, NavBar, PullRefresh, Image as VanImage, Lazyload, Swipe, SwipeItem, ActionSheet, ActionBar, ActionBarButton, Button, Form, Field, CellGroup, Icon, Dialog, Popup, DatePicker, TimePicker, Tab, Tabs, RadioGroup, Radio, Highlight,
-  Stepper, Switch, NumberKeyboard, Collapse, CollapseItem
+  Stepper, Switch, NumberKeyboard, Collapse, CollapseItem, Loading, Overlay
 } from 'vant'
 import * as Sentry from '@sentry/vue'
 
@@ -75,6 +75,8 @@ app.use(Switch)
 app.use(NumberKeyboard)
 app.use(Collapse)
 app.use(CollapseItem)
+app.use(Loading)
+app.use(Overlay)
 
 // 注册时可以配置额外的选项
 app.use(Lazyload, {

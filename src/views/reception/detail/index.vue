@@ -1,23 +1,26 @@
 <template>
   <div class="work-order-detail">
+    <div v-if="loading" class="loading-mask">
+      <van-loading size="24px" vertical color="#009100">加载中...</van-loading>
+    </div>
     <!-- 车辆信息卡片 -->
     <div class="vehicle-card">
       <div class="plate-row">
-        <span class="plate-no">{{ detail.plateNo }}</span>
-        <span v-if="detail.isAppointment" class="appointment-tag">预约客户</span>
+        <span class="plate-no">{{ detail.carPlate }}</span>
+        <span v-if="detail.custTypeLabel" class="appointment-tag">{{ detail.custTypeLabel }}</span>
       </div>
-      <div class="vehicle-model">{{ detail.vehicleModel }} · {{ detail.vin }}</div>
+      <div class="vehicle-model">{{ detail.vehModelName }} · {{ detail.vehProfileVin }}</div>
       <div class="info-row">
         <span class="label">保修日期：</span>
-        <span class="value">{{ detail.warrantyDate }}</span>
+        <span class="value">{{ detail.startWarrantyDate }}</span>
       </div>
       <div class="info-row">
         <span class="label">车主：</span>
-        <span class="value">{{ detail.owner }} {{ detail.ownerPhone }}</span>
+        <span class="value">{{ detail.customerName }} {{ detail.customerPhone }}</span>
       </div>
       <div class="info-row">
         <span class="label">绑车人：</span>
-        <span class="value">{{ detail.binder }} {{ detail.binderPhone }}</span>
+        <span class="value">{{ detail.bindingUser }} {{ detail.bindingPhone }}</span>
       </div>
 
       <div class="divider"></div>
@@ -26,14 +29,14 @@
         <span class="label">送修人</span>
         <div class="value-wrapper">
           <span class="tag">[{{ detail.repairPersonTag }}]</span>
-          <span class="value">{{ detail.repairPerson }} {{ detail.repairPersonPhone }}</span>
+          <span class="value">{{ detail.shuttleName }} {{ detail.shuttlePhone }}</span>
         </div>
       </div>
 
       <div class="select-row">
         <span class="label">业务类型</span>
         <div class="value-wrapper">
-          <span class="value">{{ detail.businessType }}</span>
+          <span class="value">{{ detail.businessTypeLabel }}</span>
         </div>
       </div>
     </div>
@@ -52,8 +55,8 @@
                   <span class="unit">km</span>
                 </div>
               </div>
-              <div class="sub-info">车联网里程数(总)：{{ detail.networkMileageTotal }}km</div>
-              <div class="sub-info">车联网里程数(增)：{{ detail.networkMileageAdd }}km</div>
+              <div class="sub-info">车联网里程数(总)：{{ detail.netMileage }}km</div>
+              <div class="sub-info">车联网里程数(增)：{{ detail.netMileageExtend }}km</div>
             </div>
 
             <!-- 进店电量 -->
@@ -61,11 +64,11 @@
               <div class="section-title">
                 <div>进店电量</div>
                 <div>
-                  <span class="number">{{ detail.battery }}</span>
+                  <span class="number">{{ detail.inPower }}</span>
                   <span class="unit">%</span>
                 </div>
               </div>
-              <div class="sub-info">车联网电量: {{ detail.networkBattery }}%</div>
+              <div class="sub-info">车联网电量: {{ detail.inNetPower }}%</div>
             </div>
 
             <!-- 车内检查 -->
@@ -73,7 +76,7 @@
               <div class="section-title">车内检查</div>
               <div class="image-grid readonly">
                 <div
-                  v-for="(img, index) in detail.interiorImages"
+                  v-for="(img, index) in detail.interiorPhotos"
                   :key="'interior-' + index"
                   class="image-item"
                 >
@@ -87,7 +90,7 @@
               <div class="section-title">车外检查</div>
               <div class="image-grid readonly">
                 <div
-                  v-for="(img, index) in detail.exteriorImages"
+                  v-for="(img, index) in detail.exteriorPhotos"
                   :key="'exterior-' + index"
                   class="image-item"
                 >
@@ -100,7 +103,7 @@
             <div class="section-card borderB">
               <div class="section-title">异常描述</div>
               <div class="expandable-text" :class="{ expanded: abnormalDescExpanded }">
-                {{ detail.abnormalDesc || '无' }}
+                {{ detail.anomalyDescription || '无' }}
               </div>
               <div
                 v-if="abnormalDescNeedExpand"
@@ -116,33 +119,29 @@
             <div class="fault-toggle-section">
               <span class="title">本次进店是否存在故障</span>
               <div class="toggle-wrapper">
-                <van-icon
-                  name="checked"
-                  size="20px"
-                  :color="detail.hasFault === '1' ? '#009100' : '#888888'"
-                />
-                <span class="toggle-text">{{ detail.hasFault === '1' ? '是' : '否' }}</span>
+                <!-- <van-icon name="checked" size="20px" color="#009100" /> -->
+                <span class="toggle-text">{{ detail.currentFaultLabel }}</span>
               </div>
             </div>
 
             <!-- 故障模块列表 -->
-            <div class="fault-modules" v-if="detail.hasFault === '1'">
+            <div class="fault-modules" v-if="detail.faultAlertRecordRespList.length">
               <div class="modules-list">
                 <div
-                  v-for="(module, index) in detail.faultModules"
+                  v-for="(module, index) in detail.faultAlertRecordRespList"
                   :key="index"
                   class="fault-module-item"
                 >
-                  <span class="module-name">{{ module }}</span>
+                  <span class="module-name">{{ module.name }}</span>
                 </div>
               </div>
             </div>
 
             <!-- 客户故障描述 -->
-            <div class="section-card" v-if="detail.hasFault === '1'">
+            <div class="section-card" v-if="detail.currentFault === '1'">
               <div class="section-title">客户故障描述</div>
               <div class="expandable-text" :class="{ expanded: customerFaultDescExpanded }">
-                {{ detail.customerFaultDesc || '无' }}
+                {{ detail.customerContent || '无' }}
               </div>
               <div
                 v-if="customerFaultDescNeedExpand"
@@ -163,52 +162,121 @@
             <div class="cost-summary">
               <div class="summary-row">
                 <span class="label">维修项目</span>
-                <span class="amount">¥{{ partsData.repairAmount }}</span>
+                <span class="amount">¥{{ partsData.workCostCount }}</span>
               </div>
               <span class="operator">+</span>
               <div class="summary-row">
                 <span class="label">维修配件</span>
-                <span class="amount">¥{{ partsData.partsAmount }}</span>
+                <span class="amount">¥{{ partsData.barkCostCount }}</span>
               </div>
               <span class="operator">=</span>
               <div class="summary-row total">
                 <span class="label">费用合计</span>
-                <span class="amount">¥{{ partsData.totalAmount }}</span>
+                <span class="amount">¥{{ partsData.maintenanceCostEstimation }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 维修项目列表 -->
+          <div v-if="partsData.repairItemRespList.length" style="padding: 12px">
+            <div class="section-title" style="margin-bottom: 8px">维修项目</div>
+            <div
+              v-for="(repairItem, rIndex) in partsData.repairItemRespList"
+              :key="'repair-' + rIndex"
+              class="parts-item-card"
+            >
+              <div class="item-main">
+                <div class="item-left">
+                  <div class="item-name">{{ repairItem.repairItemName }}</div>
+                  <div class="item-code">{{ repairItem.repairItemCode }}</div>
+                  <div class="item-code">
+                    {{ repairItem.repairItemTypeName }}-{{ repairItem.checkoutTypeName }}-{{
+                      repairItem.warrantyTypeName
+                    }}
+                  </div>
+                </div>
+                <div class="item-right">
+                  <div class="item-price">¥{{ repairItem.price }}</div>
+                  <div class="item-discount">优惠 ¥{{ repairItem.discountAmount }}</div>
+                </div>
+              </div>
+              <div class="item-footer">
+                <span class="item-subtotal">¥{{ repairItem.repairAmount }}</span>
+                <span class="item-quantity">x{{ repairItem.quantity }}</span>
               </div>
             </div>
           </div>
 
           <!-- 套餐列表 -->
-          <div style="padding: 12px">
+          <div v-if="partsData.packageRespList.length" style="padding: 12px">
             <div
-              v-for="(packageItem, pIndex) in partsData.packages"
+              v-for="(packageItem, pIndex) in partsData.packageRespList"
               :key="'package-' + pIndex"
               class="package-card"
             >
               <div class="package-header">
-                <span class="package-name">{{ packageItem.name }}</span>
+                <span class="package-name"
+                  >{{ packageItem.packageTypeLabel }}-{{ packageItem.packageCount }}</span
+                >
               </div>
               <!-- 项目列表 -->
-              <div
-                v-for="itemData in packageItem.items"
-                :key="itemData.code"
-                class="parts-item-card"
-              >
-                <div class="item-main">
-                  <div class="item-left">
-                    <div class="item-name">{{ itemData.name }}</div>
-                    <div class="item-code">{{ itemData.code }}</div>
-                    <div class="item-category">{{ itemData.category }}</div>
-                  </div>
-                  <div class="item-right">
-                    <div class="item-price">¥{{ itemData.price }}</div>
-                    <div class="item-discount">优惠 ¥{{ itemData.discount }}</div>
+              <!-- <div class="item-main">
+                <div class="item-left">
+                  <div class="item-name">{{ packageItem.repairItemName }}</div>
+                  <div class="item-code">{{ packageItem.repairItemCode }}</div>
+                  <div class="item-code">
+                    {{ packageItem.repairItemTypeName }}-{{ packageItem.checkoutTypeName }}-{{
+                      packageItem.warrantyTypeName
+                    }}
                   </div>
                 </div>
-                <div class="item-footer">
-                  <span class="item-subtotal">¥{{ itemData.subtotal }}</span>
-                  <span class="item-quantity">x{{ itemData.quantity.toFixed(2) }}</span>
+                <div class="item-right">
+                  <div class="item-price">¥{{ packageItem.price }}</div>
+                  <div class="item-discount">优惠 ¥{{ packageItem.discountAmount }}</div>
                 </div>
+              </div>
+              <div class="item-footer">
+                <span class="item-subtotal">¥{{ packageItem.repairAmount }}</span>
+                <span class="item-quantity">x{{ packageItem.quantity }}</span>
+              </div> -->
+            </div>
+          </div>
+
+          <!-- 维修配件列表 -->
+          <div v-if="partsData.sparePartRespList.length" style="padding: 12px">
+            <div class="section-title" style="margin-bottom: 8px">维修配件</div>
+            <div
+              v-for="(sparePart, sIndex) in partsData.sparePartRespList"
+              :key="'spare-' + sIndex"
+              class="parts-item-card"
+            >
+              <div class="item-main">
+                <div class="item-left">
+                  <div class="item-name-row">
+                    <span class="item-name">{{ sparePart.partsName }}</span>
+                    <span v-if="sparePart.isOemPart" class="oem-tag">原厂件</span>
+                  </div>
+                  <div class="item-code">{{ sparePart.partsCode }}</div>
+                  <div class="item-category">
+                    {{ sparePart.partsTypeName }}-{{ sparePart.checkoutTypeName }}-{{
+                      sparePart.warrantyTypeName
+                    }}
+                  </div>
+                </div>
+                <div class="item-right">
+                  <div class="item-price">¥{{ sparePart.price }}</div>
+                  <div class="item-discount">优惠 ¥{{ sparePart.discountAmount }}</div>
+                </div>
+              </div>
+              <div class="item-footer">
+                <div class="footer-info">
+                  <span class="item-subtotal">¥{{ sparePart.partsAmount }}</span>
+                  <span class="footer-divider">|</span>
+                  <span class="footer-text">实际领料 {{ sparePart.actualPickNumber }}</span>
+                  <span class="footer-divider">|</span>
+                  <span class="footer-text">退料 {{ sparePart.refundedNumber }}</span>
+                </div>
+                <span class="item-quantity">x{{ sparePart.quantity }}</span>
               </div>
             </div>
           </div>
@@ -221,20 +289,20 @@
           <div class="signature-section">
             <div class="signature-row">
               <span class="label">费用合计</span>
-              <span class="value">¥{{ signatureData.totalAmount }}</span>
+              <span class="value">¥{{ signatureData.maintenanceCostEstimation }}</span>
             </div>
             <div class="signature-row">
               <span class="label">维修类型</span>
-              <span class="value">{{ signatureData.repairTypes }}</span>
+              <span class="value">{{ signatureData.repairItemTypeDetailCollect }}</span>
             </div>
             <div class="signature-row">
               <span class="label">预计交车时间</span>
-              <span class="value">{{ signatureData.deliveryTime || '-' }}</span>
+              <span class="value">{{ signatureData.expectFinishAt || '-' }}</span>
             </div>
             <div class="signature-row">
               <span class="label">开启维修直播</span>
               <van-switch
-                v-model="signatureData.liveEnabled"
+                v-model="signatureData.isLive"
                 size="20"
                 active-color="#009100"
                 disabled
@@ -242,7 +310,7 @@
             </div>
             <div class="signature-row">
               <span class="label">签字渠道</span>
-              <span class="value">{{ signatureData.signatureChannel || '-' }}</span>
+              <span class="value">{{ signatureData.signChannel || '-' }}</span>
             </div>
           </div>
 
@@ -266,8 +334,6 @@
     <!-- 底部操作栏 -->
     <div class="bottom-bar">
       <span class="more-btn" @click="onMore">更多</span>
-      <span class="save-btn" @click="onSave">保存</span>
-      <span class="complete-btn" @click="onComplete">预检完成</span>
     </div>
     <!-- 更多操作 -->
     <van-action-sheet
@@ -299,9 +365,15 @@
             style="background: #f4f4f4; border-radius: 6px"
           />
         </div>
+        <!-- 作废操作Loading -->
+        <van-overlay :show="cancelLoading" class-name="cancel-loading-overlay">
+          <div class="loading-wrapper">
+            <van-loading size="24px" vertical color="#009100">请稍候...</van-loading>
+          </div>
+        </van-overlay>
       </template>
       <template #footer>
-        <div class="confirm-btn" @click="onConfirmCancel">确定</div>
+        <van-button class="confirm-btn" @click="onConfirmCancel">确定</van-button>
       </template>
     </ais-popup>
   </div>
@@ -313,12 +385,15 @@ import { useRoute, useRouter } from 'vue-router'
 import { showToast, showConfirmDialog } from 'vant'
 import { useGlobalStore } from '@/stores/global'
 import AisPopup from '@/libs/components/AisPopup.vue'
+import { getDetail, serviceProxyCancel } from '@/api/reception'
 import './detail.scss'
 
 const route = useRoute()
 const router = useRouter()
 const globalStore = useGlobalStore()
 const changeCarDialog = ref(false)
+const loading = ref(false)
+const cancelLoading = ref(false)
 
 const moreActionsList = [
   { name: '权益查询', tag: '1', color: '#191a1b' },
@@ -340,17 +415,17 @@ const onSelectMoreAction = (action) => {
   if (action.name === '维修履历') {
     router.push({
       path: '/reception/maintenance-history',
-      // query: {
-      //   id: route.query.id,
-      // },
+      query: {
+        id: route.query.id,
+      },
     })
   }
   if (action.name === '权益查询') {
     router.push({
       path: '/reception/rights-query',
-      // query: {
-      //   id: route.query.id,
-      // },
+      query: {
+        id: route.query.id,
+      },
     })
   }
 }
@@ -360,16 +435,30 @@ const onConfirmCancel = () => {
     showToast('请输入作废原因')
     return
   }
-  console.log('作废原因:', cancelReason.value)
-  showToast('作废成功')
-  showCancelReason.value = false
-  cancelReason.value = ''
+  cancelLoading.value = true
+  serviceProxyCancel({
+    id: detail.value.id,
+    invaildDesc: cancelReason.value,
+  })
+    .then((res) => {
+      if (res.code === 200) {
+        showToast('操作成功')
+        showCancelReason.value = false
+        cancelReason.value = ''
+        router.push('/reception/work-order')
+      } else {
+        showToast(res.msg || '操作失败')
+      }
+    })
+    .finally(() => {
+      cancelLoading.value = false
+    })
 }
 
 const onTabScroll = (e) => {
   if (e.isFixed) {
     // 触发吸顶时设置标题
-    globalStore.setTitle(detail.plateNo)
+    globalStore.setTitle(detail.value.carPlate)
   } else {
     globalStore.setTitle('施工单详情')
   }
@@ -388,112 +477,52 @@ const showBusinessTypePicker = ref(false)
 const showMoreActions = ref(false)
 
 // 详情数据
-const detail = reactive({
-  plateNo: '浙AA12345',
-  isAppointment: true,
-  vehicleModel: 'B10-510激光雷达版',
-  vin: 'LFV3H6686RKYM3393',
-  warrantyDate: '2026-01-01 至 2029-12-31',
-  owner: '王小虎',
-  ownerPhone: '13012345678',
-  binder: '张小龙',
-  binderPhone: '13012341234',
-  repairPerson: '王小虎',
-  repairPersonPhone: '13012345678',
-  repairPersonTag: '车主',
-  businessType: '预约到店',
-  mileage: '47004',
-  networkMileageTotal: '47003.00',
-  networkMileageAdd: '1002.00',
-  battery: '74',
-  networkBattery: '74',
-  interiorImages: [
-    'https://fastly.jsdelivr.net/npm/@vant/assets/cat.jpeg',
-    'https://fastly.jsdelivr.net/npm/@vant/assets/cat.jpeg',
-    'https://fastly.jsdelivr.net/npm/@vant/assets/cat.jpeg',
-  ],
-  exteriorImages: [
-    'https://fastly.jsdelivr.net/npm/@vant/assets/cat.jpeg',
-    'https://fastly.jsdelivr.net/npm/@vant/assets/cat.jpeg',
-    'https://fastly.jsdelivr.net/npm/@vant/assets/cat.jpeg',
-    'https://fastly.jsdelivr.net/npm/@vant/assets/cat.jpeg',
-    'https://fastly.jsdelivr.net/npm/@vant/assets/cat.jpeg',
-    'https://fastly.jsdelivr.net/npm/@vant/assets/cat.jpeg',
-  ],
-  abnormalDesc:
-    '这是一条异常描述内容，这是一条异常描述内容，这是一条异常描述内容这是一条异常描述内容，这是一条异常描述内容异常描述内容',
-  hasFault: '1',
-  faultModules: [
-    'F02-电子电器 V21-热管理系统零跑机电',
-    'F03-底盘系统 V22-悬挂系统',
-    'F0333-底盘系统 V22-悬挂系统',
-    'F0111-底盘系统 V22-悬挂系统',
-  ],
-  customerFaultDesc: '客户说主驾空调不出暖风',
+const detail = ref({
+  // 车辆信息
+  carPlate: '',
+  isAppointment: false,
+  vehicleModel: '',
+  vin: '',
+  startWarrantyDate: '',
+  customerName: '',
+  customerPhone: '',
+  bindingUser: '',
+  bindingPhone: '',
+  shuttleName: '',
+  shuttlePhone: '',
+  repairPersonTag: '',
+  businessTypeLabel: '',
+  // 环检信息
+  mileage: '',
+  netMileage: '',
+  netMileageExtend: '',
+  inPower: '',
+  inNetPower: '',
+  interiorPhotos: [],
+  exteriorPhotos: [],
+  anomalyDescription: '',
+  currentFault: '',
+  faultAlertRecordRespList: [],
+  customerContent: '',
 })
 
 // 项目零件数据
 const partsData = reactive({
-  repairAmount: '17,676.00',
-  partsAmount: '20,525.56',
-  totalAmount: '38,201.56',
-  packages: [
-    {
-      name: '省心保养套餐-9AB102382372389238',
-      items: [
-        {
-          name: '前保险杠补漆',
-          code: 'C1031000035',
-          category: '一般维修-保险-无',
-          price: '621.50',
-          discount: '0.00',
-          subtotal: '700.00',
-          quantity: 1,
-        },
-        {
-          name: '前保险杠补漆',
-          code: 'C1031000035',
-          category: '一般维修-保险-无',
-          price: '621.50',
-          discount: '0.00',
-          subtotal: '700.00',
-          quantity: 1,
-        },
-      ],
-    },
-    {
-      name: '省心保养套餐-9AB102382372389238',
-      items: [
-        {
-          name: '前保险杠补漆',
-          code: 'C1031000035',
-          category: '一般维修-保险-无',
-          price: '621.50',
-          discount: '0.00',
-          subtotal: '700.00',
-          quantity: 1,
-        },
-        {
-          name: '前保险杠补漆',
-          code: 'C1031000035',
-          category: '一般维修-保险-无',
-          price: '621.50',
-          discount: '0.00',
-          subtotal: '700.00',
-          quantity: 1,
-        },
-      ],
-    },
-  ],
+  workCostCount: '',
+  barkCostCount: '',
+  maintenanceCostEstimation: '',
+  repairItemRespList: [],
+  packageRespList: [],
+  sparePartRespList: [],
 })
 
 // 签字确认数据
 const signatureData = reactive({
-  totalAmount: '38,201.56',
-  repairTypes: '一般维修、钣金、美容装潢、三电维修、精品附件',
-  deliveryTime: '',
-  liveEnabled: false,
-  signatureChannel: '',
+  maintenanceCostEstimation: '',
+  repairItemTypeDetailCollect: '',
+  expectFinishAt: '',
+  isLive: false,
+  signChannel: '',
   attachments: [],
 })
 
@@ -501,31 +530,74 @@ const signatureData = reactive({
 const fetchDetail = async () => {
   const id = route.query.id
   if (!id) return
-  // TODO: 调用接口获取详情
-  console.log('获取详情:', id)
+  loading.value = true
+  getDetail(id)
+    .then((res) => {
+      console.log('获取详情成功:', res)
+      if (res.code === 200) {
+        const data = res.data
+        detail.value = res.data
+        // 车辆信息
+        detail.value.isAppointment = !!data.appointmentNo // 有预约单号即为预约客户
+        detail.value.repairPersonTag =
+          detail.value.shuttleName === data.customerName
+            ? '车主'
+            : detail.value.shuttleName === data.bindingUser
+              ? '绑车人'
+              : '其他'
+        // 图片处理
+        detail.value.interiorPhotos = data.interiorPhotos
+          ? data.interiorPhotos.split(',').filter(Boolean)
+          : []
+        detail.value.exteriorPhotos = data.exteriorPhotos
+          ? data.exteriorPhotos.split(',').filter(Boolean)
+          : []
+        detail.value.anomalyDescription = data.anomalyDescription || ''
+        detail.value.currentFault = String(data.currentFault || '')
+        // 故障模块列表
+        detail.value.faultAlertRecordRespList = data.faultAlertRecordRespList || []
+        detail.value.customerContent = data.customerContent || ''
+
+        // 签字确认数据
+        signatureData.maintenanceCostEstimation =
+          data.costCountResp.maintenanceCostEstimation || '0.00'
+        signatureData.repairItemTypeDetailCollect = data.repairItemTypeDetailCollect || ''
+        signatureData.expectFinishAt = data.expectFinishAt || ''
+        signatureData.isLive = data.isLive === 1
+        signatureData.signChannel = getSignChannelName(data.signChannel)
+        signatureData.attachments = data.attachmentPhotos
+          ? data.attachmentPhotos.split(',').filter(Boolean)
+          : []
+
+        // 项目零件数据
+        if (data.costCountResp) {
+          partsData.workCostCount = data.costCountResp.workCostCount || '0.00'
+          partsData.barkCostCount = data.costCountResp.barkCostCount || '0.00'
+          partsData.maintenanceCostEstimation =
+            data.costCountResp.maintenanceCostEstimation || '0.00'
+          partsData.repairItemRespList = data.costCountResp.repairItemRespList || []
+          partsData.packageRespList = data.costCountResp.packageRespList || []
+          partsData.sparePartRespList = data.costCountResp.sparePartRespList || []
+        }
+      }
+    })
+    .finally(() => {
+      loading.value = false
+    })
+}
+
+// 签字渠道转换
+const getSignChannelName = (channel) => {
+  const channelMap = {
+    1: '纸质单据',
+    2: 'APP/短信/零小跑',
+  }
+  return channelMap[channel] || ''
 }
 
 // 更多操作
 const onMore = () => {
   showMoreActions.value = !showMoreActions.value
-}
-
-// 保存
-const onSave = () => {
-  showToast('保存成功')
-}
-
-// 预检完成
-const onComplete = () => {
-  showConfirmDialog({
-    title: '提示',
-    message: '确定预检完成吗？',
-  })
-    .then(() => {
-      showToast('预检完成')
-      router.back()
-    })
-    .catch(() => {})
 }
 
 onMounted(() => {
@@ -540,3 +612,35 @@ onMounted(() => {
   })
 })
 </script>
+<style lang="scss" scoped>
+.loading-mask {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+}
+:deep(.van-action-sheet__cancel) {
+  color: #191a1b;
+}
+
+.cancel-loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+
+.loading-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+}
+</style>

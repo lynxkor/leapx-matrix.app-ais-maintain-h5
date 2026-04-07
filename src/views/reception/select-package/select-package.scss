@@ -1,0 +1,510 @@
+.select-package {
+  display: flex;
+  flex-direction: column;
+  background: #f7f7f7;
+  height: 100vh;
+
+  :deep(.van-tabs) {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+
+  :deep(.van-tabs__content) {
+    flex: 1;
+    overflow-y: auto;
+  }
+
+  :deep(.van-tabs__nav) {
+    background: #ffffff;
+  }
+
+  :deep(.van-tab--active) {
+    color: #009100;
+    font-weight: 500;
+  }
+
+  :deep(.van-tabs__line) {
+    background: #009100;
+  }
+}
+
+.tab-content {
+  background: #ffffff;
+  min-height: calc(100vh - 130px);
+}
+
+.search-header {
+  padding: 8px 12px;
+  background: #ffffff;
+
+  :deep(.van-search) {
+    padding: 0;
+    background: transparent;
+  }
+
+  :deep(.van-search__content) {
+    background: rgba(216, 216, 216, 0.3);
+    border-radius: 15px;
+    padding-left: 12px;
+  }
+
+  :deep(.van-field__control) {
+    font-size: 12px;
+  }
+
+  :deep(.van-field__control::placeholder) {
+    color: #888888;
+  }
+}
+
+.package-list {
+  padding: 0 12px;
+}
+
+.no-data {
+  text-align: center;
+  padding: 40px 0;
+
+  img {
+    width: 160px;
+    height: auto;
+  }
+}
+
+.package-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 0;
+  border-bottom: 0.5px solid #e6e6e5;
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  .item-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+
+    .item-name {
+      font-size: 14px;
+      color: #191a1b;
+    }
+
+    .item-code {
+      font-size: 12px;
+      color: #888888;
+    }
+  }
+
+  .item-status {
+    font-size: 14px;
+    color: #009100;
+  }
+}
+
+// 套餐详情弹窗样式
+.package-info {
+  padding: 0 12px 0 0;
+
+  .package-name {
+    font-size: 16px;
+    font-weight: 600;
+    color: #191a1b;
+    margin-bottom: 4px;
+  }
+
+  .package-code {
+    font-size: 12px;
+    color: #888888;
+  }
+}
+
+.mall-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: #191a1b;
+}
+
+.package-detail {
+  padding: 12px 0 0 0;
+
+  .repair-card {
+    background: #ffffff;
+    border: 0.5px solid #e6e6e5;
+    border-radius: 8px;
+    margin-bottom: 12px;
+    overflow: hidden;
+
+    .repair-card-content {
+      display: flex;
+      justify-content: space-between;
+      padding: 12px;
+      gap: 12px;
+
+      .repair-left {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        flex: 1;
+
+        .repair-name-row {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+
+          .repair-name {
+            font-size: 14px;
+            font-weight: 500;
+            color: #191a1b;
+          }
+
+          .repair-tag {
+            font-size: 12px;
+            color: #191a1b;
+            background: rgba(25, 26, 27, 0.06);
+            padding: 1px 4px;
+            border-radius: 4px;
+          }
+        }
+
+        .repair-code {
+          font-size: 12px;
+          color: #545454;
+        }
+
+        .repair-category {
+          font-size: 12px;
+          color: #545454;
+        }
+      }
+
+      .repair-right {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 2px;
+
+        .repair-price {
+          font-size: 14px;
+          font-weight: 500;
+          color: #191a1b;
+        }
+
+        .repair-discount {
+          font-size: 12px;
+          color: #545454;
+        }
+      }
+    }
+
+    .repair-card-bottom {
+      padding: 0 12px 12px 12px;
+
+      .repair-info-row {
+        display: flex;
+        gap: 16px;
+        margin-bottom: 8px;
+
+        .info-item {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+
+          .info-label {
+            font-size: 12px;
+            color: #545454;
+          }
+
+          .info-value {
+            font-size: 12px;
+            color: #191a1b;
+          }
+        }
+      }
+    }
+
+    .parts-list {
+      border-top: 0.5px solid #e6e6e5;
+      padding: 12px;
+      background: #fafafa;
+
+      .part-card {
+        // background: #ffffff;
+        // border: 0.5px solid #e6e6e5;
+        // border-radius: 8px;
+        margin-bottom: 8px;
+        overflow: hidden;
+
+        &:last-child {
+          margin-bottom: 0;
+        }
+
+        .part-card-content {
+          display: flex;
+          justify-content: space-between;
+          padding: 12px;
+          gap: 12px;
+
+          .part-left {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            flex: 1;
+
+            .part-name-row {
+              display: flex;
+              align-items: center;
+              gap: 4px;
+
+              .part-name {
+                font-size: 14px;
+                font-weight: 500;
+                color: #191a1b;
+              }
+
+              .part-tag {
+                font-size: 12px;
+                color: #191a1b;
+                background: rgba(25, 26, 27, 0.06);
+                padding: 1px 4px;
+                border-radius: 4px;
+              }
+            }
+
+            .part-code {
+              font-size: 12px;
+              color: #545454;
+            }
+
+            .part-category {
+              font-size: 12px;
+              color: #545454;
+            }
+          }
+
+          .part-right {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 2px;
+
+            .part-price {
+              font-size: 14px;
+              font-weight: 500;
+              color: #191a1b;
+            }
+
+            .part-discount {
+              font-size: 12px;
+              color: #545454;
+            }
+          }
+        }
+
+        .part-card-bottom {
+          padding: 0 12px 12px 12px;
+
+          .part-info-row {
+            display: flex;
+            gap: 16px;
+
+            .info-item {
+              display: flex;
+              align-items: center;
+              gap: 4px;
+
+              .info-label {
+                font-size: 12px;
+                color: #545454;
+              }
+
+              .info-value {
+                font-size: 12px;
+                color: #191a1b;
+              }
+            }
+          }
+        }
+      }
+    }
+
+    .expand-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+      padding: 12px;
+      cursor: pointer;
+
+      .expand-text {
+        font-size: 12px;
+        color: #009100;
+      }
+    }
+  }
+}
+
+// 服务活动详情弹窗样式
+.service-detail {
+  padding: 12px;
+
+  .detail-card {
+    background: #ffffff;
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 12px;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 12px;
+
+      .header-left {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+
+        .activity-name {
+          font-size: 16px;
+          font-weight: 500;
+          color: #191a1b;
+        }
+
+        .activity-tag {
+          font-size: 12px;
+          color: #009100;
+          background: #e6f4e6;
+          padding: 2px 8px;
+          border-radius: 4px;
+          width: fit-content;
+        }
+      }
+    }
+
+    .activity-info {
+      .info-item {
+        display: flex;
+        padding: 8px 0;
+        border-bottom: 0.5px solid #e6e6e5;
+
+        &:last-child {
+          border-bottom: none;
+        }
+
+        .info-label {
+          font-size: 14px;
+          color: #545454;
+          width: 70px;
+          flex-shrink: 0;
+        }
+
+        .info-value {
+          font-size: 14px;
+          color: #191a1b;
+          flex: 1;
+        }
+      }
+    }
+
+    .card-title {
+      font-size: 14px;
+      font-weight: 500;
+      color: #191a1b;
+      margin-bottom: 12px;
+    }
+
+    .project-list {
+      .project-item {
+        display: flex;
+        justify-content: space-between;
+        padding: 10px 0;
+        border-bottom: 0.5px solid #e6e6e5;
+
+        &:last-child {
+          border-bottom: none;
+        }
+
+        .project-name {
+          font-size: 14px;
+          color: #191a1b;
+        }
+
+        .project-price {
+          font-size: 14px;
+          color: #191a1b;
+        }
+      }
+
+      .expand-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        padding: 10px 0;
+        cursor: pointer;
+
+        .expand-text {
+          font-size: 12px;
+          color: #545454;
+        }
+      }
+    }
+  }
+}
+
+// 底部操作按钮
+.detail-actions {
+  display: flex;
+  gap: 12px;
+  padding: 12px;
+
+  &.single-btn {
+    .cancel-btn {
+      flex: 1;
+    }
+  }
+
+  .cancel-btn {
+    flex: 1;
+    height: 40px;
+    background: #ffffff;
+    border: 1px solid #dce0e4;
+    border-radius: 8px;
+    font-size: 14px;
+    color: #191a1b;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .confirm-btn {
+    flex: 1;
+    height: 40px;
+    background: #009100;
+    border-radius: 8px;
+    font-size: 14px;
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    &.full-btn {
+      flex: 1;
+    }
+  }
+}
+
+.loading-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+}

@@ -4,7 +4,7 @@
     <div class="search-header">
       <van-icon name="arrow-left" size="16" color="#191A1B" @click="goBack" />
       <van-search
-        v-model="localSearchValue"
+        v-model="appSearchKeyWord"
         shape="round"
         :autofocus="true"
         placeholder="搜索"
@@ -15,7 +15,7 @@
           <van-icon name="search" size="16" color="#191A1B" />
         </template>
         <template #right-icon>
-          <div class="search-inner-btn" @click="onLocalSearch(localSearchValue)">搜索</div>
+          <div class="search-inner-btn" @click="onLocalSearch(appSearchKeyWord)">搜索</div>
         </template>
       </van-search>
     </div>
@@ -29,59 +29,15 @@
 
       <!-- 搜索结果列表 -->
       <div class="common-scroll-content" v-else-if="searchResults.length > 0">
-        <list-item
+        <div
           v-for="item in searchResults"
           :key="item.id"
-          class="work-order-card"
+          class="search-result-item"
           @click="onCardClick(item)"
         >
-          <template #card-info>
-            <!-- 卡片头部 -->
-            <div class="card-header">
-              <span class="order-no">{{ item.orderNo }}</span>
-              <span :class="['status-tag', `status-${item.status}`]">{{ item.statusText }}</span>
-            </div>
-
-            <!-- 车辆信息 -->
-            <div class="vehicle-info">
-              <div class="plate-row">
-                <span class="plate-no">{{ item.plateNo || '无车牌' }}</span>
-                <div class="tag-list">
-                  <span>
-                    <img src="@/assets/image/warning-red.png" alt="" />
-                  </span>
-                  <span>
-                    <img src="@/assets/image/warning-yellow.png" alt="" />
-                  </span>
-                  <span style="height: 20px">
-                    <img src="@/assets/image/warning-green.png" alt="" />
-                  </span>
-                  <span v-for="tag in item.tags" :key="tag" class="info-tag">{{ tag }}</span>
-                </div>
-              </div>
-              <div class="vehicle-model">{{ item.vehicleModel }} · {{ item.vin }}</div>
-            </div>
-
-            <!-- 详细信息 -->
-            <div class="detail-info">
-              <div class="info-row">
-                <span class="label">车主</span>
-                <div class="value-wrapper">
-                  <span class="value">{{ item.owner }}</span>
-                  <span v-if="item.isAppointment" class="appointment-tag">预约客户</span>
-                </div>
-              </div>
-              <div class="info-row">
-                <span class="label">客户经理</span>
-                <span class="value">{{ item.manager }}</span>
-              </div>
-              <div class="info-row">
-                <span class="label">预计交车</span>
-                <span class="value">{{ item.expectedDelivery }}</span>
-              </div>
-            </div>
-          </template>
-        </list-item>
+          <span class="result-text" v-html="highlightKeyword(getResultText(item))"></span>
+          <van-icon name="arrow" size="16" color="#888888" />
+        </div>
       </div>
 
       <!-- 无搜索结果 -->
@@ -99,9 +55,23 @@
 import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useGlobalStore } from '@/stores/global'
-import { getWorkOrderList } from '@/api/workOrder'
+import { getVehicleInfo } from '@/api/reception'
 import { showToast } from 'vant'
-import ListItem from '@/components/ListItem.vue'
+// 列表项显示文本：车牌号/VIN/姓名
+const getResultText = (item) => {
+  const plateNo = item.vehiclePlateNo || '无车牌'
+  const vin = item.vin || ''
+  const name = item.vehicleProfileOwnerResp.customerName || ''
+  return `${plateNo}/${vin}/${name}`
+}
+
+// 高亮匹配字符（绿色）
+const highlightKeyword = (text) => {
+  if (!appSearchKeyWord.value) return text
+  const keyword = appSearchKeyWord.value.trim()
+  const regex = new RegExp(`(${keyword})`, 'gi')
+  return text.replace(regex, '<span style="color:#009100">$1</span>')
+}
 
 const route = useRoute()
 const router = useRouter()
@@ -113,13 +83,13 @@ const goBack = () => {
 }
 
 // 本地状态管理
-const localSearchValue = ref('')
+const appSearchKeyWord = ref('')
 const searchResults = ref([])
 const searchLoading = ref(false)
 const hasSearched = ref(false)
 
 // 页面加载时
-onMounted(async() => {
+onMounted(async () => {
   globalStore.setTitle('')
 })
 
@@ -133,7 +103,7 @@ const onLocalSearch = (val) => {
 }
 
 // 搜索处理
-const handleSearch = async(keyword) => {
+const handleSearch = async (keyword) => {
   if (!keyword) return
 
   searchLoading.value = true
@@ -141,15 +111,11 @@ const handleSearch = async(keyword) => {
   hasSearched.value = true
 
   try {
-    const searchParams = {
-      vinLastSix: keyword,
-      pageNum: 1,
-      pageSize: 100
-    }
-
-    const res = await getWorkOrderList({ pageNum: 1, pageSize: 10 })
+    const res = await getVehicleInfo({
+      searchVin: keyword,
+    })
     if (res.code === 200) {
-      searchResults.value = res.data.records || []
+      searchResults.value = res.data || []
     } else {
       searchResults.value = []
     }
@@ -163,11 +129,15 @@ const handleSearch = async(keyword) => {
 }
 
 const onCardClick = (item) => {
+  // 使用 params 传递整个 item 对象
   router.push({
-    name: 'workOrderDetail',
+    name: 'workOrderCreate',
+    query: {
+      id: item.id,
+    },
     params: {
-      id: item.id
-    }
+      vehicleInfo: JSON.stringify(item),
+    },
   })
 }
 </script>
@@ -245,7 +215,7 @@ const onCardClick = (item) => {
 .search-full-page {
   width: 100%;
   min-height: 100%;
-  background-color: #f7f7f7;
+  // background-color: #ffffff;
   display: flex;
   flex-direction: column;
   padding-top: 44px;
@@ -266,11 +236,10 @@ const onCardClick = (item) => {
   }
 }
 
-// 搜索结果列表 - 与 ListView.vue 一致
+// 搜索结果列表
 .common-scroll-content {
   flex: 1;
   overflow-y: auto;
-  padding: 0 12px;
 }
 
 // 无搜索结果
@@ -305,118 +274,24 @@ const onCardClick = (item) => {
   }
 }
 
-.work-order-card {
+// 搜索结果列表项（设计图样式）
+.search-result-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 50px;
   background: #ffffff;
-  border-radius: 8px;
-  margin-top: 12px;
-  padding: 12px;
-  box-shadow: 0px 0px 4px 0px rgba(57, 61, 58, 0.1);
+  border-bottom: 0.5px solid #e6e6e5;
+  padding: 0 12px;
+  cursor: pointer;
 
-  .card-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 12px;
-    border-bottom: 1px solid #e6e6e5;
-    padding-bottom: 9px;
-    .order-no {
-      font-size: 14px;
-      font-weight: 500;
-      color: #191a1b;
-    }
-
-    .status-tag {
-      font-size: 12px;
-      padding: 2px 8px;
-      border-radius: 4px;
-      font-weight: 500;
-      &.status-pending {
-        color: #c8a12b;
-      }
-
-      &.status-completed {
-        color: #6c6e6c;
-      }
-    }
-  }
-
-  .vehicle-info {
-    margin-bottom: 8px;
-    .plate-row {
-      display: flex;
-      align-items: center;
-      margin-bottom: 4px;
-
-      .plate-no {
-        font-size: 16px;
-        font-weight: 500;
-        color: #191a1b;
-        margin-right: 8px;
-      }
-
-      .tag-list {
-        display: flex;
-        gap: 4px;
-        align-items: center;
-        .info-tag {
-          font-size: 10px;
-          padding: 1px 4px;
-          height: 20px;
-          background: #fff;
-          color: #191a1b;
-          border: 0.5px solid #191a1b;
-          border-radius: 4px;
-        }
-      }
-    }
-
-    .vehicle-model {
-      font-size: 12px;
-      color: #545454;
-    }
-  }
-
-  .detail-info {
-    .info-row {
-      display: flex;
-      align-items: center;
-      margin-bottom: 6px;
-
-      &:last-child {
-        margin-bottom: 0;
-      }
-
-      .label {
-        width: 68px;
-        font-size: 14px;
-        color: #545454;
-        flex-shrink: 0;
-      }
-
-      .value-wrapper {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-
-        .value {
-          font-size: 14px;
-          color: #191a1b;
-        }
-
-        .appointment-tag {
-          font-size: 10px;
-          padding: 1px 4px;
-          border-radius: 4px;
-          background: rgba(25, 26, 27, 0.06);
-          color: #191a1b;
-        }
-      }
-
-      .value {
-        font-size: 14px;
-        color: #191a1b;
-      }
-    }
+  .result-text {
+    font-size: 14px;
+    color: #191a1b;
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 }
 </style>

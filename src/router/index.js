@@ -71,7 +71,7 @@ const router = createRouter({
           }
         },
         {
-          path: '/reception/work-order/create',
+          path: '/reception/work-order/create/:vehicleInfo?',
           name: 'workOrderCreate',
           component: () => import('../views/reception/create/index.vue'),
           meta: {
@@ -83,6 +83,15 @@ const router = createRouter({
           path: '/reception/work-order/detail',
           name: 'workOrderDetail',
           component: () => import('../views/reception/detail/index.vue'),
+          meta: {
+            title: '施工单详情',
+            keepAlive: false
+          }
+        },
+        {
+          path: '/reception/work-order/edit',
+          name: 'workOrderEdit',
+          component: () => import('../views/reception/edit/index.vue'),
           meta: {
             title: '施工单详情',
             keepAlive: false
@@ -104,6 +113,24 @@ const router = createRouter({
           meta: {
             title: '权益查询',
             keepAlive: true
+          }
+        },
+        {
+          path: '/reception/select-package',
+          name: 'selectPackage',
+          component: () => import('../views/reception/select-package/index.vue'),
+          meta: {
+            title: '选择维修项目',
+            keepAlive: false
+          }
+        },
+        {
+          path: '/reception/add-parts',
+          name: 'addParts',
+          component: () => import('../views/reception/add-parts/index.vue'),
+          meta: {
+            title: '选择维修项目',
+            keepAlive: false
           }
         }
       ]

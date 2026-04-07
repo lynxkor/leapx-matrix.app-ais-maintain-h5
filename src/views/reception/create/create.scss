@@ -272,6 +272,11 @@
     align-items: center;
     justify-content: space-between;
     width: 100%;
+
+    .required {
+      color: #ee0a24;
+      margin-right: 2px;
+    }
   }
 
   .sub-info {
@@ -509,11 +514,11 @@
   .save-btn {
     flex: 1;
     height: 40px;
-    background: #ffffff;
+    background: #009100;
     border: 1px solid #009100;
     border-radius: 8px;
     font-size: 14px;
-    color: #009100;
+    color: #ffffff;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -762,7 +767,7 @@
       .label {
         font-size: 14px;
         color: #191a1b;
-        width: 300px;
+        width: 260px;
       }
 
       .value {
@@ -859,16 +864,166 @@
     }
   }
 }
-.confirm-btn {
-  width: 100%;
-  height: 40px;
-  background: #009100;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 500;
-  color: #ffffff;
+
+// 预计交车时间选择器样式
+.delivery-time-picker {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-top: 16px;
+  height: 100%;
+
+  .date-column {
+    width: 168px;
+    background: #f5f5f5;
+    overflow-y: auto;
+
+    .picker-item {
+      display: flex;
+      align-items: center;
+      height: 44px;
+      padding-left: 16px;
+      font-size: 14px;
+      color: #191a1b;
+      background: #f4f4f4;
+      cursor: pointer;
+
+      &.active {
+        background: #ffffff;
+        color: #009100;
+      }
+    }
+  }
+
+  .time-column {
+    flex: 1;
+    background: #ffffff;
+    overflow-y: auto;
+
+    .picker-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 44px;
+      padding-left: 22px;
+      padding-right: 16px;
+      font-size: 14px;
+      color: #191a1b;
+      cursor: pointer;
+
+      &.active {
+        .time-text {
+          color: #009100;
+        }
+      }
+    }
+  }
+}
+
+// 签字渠道选择器样式
+.signature-channel-picker {
+  .picker-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 16px;
+    background: #ffffff;
+    cursor: pointer;
+    height: 70px;
+
+    .channel-content {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+
+      .channel-text {
+        font-size: 14px;
+        color: #191a1b;
+      }
+
+      .channel-hint {
+        font-size: 12px;
+        color: #888888;
+      }
+    }
+
+    &.active {
+      .channel-content .channel-text {
+        color: #009100;
+      }
+    }
+  }
+}
+
+// 维修类型选择弹窗样式
+.category-popup {
+  .category-tabs {
+    display: flex;
+    background: #ffffff;
+    padding: 12px;
+    gap: 8px;
+
+    .category-tab {
+      flex: 1;
+      text-align: center;
+      padding: 8px 0;
+      font-size: 16px;
+      font-weight: 500;
+      color: #191a1b;
+      border-bottom: 2px solid transparent;
+
+      &.active {
+        color: #009100;
+        border-bottom-color: #009100;
+      }
+    }
+  }
+
+  .category-content {
+    max-height: 50vh;
+    overflow-y: auto;
+    background: #ffffff;
+    border-radius: 8px;
+    margin: 12px 0;
+    padding: 4px 0;
+
+    .category-list {
+      .category-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        height: 40px;
+        padding: 0 12px;
+        border-bottom: 0.5px solid #e6e6e5;
+
+        &:last-child {
+          border-bottom: none;
+        }
+
+        &.active {
+          .item-text {
+            color: #009100;
+          }
+        }
+
+        .item-text {
+          font-size: 14px;
+          color: #191a1b;
+        }
+      }
+    }
+  }
+
+  .category-footer {
+    padding: 12px;
+    background: #ffffff;
+
+    .confirm-btn {
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #009100;
+      border-radius: 8px;
+      font-size: 14px;
+      color: #ffffff;
+    }
+  }
 }
