@@ -23,17 +23,14 @@
         <div class="search-input-wrapper">
           <div class="search-input-container">
             <van-icon name="search" size="16" color="#191A1B" class="search-icon" />
-            <div class="search-dropdown-wrap">
-              <SearchDropdown
-                v-model="selectedModuleValue"
-                v-model:searchKeyword="searchKeyword"
-                :options="moduleOptions"
-                placeholder="搜索故障模块"
-                @focus="handleModuleFocus"
-                @onSearch="handleModuleSearch"
-                @select="handleModuleSelect"
-              />
-            </div>
+            <input
+              v-model="searchKeyword"
+              type="search"
+              class="search-input"
+              placeholder="输入VRT/VFG/CCC"
+              @input="onSearchInput"
+              @keydown.enter="handleSearchBtn"
+            />
             <!-- 搜索按钮 -->
             <div class="search-btn" @click="handleSearchBtn">
               搜索
@@ -41,16 +38,19 @@
           </div>
         </div>
 
-        <!-- 已选故障模块列表 -->
-        <div class="module-list">
-          <div
-            v-for="(item, index) in faultModules"
-            :key="index"
-            class="module-item"
-          >
-            <span class="module-text">{{ item.cccName }}</span>
-            <van-icon name="delete-o" size="16" color="#3B3E3B" @click="handleDeleteModule(index)" />
-          </div>
+        <!-- 搜索结果列表 -->
+        <div v-if="hasSearched" class="result-list">
+          <template v-if="searchResults.length">
+            <div
+              v-for="item in searchResults"
+              :key="item.id"
+              class="result-item"
+              @click="handleSelect(item)"
+            >
+              <span class="result-text" v-html="formatSearchResults(item)"></span>
+            </div>
+          </template>
+          <Empty v-else text="没有找到相关CCC，请联系服务部技术支持" />
         </div>
       </div>
     </div>
@@ -58,103 +58,98 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed } from 'vue'
 import { showToast } from 'vant'
-import SearchDropdown from '@/libs/components/SearchDropdown.vue'
+import Empty from './Empty.vue'
 import { cccList } from '../../../api/repairWork'
 
 const props = defineProps({
   visible: {
     type: Boolean,
     default: false
+  },
+  existingModules: {
+    type: Array,
+    default: () => []
   }
 })
 
-const emit = defineEmits(['update:visible', 'change'])
+const emit = defineEmits(['update:visible', 'select'])
 
-// 使用计算属性避免直接修改 prop
 const innerVisible = computed({
   get: () => props.visible,
   set: (val) => emit('update:visible', val)
 })
 
-// 搜索关键词
 const searchKeyword = ref('')
+const searchResults = ref([])
+const hasSearched = ref(false)
 
-// 当前选中的模块值
-const selectedModuleValue = ref('')
+let debounceTimer = null
 
-// 已选故障模块列表
-const faultModules = ref([])
-
-// 模块选项列表
-const moduleOptions = ref([])
-
-// 搜索故障模块
 const searchFaultModules = async(keyword) => {
   try {
-    const data = await cccList(keyword || '')
-    const list = data?.data || data || []
-    moduleOptions.value = list.map((item) => ({
-      label: item.cccName,
-      value: item
-    }))
+    const res = await cccList(keyword || '')
+    if (res.code === 200) {
+      searchResults.value = res?.data || []
+    } else {
+      searchResults.value = []
+      showToast(res.message)
+    }
   } catch {
-    moduleOptions.value = []
+    searchResults.value = []
     showToast('搜索故障模块失败')
   }
+  hasSearched.value = true
 }
 
-// 处理模块搜索下拉框聚焦
-const handleModuleFocus = () => {
-  searchFaultModules('')
+const onSearchInput = () => {
+  clearTimeout(debounceTimer)
+  debounceTimer = setTimeout(() => {
+    const keyword = searchKeyword.value.trim()
+    if (keyword) {
+      searchFaultModules(keyword)
+    } else {
+      searchResults.value = []
+      hasSearched.value = false
+    }
+  }, 300)
 }
 
-// 处理模块搜索
-const handleModuleSearch = (keyword) => {
-  searchFaultModules(keyword)
-}
-
-// 处理模块选择
-const handleModuleSelect = (option) => {
-  const moduleData = option.value
-  // 避免重复添加
-  const exists = faultModules.value.some(item => item.id === moduleData.id)
-  if (!exists) {
-    faultModules.value.push(moduleData)
-  }
-  // 清空搜索框
-  searchKeyword.value = ''
-  selectedModuleValue.value = ''
-}
-
-// 搜索按钮点击
 const handleSearchBtn = () => {
-  if (!searchKeyword.value.trim()) {
+  clearTimeout(debounceTimer)
+  const keyword = searchKeyword.value.trim()
+  if (keyword) {
+    searchFaultModules(keyword)
+  }
+}
+
+const handleSelect = (item) => {
+  const exists = props.existingModules.some(
+    (m) => m.cccName === item.cccName || m.id === item.id
+  )
+  if (exists) {
+    showToast('请勿重复添加')
     return
   }
-  const firstMatch = moduleOptions.value[0]
-  if (firstMatch) {
-    handleModuleSelect(firstMatch)
-  }
+  emit('select', item)
+  handleClose()
 }
 
-// 监听弹窗关闭事件，关闭时传递已选择的模块列表
-watch(innerVisible, (newVal, oldVal) => {
-  if (!newVal && oldVal) {
-    emit('change', faultModules.value)
-  }
-})
-
-// 删除故障模块
-const handleDeleteModule = (index) => {
-  faultModules.value.splice(index, 1)
-}
-
-// 关闭弹窗
 const handleClose = () => {
+  searchKeyword.value = ''
+  searchResults.value = []
+  hasSearched.value = false
   innerVisible.value = false
 }
+
+const formatSearchResults = (item) => {
+  // 匹配到的key替换为高亮
+  const str = `${item.vrtName}-${item.vfgName}-${item.cccName}`
+  const reg = new RegExp(searchKeyword.value, 'gi')
+  return str.replace(reg, `<em>${searchKeyword.value}</em>`)
+}
+
 </script>
 
 <style lang="scss" scoped>
@@ -163,16 +158,13 @@ const handleClose = () => {
     display: flex;
     flex-direction: column;
     height: 100%;
-    background-color: #f4f4f4;
   }
 
-  // 标题栏
   .popup-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
     height: 58px;
-    background-color: #f4f4f4;
     padding: 0 16px;
     flex-shrink: 0;
 
@@ -205,26 +197,25 @@ const handleClose = () => {
     }
   }
 
-  // 内容区域
   .popup-content {
     flex: 1;
-    padding: 0 12px 12px 12px;
+    padding: 0 12px 12px;
     overflow-y: auto;
     overflow-x: hidden;
   }
 
-  // 搜索输入框
   .search-input-wrapper {
-    flex: 1;
-    height: 30px;
     margin-bottom: 12px;
+    position: sticky;
+    top: 0;
+    background-color: #fff;
+    z-index: 9;
   }
 
   .search-input-container {
     display: flex;
     align-items: center;
-    width: 100%;
-    height: 100%;
+    height: 30px;
     padding-left: 8px;
     background-color: rgba(216, 216, 216, 0.3);
     border-radius: 15px;
@@ -235,23 +226,25 @@ const handleClose = () => {
     flex-shrink: 0;
   }
 
-  .search-dropdown-wrap {
+  .search-input {
     flex: 1;
     height: 100%;
-    display: flex;
-    align-items: center;
+    border: none;
+    outline: none;
+    background: transparent;
+    font-size: 12px;
+    font-family: 'PingFang SC', sans-serif;
+    color: var(--leap-color-default);
+    line-height: 28px;
+    padding: 0;
 
-    :deep(.van-cell) {
-      padding: 0;
-      background-color: transparent;
+    &::placeholder {
+      color: var(--leap-color-default-light-2);
     }
 
-    :deep(.van-field__control) {
-      height: 100%;
-      line-height: 28px;
-      font-size: 12px;
-      background: transparent;
-      padding: 0;
+    // 隐藏原生搜索框清除按钮
+    &::-webkit-search-cancel-button {
+      -webkit-appearance: none;
     }
   }
 
@@ -275,24 +268,30 @@ const handleClose = () => {
     }
   }
 
-  // 模块列表
-  .module-list {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  .module-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    height: 40px;
-    padding: 0 12px;
+  .result-list {
     background-color: #fff;
     border-radius: 8px;
-    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+    min-height: 400px;
+  }
 
-    .module-text {
+  .result-item {
+    display: flex;
+    align-items: center;
+    height: 50px;
+    padding: 0 12px;
+    cursor: pointer;
+    border-bottom: 0.5px solid #E6E6E5;
+
+    &:last-child {
+      border-bottom: none;
+    }
+
+    &:active {
+      background-color: var(--leap-color-default-light-5);
+    }
+
+    .result-text {
       flex: 1;
       font-family: 'PingFang SC', -apple-system, BlinkMacSystemFont, sans-serif;
       font-size: 14px;
@@ -301,8 +300,14 @@ const handleClose = () => {
       line-height: 20px;
       overflow: hidden;
       text-overflow: ellipsis;
-      white-space: nowrap;
-      margin-right: 8px;
+      display: -webkit-box;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
+      line-clamp: 2;
+      ::v-deep em {
+        font-style: normal;
+        color: var(--leap-color-primary);
+      }
     }
   }
 }

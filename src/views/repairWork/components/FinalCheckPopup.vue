@@ -235,11 +235,16 @@ const loadDetail = async() => {
 const searchBatteryUnit = async(keyword) => {
   try {
     const res = await getBatteryUnitList({ name: keyword })
-    batteryUnitOptions.value = (res.data || []).map((item) => ({
-      ...item,
-      label: item.name,
-      value: item.id
-    }))
+    if (res.code === 200) {
+      batteryUnitOptions.value = (res.data || []).map((item) => ({
+        ...item,
+        label: item.name,
+        value: item.id
+      }))
+    } else {
+      batteryUnitOptions.value = []
+      showToast(res.message)
+    }
   } catch {
     batteryUnitOptions.value = []
   }

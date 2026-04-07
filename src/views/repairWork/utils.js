@@ -160,17 +160,23 @@ export async function showFaultCheckDialog(serviceProxyId, onRefresh, workOrder)
       })
       // 确认无故障，清空故障信息
       try {
-        await addOrUpdate({
+        const res = await addOrUpdate({
           ...workOrder,
           serviceProxyId,
           faultAlertRecordRespList: [],
           currentFault: 0,
           customerContent: ''
         })
-        showToast('已确认无故障')
-        onRefresh?.()
-        return { action: 'noFault' }
-      } catch {
+        if (res.code === 200) {
+          showToast('已确认无故障')
+          onRefresh?.()
+          return { action: 'noFault' }
+        } else {
+          showToast(res.message)
+          throw new Error('clear_fault_failed')
+        }
+      } catch (e) {
+        if (e.message === 'clear_fault_failed') throw e
         showToast('操作失败')
         throw new Error('clear_fault_failed')
       }
@@ -196,11 +202,16 @@ export async function executeSingleItemOperation(action, { serviceProxyId, item,
   if (!confirmed) return false
 
   try {
-    await callSingleItemApi(action, { serviceProxyId, item })
-    showToast('操作成功')
-    onRefresh?.()
-    onSuccess?.()
-    return true
+    const res = await callSingleItemApi(action, { serviceProxyId, item })
+    if (res.code === 200) {
+      showToast('操作成功')
+      onRefresh?.()
+      onSuccess?.()
+      return true
+    } else {
+      showToast(res.message)
+      return false
+    }
   } catch {
     showToast('操作失败')
     return false
@@ -227,11 +238,16 @@ export async function executeBatchOperation(action, { serviceProxyId, ids, selec
   if (!confirmed) return false
 
   try {
-    await callBatchApi(action, { serviceProxyId, ids, extraParams })
-    showToast('操作成功')
-    onRefresh?.()
-    onSuccess?.()
-    return true
+    const res = await callBatchApi(action, { serviceProxyId, ids, extraParams })
+    if (res.code === 200) {
+      showToast('操作成功')
+      onRefresh?.()
+      onSuccess?.()
+      return true
+    } else {
+      showToast(res.message)
+      return false
+    }
   } catch {
     showToast('操作失败')
     return false
@@ -251,6 +267,10 @@ export async function executeBatchOperation(action, { serviceProxyId, ids, selec
 export async function handleFinalCheckFlow({ serviceProxyId, workOrder, onRefresh, onShowFinalCheckPopup, onShowFaultInfoPopup }) {
   try {
     const resdata = await finalInspectionDetail(serviceProxyId)
+    if (resdata.code !== 200) {
+      showToast(resdata.message)
+      return
+    }
     const res = resdata?.data || {}
     if (res.faultFlag && res.faultAlertRecordResps?.length === 0) {
       const result = await showFaultCheckDialog(serviceProxyId, onRefresh, workOrder)
@@ -278,9 +298,14 @@ export async function handleFinalCheckFlow({ serviceProxyId, workOrder, onRefres
           finalChecker: userStore.userName
         }
         try {
-          await finalInspection(submitData)
-          showToast('终检成功')
-          onRefresh?.()
+          const fres = await finalInspection(submitData)
+          if (fres.code === 200) {
+            showToast('终检成功')
+            onRefresh?.()
+          } else {
+            showToast(fres.message)
+            onRefresh?.()
+          }
         } catch (e) {
           showToast(e?.message || '终检失败')
           onRefresh?.()
@@ -288,6 +313,6 @@ export async function handleFinalCheckFlow({ serviceProxyId, workOrder, onRefres
       }
     }
   } catch {
-    showToast('终检失败')
+    // showToast('终检失败')
   }
 }

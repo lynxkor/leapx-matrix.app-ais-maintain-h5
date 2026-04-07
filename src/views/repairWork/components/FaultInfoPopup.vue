@@ -58,7 +58,7 @@
             :key="index"
             class="module-item"
           >
-            <span class="module-text">{{ item.cccName || item.label }}</span>
+            <span class="module-text">{{`${item.vrtName}-${item.vfgName}-${item.cccName}`}}</span>
             <van-icon name="delete-o" size="16" color="#3B3E3B" @click="handleDeleteModule(index)" />
           </div>
         </div>
@@ -92,7 +92,8 @@
       <!-- 添加故障模块弹窗 -->
       <AddFaultInfoPopup
         v-model:visible="showAddModulePopup"
-        @change="handleModuleChange"
+        :existing-modules="faultModules"
+        @select="handleModuleSelect"
       />
     </div>
   </van-popup>
@@ -159,11 +160,9 @@ const handleDeleteModule = (index) => {
   faultModules.value.splice(index, 1)
 }
 
-// 处理模块变化（从弹窗接收数据）
-const handleModuleChange = (modules) => {
-  if (modules && modules.length > 0) {
-    faultModules.value = modules
-  }
+// 处理模块选择（从弹窗接收单条数据）
+const handleModuleSelect = (module) => {
+  faultModules.value.push(module)
 }
 
 // 提交保存
@@ -179,6 +178,8 @@ const handleSubmit = async() => {
       showSuccessToast('保存成功')
       emit('refresh')
       handleClose()
+    } else {
+      showToast(res.message)
     }
   } catch {
     showToast('保存失败')
@@ -337,8 +338,8 @@ const handleClose = () => {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      height: 40px;
-      padding: 0 8px;
+      min-height: 40px;
+      padding: 8px;
       background-color: var(--leap-color-default-light-5);
       border-radius: 6px;
       margin-top: 8px;
@@ -349,10 +350,12 @@ const handleClose = () => {
         font-size: 14px;
         font-weight: 400;
         color: var(--leap-color-default);
-        line-height: 20px;
         overflow: hidden;
         text-overflow: ellipsis;
-        white-space: nowrap;
+        display: -webkit-box;
+        line-clamp: 2;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
       }
     }
   }

@@ -55,6 +55,7 @@
 <script setup>
 import { ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import { showToast } from 'vant'
 import RepairWorkCard from './components/RepairWorkCard.vue'
 import Empty from './components/Empty.vue'
 import { getRecord } from '../../api/repairWork'
@@ -137,21 +138,26 @@ const loadData = async(isRefresh = false) => {
       ...getFilterParams(activeFilter.value)
     }
 
-    const resData = await getRecord(params)
-    const res = resData.data || {}
-    const records = res.records || []
-    if (isRefresh) {
-      workOrderList.value = records
-    } else {
-      workOrderList.value.push(...records)
-    }
+    const res = await getRecord(params)
+    if (res.code === 200) {
+      const data = res.data || {}
+      const records = data.records || []
+      if (isRefresh) {
+        workOrderList.value = records
+      } else {
+        workOrderList.value.push(...records)
+      }
 
-    // 判断是否还有更多数据
-    const totalPage = res.totalPage || res.pages || 1
-    if (currentPage.value >= totalPage || records.length < PAGESIZE) {
-      finished.value = true
+      // 判断是否还有更多数据
+      const totalPage = data.totalPage || data.pages || 1
+      if (currentPage.value >= totalPage || records.length < PAGESIZE) {
+        finished.value = true
+      } else {
+        currentPage.value++
+      }
     } else {
-      currentPage.value++
+      showToast(res.message)
+      finished.value = true
     }
   } catch (error) {
     console.error('加载数据失败:', error)
@@ -205,7 +211,9 @@ watch(activeTab, () => {
 
       &.van-tab--active {
         color: var(--leap-color-primary);
-        font-weight: 600;
+        .van-tab__text {
+          font-weight: 500;
+        }
       }
     }
 
