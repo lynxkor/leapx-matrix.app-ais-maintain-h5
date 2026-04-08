@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { getEnum } from '@/libs/api/common'
+import { getMaintainEnum } from '@/libs/api/common'
 
 export const useGlobalStore = defineStore('global', {
   state: () => ({
