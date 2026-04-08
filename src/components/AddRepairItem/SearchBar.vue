@@ -44,8 +44,7 @@
         v-for="card in activeCards"
         :key="card.id"
         :item="card"
-        @checkout-click="$emit('checkout-click', $event)"
-        @quantity-change="$emit('quantity-change', $event)"
+        @update-item="(item, updates) => emit('update-item', item, updates)"
       />
       <!-- <div class="active-card-actions">
         <div class="action-btn continue-btn" @click="onContinue">继续添加</div>
@@ -66,7 +65,7 @@ defineProps({
   }
 })
 
-const emit = defineEmits(['search', 'add-item-with-parts', 'checkout-click', 'quantity-change', 'done'])
+const emit = defineEmits(['search', 'add-item-with-parts', 'update-item', 'done'])
 
 const keyword = ref('')
 const results = ref([])

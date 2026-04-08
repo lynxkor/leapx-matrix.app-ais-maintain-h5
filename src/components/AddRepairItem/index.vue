@@ -33,8 +33,7 @@
         "
         @search="performSearch"
         @add-item-with-parts="handleAddItemWithParts"
-        @checkout-click="toggleCheckoutPicker"
-        @quantity-change="onQuantityChange"
+        @update-item="handleItemUpdate"
         @done="onSearchDone"
       />
 
@@ -47,8 +46,7 @@
             :key="item.id"
             :item="item"
             @delete="removeItem(index, 'item')"
-            @checkout-click="toggleCheckoutPicker"
-            @quantity-change="onQuantityChange"
+            @update-item="handleItemUpdate"
           />
         </div>
 
@@ -59,8 +57,7 @@
             :key="item.id"
             :item="item"
             @delete="removeItem(index, 'part')"
-            @checkout-click="toggleCheckoutPicker"
-            @quantity-change="onQuantityChange"
+            @update-item="handleItemUpdate"
           />
         </div>
 
@@ -166,10 +163,10 @@ const normalizeItem = (raw) => ({
   ...raw,
   name: raw.repairItemName || raw.name,
   code: raw.repairItemCode || raw.code,
-  price: raw.salePrice || raw.workhourPrice || raw.price || '0.00',
+  price: raw.workhourPrice || raw.price || '0.00',
   checkoutType: '',
-  quantity: raw.workHour || raw.quantity || 1,
-  discountAmount: raw.discountAmount
+  quantity: raw.workHour || 1,
+  discountAmount: raw.discountAmount || 0
 })
 
 const normalizePart = (raw) => ({
@@ -179,7 +176,7 @@ const normalizePart = (raw) => ({
   price: raw.salePrice || raw.price || '0.00',
   checkoutType: '',
   quantity: raw.quantity || 1,
-  discountAmount: raw.discountAmount
+  discountAmount: raw.discountAmount || 0
 })
 
 // 搜索结果点击 → 区分维修项目/零件
@@ -226,15 +223,14 @@ const removeItem = (index, type) => {
   list.value.splice(index, 1)
 }
 
-// 数量变更
-const onQuantityChange = (item, val) => {
-  item.quantity = val
-}
-
-// 结算类型
-const toggleCheckoutPicker = (item) => {
-  editingItem.value = item
-  showCheckoutPicker.value = true
+// 统一字段更新
+const handleItemUpdate = (item, updates) => {
+  if (updates._action === 'checkout') {
+    editingItem.value = item
+    showCheckoutPicker.value = true
+    return
+  }
+  Object.assign(item, updates)
 }
 
 const onCheckoutConfirm = (value) => {
