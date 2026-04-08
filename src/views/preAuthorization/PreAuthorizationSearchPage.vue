@@ -36,7 +36,7 @@
         >
           <template #header>
             <div class="item-header">
-              <span class="order-no">{{ item.orderNo }}</span>
+              <span class="order-no">{{ item.code }}</span>
               <span class="status-tag" :class="getStatusClass(item.status)">
                 {{ getStatusText(item.status) }}
               </span>
@@ -47,15 +47,15 @@
             <van-row class="card-info">
               <van-col span="24" class="card-info-col">
                 <span class="card-info-title">VIN</span>
-                <span class="card-info-des">{{ item.vin }}</span>
+                <span class="card-info-des">{{ item.vehProfileVin }}</span>
               </van-col>
               <van-col span="24" class="card-info-col">
                 <span class="card-info-title">门店名称</span>
-                <span class="card-info-des">{{ item.storeName }}</span>
+                <span class="card-info-des">{{ item.dealerName }}</span>
               </van-col>
               <van-col span="24" class="card-info-col">
                 <span class="card-info-title">保修时间</span>
-                <span class="card-info-des">{{ item.warrantyTime }}</span>
+                <span class="card-info-des">{{ item.guaranteeStartDate }} - {{ item.warrantyEndTime }}</span>
               </van-col>
               <van-col span="24" class="card-info-col">
                 <span class="card-info-title">进店里程</span>
@@ -66,12 +66,12 @@
                 <span class="card-info-des">{{ item.createTime }}</span>
               </van-col>
               <van-col span="24" class="card-info-col">
-                <span class="card-info-title">缴定金时间</span>
-                <span class="card-info-des">{{ item.depositTime }}</span>
+                <span class="card-info-title">创建人</span>
+                <span class="card-info-des">{{ item.creatorName }}</span>
               </van-col>
               <van-col span="24" class="card-info-col">
-                <span class="card-info-title">销售门店</span>
-                <span class="card-info-des">{{ item.salesStore }}</span>
+                <span class="card-info-title">预交时间</span>
+                <span class="card-info-des">{{ item.estimateDeliverTime }}</span>
               </van-col>
             </van-row>
           </template>
@@ -101,6 +101,8 @@ import { useRouter } from 'vue-router'
 import { showToast } from 'vant'
 import ListItem from '@/components/ListItem.vue'
 import AisButton from '@/components/AisButton.vue'
+import { preAuthList } from '@/api/authorization'
+import { callPhone } from '@/libs/utils/nativeFn'
 
 const router = useRouter()
 
@@ -114,70 +116,6 @@ const localSearchValue = ref('')
 const searchResults = ref([])
 const searchLoading = ref(false)
 const hasSearched = ref(false)
-
-// 模拟数据
-const mockData = [
-  {
-    id: 1,
-    orderNo: 'YS-260313141948383402',
-    status: 'pending',
-    vin: 'LFV3H6686RKYM3393',
-    storeName: '2358446753543340032',
-    warrantyTime: 'B10-510激光雷达版',
-    mileage: '2025款',
-    createTime: 'LFV3H6686RKYM3393',
-    depositTime: '2025-12-30 13:15:00',
-    salesStore: '杭州服务中心芯图大厦店'
-  },
-  {
-    id: 2,
-    orderNo: 'YS-260313141948383403',
-    status: 'submitted',
-    vin: 'LFV3H6686RKYM3394',
-    storeName: '2358446753543340033',
-    warrantyTime: 'C11-200增程版',
-    mileage: '2024款',
-    createTime: 'LFV3H6686RKYM3394',
-    depositTime: '2025-12-29 10:00:00',
-    salesStore: '上海浦东店'
-  },
-  {
-    id: 3,
-    orderNo: 'YS-260313141948383404',
-    status: 'approved',
-    vin: 'LFV3H6686RKYM3395',
-    storeName: '测试门店001',
-    warrantyTime: 'C10-525舒享版',
-    mileage: '2024款',
-    createTime: 'LFV3H6686RKYM3395',
-    depositTime: '2025-12-28 09:00:00',
-    salesStore: '北京朝阳店'
-  },
-  {
-    id: 4,
-    orderNo: 'YS-260313141948383405',
-    status: 'rejected',
-    vin: 'LFV3H6686RKYM3396',
-    storeName: '深圳南山店',
-    warrantyTime: 'T03-400轻享版',
-    mileage: '2023款',
-    createTime: 'LFV3H6686RKYM3396',
-    depositTime: '2025-12-27 14:30:00',
-    salesStore: '深圳南山店'
-  },
-  {
-    id: 5,
-    orderNo: 'YS-260313141948383406',
-    status: 'pending',
-    vin: 'LFV3H6686RKYM3397',
-    storeName: '成都武侯店',
-    warrantyTime: 'C11-605纯电版',
-    mileage: '2025款',
-    createTime: 'LFV3H6686RKYM3397',
-    depositTime: '2025-12-26 11:20:00',
-    salesStore: '成都武侯店'
-  }
-]
 
 // 本地搜索框触发搜索
 const onLocalSearch = (val) => {
@@ -197,15 +135,13 @@ const handleSearch = async(keyword) => {
   hasSearched.value = true
 
   try {
-    // 模拟搜索请求
-    await new Promise(resolve => setTimeout(resolve, 500))
-
-    // 简单过滤模拟
-    searchResults.value = mockData.filter(item =>
-      item.orderNo.includes(keyword) ||
-      item.vin.includes(keyword) ||
-      item.storeName.includes(keyword)
-    )
+    const res = await preAuthList({
+      appSearchKeyWord: keyword,
+      pageNum: 1,
+      pageSize: 20
+    })
+    // 处理接口返回的数据结构
+    searchResults.value = res?.data?.list || res?.list || []
   } catch (error) {
     console.error('搜索失败:', error)
     searchResults.value = []
@@ -217,30 +153,39 @@ const handleSearch = async(keyword) => {
 
 const getStatusText = (status) => {
   switch (status) {
-    case 'pending': return '未提交'
-    case 'submitted': return '已提交'
-    case 'approved': return '已批准'
-    case 'rejected': return '已拒绝'
+    case 0: return '未提交'
+    case 1: return '已提交'
+    case 2: return '待审核'
+    case 3: return '已通过'
+    case 4: return '已驳回'
+    case 5: return '已作废'
     default: return '未知'
   }
 }
 
 const getStatusClass = (status) => {
   switch (status) {
-    case 'pending': return 'status-blue'
-    case 'submitted':
-    case 'approved': return 'status-green'
-    case 'rejected': return 'status-red'
+    case 0: return 'status-blue'
+    case 1: return 'status-green'
+    case 2: return 'status-yellow'
+    case 3: return 'status-green'
+    case 4: return 'status-red'
+    case 5: return 'status-gray'
     default: return ''
   }
 }
 
 const handleContact = (item) => {
-  showToast(`联系创建人: ${item.orderNo}`)
+  const phone = item.creatorPhone || item.subUserPhone || ''
+  if (phone) {
+    callPhone(phone)
+  } else {
+    showToast('暂无联系电话')
+  }
 }
 
 const goToDetail = (item) => {
-  router.push(`/pre-authorization/${item.id}`)
+  router.push(`/pre-authorization/detail/${item.id}`)
 }
 </script>
 
@@ -373,6 +318,11 @@ const goToDetail = (item) => {
       &.status-red {
         color: #ee0a24;
         background: rgba(238, 10, 36, 0.1);
+      }
+
+      &.status-gray {
+        color: #969799;
+        background: rgba(150, 151, 153, 0.1);
       }
     }
   }

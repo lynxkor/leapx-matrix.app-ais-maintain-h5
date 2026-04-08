@@ -27,6 +27,7 @@
 
       <RefreshList
         v-else
+        ref="refreshListRef"
         :requestData="requestData"
         :has-no-data="dataList.length === 0"
         @setData="setData"
@@ -40,7 +41,7 @@
         >
           <template #header>
             <div class="item-header">
-              <span class="order-no">{{ item.orderNo }}</span>
+              <span class="order-no">{{ item.code }}</span>
               <span class="status-tag" :class="getStatusClass(item.status)">
                 {{ getStatusText(item.status) }}
               </span>
@@ -51,15 +52,15 @@
             <van-row class="card-info">
               <van-col span="24" class="card-info-col">
                 <span class="card-info-title">VIN</span>
-                <span class="card-info-des">{{ item.vin }}</span>
+                <span class="card-info-des">{{ item.vehProfileVin }}</span>
               </van-col>
               <van-col span="24" class="card-info-col">
                 <span class="card-info-title">门店名称</span>
-                <span class="card-info-des">{{ item.storeName }}</span>
+                <span class="card-info-des">{{ item.dealerName }}</span>
               </van-col>
               <van-col span="24" class="card-info-col">
                 <span class="card-info-title">保修时间</span>
-                <span class="card-info-des">{{ item.warrantyTime }}</span>
+                <span class="card-info-des">{{ item.guaranteeStartDate }} - {{ item.warrantyEndTime }}</span>
               </van-col>
               <van-col span="24" class="card-info-col">
                 <span class="card-info-title">进店里程</span>
@@ -71,11 +72,11 @@
               </van-col>
               <van-col span="24" class="card-info-col">
                 <span class="card-info-title">创建人</span>
-                <span class="card-info-des">{{ item.creator }}</span>
+                <span class="card-info-des">{{ item.creatorName }}</span>
               </van-col>
               <van-col span="24" class="card-info-col">
-                <span class="card-info-title">销售门店</span>
-                <span class="card-info-des">{{ item.salesStore }}</span>
+                <span class="card-info-title">预计交车时间</span>
+                <span class="card-info-des">{{ item.estimateDeliverTime }}</span>
               </van-col>
             </van-row>
           </template>
@@ -97,13 +98,15 @@
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { showToast } from 'vant'
 import FilterHeader from '@/libs/components/FilterHeader.vue'
 import RefreshList from '@/libs/components/RefreshList.vue'
 import ListItem from '@/components/ListItem.vue'
 import AisButton from '@/components/AisButton.vue'
+import { preAuthPage, preAuthGetStoreArea } from '@/api/authorization'
+import { callPhone } from '@/libs/utils/nativeFn'
 
 const router = useRouter()
 
@@ -112,166 +115,83 @@ const activeTab = ref('all')
 const dataList = ref([])
 const showEmpty = ref(false)
 const filterHeaderRef = ref(null)
+const refreshListRef = ref(null)
 
 // FilterHeader 配置
 const filterList = ref([
   {
-    title: '客户类型',
-    key: 'customerType',
-    nodeType: 'single',
-    options: [
-      { label: '个人客户', value: 'individual' },
-      { label: '企业客户', value: 'enterprise' }
-    ]
+    title: '门店所属区域',
+    key: 'dealerUnitIdList',
+    nodeType: 'multiple',
+    default: [],
+    options: []
   },
   {
-    title: '车辆品牌',
-    key: 'brand',
-    nodeType: 'single',
+    title: '预授权类型',
+    key: 'preAuthTypeList',
+    nodeType: 'multiple',
+    default: [],
     options: [
-      { label: 'Leapmotor C10', value: 'c10' },
-      { label: 'Leapmotor T03', value: 't03' },
-      { label: '其他', value: 'other' },
-      { label: '测试空结果', value: 'empty' }
-    ]
-  },
-  {
-    title: '日期范围',
-    key: 'dateRange',
-    nodeType: 'day',
-    columnsType: ['year', 'month', 'day'],
-    list: [
-      { label: '今天', value: 'today' },
-      { label: '近7天', value: 'week' },
-      { label: '近30天', value: 'month' }
+      { label: '技术预授权', value: 1 },
+      { label: '保修预授权', value: 2 }
     ]
   }
 ])
 
-// 模拟数据
-const mockData = [
-  {
-    id: 1,
-    orderNo: 'YS-260313141948383402',
-    status: 'pending',
-    vin: 'LFV3H6686RKYM3393',
-    storeName: '2358446753543340032',
-    warrantyTime: 'B10-510激光雷达版',
-    mileage: '2025款',
-    createTime: '2025-12-30 13:15:00',
-    creator: '王小虎',
-    salesStore: '杭州服务中心芯图大厦店'
-  },
-  {
-    id: 2,
-    orderNo: 'YS-260313141948383403',
-    status: 'submitted',
-    vin: 'LFV3H6686RKYM3394',
-    storeName: '2358446753543340033',
-    warrantyTime: 'C11-200增程版',
-    mileage: '2024款',
-    createTime: '2025-12-29 10:00:00',
-    creator: '李小明',
-    salesStore: '上海浦东店'
-  },
-  {
-    id: 3,
-    orderNo: 'YS-260313141948383404',
-    status: 'approved',
-    vin: 'LFV3H6686RKYM3395',
-    storeName: '测试门店001',
-    warrantyTime: 'C10-525舒享版',
-    mileage: '2024款',
-    createTime: '2025-12-28 09:00:00',
-    creator: '张三',
-    salesStore: '北京朝阳店'
-  },
-  {
-    id: 4,
-    orderNo: 'YS-260313141948383405',
-    status: 'rejected',
-    vin: 'LFV3H6686RKYM3396',
-    storeName: '深圳南山店',
-    warrantyTime: 'T03-400轻享版',
-    mileage: '2023款',
-    createTime: '2025-12-27 14:30:00',
-    creator: '李四',
-    salesStore: '深圳南山店'
-  },
-  {
-    id: 5,
-    orderNo: 'YS-260313141948383406',
-    status: 'pending',
-    vin: 'LFV3H6686RKYM3397',
-    storeName: '成都武侯店',
-    warrantyTime: 'C11-605纯电版',
-    mileage: '2025款',
-    createTime: '2025-12-26 11:20:00',
-    creator: '王五',
-    salesStore: '成都武侯店'
-  },
-  {
-    id: 6,
-    orderNo: 'YS-260313141948383407',
-    status: 'audit',
-    vin: 'LFV3H6686RKYM3398',
-    storeName: '广州天河店',
-    warrantyTime: 'C10-510激光雷达版',
-    mileage: '2025款',
-    createTime: '2025-12-25 09:30:00',
-    creator: '赵六',
-    salesStore: '广州天河店'
+// 获取门店所属区域数据
+const getStoreAreaOptions = async() => {
+  try {
+    const res = await preAuthGetStoreArea()
+    if (res?.data) {
+      filterList.value[0].options = res.data.map((item) => ({
+        label: item.orgName,
+        value: item.orgCode
+      }))
+    }
+  } catch (error) {
+    console.error('获取门店所属区域失败', error)
   }
-]
+}
 
-// 初始化数据
-dataList.value = [...mockData]
+onMounted(() => {
+  getStoreAreaOptions()
+})
 
 // requestData 配置
 const requestData = reactive({
   data: {
-    keyWord: '',
     pageNum: 1,
-    pageSize: 10
+    pageSize: 10,
+    dealerUnitIdList: [],
+    preAuthTypeList: [],
+    appSearchKeyWord: ''
   },
-  api: () => Promise.resolve({ code: 200, data: mockData })
+  api: (params) => preAuthPage(params)
 })
 
 // 方法定义
 const onSearch = (params) => {
-  showToast(`搜索：${params.searchValue}`)
-  requestData.data.keyWord = params.searchValue
-  requestData.data.pageNum = 1
-  dataList.value = [...mockData]
+  // 更新 requestData.data 中的搜索关键词，但不触发自动查询
+  requestData.data = {
+    ...requestData.data,
+    appSearchKeyWord: params.searchValue,
+    pageNum: 1
+  }
+  // 手动触发搜索
+  if (refreshListRef.value) {
+    refreshListRef.value.search(requestData.data)
+  }
 }
 
 const onFilterSearch = (filterParams) => {
-  showToast('应用筛选条件')
-
-  let filtered = [...mockData]
-
-  // 根据筛选条件过滤
-  if (filterParams.brand === 'empty') {
-    // 选择"测试空结果"时返回空数组
-    filtered = []
-  } else if (filterParams.brand && filterParams.brand !== 'all') {
-    if (filterParams.brand === 'c10') {
-      filtered = filtered.filter((item) => item.warrantyTime.includes('C10'))
-    } else if (filterParams.brand === 't03') {
-      filtered = filtered.filter((item) => item.warrantyTime.includes('T03'))
-    } else if (filterParams.brand === 'other') {
-      filtered = filtered.filter(
-        (item) =>
-          !item.warrantyTime.includes('C10') &&
-          !item.warrantyTime.includes('T03') &&
-          !item.warrantyTime.includes('C11')
-      )
-    }
+  // 点击开始筛选时，手动调用 RefreshList 的 search 方法触发查询
+  if (refreshListRef.value) {
+    refreshListRef.value.search({
+      ...requestData.data,
+      ...filterParams,
+      pageNum: 1
+    })
   }
-
-  requestData.data = { ...requestData.data }
-  dataList.value = filtered
-  showEmpty.value = filtered.length === 0
 }
 
 const onTabChange = (name) => {
@@ -280,33 +200,37 @@ const onTabChange = (name) => {
 }
 
 const setData = (res) => {
-  const list = Array.isArray(res.list) ? res.list : []
-  if (res.isRefresh) {
+  // RefreshList emit: { list: records, isRefresh: current === 1 }
+  const list = res?.list || []
+  if (res?.isRefresh) {
     dataList.value = [...list]
   } else {
     dataList.value.push(...list)
   }
+  showEmpty.value = dataList.value.length === 0
 }
 
 const resetFilters = () => {
   activeTab.value = 'all'
   requestData.data = {
-    keyWord: '',
     pageNum: 1,
-    pageSize: 10
+    pageSize: 10,
+    dealerUnitIdList: [],
+    preAuthTypeList: [],
+    appSearchKeyWord: ''
   }
-  dataList.value = [...mockData]
   showEmpty.value = false
 }
 
 const handleResetFilter = () => {
   activeTab.value = 'all'
   requestData.data = {
-    keyWord: '',
     pageNum: 1,
-    pageSize: 10
+    pageSize: 10,
+    dealerUnitIdList: [],
+    preAuthTypeList: [],
+    appSearchKeyWord: ''
   }
-  dataList.value = [...mockData]
   showEmpty.value = false
   // 重置 FilterHeader 的筛选条件
   if (filterHeaderRef.value) {
@@ -316,16 +240,18 @@ const handleResetFilter = () => {
 
 const getStatusText = (status) => {
   switch (status) {
-    case 'pending':
+    case 0:
       return '未提交'
-    case 'submitted':
+    case 1:
       return '已提交'
-    case 'audit':
+    case 2:
       return '待审核'
-    case 'approved':
+    case 3:
       return '已通过'
-    case 'rejected':
+    case 4:
       return '已驳回'
+    case 5:
+      return '已作废'
     default:
       return '未知'
   }
@@ -333,27 +259,34 @@ const getStatusText = (status) => {
 
 const getStatusClass = (status) => {
   switch (status) {
-    case 'pending':
+    case 0:
       return 'status-blue'
-    case 'submitted':
+    case 1:
       return 'status-green'
-    case 'audit':
+    case 2:
       return 'status-yellow'
-    case 'approved':
+    case 3:
       return 'status-green'
-    case 'rejected':
+    case 4:
       return 'status-red'
+    case 5:
+      return 'status-gray'
     default:
       return ''
   }
 }
 
 const handleContact = (item) => {
-  showToast(`联系创建人: ${item.orderNo}`)
+  const phone = item.creatorMobile
+  if (phone) {
+    callPhone(phone)
+  } else {
+    showToast('暂无联系电话')
+  }
 }
 
 const goToDetail = (item) => {
-  router.push(`/pre-authorization/${item.id}`)
+  router.push(`/pre-authorization/detail/${item.id}`)
 }
 
 const createAuthorization = () => {
@@ -462,6 +395,11 @@ const createAuthorization = () => {
         color: #ee0a24;
         background: rgba(238, 10, 36, 0.1);
       }
+
+      &.status-gray {
+        color: #969799;
+        background: rgba(150, 151, 153, 0.1);
+      }
     }
   }
 
@@ -479,13 +417,14 @@ const createAuthorization = () => {
 
       .card-info-title {
         color: #545454;
-        width: 70px;
+        width: 90px;
         flex-shrink: 0;
       }
 
       .card-info-des {
         color: #191a1b;
         flex: 1;
+        margin-left: 12px;
         word-break: break-all;
       }
     }

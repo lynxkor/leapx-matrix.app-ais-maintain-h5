@@ -51,7 +51,7 @@ const router = createRouter({
           }
         },
         {
-          path: '/pre-authorization/:id',
+          path: '/pre-authorization/detail/:id',
           name: 'preAuthorizationDetail',
           component: () => import('../views/preAuthorization/PreAuthorizationDetail.vue'),
           meta: {
