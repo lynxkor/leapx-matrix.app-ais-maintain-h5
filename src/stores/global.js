@@ -17,7 +17,7 @@ export const useGlobalStore = defineStore('global', {
     },
     // 获取枚举数据
     getEnumData() {
-      getEnum('MaintenanceTypeEnum').then((res) => {
+      getMaintainEnum('MaintenanceTypeEnum').then((res) => {
         this.itemOptions.repairItemTypeName = (res.data || []).map((item) => ({
           repairItemTypeId: item.code,
           repairItemTypeName: item.message,
@@ -25,7 +25,7 @@ export const useGlobalStore = defineStore('global', {
           value: item.code
         }))
       })
-      getEnum('StatementTypeEnum').then((res) => {
+      getMaintainEnum('StatementTypeEnum').then((res) => {
         this.itemOptions.checkoutTypeName = (res.data || []).map((item) => ({
           checkoutTypeId: item.code,
           checkoutTypeName: item.message,
@@ -33,7 +33,7 @@ export const useGlobalStore = defineStore('global', {
           value: item.code
         }))
       })
-      getEnum('WarrantyTypeEnum').then((res) => {
+      getMaintainEnum('WarrantyTypeEnum').then((res) => {
         this.itemOptions.warrantyTypeName = (res.data || []).map((item) => ({
           warrantyTypeId: item.code,
           warrantyTypeName: item.message,
