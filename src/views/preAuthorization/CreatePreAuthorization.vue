@@ -16,7 +16,7 @@
       <!-- 接车施工单卡片 -->
       <div class="main-card">
         <!-- 施工单 -->
-        <div class="card-row work_order" @click="showConstructionPicker = true">
+        <div class="card-row work_order" @click="openConstructionPicker">
           <div class="section-title">接车施工单</div>
           <div class="work_box">
             <span class="row-label">施工单</span>
@@ -79,54 +79,47 @@
           <span class="info-label">门店所属区域</span>
           <span class="info-value">{{ vehicleInfo.storeArea }}</span>
         </div>
-        <div class="vehicle-info-item" @click="showWarningInfo">
+        <div class="vehicle-info-item" @click="warningExpanded = !warningExpanded">
           <span class="info-label">预警信息</span>
-          <span class="info-value warning-value">{{ vehicleInfo.warningInfo }}</span>
-          <van-icon name="arrow" size="14" color="#888888" />
+          <span class="info-value" :class="{ 'text-collapsed': !warningExpanded }">{{ vehicleInfo.warningInfo }}</span>
+          <van-icon
+            v-if="vehicleInfo.warningInfo && vehicleInfo.warningInfo.length > 20"
+            :name="warningExpanded ? 'arrow-up' : 'arrow-down'"
+            size="14"
+            color="#888888"
+          />
         </div>
       </div>
 
       <!-- 质量反馈报告卡片 -->
-      <div class="feedback-card">
+      <div class="quality-feedback-card">
         <div class="section-title">质量反馈报告</div>
-        <div class="card-row" @click="showFeedbackPicker = true">
+        <div class="feedback-row" @click="openFeedbackPicker">
           <span class="row-label">质量反馈单号</span>
-          <span class="row-value">
-            {{ feedbackNo || '请选择' }}
+          <div class="row-value">
+            <span class="feedback-no">{{ feedbackNo || '' }}</span>
             <van-icon name="arrow" size="14" color="#888888" />
-          </span>
+          </div>
         </div>
-        <div v-if="qualityFeedback.title" class="feedback-content">
-          <div class="feedback-label">报告类型</div>
-          <div class="feedback-text">{{ qualityFeedback.title }}</div>
-        </div>
-        <div v-if="qualityFeedback.description" class="feedback-content">
-          <div class="feedback-label">故障描述</div>
-          <div
-            class="feedback-text"
-            :class="{ 'text-collapsed': !faultDescExpanded }"
-            @click="faultDescExpanded = !faultDescExpanded"
-          >
-            {{ qualityFeedback.description }}
+        <div v-if="feedbackDesc" class="feedback-info-row">
+          <span class="info-label">故障现象描述</span>
+          <div class="info-value" :class="{ 'text-collapsed': !descExpanded }" @click="descExpanded = !descExpanded">
+            {{ feedbackDesc }}
             <van-icon
-              v-if="qualityFeedback.description && qualityFeedback.description.length > 30"
-              :name="faultDescExpanded ? 'arrow-up' : 'arrow-down'"
+              v-if="feedbackDesc.length > 20"
+              :name="descExpanded ? 'arrow-up' : 'arrow-down'"
               size="14"
               color="#888888"
             />
           </div>
         </div>
-        <div v-if="qualityFeedback.faultProcess" class="feedback-content no-border">
-          <div class="feedback-label">故障排查流程</div>
-          <div
-            class="feedback-text"
-            :class="{ 'text-collapsed': !faultProcessExpanded }"
-            @click="faultProcessExpanded = !faultProcessExpanded"
-          >
-            {{ qualityFeedback.faultProcess }}
+        <div v-if="feedbackProcess" class="feedback-info-row no-border">
+          <span class="info-label">故障排查流程</span>
+          <div class="info-value" :class="{ 'text-collapsed': !processExpanded }" @click="processExpanded = !processExpanded">
+            {{ feedbackProcess }}
             <van-icon
-              v-if="qualityFeedback.faultProcess && qualityFeedback.faultProcess.length > 30"
-              :name="faultProcessExpanded ? 'arrow-up' : 'arrow-down'"
+              v-if="feedbackProcess.length > 20"
+              :name="processExpanded ? 'arrow-up' : 'arrow-down'"
               size="14"
               color="#888888"
             />
@@ -145,84 +138,6 @@
           autosize
           class="reason-textarea"
         />
-      </div>
-
-      <!-- 维修配件卡片 -->
-      <div id="parts-card" class="parts-card">
-        <div class="parts-card-header">维修配件</div>
-        <div v-for="(item, index) in partsList" :key="index" class="parts-item">
-          <div class="parts-item-main">
-            <div class="parts-item-left">
-              <div class="parts-item-top">
-                <span class="parts-name">{{ item.name }}</span>
-                <span v-if="item.tag" class="parts-tag">{{ item.tag }}</span>
-              </div>
-              <div class="parts-part-no">{{ item.partNo }}</div>
-              <div class="parts-type">{{ item.type }}</div>
-            </div>
-            <div class="parts-item-right">
-              <div class="parts-price">¥{{ item.price }}</div>
-              <div class="parts-discount">优惠 ¥{{ item.discount }}</div>
-            </div>
-          </div>
-          <div class="parts-item-bottom">
-            <span class="parts-subtotal">¥{{ item.subtotal }}</span>
-            <span class="parts-actual">实际领料 {{ item.actualQuantity }}</span>
-            <span class="parts-return">退料 {{ item.returnQuantity }}</span>
-            <span class="parts-quantity">x{{ item.quantity }}</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- 附件信息卡片 -->
-      <div id="attachments-card" class="attachments-card">
-        <div class="attachments-card-header">附件信息</div>
-
-        <!-- 车辆信息 -->
-        <div class="attachment-section">
-          <div class="attachment-section-title">车辆信息</div>
-          <div class="attachment-list">
-            <!-- 已上传的图片 -->
-            <div v-for="(img, index) in vehicleImages" :key="index" class="attachment-item">
-              <img :src="img.url" class="attachment-img" />
-              <div class="attachment-delete" @click="deleteVehicleImage(index)">
-                <van-icon name="cross" size="12" color="#ffffff" />
-              </div>
-            </div>
-            <!-- 上传按钮 -->
-            <div
-              class="attachment-upload"
-              @click="uploadVehicleImage"
-              v-if="vehicleImages.length < 3"
-            >
-              <van-icon name="photograph" size="24" color="#d8d8d8" />
-              <span class="upload-text">上传</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- 行驶证 -->
-        <div class="attachment-section">
-          <div class="attachment-section-title">行驶证</div>
-          <div class="attachment-list">
-            <!-- 已上传的图片 -->
-            <div v-for="(img, index) in licenseImages" :key="index" class="attachment-item">
-              <img :src="img.url" class="attachment-img" />
-              <div class="attachment-delete" @click="deleteLicenseImage(index)">
-                <van-icon name="cross" size="12" color="#ffffff" />
-              </div>
-            </div>
-            <!-- 上传按钮 -->
-            <div
-              class="attachment-upload"
-              @click="uploadLicenseImage"
-              v-if="licenseImages.length < 3"
-            >
-              <van-icon name="photograph" size="24" color="#d8d8d8" />
-              <span class="upload-text">上传</span>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
 
@@ -292,19 +207,13 @@
         <div class="attachment-section">
           <div class="attachment-section-title">车辆信息</div>
           <div class="attachment-list">
-            <!-- 已上传的图片 -->
-            <div v-for="(img, index) in vehicleImages" :key="index" class="attachment-item">
+            <div v-for="(img, index) in attachmentData.vehicle" :key="index" class="attachment-item">
               <img :src="img.url" class="attachment-img" />
-              <div class="attachment-delete" @click="deleteVehicleImage(index)">
+              <div class="attachment-delete" @click="deleteAttachment('vehicle', index)">
                 <van-icon name="cross" size="12" color="#ffffff" />
               </div>
             </div>
-            <!-- 上传按钮 -->
-            <div
-              class="attachment-upload"
-              @click="uploadVehicleImage"
-              v-if="vehicleImages.length < 3"
-            >
+            <div class="attachment-upload" @click="uploadAttachment('vehicle')" v-if="attachmentData.vehicle.length < 3">
               <van-icon name="photograph" size="24" color="#d8d8d8" />
               <span class="upload-text">上传</span>
             </div>
@@ -315,19 +224,132 @@
         <div class="attachment-section">
           <div class="attachment-section-title">行驶证</div>
           <div class="attachment-list">
-            <!-- 已上传的图片 -->
-            <div v-for="(img, index) in licenseImages" :key="index" class="attachment-item">
+            <div v-for="(img, index) in attachmentData.license" :key="index" class="attachment-item">
               <img :src="img.url" class="attachment-img" />
-              <div class="attachment-delete" @click="deleteLicenseImage(index)">
+              <div class="attachment-delete" @click="deleteAttachment('license', index)">
                 <van-icon name="cross" size="12" color="#ffffff" />
               </div>
             </div>
-            <!-- 上传按钮 -->
-            <div
-              class="attachment-upload"
-              @click="uploadLicenseImage"
-              v-if="licenseImages.length < 3"
-            >
+            <div class="attachment-upload" @click="uploadAttachment('license')" v-if="attachmentData.license.length < 3">
+              <van-icon name="photograph" size="24" color="#d8d8d8" />
+              <span class="upload-text">上传</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 故障信息 -->
+        <div class="attachment-section">
+          <div class="attachment-section-title">故障信息</div>
+          <div class="attachment-list">
+            <div v-for="(img, index) in attachmentData.fault" :key="index" class="attachment-item">
+              <img :src="img.url" class="attachment-img" />
+              <div class="attachment-delete" @click="deleteAttachment('fault', index)">
+                <van-icon name="cross" size="12" color="#ffffff" />
+              </div>
+            </div>
+            <div class="attachment-upload" @click="uploadAttachment('fault')" v-if="attachmentData.fault.length < 3">
+              <van-icon name="photograph" size="24" color="#d8d8d8" />
+              <span class="upload-text">上传</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 终审权益 -->
+        <div class="attachment-section">
+          <div class="attachment-section-title">终审权益</div>
+          <div class="attachment-list">
+            <div v-for="(img, index) in attachmentData.finalRight" :key="index" class="attachment-item">
+              <img :src="img.url" class="attachment-img" />
+              <div class="attachment-delete" @click="deleteAttachment('finalRight', index)">
+                <van-icon name="cross" size="12" color="#ffffff" />
+              </div>
+            </div>
+            <div class="attachment-upload" @click="uploadAttachment('finalRight')" v-if="attachmentData.finalRight.length < 3">
+              <van-icon name="photograph" size="24" color="#d8d8d8" />
+              <span class="upload-text">上传</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 首保凭证 -->
+        <div class="attachment-section">
+          <div class="attachment-section-title">首保凭证</div>
+          <div class="attachment-list">
+            <div v-for="(img, index) in attachmentData.firstMaintain" :key="index" class="attachment-item">
+              <img :src="img.url" class="attachment-img" />
+              <div class="attachment-delete" @click="deleteAttachment('firstMaintain', index)">
+                <van-icon name="cross" size="12" color="#ffffff" />
+              </div>
+            </div>
+            <div class="attachment-upload" @click="uploadAttachment('firstMaintain')" v-if="attachmentData.firstMaintain.length < 3">
+              <van-icon name="photograph" size="24" color="#d8d8d8" />
+              <span class="upload-text">上传</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 保养质检 -->
+        <div class="attachment-section">
+          <div class="attachment-section-title">保养质检</div>
+          <div class="attachment-list">
+            <div v-for="(img, index) in attachmentData.maintainQuality" :key="index" class="attachment-item">
+              <img :src="img.url" class="attachment-img" />
+              <div class="attachment-delete" @click="deleteAttachment('maintainQuality', index)">
+                <van-icon name="cross" size="12" color="#ffffff" />
+              </div>
+            </div>
+            <div class="attachment-upload" @click="uploadAttachment('maintainQuality')" v-if="attachmentData.maintainQuality.length < 3">
+              <van-icon name="photograph" size="24" color="#d8d8d8" />
+              <span class="upload-text">上传</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 施工旧件 -->
+        <div class="attachment-section">
+          <div class="attachment-section-title">施工旧件</div>
+          <div class="attachment-list">
+            <div v-for="(img, index) in attachmentData.oldParts" :key="index" class="attachment-item">
+              <img :src="img.url" class="attachment-img" />
+              <div class="attachment-delete" @click="deleteAttachment('oldParts', index)">
+                <van-icon name="cross" size="12" color="#ffffff" />
+              </div>
+            </div>
+            <div class="attachment-upload" @click="uploadAttachment('oldParts')" v-if="attachmentData.oldParts.length < 3">
+              <van-icon name="photograph" size="24" color="#d8d8d8" />
+              <span class="upload-text">上传</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 旧件信息 -->
+        <div class="attachment-section">
+          <div class="attachment-section-title">旧件信息</div>
+          <div class="attachment-list">
+            <div v-for="(img, index) in attachmentData.oldPartInfo" :key="index" class="attachment-item">
+              <img :src="img.url" class="attachment-img" />
+              <div class="attachment-delete" @click="deleteAttachment('oldPartInfo', index)">
+                <van-icon name="cross" size="12" color="#ffffff" />
+              </div>
+            </div>
+            <div class="attachment-upload" @click="uploadAttachment('oldPartInfo')" v-if="attachmentData.oldPartInfo.length < 3">
+              <van-icon name="photograph" size="24" color="#d8d8d8" />
+              <span class="upload-text">上传</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 其他 -->
+        <div class="attachment-section">
+          <div class="attachment-section-title">其他</div>
+          <div class="attachment-list">
+            <div v-for="(img, index) in attachmentData.other" :key="index" class="attachment-item">
+              <img :src="img.url" class="attachment-img" />
+              <div class="attachment-delete" @click="deleteAttachment('other', index)">
+                <van-icon name="cross" size="12" color="#ffffff" />
+              </div>
+            </div>
+            <div class="attachment-upload" @click="uploadAttachment('other')" v-if="attachmentData.other.length < 3">
               <van-icon name="photograph" size="24" color="#d8d8d8" />
               <span class="upload-text">上传</span>
             </div>
@@ -339,7 +361,9 @@
 
     <!-- 底部提交按钮 -->
     <div class="bottom-action">
-      <div class="submit-btn" :class="{ 'submit-btn-disabled': !canSubmit }">提交申请</div>
+      <div class="submit-btn" @click="handleSubmit">
+        提交申请
+      </div>
     </div>
 
     <!-- 施工单选择弹窗 -->
@@ -361,117 +385,77 @@
                 v-model="constructionSearchText"
                 type="text"
                 class="search-input"
-                placeholder="搜索"
+                placeholder="输入车牌号/VIN"
               />
-              <div class="search-btn">搜索</div>
+              <div class="search-btn" @click="handleConstructionSearch">搜索</div>
             </div>
           </div>
-          <div class="popup-content-list">
-            <template v-if="filteredConstructionList.length > 0">
-              <div
-                v-for="item in filteredConstructionList"
-                :key="item.value"
-                class="construction-item"
-                @click="onConstructionSelect(item)"
-              >
-                <div class="construction-header">
-                  <span class="construction-no">{{ item.constructionNo }}</span>
-                  <span class="construction-status" :class="'status-' + item.status">{{
-                    item.statusText
-                  }}</span>
+          <RefreshList
+            ref="constructionRefreshListRef"
+            class="popup-refresh-list"
+            :requestData="constructionRequestData"
+            :has-no-data="constructionList.length === 0"
+            @setData="setConstructionData"
+          >
+            <div
+              v-for="item in constructionList"
+              :key="item.id"
+              class="construction-item"
+              @click="onConstructionSelect(item)"
+            >
+              <div class="construction-header">
+                <span class="construction-no">{{ item.code }}</span>
+                <span class="construction-status" :class="'status-' + item.status">{{
+                  item.statusText
+                }}</span>
+              </div>
+              <div class="construction-vehicle">
+                <span class="vehicle-plate">{{ item.carPlate }}</span>
+                <div class="vehicle-icons" v-if="item.alarmLevel">
+                  <svg class="icon" viewBox="0 0 16 16">
+                    <path
+                      :fill="getAlarmColor(item.alarmLevel)"
+                      :stroke="getAlarmColor(item.alarmLevel)"
+                      stroke-width="4"
+                      stroke-linejoin="round"
+                      d="M8 2L14 13H2Z"
+                    />
+                    <text
+                      x="8"
+                      y="12"
+                      text-anchor="middle"
+                      fill="#ffffff"
+                      font-size="9"
+                      font-weight="bold"
+                    >
+                      !
+                    </text>
+                  </svg>
                 </div>
-                <div class="construction-vehicle">
-                  <span class="vehicle-plate">{{ item.plate }}</span>
-                  <div class="vehicle-icons">
-                    <svg class="icon" viewBox="0 0 16 16">
-                      <path
-                        fill="#C8A12B"
-                        stroke="#C8A12B"
-                        stroke-width="4"
-                        stroke-linejoin="round"
-                        d="M8 2L14 13H2Z"
-                      />
-                      <text
-                        x="8"
-                        y="12"
-                        text-anchor="middle"
-                        fill="#ffffff"
-                        font-size="9"
-                        font-weight="bold"
-                      >
-                        !
-                      </text>
-                    </svg>
-                    <svg class="icon" viewBox="0 0 16 16">
-                      <path
-                        fill="#009100"
-                        stroke="#009100"
-                        stroke-width="4"
-                        stroke-linejoin="round"
-                        d="M8 2L14 13H2Z"
-                      />
-                      <text
-                        x="8"
-                        y="12"
-                        text-anchor="middle"
-                        fill="#ffffff"
-                        font-size="9"
-                        font-weight="bold"
-                      >
-                        !
-                      </text>
-                    </svg>
-                    <svg class="icon" viewBox="0 0 16 16">
-                      <path
-                        fill="#B91919"
-                        stroke="#B91919"
-                        stroke-width="4"
-                        stroke-linejoin="round"
-                        d="M8 2L14 13H2Z"
-                      />
-                      <text
-                        x="8"
-                        y="12"
-                        text-anchor="middle"
-                        fill="#ffffff"
-                        font-size="9"
-                        font-weight="bold"
-                      >
-                        !
-                      </text>
-                    </svg>
-                  </div>
-                  <div class="vehicle-tags">
-                    <span v-for="tag in item.tags" :key="tag" class="vehicle-tag">{{ tag }}</span>
-                  </div>
-                </div>
-                <div class="construction-vehicle-info">
-                  {{ item.vehicleModel }} · {{ item.vin }}
-                </div>
-                <div class="construction-detail">
-                  <div class="detail-row">
-                    <span class="detail-label">送修人</span>
-                    <span class="detail-value">{{ item.customerName }}</span>
-                    <span v-if="item.customerType" class="customer-tag">{{
-                      item.customerType
-                    }}</span>
-                  </div>
-                  <div class="detail-row">
-                    <span class="detail-label">客户经理</span>
-                    <span class="detail-value">{{ item.manager }}</span>
-                  </div>
-                  <div class="detail-row">
-                    <span class="detail-label">预计交车</span>
-                    <span class="detail-value">{{ item.deliveryDate }}</span>
-                  </div>
+                <div class="vehicle-tags" v-if="item.repairItemTypeDetailCollect">
+                  <span class="vehicle-tag">{{ item.repairItemTypeDetailCollect }}</span>
                 </div>
               </div>
-            </template>
-            <div v-else class="empty-state">
-              <van-icon name="search" size="48" color="#cccccc" />
-              <span>暂无搜索结果</span>
+              <div class="construction-vehicle-info">
+                {{ item.vehModelName }} · {{ item.vehProfileVin }}
+              </div>
+              <div class="construction-detail">
+                <div class="detail-row">
+                  <span class="detail-label">送修人</span>
+                  <span class="detail-value">{{ item.customerName }}</span>
+                  <span v-if="item.customerType" class="customer-tag">{{ item.customerType }}</span>
+                </div>
+                <div class="detail-row">
+                  <span class="detail-label">客户经理</span>
+                  <span class="detail-value">{{ item.dedicatedServiceManager }}</span>
+                </div>
+                <div class="detail-row">
+                  <span class="detail-label">预计交车</span>
+                  <span class="detail-value">{{ item.expectFinishAt }}</span>
+                </div>
+              </div>
             </div>
-          </div>
+          </RefreshList>
         </div>
       </template>
     </AisPopup>
@@ -495,37 +479,31 @@
                 v-model="feedbackSearchText"
                 type="text"
                 class="search-input"
-                placeholder="搜索"
+                placeholder="反馈单号"
               />
-              <div class="search-btn">搜索</div>
+              <div class="search-btn" @click="handleFeedbackSearch">搜索</div>
             </div>
           </div>
-          <div class="popup-content-list">
-            <template v-if="filteredFeedbackList.length > 0">
-              <div
-                v-for="item in filteredFeedbackList"
-                :key="item.value"
-                class="feedback-item"
-                @click="onFeedbackSelect(item)"
-              >
-                <div class="feedback-item-serial">
-                  <span class="serial-text">
-                    {{ getSerialPrefix(item.serialNumber)
-                    }}<span class="date-part">{{ getSerialDate(item.serialNumber) }}</span
-                    >{{ getSerialRest(item.serialNumber) }}
-                  </span>
-                </div>
-                <div class="feedback-item-info">
-                  <div class="info-title">{{ item.title }}</div>
-                  <div class="info-desc">{{ item.description }}</div>
-                </div>
+          <RefreshList
+            ref="feedbackRefreshListRef"
+            class="popup-refresh-list"
+            :requestData="feedbackRequestData"
+            :has-no-data="feedbackList.length === 0"
+            @setData="setFeedbackData"
+          >
+            <div
+              v-for="item in feedbackList"
+              :key="item.id"
+              class="feedback-select-item"
+              @click="onFeedbackSelect(item)"
+            >
+              <div class="feedback-serial">
+                {{ getSerialPrefix(item.code) }}<span class="date-part">{{ getSerialDate(item.code) }}</span>{{ getSerialRest(item.code) }}
               </div>
-            </template>
-            <div v-else class="empty-state">
-              <van-icon name="search" size="48" color="#cccccc" />
-              <span>暂无搜索结果</span>
+              <div class="feedback-type" v-if="item.reportType">{{ item.reportType }}</div>
+              <div class="feedback-desc" v-if="item.customerContent">{{ item.customerContent }}</div>
             </div>
-          </div>
+          </RefreshList>
         </div>
       </template>
     </AisPopup>
@@ -547,10 +525,18 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
+import { ref, reactive, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
-import { showToast } from 'vant'
+import { showToast, showLoadingToast, closeToast } from 'vant'
 import AisPopup from '@/components/AisPopup.vue'
+import RefreshList from '@/libs/components/RefreshList.vue'
+import {
+  preAuthGetPreAuthInfoDetail,
+  preAuthAddOrUpdate,
+  preAuthGetConstructionList,
+  preAuthGetQualityFeedbackList
+} from '@/api/authorization'
+import { getAppImg } from '@/libs/utils/nativeFn'
 
 const router = useRouter()
 
@@ -558,6 +544,8 @@ const activeTab = ref('basic')
 const tabsNavRef = ref(null)
 const isHeaderVisible = ref(true)
 const navBarHeight = ref(43)
+const constructionRefreshListRef = ref(null)
+const feedbackRefreshListRef = ref(null)
 
 // Tab 配置
 const tabs = [
@@ -782,8 +770,14 @@ const switchTab = async(tabName) => {
 
 // 表单数据
 const constructionNo = ref('')
+const constructionId = ref('')
 const authType = ref('')
 const feedbackNo = ref('')
+const feedbackId = ref('')
+const feedbackDesc = ref('')
+const feedbackProcess = ref('')
+const descExpanded = ref(false)
+const processExpanded = ref(false)
 const applyReason = ref('')
 
 // 监听申请原因变化
@@ -795,91 +789,38 @@ watch(applyReason, () => {
 const showVehicleInfo = ref(false)
 
 // 折叠状态
-const faultDescExpanded = ref(false)
-const faultProcessExpanded = ref(false)
+const warningExpanded = ref(false)
 
 // 附件图片数据
-const vehicleImages = ref([
-  { url: 'https://example.com/car1.jpg' },
-  { url: 'https://example.com/car2.jpg' }
-])
-const licenseImages = ref([])
+const attachmentData = reactive({
+  vehicle: [],
+  license: [],
+  fault: [],
+  finalRight: [],
+  firstMaintain: [],
+  maintainQuality: [],
+  oldParts: [],
+  oldPartInfo: [],
+  other: []
+})
 
 // 车辆信息数据
 const vehicleInfo = ref({
-  vin: '2358436753543340032',
-  warrantyTime: '2026-01-01 至 2029-12-31',
-  mileage: '47007km',
-  vehicleUse: '非营运',
-  lifetimeWarranty: '这是一段文案',
-  serviceStore: '杭州零跑中心建设四路店',
-  storeArea: '浙江杭州',
-  warningInfo: '这是一条预警描述内容这是一…'
-})
-
-// 质量反馈数据
-const qualityFeedback = ref({
-  title: '',
-  description: '',
-  faultDescription: '',
-  faultProcess: ''
+  vin: '',
+  warrantyTime: '',
+  mileage: '',
+  vehicleUse: '',
+  lifetimeWarranty: '',
+  serviceStore: '',
+  storeArea: '',
+  warningInfo: ''
 })
 
 // 维修项目数据
-const repairItems = ref([
-  {
-    name: '前保险杠补漆',
-    partNo: 'C1031000035',
-    type: '一般维修-保险-无',
-    price: '621.50',
-    discount: '0.00',
-    subtotal: '700.00',
-    quantity: '1.00',
-    actualQuantity: '1',
-    returnQuantity: '0',
-    tag: ''
-  }
-])
+const repairItems = ref([])
 
 // 维修配件数据
-const partsList = ref([
-  {
-    name: '前保险杠漆面',
-    partNo: 'P1031000035',
-    type: '一般维修-配件-无',
-    price: '320.00',
-    discount: '0.00',
-    subtotal: '320.00',
-    quantity: '1.00',
-    actualQuantity: '1',
-    returnQuantity: '0',
-    tag: ''
-  },
-  {
-    name: '左前大灯总成',
-    partNo: 'P1031000036',
-    type: '一般维修-配件-无',
-    price: '4200.00',
-    discount: '200.00',
-    subtotal: '4000.00',
-    quantity: '1.00',
-    actualQuantity: '1',
-    returnQuantity: '0',
-    tag: '原厂件'
-  },
-  {
-    name: 'ABS传感器',
-    partNo: 'P1031000037',
-    type: '一般维修-配件-无',
-    price: '580.00',
-    discount: '0.00',
-    subtotal: '580.00',
-    quantity: '2.00',
-    actualQuantity: '2',
-    returnQuantity: '0',
-    tag: '原厂件'
-  }
-])
+const partsList = ref([])
 
 // 选择器配置
 const showConstructionPicker = ref(false)
@@ -889,112 +830,64 @@ const showSaveConfirmDialog = ref(false)
 // 页面是否有编辑
 const hasEdited = ref(false)
 const constructionSearchText = ref('')
-const constructionList = ref([
-  {
-    constructionNo: '3318938923892839283',
-    status: 'pending',
-    statusText: '待派工',
-    plate: '浙AA12345',
-    tags: ['一般维修', '钣金', '喷漆'],
-    vehicleModel: 'B10-510激光雷达版',
-    vin: 'LFV3H6686RKYM3393',
-    customerName: '王小虎',
-    customerType: '预约客户',
-    manager: '王小丫',
-    deliveryDate: '2026-03-20 17:30',
-    value: '001'
-  },
-  {
-    constructionNo: '3318938923892839284',
-    status: 'pending',
-    statusText: '待派工',
-    plate: '浙BB12345',
-    tags: ['一般维修'],
-    vehicleModel: 'C11增程版',
-    vin: 'LFV3H6686RKYM3400',
-    customerName: '李大明',
-    customerType: '到店客户',
-    manager: '张小丫',
-    deliveryDate: '2026-03-21 10:00',
-    value: '002'
-  },
-  {
-    constructionNo: '3318938923892839285',
-    status: 'processing',
-    statusText: '施工中',
-    plate: '浙CC12345',
-    tags: ['一般维修', '保养'],
-    vehicleModel: 'C10舒享版',
-    vin: 'LFV3H6686RKYM3411',
-    customerName: '赵小明',
-    customerType: '',
-    manager: '王小丫',
-    deliveryDate: '2026-03-22 15:00',
-    value: '003'
-  }
-])
+const constructionList = ref([])
 
-// 过滤后的施工单列表
-const filteredConstructionList = computed(() => {
-  if (!constructionSearchText.value) return constructionList.value
-  const search = constructionSearchText.value.toLowerCase()
-  return constructionList.value.filter(
-    (item) =>
-      item.constructionNo.toLowerCase().includes(search) ||
-      item.constructionName.toLowerCase().includes(search)
-  )
+// 施工单列表请求配置
+const constructionRequestData = reactive({
+  data: {
+    pageNum: 1,
+    pageSize: 10,
+    appSearchKeyWord: ''
+  },
+  api: (params) => preAuthGetConstructionList(params)
 })
 
-// 质量反馈列表数据
+// 设置施工单数据
+const setConstructionData = (res) => {
+  const list = res?.list || []
+  if (res?.isRefresh) {
+    constructionList.value = [...list]
+  } else {
+    constructionList.value.push(...list)
+  }
+}
+
 const feedbackSearchText = ref('')
-const feedbackList = [
-  {
-    serialNumber: 'ZLR-260115092347261804',
-    title: '技术支持申请报告',
-    description: '仪表提示ABS灯常亮',
-    faultDescription: '仪表提示ABS灯常亮,左后轮速传感器信号丢失',
-    faultProcess: '传感器检测 → 线路排查 → 更换传感器 → 系统复位 → 故障码清除',
-    hasError: false
-  },
-  {
-    serialNumber: 'ZLR-251219132432675085',
-    title: '技术支持申请报告',
-    description: '电池包高温告警',
-    faultDescription: '电池包高温告警,温度传感器信号异常',
-    faultProcess: '温度检测 → 传感器校准 → 冷却系统检查 → 更换传感器 → 性能验证',
-    hasError: true,
-    customerName: '王小虎'
-  },
-  {
-    serialNumber: 'ZLR-251218084512390471',
-    title: '技术支持申请报告',
-    description: '车辆前保险杠右侧有明显划痕',
-    faultDescription: '车辆前保险杠右侧有明显划痕,长度约5cm,深度未伤及底漆',
-    faultProcess: '外观检查 → 划痕测量 → 腻子填补 → 打磨平整 → 底漆喷涂 → 面漆喷涂 → 抛光处理',
-    hasError: false
-  },
-  {
-    serialNumber: 'ZLR-251217145623789023',
-    title: '技术支持申请报告',
-    description: '左前大灯无法点亮',
-    faultDescription: '左前大灯无法点亮,夜间行车存在安全隐患',
-    faultProcess: '电路检测 → 灯泡检查 → 保险丝排查 → 线路诊断 → 更换灯泡或线束',
-    hasError: true,
-    customerName: '李明'
-  }
-]
+const feedbackList = ref([])
 
-// 过滤后的质量反馈列表
-const filteredFeedbackList = computed(() => {
-  if (!feedbackSearchText.value) return feedbackList
-  const search = feedbackSearchText.value.toLowerCase()
-  return feedbackList.filter(
-    (item) =>
-      item.serialNumber.toLowerCase().includes(search) ||
-      item.title.toLowerCase().includes(search) ||
-      item.description.toLowerCase().includes(search)
-  )
+// 质量反馈列表请求配置
+const feedbackRequestData = reactive({
+  data: {
+    pageNum: 1,
+    pageSize: 10,
+    appSearchKeyWord: ''
+  },
+  api: (params) => preAuthGetQualityFeedbackList(params)
 })
+
+// 设置质量反馈数据
+const setFeedbackData = (res) => {
+  const list = res?.list || []
+  if (res?.isRefresh) {
+    feedbackList.value = [...list]
+  } else {
+    feedbackList.value.push(...list)
+  }
+}
+
+// 施工单搜索按钮点击
+const handleConstructionSearch = () => {
+  constructionRequestData.data.appSearchKeyWord = constructionSearchText.value
+  constructionRequestData.data.pageNum = 1
+  constructionRefreshListRef.value?.reset()
+}
+
+// 质量反馈搜索按钮点击
+const handleFeedbackSearch = () => {
+  feedbackRequestData.data.appSearchKeyWord = feedbackSearchText.value
+  feedbackRequestData.data.pageNum = 1
+  feedbackRefreshListRef.value?.reset()
+}
 
 // 获取单号前缀（ZLR-）
 const getSerialPrefix = (serialNumber) => {
@@ -1013,57 +906,185 @@ const getSerialRest = (serialNumber) => {
   return parts[1]?.substring(4) || ''
 }
 
-// 计算是否可以提交
-const canSubmit = computed(() => {
-  return constructionNo.value && applyReason.value.length > 0
-})
+// 根据预警级别获取颜色 10=绿色, 20=黄色, 30=红色
+const getAlarmColor = (alarmLevel) => {
+  switch (alarmLevel) {
+    case 10:
+      return '#009100'
+    case 20:
+      return '#C8A12B'
+    case 30:
+      return '#B91919'
+    default:
+      return '#009100'
+  }
+}
+
+// 提交申请
+const handleSubmit = async() => {
+  // 校验
+  if (!constructionId.value) {
+    showToast('请选择施工单')
+    return
+  }
+  if (!feedbackId.value) {
+    showToast('请选择质量反馈单号')
+    return
+  }
+  if (!applyReason.value.trim()) {
+    showToast('请填写申请原因')
+    return
+  }
+
+  try {
+    showLoadingToast({ message: '提交中...', forbidClick: true })
+
+    const submitData = {
+      serviceProxyId: constructionId.value,
+      qualityOrderReportId: feedbackId.value,
+      reason: applyReason.value,
+      saveOrSubmit: '1'
+    }
+
+    const res = await preAuthAddOrUpdate(submitData)
+    closeToast()
+
+    if (res?.code === 0 || res?.code === 200) {
+      showToast('提交成功')
+      hasEdited.value = false
+      router.back()
+    } else {
+      showToast(res?.msg || '提交失败')
+    }
+  } catch (error) {
+    closeToast()
+    console.error('提交失败:', error)
+    showToast('提交失败，请稍后重试')
+  }
+}
 
 // 方法
+const openConstructionPicker = () => {
+  constructionList.value = []
+  showConstructionPicker.value = true
+  nextTick(() => {
+    constructionRefreshListRef.value?.reset()
+  })
+}
+
+const openFeedbackPicker = () => {
+  feedbackList.value = []
+  showFeedbackPicker.value = true
+  nextTick(() => {
+    feedbackRefreshListRef.value?.reset()
+  })
+}
+
 const onAuthTypeChange = (type) => {
   authType.value = type
   showVehicleInfo.value = true
   hasEdited.value = true
 }
 
-const showWarningInfo = () => {
-  showToast('查看预警信息')
-}
-
-const onConstructionSelect = (item) => {
-  constructionNo.value = item.constructionNo
+const onConstructionSelect = async(item) => {
+  constructionNo.value = item.code
+  constructionId.value = item.id
   showConstructionPicker.value = false
-  showVehicleInfo.value = true
   hasEdited.value = true
+  showVehicleInfo.value = true
+
+  // 直接从选中项展示车辆信息
+  vehicleInfo.value = {
+    vin: item.vehProfileVin || '--',
+    warrantyTime: '--',
+    mileage: item.mileage || '--',
+    vehicleUse: item.carProperty || '--',
+    lifetimeWarranty: '--',
+    serviceStore: item.dealerName || '--',
+    storeArea: item.orgName || item.dealerUnitName || '--',
+    warningInfo: item.alarmInfo || '--'
+  }
+
+  // 调用API获取预填充详情
+  try {
+    showLoadingToast({ message: '加载中...', forbidClick: true })
+    const res = await preAuthGetPreAuthInfoDetail(item.id)
+    closeToast()
+
+    if (res?.data) {
+      const data = res.data
+      // 更新车辆信息
+      vehicleInfo.value = {
+        vin: data.vehProfileVin || item.vehProfileVin || '',
+        warrantyTime:
+          data.guaranteeStartDate && data.warrantyEndTime
+            ? `${data.guaranteeStartDate} 至 ${data.warrantyEndTime}`
+            : '',
+        mileage: data.mileage || item.mileage || '',
+        vehicleUse: data.carProperty || item.carProperty || '',
+        lifetimeWarranty: data.isLifetime === 1 ? '是' : '否',
+        serviceStore: data.dealerName || item.dealerName || '',
+        storeArea: data.orgName || data.dealerUnitName || item.orgName || item.dealerUnitName || '',
+        warningInfo: data.alarmInfo || item.alarmInfo || '无'
+      }
+      // 预授权类型: 1=技术预授权, 2=保修预授权
+      authType.value = data.preAuthType == 1 ? 'tech' : 'warranty'
+
+      // 维修项目数据
+      repairItems.value = (data.spRepairItemResps || []).map((item) => ({
+        name: item.repairItemName || '',
+        partNo: item.repairItemCode || '',
+        type: item.repairItemTypeName || '',
+        price: item.price || '0',
+        discount: item.discountAmount || '0',
+        subtotal: item.totalAmount || '0',
+        quantity: item.quantity || '0',
+        actualQuantity: item.actualQuantity || '0',
+        returnQuantity: item.returnQuantity || '0',
+        tag: ''
+      }))
+
+      // 维修配件数据
+      partsList.value = (data.spSparePartResps || []).map((item) => ({
+        name: item.partsName || '',
+        partNo: item.partsCode || '',
+        type: item.repairItemTypeName || '',
+        tag: item.isOemPart === 1 ? '原厂件' : '',
+        price: item.price || '0',
+        discount: item.discountAmount || '0',
+        subtotal: item.totalAmount || '0',
+        quantity: item.quantity || '0',
+        actualQuantity: item.actualQuantity || '0',
+        returnQuantity: item.returnQuantity || '0'
+      }))
+
+      showVehicleInfo.value = true
+    }
+  } catch (error) {
+    closeToast()
+    console.error('获取预填充信息失败:', error)
+    showToast('获取信息失败')
+    showVehicleInfo.value = true
+  }
 }
 
 const onFeedbackSelect = (item) => {
-  feedbackNo.value = item.serialNumber
-  qualityFeedback.value.title = item.title || ''
-  qualityFeedback.value.description = item.description || ''
-  qualityFeedback.value.faultDescription = item.faultDescription || ''
-  qualityFeedback.value.faultProcess = item.faultProcess || ''
+  feedbackNo.value = item.code
+  feedbackId.value = item.id || ''
+  feedbackDesc.value = item.customerContent || ''
+  feedbackProcess.value = item.diagnosisContent || ''
   showFeedbackPicker.value = false
   hasEdited.value = true
 }
 
 // 附件相关方法
-const uploadVehicleImage = () => {
-  showToast('上传车辆信息图片')
+const uploadAttachment = (type) => {
+  getAppImg()
   hasEdited.value = true
 }
 
-const deleteVehicleImage = (index) => {
-  vehicleImages.value.splice(index, 1)
-  hasEdited.value = true
-}
-
-const uploadLicenseImage = () => {
-  showToast('上传行驶证图片')
-  hasEdited.value = true
-}
-
-const deleteLicenseImage = (index) => {
-  licenseImages.value.splice(index, 1)
+const deleteAttachment = (type, index) => {
+  attachmentData[type].splice(index, 1)
   hasEdited.value = true
 }
 
@@ -1105,6 +1126,7 @@ defineExpose({
 .detail-tabs-nav {
   background: #fff;
   display: flex;
+  justify-content: space-around;
   border-bottom: 1px solid #eee;
   position: fixed;
   top: 43px;
@@ -1562,86 +1584,6 @@ defineExpose({
   }
 }
 
-// 质量反馈报告卡片
-.feedback-card {
-  background: #ffffff;
-  border-radius: 6px;
-  padding: 12px;
-  margin-bottom: 12px;
-
-  .section-title {
-    font-family: 'PingFang SC';
-    font-size: 14px;
-    font-weight: 500;
-    color: #191a1b;
-    margin-bottom: 12px;
-  }
-
-  .card-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 15px 0;
-    border-bottom: 0.5px solid #e6e6e5;
-
-    &:last-child {
-      border-bottom: none;
-    }
-
-    .row-label {
-      font-family: 'PingFang SC';
-      font-size: 14px;
-      color: #191a1b;
-      flex-shrink: 0;
-    }
-
-    .row-value {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      font-family: 'PingFang SC';
-      font-size: 14px;
-      color: #888888;
-
-      &.warning-value {
-        color: #ee0a24;
-      }
-    }
-  }
-
-  .feedback-content {
-    padding: 12px 0;
-
-    &.no-border {
-      padding-top: 0;
-    }
-
-    .feedback-label {
-      font-family: 'PingFang SC';
-      font-size: 14px;
-      color: #545454;
-      margin-bottom: 8px;
-    }
-
-    .feedback-text {
-      font-family: 'PingFang SC';
-      font-size: 14px;
-      color: #191a1b;
-      line-height: 1.5;
-      display: flex;
-      align-items: center;
-      gap: 4px;
-
-      &.text-collapsed {
-        display: -webkit-box;
-        -webkit-line-clamp: 2;
-        -webkit-box-orient: vertical;
-        overflow: hidden;
-      }
-    }
-  }
-}
-
 // 车辆信息卡片
 .vehicle-info-card {
   background: #ffffff;
@@ -1680,6 +1622,21 @@ defineExpose({
 }
 
 // 搜索无结果空状态
+.loading-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 0;
+  gap: 12px;
+
+  .loading-text {
+    font-family: 'PingFang SC';
+    font-size: 14px;
+    color: #999;
+  }
+}
+
 .empty-state {
   display: flex;
   flex-direction: column;
@@ -1825,6 +1782,11 @@ defineExpose({
   .popup-content-list {
     flex: 1;
     overflow-y: auto;
+  }
+
+  .popup-refresh-list {
+    flex: 1;
+    overflow-y: auto;
 
     .construction-item {
       background: #ffffff;
@@ -1896,7 +1858,6 @@ defineExpose({
         .vehicle-tags {
           display: flex;
           gap: 4px;
-          margin-left: auto;
 
           .vehicle-tag {
             font-family: 'PingFang SC';
@@ -1954,6 +1915,86 @@ defineExpose({
   }
 }
 
+// 质量反馈报告卡片
+.quality-feedback-card {
+  background: #ffffff;
+  border-radius: 6px;
+  padding: 12px;
+  margin-bottom: 12px;
+
+  .section-title {
+    font-family: 'PingFang SC';
+    font-size: 14px;
+    font-weight: 500;
+    color: #191a1b;
+    margin-bottom: 12px;
+  }
+
+  .feedback-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 15px 0;
+    border-bottom: 0.5px solid #e6e6e5;
+
+    .row-label {
+      font-family: 'PingFang SC';
+      font-size: 14px;
+      color: #191a1b;
+      flex-shrink: 0;
+    }
+
+    .row-value {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+
+      .feedback-no {
+        font-family: 'PingFang SC';
+        font-size: 14px;
+        color: #191a1b;
+      }
+    }
+  }
+
+  .feedback-info-row {
+    display: flex;
+    align-items: flex-start;
+    padding: 12px 0;
+    border-bottom: 0.5px solid #e6e6e5;
+    gap: 12px;
+
+    &.no-border {
+      border-bottom: none;
+    }
+
+    .info-label {
+      font-family: 'PingFang SC';
+      font-size: 14px;
+      color: #191a1b;
+      flex-shrink: 0;
+      width: 98px;
+    }
+
+    .info-value {
+      flex: 1;
+      font-family: 'PingFang SC';
+      font-size: 14px;
+      color: #888888;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 4px;
+
+      &.text-collapsed {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+    }
+  }
+}
+
 // 质量反馈弹窗
 .feedback-popup {
   height: 727px;
@@ -1962,7 +2003,7 @@ defineExpose({
   flex-direction: column;
 
   .popup-header {
-    padding-bottom: 12px;
+    padding: 12px;
     flex-shrink: 0;
 
     .search-box {
@@ -2016,57 +2057,48 @@ defineExpose({
     }
   }
 
-  .popup-content-list {
+  .popup-refresh-list {
     flex: 1;
     overflow-y: auto;
+    padding: 0 12px;
 
-    .feedback-item {
-      border: 0.5px solid #e6e6e5;
-      background-color: #fff;
-      border-radius: 4px;
+    .feedback-select-item {
+      background: #ffffff;
+      border-radius: 6px;
+      padding: 12px;
       margin-bottom: 8px;
-      overflow: hidden;
 
       &:last-child {
         margin-bottom: 0;
       }
 
-      .feedback-item-serial {
-        padding: 12px 0;
+      .feedback-serial {
+        font-family: 'PingFang SC';
+        font-size: 14px;
+        color: #191a1b;
+        padding-bottom: 12px;
         border-bottom: 0.5px solid #e6e6e5;
-        border-radius: 6px 6px 0 0;
+        margin-bottom: 12px;
 
-        .serial-text {
-          display: block;
-          font-family: 'PingFang SC';
-          font-size: 14px;
-          color: #191a1b;
-          padding: 0 8px;
-
-          .date-part {
-            color: #009100;
-          }
+        .date-part {
+          color: #009100;
         }
       }
 
-      .feedback-item-info {
-        padding: 12px 0;
+      .feedback-type {
+        font-family: 'PingFang SC';
+        font-size: 14px;
+        color: #191a1b;
+        margin-bottom: 4px;
+      }
 
-        .info-title {
-          font-family: 'PingFang SC';
-          font-size: 14px;
-          font-weight: 500;
-          color: #191a1b;
-          margin-bottom: 8px;
-          padding: 0 8px;
-        }
-
-        .info-desc {
-          font-family: 'PingFang SC';
-          font-size: 14px;
-          color: #191a1b;
-          padding: 0 8px;
-        }
+      .feedback-desc {
+        font-family: 'PingFang SC';
+        font-size: 14px;
+        color: #545454;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
       }
     }
   }

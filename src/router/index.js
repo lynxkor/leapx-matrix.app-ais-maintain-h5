@@ -42,15 +42,6 @@ const router = createRouter({
           }
         },
         {
-          path: '/pre-authorization',
-          name: 'preAuthorization',
-          component: () => import('../views/preAuthorization/PreAuthorizationDashboard.vue'),
-          meta: {
-            title: '预授权管理',
-            keepAlive: true
-          }
-        },
-        {
           path: '/pre-authorization/list',
           name: 'preAuthorizationList',
           component: () => import('../views/preAuthorization/PreAuthorizationList.vue'),
@@ -60,7 +51,7 @@ const router = createRouter({
           }
         },
         {
-          path: '/pre-authorization/:id',
+          path: '/pre-authorization/detail/:id',
           name: 'preAuthorizationDetail',
           component: () => import('../views/preAuthorization/PreAuthorizationDetail.vue'),
           meta: {
@@ -73,14 +64,6 @@ const router = createRouter({
           component: () => import('../views/preAuthorization/CreatePreAuthorization.vue'),
           meta: {
             title: '预授权申请'
-          }
-        },
-        {
-          path: '/pre-authorization/edit/:id',
-          name: 'editPreAuthorization',
-          component: () => import('../views/preAuthorization/CreatePreAuthorization.vue'),
-          meta: {
-            title: '编辑预授权'
           }
         },
         {

@@ -1,5 +1,11 @@
 <template>
   <div class="pre-auth-detail">
+    <!-- 加载状态 -->
+    <div v-if="detailLoading" class="loading-overlay">
+      <van-loading type="circular" color="#009100" />
+      <span class="loading-text">加载中...</span>
+    </div>
+
     <!-- 置顶区域：状态栏 + Tab 导航 -->
     <div class="sticky-header">
       <!-- 状态栏 -->
@@ -7,13 +13,13 @@
         <div class="status-bar-content">
           <div class="status-info">
             <span class="status-label">编号：</span>
-            <span class="status-value">{{ detail.orderNo }}</span>
+            <span class="status-value">{{ detail.orderNo || '--' }}</span>
           </div>
           <span class="status-tag" :class="detail.statusClass">{{ detail.statusText }}</span>
         </div>
         <!-- 驳回原因 -->
-        <div v-if="detail.status === 'rejected'" class="reject-reason">
-          {{ detail.rejectReason }}
+        <div v-if="detail.status === 4" class="reject-reason">
+          {{ detail.rejectReason || '--' }}
         </div>
       </div>
 
@@ -40,46 +46,50 @@
         <div class="card-body">
           <div class="info-row">
             <span class="info-label">施工单号</span>
-            <span class="info-value">{{ detail.constructionNo }}</span>
+            <span class="info-value">{{ detail.constructionNo || '--' }}</span>
           </div>
           <div class="info-row">
             <span class="info-label">预授权类型</span>
-            <span class="info-value">{{ detail.authType }}</span>
+            <span class="info-value">{{ detail.authType || '--' }}</span>
           </div>
           <div class="info-row">
             <span class="info-label">VIN</span>
-            <span class="info-value">{{ detail.vin }}</span>
+            <span class="info-value">{{ detail.vin || '--' }}</span>
           </div>
           <div class="info-row">
             <span class="info-label">保修时间</span>
-            <span class="info-value">{{ detail.warrantyTime }}</span>
+            <span class="info-value">{{ detail.warrantyTime || '--' }}</span>
           </div>
           <div class="info-row">
             <span class="info-label">进店里程</span>
-            <span class="info-value">{{ detail.mileage }}</span>
+            <span class="info-value">{{ detail.mileage || '--' }}</span>
           </div>
           <div class="info-row">
             <span class="info-label">车辆用途</span>
-            <span class="info-value">{{ detail.vehicleUse }}</span>
+            <span class="info-value">{{ detail.vehicleUse || '--' }}</span>
           </div>
           <div class="info-row">
             <span class="info-label">终身质保</span>
-            <span class="info-value">{{ detail.lifetimeWarranty }}</span>
+            <span class="info-value">{{ detail.lifetimeWarranty || '--' }}</span>
           </div>
           <div class="info-row">
             <span class="info-label">服务门店</span>
-            <span class="info-value">{{ detail.serviceStore }}</span>
+            <span class="info-value">{{ detail.serviceStore || '--' }}</span>
           </div>
           <div class="info-row">
             <span class="info-label">门店所属区域</span>
-            <span class="info-value">{{ detail.storeArea }}</span>
+            <span class="info-value">{{ detail.storeArea || '--' }}</span>
           </div>
           <div class="info-row" @click="showWarningInfo">
             <span class="info-label">预警信息</span>
             <span class="info-value warning">
-              {{ detail.warningInfo }}
+              {{ detail.warningInfo || '--' }}
               <van-icon name="arrow" size="12" color="#888888" />
             </span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">预交时间</span>
+            <span class="info-value">{{ detail.estimateDeliverTime || '--' }}</span>
           </div>
         </div>
       </div>
@@ -92,16 +102,16 @@
         <div class="card-body">
           <div class="info-row">
             <span class="info-label">质量反馈单号</span>
-            <span class="info-value">{{ detail.qualityReport.reportNo }}</span>
+            <span class="info-value">{{ detail.qualityReport?.reportNo || '--' }}</span>
           </div>
           <div class="info-row expandable" :class="{ expanded: faultDescExpanded }" @click="faultDescExpanded = !faultDescExpanded">
             <span class="info-label">故障现象描述</span>
-            <span class="info-value" :class="{ collapsed: !faultDescExpanded }">{{ detail.qualityReport.faultDesc }}</span>
+            <span class="info-value" :class="{ collapsed: !faultDescExpanded }">{{ detail.qualityReport?.faultDesc || '--' }}</span>
             <van-icon name="arrow" size="12" color="#888888" class="arrow-icon" />
           </div>
           <div class="info-row expandable" :class="{ expanded: faultProcessExpanded }" @click="faultProcessExpanded = !faultProcessExpanded">
             <span class="info-label">故障排查流程</span>
-            <span class="info-value" :class="{ collapsed: !faultProcessExpanded }">{{ detail.qualityReport.faultProcess }}</span>
+            <span class="info-value" :class="{ collapsed: !faultProcessExpanded }">{{ detail.qualityReport?.faultProcess || '--' }}</span>
             <van-icon name="arrow" size="12" color="#888888" class="arrow-icon" />
           </div>
         </div>
@@ -114,7 +124,7 @@
         </div>
         <div class="card-body">
           <div class="reason-content" :class="{ collapsed: !reasonExpanded }">
-            {{ detail.applyReason }}
+            {{ detail.applyReason || '--' }}
           </div>
           <div v-if="reasonNeedExpand" class="expand-btn" @click="reasonExpanded = !reasonExpanded">
             {{ reasonExpanded ? '收起' : '展开' }}
@@ -224,7 +234,7 @@
       </div>
     </div>
     <!-- 审核信息 Tab (仅驳回状态显示) -->
-    <div v-if="detail.status === 'rejected'" id="tab-audit" class="tab-content-section">
+    <div v-if="detail.status === 4" id="tab-audit" class="tab-content-section">
       <!-- 审核信息卡片 -->
       <div class="info-card">
         <div class="card-header">
@@ -233,7 +243,7 @@
         <div class="card-body">
           <div class="info-row">
             <span class="info-label">施工单号</span>
-            <span class="info-value">{{ detail.constructionNo }}</span>
+            <span class="info-value">{{ detail.constructionNo || '--' }}</span>
           </div>
           <div class="info-row">
             <span class="info-label">同意工时索赔小计</span>
@@ -274,7 +284,7 @@
     </div>
     <div style="height: 50vh;"></div>
     <!-- 底部审核按钮 (仅待审核状态显示) -->
-    <div v-if="detail.status === 'audit'" class="bottom-actions">
+    <div v-if="detail.status === 2" class="bottom-actions">
       <div class="action-btn audit" @click="handleAudit">审核</div>
     </div>
 
@@ -361,8 +371,9 @@
 <script setup>
 import { ref, onMounted, onUnmounted, nextTick, computed } from 'vue'
 import { useRoute } from 'vue-router'
-import { showToast } from 'vant'
+import { showToast, showLoadingToast, closeToast } from 'vant'
 import AisPopup from '@/components/AisPopup.vue'
+import { preAuthGet } from '@/api/authorization'
 
 const route = useRoute()
 
@@ -377,6 +388,7 @@ const showErrorCodePopup = ref(false) // 错误代码选择弹窗显示状态
 const auditResult = ref('') // 审核结果
 const auditRemark = ref('') // 审核意见
 const selectedErrorCode = ref('') // 选中的错误代码
+const detailLoading = ref(false) // 详情加载状态
 const auditOptions = [
   { label: '审核通过', value: 'approve' },
   { label: '审核驳回', value: 'reject' },
@@ -457,9 +469,9 @@ const scrollToPosition = (targetScrollTop, behavior = 'smooth') => {
 // 根据状态动态添加审核信息tab
 const updateTabsByStatus = () => {
   const hasAuditTab = tabs.value.some(tab => tab.name === 'audit')
-  if (detail.value.status === 'rejected' && !hasAuditTab) {
+  if (detail.value.status === 4 && !hasAuditTab) {
     tabs.value.push({ name: 'audit', title: '审核信息' })
-  } else if (detail.value.status !== 'rejected' && hasAuditTab) {
+  } else if (detail.value.status !== 4 && hasAuditTab) {
     tabs.value = tabs.value.filter(tab => tab.name !== 'audit')
   }
 }
@@ -528,108 +540,31 @@ const syncTabByScroll = () => {
   }
 }
 
-// 模拟详情数据
+// 详情数据
 const detail = ref({
-  // 状态信息
-  orderNo: '2358446753543340032',
-  status: 'audit', // pending, submitted, audit, approved, rejected
-  statusText: '待审核',
-  statusClass: 'status-audit',
-  rejectReason: '超过保修期，这是错误内容。这是审核意见描述内容这是审核意见描述内容这是审核意见描述内容。请检查车辆保修状态后重新提交申请，确保所有信息准确无误。',
-
-  // 审核信息
-  auditInfo: {
-    auditor: '张三',
-    auditTime: '2026-04-01 14:30:00',
-    result: '驳回',
-    laborSubtotal: '¥22.00 12.22%',
-    partsSubtotal: '¥22.00 12.22%',
-    otherSubtotal: '¥22.00 12.22%'
-  },
-
-  // 申请金额
-  applyAmount: '1500.00',
-
-  // 审核记录
-  auditRecords: [
-    {
-      time: '2026-03-10 18:30:00',
-      status: 'approved',
-      statusText: '通过',
-      comment: '这是一条审核意见这是一条审核意见这是一条审核意见这是一条审核意见 这是一条审核意见这是一条审核意见',
-      images: []
-    },
-    {
-      time: '2026-03-10 18:30:00',
-      status: 'rejected',
-      statusText: '驳回',
-      comment: '这是一条审核意见这是一条审核意见这是一条审核意见这是一条审核意见 这是一条审核意见这是一条审核意见',
-      images: [
-        'https://example.com/audit1.jpg',
-        'https://example.com/audit2.jpg',
-        'https://example.com/audit3.jpg',
-        'https://example.com/audit4.jpg',
-        'https://example.com/audit5.jpg'
-      ]
-    }
-  ],
-
-  // 接车施工单
-  constructionNo: 'LFV3H6686RKYM3393',
-  authType: '保修预授权',
-  vin: 'LFV3H6686RKYM3393',
-  warrantyTime: '2026-01-01 至 2029-12-31',
-  mileage: '47007km',
-  vehicleUse: '非营运',
-  lifetimeWarranty: '终身质保',
-  serviceStore: '杭州零跑中心建设四路店',
-  storeArea: '浙江杭州',
-  warningInfo: '这是一条预警描述内容这是一…',
-
-  // 质量反馈报告
-  qualityReport: {
-    reportNo: 'ZLR-260115092347261804',
-    faultDesc: '仪表提示ABS灯常亮，左后轮速传感器信号丢失',
-    faultProcess: '传感器检测 → 线路排查 → 更换传感器 → 系统复位 → 故障码清除'
-  },
-
-  // 申请原因
-  applyReason: '这是一条申请原因内容，用于说明本次预授权申请的具体原因和情况说明。车辆前保险杠右侧有明显划痕，长度约5cm，深度未伤及底漆。前保险杠表面有多处细小划痕，影响美观，需要进行喷漆修复处理。维修工艺：打磨 → 腻子填补 → 打磨平整 → 防锈处理 → 底漆喷涂 → 面漆喷涂 → 抛光处理。预计使用材料：底漆2罐、面漆1罐、固化剂、稀释剂等。',
-
-  // 维修项目
-  repairItems: [
-    {
-      name: '前保险杠补漆',
-      partNo: 'C1031000035',
-      type: '一般维修-保险-无',
-      price: '621.50',
-      discount: '0.00',
-      subtotal: '700.00',
-      quantity: '1.00'
-    }
-  ],
-
-  // 维修配件
-  partsItems: [
-    {
-      name: '左前大灯',
-      partNo: 'C1031000035',
-      type: '一般维修-保险-无',
-      tag: '原厂件',
-      price: '8681.81',
-      discount: '2.46',
-      subtotal: '700.00',
-      quantity: '1.00',
-      actualQuantity: '1',
-      returnQuantity: '0'
-    }
-  ],
-
-  // 附件图片
-  vehicleImages: [
-    'https://example.com/car1.jpg',
-    'https://example.com/car2.jpg'
-  ],
+  orderNo: '',
+  status: 0,
+  statusText: '',
+  statusClass: '',
+  rejectReason: '',
+  constructionNo: '',
+  authType: '',
+  vin: '',
+  warrantyTime: '',
+  mileage: '',
+  vehicleUse: '',
+  lifetimeWarranty: '',
+  serviceStore: '',
+  storeArea: '',
+  warningInfo: '',
+  applyReason: '',
+  estimateDeliverTime: '',
+  qualityReport: null,
+  auditInfo: {},
+  auditRecords: [],
+  repairItems: [],
+  partsItems: [],
+  vehicleImages: [],
   licenseImages: []
 })
 
@@ -716,9 +651,154 @@ const handleUploadAttachment = () => {
   showToast('上传附件')
 }
 
+// 获取详情数据
+const fetchDetail = async() => {
+  const id = route.params.id
+  if (!id) {
+    showToast('缺少预授权ID')
+    return
+  }
+
+  detailLoading.value = true
+  try {
+    const res = await preAuthGet(id)
+    if (res.code === 200 && res.data) {
+      Object.assign(detail.value, formatDetailData(res.data.serviceProxyResp, res.data))
+      updateTabsByStatus()
+    } else {
+      showToast(res.msg || '获取详情失败')
+    }
+  } catch (error) {
+    console.error('获取详情失败:', error)
+  } finally {
+    detailLoading.value = false
+  }
+}
+
+// 格式化详情数据
+const formatDetailData = (data, allData) => {
+  // 从 allData 中获取预授权主数据
+  const preAuthData = allData || data
+  // 从 serviceProxyResp 中获取施工单数据
+  const serviceProxy = data.serviceProxyResp || {}
+
+  return {
+    // 基础信息
+    orderNo: preAuthData.code || '',
+    status: preAuthData.status,
+    statusText: getStatusText(preAuthData.status),
+    statusClass: getStatusClass(preAuthData.status),
+    rejectReason: preAuthData.rejectReason || '',
+    constructionNo: serviceProxy.code || '',
+    authType: preAuthData.preAuthType === 1 ? '技术预授权' : preAuthData.preAuthType === 2 ? '保修预授权' : '',
+    vin: serviceProxy.vehProfileVin || '',
+    warrantyTime: serviceProxy.startWarrantyDate && serviceProxy.warrantyEndDate
+      ? `${serviceProxy.startWarrantyDate} 至 ${serviceProxy.warrantyEndDate}`
+      : '',
+    mileage: serviceProxy.mileage ? `${serviceProxy.mileage}km` : '',
+    vehicleUse: serviceProxy.carProperty === 1 ? '非营运' : serviceProxy.carProperty === 2 ? '营运' : '',
+    lifetimeWarranty: preAuthData.warrantyLife === 1 ? '终身质保' : '',
+    serviceStore: serviceProxy.dealerName || '',
+    storeArea: preAuthData.orgName || preAuthData.dealerUnitName || '',
+    warningInfo: preAuthData.alarmInfo || serviceProxy.alarmInfo || '',
+    applyReason: preAuthData.reason || '',
+    estimateDeliverTime: serviceProxy.expectFinishAt || '',
+
+    // 质量反馈报告
+    qualityReport: allData?.qualityOrderReportResp ? {
+      reportNo: allData.qualityOrderReportResp.code || '',
+      faultDesc: allData.qualityOrderReportResp.customerContent || '',
+      faultProcess: allData.qualityOrderReportResp.troubleshootingProcess || ''
+    } : null,
+
+    // 审核信息
+    auditInfo: {
+      auditor: preAuthData.approver || '',
+      auditTime: preAuthData.approvalOn || '',
+      laborSubtotal: preAuthData.approvedLaborClaimTotal ? `¥${preAuthData.approvedLaborClaimTotal}` : '--',
+      partsSubtotal: preAuthData.approvedPartsClaimTotal ? `¥${preAuthData.approvedPartsClaimTotal}` : '--',
+      otherSubtotal: preAuthData.approvedOtherClaimTotal ? `¥${preAuthData.approvedOtherClaimTotal}` : '--'
+    },
+
+    // 审核记录
+    auditRecords: (allData?.supportApprovalResps || []).map(item => ({
+      time: item.approvalOn || '',
+      status: item.approvalResult,
+      statusText: getApprovalResultText(item.approvalResult),
+      comment: item.content || '',
+      images: []
+    })),
+
+    // 维修项目
+    repairItems: (allData?.spRepairItemResps || []).map(item => ({
+      name: item.repairItemName || '',
+      partNo: item.repairItemCode || '',
+      type: item.repairItemTypeName || '',
+      price: item.price || '0',
+      discount: item.discountAmount || '0',
+      subtotal: item.repairAmount || '0',
+      quantity: item.workHour || '0'
+    })),
+
+    // 维修配件
+    partsItems: (allData?.spSparePartResps || []).map(item => ({
+      name: item.partsName || '',
+      partNo: item.partsCode || '',
+      type: item.repairItemTypeName || '',
+      tag: item.isOemPart === 1 ? '原厂件' : '',
+      price: item.price || '0',
+      discount: item.discountAmount || '0',
+      subtotal: item.partsAmount || '0',
+      quantity: item.quantity || '0',
+      actualQuantity: item.actualPickNumber || '0',
+      returnQuantity: item.refundedNumber || '0'
+    })),
+
+    // 附件图片 - 待补充
+    vehicleImages: [],
+    licenseImages: []
+  }
+}
+
+// 获取审批结果文本
+const getApprovalResultText = (result) => {
+  switch (result) {
+    case 1: return '通过'
+    case 2: return '驳回'
+    case 3: return '拒绝'
+    default: return ''
+  }
+}
+
+// 获取状态文本
+const getStatusText = (status) => {
+  switch (status) {
+    case 0: return '未提交'
+    case 1: return '已提交'
+    case 2: return '待审核'
+    case 3: return '已通过'
+    case 4: return '已驳回'
+    case 5: return '已作废'
+    default: return '未知'
+  }
+}
+
+// 获取状态样式类
+const getStatusClass = (status) => {
+  switch (status) {
+    case 0: return 'status-pending'
+    case 1: return 'status-approved'
+    case 2: return 'status-audit'
+    case 3: return 'status-approved'
+    case 4: return 'status-rejected'
+    case 5: return 'status-rejected'
+    default: return ''
+  }
+}
+
 onMounted(() => {
   console.log('预授权详情页加载，ID:', route.params.id)
-  updateTabsByStatus()
+  fetchDetail()
 
   nextTick(() => {
     setupScrollListener()
@@ -741,6 +821,27 @@ onUnmounted(() => {
   background: #f5f5f5;
   padding-bottom: calc(76px + env(safe-area-inset-bottom));
   padding-top: 84px;
+}
+
+// 加载状态
+.loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.9);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  z-index: 9999;
+
+  .loading-text {
+    font-size: 14px;
+    color: #666;
+  }
 }
 
 // 置顶区域容器
@@ -824,6 +925,7 @@ onUnmounted(() => {
 .detail-tabs-nav {
   background: #fff;
   display: flex;
+  justify-content: space-around;
   padding: 0 12px;
   border-bottom: 1px solid #eee;
   height: 44px;

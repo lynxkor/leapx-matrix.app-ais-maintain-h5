@@ -98,3 +98,4 @@ This is a Vue 3 mobile/H5 application built with Vite for Leap Motor's AIS maint
 3. 所有列表页面, 多条数据展示的, 都推荐使用src/components/ListItem.vue组件
 4. 步骤条相关的组件使用src/components/AisStepNav.vue组件
 5. 所有涉及从页面底部弹出展示popup的页面, 都需要使用src/components/AisPopup.vue组件6.每次执行命令的时候, 我需要你参考一下项目app-ais-vehretail-h5
+6. 页面展示字段全部使用接口返回的字段, 确保代码可读性

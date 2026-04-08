@@ -1,6 +1,6 @@
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
-import { List, Cell, Search, NavBar, PullRefresh, Image as VanImage, Lazyload, Swipe, SwipeItem, ActionSheet, ActionBar, ActionBarButton, Button, Form, Field, CellGroup, Icon, Dialog, Popup, DatePicker, TimePicker, Tabs, Tab } from 'vant'
+import { List, Cell, Search, NavBar, PullRefresh, Image as VanImage, Lazyload, Swipe, SwipeItem, ActionSheet, ActionBar, ActionBarButton, Button, Form, Field, CellGroup, Icon, Dialog, Popup, DatePicker, TimePicker, Tabs, Tab, Loading, Row, Col } from 'vant'
 import * as Sentry from '@sentry/vue'
 
 import App from './App.vue'
@@ -64,6 +64,9 @@ app.use(DatePicker)
 app.use(TimePicker)
 app.use(Tabs)
 app.use(Tab)
+app.use(Loading)
+app.use(Row)
+app.use(Col)
 
 // 注册时可以配置额外的选项
 app.use(Lazyload, {
