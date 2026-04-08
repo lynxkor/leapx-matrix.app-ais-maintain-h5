@@ -13,7 +13,7 @@
         <div class="close-btn" @click="handleClose">
           <van-icon name="arrow-left" />
         </div>
-        <div class="header-title">故障信息</div>
+        <div class="header-title">填写故障信息</div>
         <div class="header-right"></div>
       </div>
 

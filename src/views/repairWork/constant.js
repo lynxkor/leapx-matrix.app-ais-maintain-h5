@@ -156,3 +156,59 @@ export const DispatchStatusEnum = {
 
 export const PAGESIZE = 20
 
+// 维修项目
+export const MaintenanceTypeList = [
+  {
+    'code': '898A364C-DD79-EC11-B0F9-9216EACB73F2',
+    'message': '一般维修'
+  },
+  {
+    'code': '1073B058-DD79-EC11-B0F9-9216EACB73F2',
+    'message': '钣喷'
+  },
+  {
+    'code': '137F5860-DD79-EC11-B0F9-9216EACB73F2',
+    'message': '美容，装潢'
+  },
+  {
+    'code': '9C938267-DD79-EC11-B0F9-9216EACB73F2',
+    'message': '精品附件'
+  },
+  {
+    'code': 'EC34606E-DD79-EC11-B0F9-9216EACB73F2',
+    'message': '三电维修'
+  },
+  {
+    'code': '6EA3066F-82AC-E911-B0BB-FC82BA5F9EDF',
+    'message': '保养'
+  },
+  {
+    'code': '019D2E08-67B6-75D9-ACC4-9A832B44F9E9',
+    'message': '保修'
+  }
+]
+
+// 结算类型
+export const CheckoutTypeList = [
+  {
+    'code': '352BB70C-82AC-E911-B0BB-FC82BA5F9EDF',
+    'message': '自费'
+  },
+  {
+    'code': '372BB70C-82AC-E911-B0BB-FC82BA5F9EDF',
+    'message': '保险'
+  },
+  {
+    'code': '392BB70C-82AC-E911-B0BB-FC82BA5F9EDF',
+    'message': '保修'
+  },
+  {
+    'code': '3B2BB70C-82AC-E911-B0BB-FC82BA5F9EDF',
+    'message': '合同'
+  },
+  {
+    'code': '3D2BB70C-82AC-E911-B0BB-FC82BA5F9EDF',
+    'message': '内部结算'
+  }
+]
+

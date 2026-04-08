@@ -17,6 +17,13 @@
         @submit="handleBatchDispatchSubmit"
       />
 
+      <!-- 添加维修项目弹窗 -->
+      <AddRepairItem
+        v-model:visible="showAddRepairPopup"
+        :service-proxy-id="workOrder.serviceProxyId"
+        @confirm="handleAddRepairConfirm"
+      />
+
       <!-- 标题栏 -->
       <div class="popup-header">
         <div class="close-btn" @click="handleClose">
@@ -205,6 +212,7 @@ import { ref, computed, watch, nextTick } from 'vue'
 import { showToast } from 'vant'
 import DispatchWorkPopup from './DispatchWorkPopup.vue'
 import CancelWorkPopup from './CancelWorkPopup.vue'
+import AddRepairItem from '@/components/AddRepairItem/index.vue'
 import { cancel, repairWorkRecord } from '../../../api/repairWork'
 import { formatDateTime } from '@/libs/utils'
 import { executeBatchOperation, filterByTag /* handleFinalCheckFlow*/ } from '../utils'
@@ -235,6 +243,7 @@ const userStore = useUserStore()
 const visible = ref(props.modelValue)
 const showCancelPopup = ref(false)
 const showDispatchPopup = ref(false)
+const showAddRepairPopup = ref(false)
 const loading = ref(false)
 
 // 内部维修项目列表（带选中状态）
@@ -432,7 +441,13 @@ const handleBatchDispatchSubmit = async() => {
 
 // 添加维修项目
 const handleAddRepair = () => {
-  // 跳转添加维修项目页面
+  showAddRepairPopup.value = true
+}
+
+// 添加维修项目确认
+const handleAddRepairConfirm = () => {
+  emit('refresh')
+  loadRepairWorkRecord()
 }
 
 // 作废
