@@ -65,9 +65,11 @@
       </div>
 
       <!-- 结算类型选择弹窗 -->
-      <CheckoutPicker
+      <AisCascader
         v-model:show="showCheckoutPicker"
-        :current-item="editingItem"
+        title="选择结算类型"
+        :options="cascaderOptions"
+        :model-value="editingItem?.warrantyTypeId || ''"
         @confirm="onCheckoutConfirm"
       />
 
@@ -89,10 +91,10 @@
 import { ref, computed, watch } from 'vue'
 import { showToast } from 'vant'
 import Empty from '@/views/repairWork/components/Empty.vue'
-import { filterRepairItems, filterRepairParts, getRepairItemInfo, saveRepairItemInfo } from '@/api/repairWork'
+import { filterRepairItems, filterRepairParts, getRepairItemInfo, saveRepairItemInfo, getEnum, getRepairItemTypeMap } from '@/api/repairWork'
 import SearchBar from './SearchBar.vue'
 import RepairItemCard from './RepairItemCard.vue'
-import CheckoutPicker from './CheckoutPicker.vue'
+import AisCascader from '@/components/AisCascader/index.vue'
 
 const props = defineProps({
   visible: {
@@ -130,6 +132,10 @@ const selectedParts = ref([])
 const showCheckoutPicker = ref(false)
 const editingItem = ref(null)
 
+// 级联选择器数据与枚举默认值
+const cascaderOptions = ref([])
+const enumDefaults = ref({})
+
 // 加载状态
 const loading = ref(false)
 
@@ -160,23 +166,37 @@ const performSearch = async(keyword) => {
 
 // 统一字段映射（零件用 partName/partCode/salePrice，项目用 name/code/price）
 const normalizeItem = (raw) => ({
-  ...raw,
+  ...enumDefaults.value,
   name: raw.repairItemName || raw.name,
   code: raw.repairItemCode || raw.code,
   price: raw.workhourPrice || raw.price || '0.00',
-  checkoutType: '',
   quantity: raw.workHour || 1,
-  discountAmount: raw.discountAmount || 0
+  discountAmount: raw.discountAmount || 0,
+  workHour: raw.workHour || 1,
+  repairItemName: raw.repairItemName || raw.name,
+  repairItemCode: raw.repairItemCode || raw.code,
+  repairItemId: raw.repairItemId || raw.id,
+  packageCode: raw.packageCode || '',
+  isWarranty: raw.isWarranty || 0,
+  isProdType: raw.isProdType || 0
 })
 
 const normalizePart = (raw) => ({
-  ...raw,
+  ...enumDefaults.value,
   name: raw.partsName || raw.partName || raw.name,
   code: raw.partsCode || raw.partCode || raw.code,
+  partsId: raw.partsId || raw.id,
+  partsName: raw.partsName || raw.partName || raw.name,
+  partsCode: raw.partsCode || raw.partCode || raw.code,
   price: raw.salePrice || raw.price || '0.00',
-  checkoutType: '',
   quantity: raw.quantity || 1,
-  discountAmount: raw.discountAmount || 0
+  discountAmount: raw.discountAmount || 0,
+  repairItemName: raw.name || '',
+  packageCode: raw.packageCode || '',
+  repairItemId: raw.repairItemId, // 关联维修项目ID
+  repairitemcode: raw.code,
+  isOemPart: raw.isOemPart || 0,
+  isBindltem: 0
 })
 
 // 搜索结果点击 → 区分维修项目/零件
@@ -205,7 +225,7 @@ const handleAddItemWithParts = (rawItem) => {
       showToast({ message: '请勿重复添加', 'z-index': 5100 })
       return
     }
-    const newItem = normalizeItem(rawItem)
+    const newItem = normalizePart(rawItem)
     selectedParts.value.push(newItem)
     searchBarRef.value?.showActiveCards([newItem])
     showToast({ message: '添加成功', 'z-index': 5100 })
@@ -233,9 +253,17 @@ const handleItemUpdate = (item, updates) => {
   Object.assign(item, updates)
 }
 
-const onCheckoutConfirm = (value) => {
+const onCheckoutConfirm = ({ selectedOptions }) => {
+  const [level1, level2, level3] = selectedOptions || []
   if (editingItem.value) {
-    Object.assign(editingItem.value, value)
+    Object.assign(editingItem.value, {
+      repairItemTypeId: level1?.value || '',
+      repairItemTypeName: level1?.text || '',
+      checkoutTypeId: level2?.value || '',
+      checkoutTypeName: level2?.text || '',
+      warrantyTypeId: level3?.value || '',
+      warrantyTypeName: level3?.text || ''
+    })
   }
   showCheckoutPicker.value = false
   editingItem.value = null
@@ -296,17 +324,58 @@ watch(
   }
 )
 
+// 加载枚举数据并构建级联选项
+const loadEnumData = async() => {
+  const [mtRes, ctRes, ritRes] = await Promise.all([
+    getEnum('MaintenanceTypeEnum'),
+    getEnum('StatementTypeEnum'),
+    getRepairItemTypeMap()
+  ])
+  const maintenanceTypes = mtRes?.data || []
+  const checkoutTypes = ctRes?.data || []
+  const repairItemTypes = ritRes?.data || []
+
+  cascaderOptions.value = maintenanceTypes.map(mt => ({
+    text: mt.message,
+    value: mt.code,
+    children: checkoutTypes.map(ct => ({
+      text: ct.message,
+      value: ct.code,
+      children: repairItemTypes
+        .filter(rit => rit.checkoutTypeId === ct.code)
+        .map(rit => ({ text: rit.name, value: rit.id }))
+    }))
+  }))
+
+  // 取第一个选项作为新增时的默认值
+  const firstMt = maintenanceTypes[0]
+  const firstCt = checkoutTypes[0]
+  const firstRit = repairItemTypes.find(rit => rit.checkoutTypeId === firstCt?.code)
+  enumDefaults.value = {
+    repairItemTypeId: firstMt?.code || '',
+    repairItemTypeName: firstMt?.message || '',
+    checkoutTypeId: firstCt?.code || '',
+    checkoutTypeName: firstCt?.message || '',
+    warrantyTypeId: firstRit?.id || '',
+    warrantyTypeName: firstRit?.name || ''
+  }
+}
+
 // 加载初始数据
 const loadInitialData = async() => {
   if (!props.serviceProxyId) return
   try {
     loading.value = true
-    const res = await getRepairItemInfo(props.serviceProxyId)
-    if (res?.code === 200 && res?.data) {
-      const { repairItemRespList = [], sparePartRespList = [] } = res.data
-      selectedItems.value = repairItemRespList.map(normalizeItem)
-      selectedParts.value = sparePartRespList.map(normalizePart)
-    }
+    await Promise.all([
+      loadEnumData(),
+      getRepairItemInfo(props.serviceProxyId).then((res) => {
+        if (res?.code === 200 && res?.data) {
+          const { repairItemRespList = [], sparePartRespList = [] } = res.data
+          selectedItems.value = repairItemRespList.map(normalizeItem)
+          selectedParts.value = sparePartRespList.map(normalizePart)
+        }
+      })
+    ])
   } catch (error) {
     console.error('加载维修项目数据失败:', error)
   } finally {

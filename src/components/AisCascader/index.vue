@@ -1,12 +1,12 @@
 <template>
   <van-popup v-model:show="visible" round position="bottom">
-    <div class="checkout-picker">
-      <div class="checkout-picker-title">选择结算类型</div>
+    <div class="ais-cascader">
+      <div class="ais-cascader-title">{{ title }}</div>
       <div class="close-btn" @click="handleClose">
         <van-icon name="cross" />
       </div>
       <van-cascader
-        v-model="cascaderValue"
+        v-model="innerValue"
         :options="options"
         title="请选择"
         :show-header="false"
@@ -19,105 +19,77 @@
 </template>
 
 <script setup>
+/**
+ * AisCascader - 通用三级级联选择器
+ *
+ * 纯 UI 组件，不负责数据获取。options 由调用方传入。
+ *
+ * @prop show       - 控制弹窗显隐，支持 v-model:show
+ * @prop title      - 弹窗标题
+ * @prop options    - 级联选项数组，格式 [{ text, value, children }]
+ * @prop modelValue - 当前选中值，用于回显
+ *
+ * @emit update:show       - 双向绑定显隐
+ * @emit update:modelValue - 双向绑定值
+ * @emit confirm           - 选择完成，payload { selectedOptions }
+ */
 import { computed, ref, watch } from 'vue'
-import { getEnum, getRepairItemTypeMap } from '@/api/repairWork'
 
 const props = defineProps({
   show: {
     type: Boolean,
     default: false
   },
-  currentItem: {
-    type: Object,
-    default: null
+  title: {
+    type: String,
+    default: '请选择'
+  },
+  options: {
+    type: Array,
+    default: () => []
+  },
+  modelValue: {
+    type: String,
+    default: ''
   }
 })
 
-const emit = defineEmits(['update:show', 'confirm'])
+const emit = defineEmits(['update:show', 'update:modelValue', 'confirm'])
 
 const visible = computed({
   get: () => props.show,
   set: (val) => emit('update:show', val)
 })
 
-const cascaderValue = ref('')
-const options = ref([])
-const fieldNames = {
-  text: 'text',
-  value: 'value',
-  children: 'children'
-}
+const innerValue = ref('')
 
-// 缓存原始数据，用于 confirm 时查找名称
-let checkoutTypesRaw = []
-let repairItemTypesRaw = []
+const fieldNames = { text: 'text', value: 'value', children: 'children' }
 
-const loadOptions = async() => {
-  const [maintenanceTypesRes, checkoutTypesRes, repairItemTypesRes] = await Promise.all([
-    getEnum('MaintenanceTypeEnum'),
-    getEnum('StatementTypeEnum'),
-    getRepairItemTypeMap()
-  ])
-
-  const maintenanceTypes = maintenanceTypesRes?.data || []
-  checkoutTypesRaw = checkoutTypesRes?.data || []
-  repairItemTypesRaw = repairItemTypesRes?.data || []
-
-  options.value = maintenanceTypes.map((mt) => ({
-    text: mt.message,
-    value: mt.code,
-    children: checkoutTypesRaw.map((ct) => ({
-      text: ct.message,
-      value: ct.code,
-      children: repairItemTypesRaw
-        .filter((rit) => rit.checkoutTypeId === ct.code)
-        .map((rit) => ({
-          text: rit.name,
-          value: rit.id
-        }))
-    }))
-  }))
-  console.log(maintenanceTypes, checkoutTypesRaw, repairItemTypesRaw, options.value)
-}
-
-// 弹窗打开时加载数据
-watch(visible, async(val) => {
-  if (val && options.value.length === 0) {
-    await loadOptions()
-  }
-  // 回显当前选中值
-  if (val && props.currentItem) {
-    cascaderValue.value = props.currentItem.warrantyTypeId || ''
+// 弹窗打开时回显当前值
+watch(visible, (val) => {
+  if (val) {
+    innerValue.value = props.modelValue || ''
   }
 })
 
 const onFinish = ({ selectedOptions }) => {
-  const [level1, level2, level3] = selectedOptions || []
-
-  emit('confirm', {
-    repairItemTypeId: level1?.value || '',
-    repairItemTypeName: level1?.text || '',
-    checkoutTypeId: level2?.value || '',
-    checkoutTypeName: level2?.text || '',
-    warrantyTypeId: level3?.value || '',
-    warrantyTypeName: level3?.text || ''
-  })
+  emit('confirm', { selectedOptions })
+  visible.value = false
 }
 
 const handleClose = () => {
   visible.value = false
 }
-
 </script>
 
 <style lang="scss" scoped>
-.checkout-picker {
+.ais-cascader {
   padding: 16px 0;
   padding-bottom: calc(16px + env(safe-area-inset-bottom));
   position: relative;
   background: #f4f4f4;
 
-  .checkout-picker-title {
+  .ais-cascader-title {
     text-align: center;
     font-family: 'PingFang SC', sans-serif;
     font-size: 14px;
@@ -151,9 +123,8 @@ const handleClose = () => {
     &::after {
       content: '/';
       transform: translateX(8px);
-      color:#191a1b;
+      color: #191a1b;
     }
-    // 倒数第二个不加 /
     &:nth-last-child(2)::after {
       display: none;
     }
@@ -164,7 +135,7 @@ const handleClose = () => {
   ::v-deep .van-tabs__line {
     display: none;
   }
-  ::v-deep .van-cascader__options{
+  ::v-deep .van-cascader__options {
     padding: 0 12px;
   }
   ::v-deep .van-cascader__option {
@@ -174,8 +145,8 @@ const handleClose = () => {
       content: '';
       position: absolute;
       bottom: 0;
-      left: 12px;  /* 左侧留白 */
-      right: 12px; /* 右侧留白 */
+      left: 12px;
+      right: 12px;
       height: 1px;
       background-color: #E6E6E5;
     }
