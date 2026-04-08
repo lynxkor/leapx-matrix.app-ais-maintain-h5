@@ -6,8 +6,8 @@
       :showScan="true"
       :showSort="false"
       :filterList="filterList"
-      search-page-route="workOrderSearch"
-      @filterSearch="onSearch"
+      @filterSearch="onFilterSearch"
+      @search="onSearch"
     />
 
     <!-- Tab导航 -->
@@ -19,7 +19,12 @@
 
     <!-- 列表内容 -->
     <div class="common-scroll-content" ref="scrollEle">
-      <RefreshList :requestData="requestData" :needRefresh="needRefresh" @setData="onSetData">
+      <RefreshList
+        :requestData="requestData"
+        :needRefresh="needRefresh"
+        @setData="onSetData"
+        @onError="onListError"
+      >
         <div v-if="list.length > 0">
           <list-item
             v-for="item in list"
@@ -55,6 +60,7 @@
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { showToast } from 'vant'
 import FilterHeader from '@/libs/components/FilterHeader.vue'
 import { useGlobalStore } from '@/stores/global'
 import ListItem from '@/components/ListItem.vue'
@@ -93,9 +99,9 @@ const filterList = ref([
       { label: '待交车', value: 160 },
       { label: '已交车', value: 180 },
       { label: '反结算', value: 200 },
-      { label: '已作废', value: 210 },
-    ],
-  },
+      { label: '已作废', value: 210 }
+    ]
+  }
   // {
   //   title: '维修类型',
   //   key: 'repairItemTypeDetailCollect',
@@ -129,37 +135,49 @@ const requestData = computed(() => {
     return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
   }
 
-  let data = {
+  const data = {
     pageNum: 1,
     pageSize: 10,
-    ...searchParams.value,
+    ...searchParams.value
   }
-
+  console.log('data', data, activeTab.value)
   if (activeTab.value === 'today') {
     data.createTimeStart = formatDate(todayStart)
     data.createTimeEnd = formatDate(todayEnd)
   } else if (activeTab.value === 'week') {
     data.createTimeStart = formatDate(weekAgo)
     data.createTimeEnd = formatDate(todayEnd)
+  } else if (activeTab.value === 'all') {
+    // all 不传日期参数，同时清除可能存在的旧日期值
+    data.createTimeStart = null
+    data.createTimeEnd = null
   }
-  // 'all' 不传日期参数
-
   return {
     api: getList,
-    data,
+    data
   }
 })
 
 // 搜索事件
-const onSearch = (params) => {
+const onFilterSearch = (params) => {
   searchParams.value = params
+  loading.value = true
+  isExplicitRefresh.value = true
+  needRefresh.value = true
+}
+const onSearch = (e) => {
+  searchParams.value = {
+    ...searchParams.value,
+    appSearchKeyWord: e.searchValue
+  }
   loading.value = true
   isExplicitRefresh.value = true
   needRefresh.value = true
 }
 
 // Tab切换
-const onTabChange = () => {
+const onTabChange = (e) => {
+  activeTab.value = e
   loading.value = true
   isExplicitRefresh.value = true
   needRefresh.value = true
@@ -177,22 +195,29 @@ const onSetData = (data) => {
   isExplicitRefresh.value = false
 }
 
+// 列表请求错误处理
+const onListError = (msg) => {
+  loading.value = false
+  isExplicitRefresh.value = false
+  showToast(msg)
+}
+
 // 卡片点击
 const onCardClick = (item) => {
-  // 已交车(180)或已作废(210)跳转到详情页，其他跳转到编辑页
+  // 已交车(180)或已作废(210), 已生成结算单(1)跳转到详情页，其他跳转到编辑页
   const path =
-    item.status === 180 || item.status === 210
+    item.status === 180 || item.status === 210 || item.isCreateStatementInfo == 1
       ? '/reception/work-order/detail'
       : '/reception/work-order/edit'
   router.push({
     path,
-    query: { id: item.id },
+    query: { id: item.id }
   })
 }
 
 // 新建施工单
 const onCreateOrder = () => {
-  router.push('/reception/vehicle-search')
+  router.push('/reception/work-order-search')
 }
 
 onMounted(() => {

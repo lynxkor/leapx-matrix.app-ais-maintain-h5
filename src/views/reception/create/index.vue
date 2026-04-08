@@ -1012,7 +1012,7 @@ import {
   getVehicleMileage,
   getFaultModule,
   serviceAddOrUpdate,
-  servicePreCheck,
+  servicePreCheck
 } from '@/api/reception'
 import './create.scss'
 
@@ -1124,7 +1124,7 @@ const numberLetterRows = computed(() => {
     ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'P', '港', '澳'],
     ['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', '学'],
     ['Z', 'X', 'C', 'V', 'B', 'N', 'M', '警', '领', ''],
-    ['删除', '', '', '', '', '', '', '', '', '完成'],
+    ['删除', '', '', '', '', '', '', '', '', '完成']
   ]
 })
 
@@ -1203,17 +1203,17 @@ const moreActionsList = [
   { name: '权益查询', tag: '1', color: '#191a1b' },
   { name: '维修履历', tag: '2', color: '#191a1b' },
   { name: '实时故障', tag: '3', color: '#191a1b' },
-  { name: '作废', tag: '4', color: '#191a1b' },
+  { name: '作废', tag: '4', color: '#191a1b' }
 ]
 const faultModuleList = ref([])
 
 // 获取故障模块列表
-const fetchFaultModuleList = async () => {
+const fetchFaultModuleList = async() => {
   try {
     const res = await getFaultModule(faultSearchValue.value.trim())
     if (res.code === 200) {
       faultModuleList.value = (res.data || []).map((item) => ({
-        ...item,
+        ...item
       }))
     }
   } catch (error) {
@@ -1239,16 +1239,16 @@ const onSelectMoreAction = (action) => {
       query: {
         vin: detail.vin,
         plateNo: detail.plateNo,
-        vehicleModel: detail.vehicleModel,
-      },
+        vehicleModel: detail.vehicleModel
+      }
     })
   }
   if (action.name === '权益查询') {
     router.push({
       path: '/reception/rights-query',
       query: {
-        id: detail.id,
-      },
+        id: detail.id
+      }
     })
   }
 }
@@ -1323,7 +1323,7 @@ const businessTypeList = ref([
   { value: 20, label: '取送车到店' },
   { value: 30, label: '上门服务' },
   { value: 40, label: '外出驻点服务' },
-  { value: 50, label: '预约到店' },
+  { value: 50, label: '预约到店' }
 ])
 
 // 详情数据
@@ -1352,7 +1352,7 @@ const detail = reactive({
   abnormalDesc: '',
   hasFault: '1',
   faultModules: [],
-  customerFaultDesc: '',
+  customerFaultDesc: ''
 })
 
 // 项目零件数据
@@ -1371,7 +1371,7 @@ const partsData = reactive({
           price: '621.50',
           discount: '0.00',
           subtotal: '700.00',
-          quantity: 1,
+          quantity: 1
         },
         {
           name: '前保险杠补漆',
@@ -1380,9 +1380,9 @@ const partsData = reactive({
           price: '621.50',
           discount: '0.00',
           subtotal: '700.00',
-          quantity: 1,
-        },
-      ],
+          quantity: 1
+        }
+      ]
     },
     {
       name: '省心保养套餐-9AB102382372389238',
@@ -1394,7 +1394,7 @@ const partsData = reactive({
           price: '621.50',
           discount: '0.00',
           subtotal: '700.00',
-          quantity: 1,
+          quantity: 1
         },
         {
           name: '前保险杠补漆',
@@ -1403,11 +1403,11 @@ const partsData = reactive({
           price: '621.50',
           discount: '0.00',
           subtotal: '700.00',
-          quantity: 1,
-        },
-      ],
-    },
-  ],
+          quantity: 1
+        }
+      ]
+    }
+  ]
 })
 
 // 签字确认数据
@@ -1417,7 +1417,7 @@ const signatureData = reactive({
   deliveryTime: '',
   liveEnabled: false,
   signatureChannel: '',
-  attachments: [],
+  attachments: []
 })
 
 // 选择器显示状态
@@ -1441,7 +1441,7 @@ const generateDeliveryDates = () => {
     const day = String(date.getDate()).padStart(2, '0')
     dates.push({
       value: `${year}-${month}-${day}`,
-      label: `${year}-${month}-${day}`,
+      label: `${year}-${month}-${day}`
     })
   }
   deliveryDateList.value = dates
@@ -1460,17 +1460,17 @@ const deliveryTimeList = ref([
   { value: '10:00', label: '10:00' },
   { value: '10:15', label: '10:15' },
   { value: '10:30', label: '10:30' },
-  { value: '10:45', label: '10:45' },
+  { value: '10:45', label: '10:45' }
 ])
 
 // 签字渠道列表
 const signatureChannelList = ref([
   { value: 'paper', label: '纸质单据' },
-  { value: 'app', label: 'APP/短信/零小跑' },
+  { value: 'app', label: 'APP/短信/零小跑' }
 ])
 
 // 获取详情
-const fetchDetail = async () => {
+const fetchDetail = async() => {
   const id = route.query.id
   const vehicleInfoStr = route.params.vehicleInfo || route.query.vehicleInfo
 
@@ -1528,7 +1528,7 @@ const onChangeCarClose = () => {
 }
 
 // 搜索车辆
-const onCarSearch = async (value) => {
+const onCarSearch = async(value) => {
   console.log('搜索车辆:', value)
   // 重置选中车辆信息，展示搜索结果列表
   selectedCarInfo.value = null
@@ -1558,7 +1558,7 @@ const onSelectCar = (item) => {
 }
 
 // 获取车联网里程数
-const fetchVehicleMileage = async (vin) => {
+const fetchVehicleMileage = async(vin) => {
   if (!vin) return
   try {
     const res = await getVehicleMileage(vin)
@@ -1609,7 +1609,7 @@ const onEditPlate = () => {
 const onDeleteImage = (type, index) => {
   showConfirmDialog({
     title: '提示',
-    message: '确定删除该图片吗？',
+    message: '确定删除该图片吗？'
   })
     .then(() => {
       if (type === 'interior') {
@@ -1640,7 +1640,7 @@ const onCloseFaultModulePopup = () => {
 }
 
 // 故障模块搜索
-const onFaultSearch = async (value) => {
+const onFaultSearch = async(value) => {
   faultSearchValue.value = value
   await fetchFaultModuleList()
 }
@@ -1746,7 +1746,7 @@ const validateRepairPerson = () => {
 
 const savingLoading = ref(false)
 
-const onSave = async () => {
+const onSave = async() => {
   console.log('保存:', detail)
   if (!validateRepairPerson()) return
   // 如果选择"是"，客户故障描述必填
@@ -1882,10 +1882,10 @@ const onSave = async () => {
         vfgId: m.vfgCode || '',
         vfgName: m.vfgName || '',
         vrtId: m.vrtCode || '',
-        vrtName: m.vrtName || '',
+        vrtName: m.vrtName || ''
       })),
       latelyServiceProxy: '',
-      earlyServiceProxy: '',
+      earlyServiceProxy: ''
     })
     if (res.code === 200) {
       showToast('保存成功')
@@ -1901,7 +1901,7 @@ const onSave = async () => {
   }
 }
 
-const onComplete = async () => {
+const onComplete = async() => {
   if (!validateRepairPerson()) return
   // 如果选择"是"，客户故障描述必填
   if (detail.hasFault === '1' && !detail.customerFaultDesc.trim()) {
@@ -1910,12 +1910,12 @@ const onComplete = async () => {
   }
   showConfirmDialog({
     title: '提示',
-    message: '确定预检完成吗？',
+    message: '确定预检完成吗？'
   })
-    .then(async () => {
+    .then(async() => {
       try {
         const res = await servicePreCheck({
-          id: route.query.id,
+          id: route.query.id
         })
         if (res.code === 200) {
           showToast('预检完成')
@@ -1940,8 +1940,8 @@ const onAddParts = () => {
   router.push({
     path: '/reception/add-parts',
     query: {
-      serviceProxyId: route.query.id,
-    },
+      serviceProxyId: route.query.id
+    }
   })
 }
 
@@ -1950,8 +1950,8 @@ const onAddPackage = () => {
   router.push({
     path: '/reception/select-package',
     query: {
-      serviceProxyId: route.query.id,
-    },
+      serviceProxyId: route.query.id
+    }
   })
 }
 
@@ -1959,7 +1959,7 @@ const onAddPackage = () => {
 const onDeleteAttachment = (index) => {
   showConfirmDialog({
     title: '提示',
-    message: '确定删除该附件吗？',
+    message: '确定删除该附件吗？'
   })
     .then(() => {
       signatureData.attachments.splice(index, 1)

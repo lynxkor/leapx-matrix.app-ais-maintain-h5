@@ -614,3 +614,74 @@
     }
   }
 }
+
+// 维修类型选择弹窗样式
+.category-popup {
+  .category-tabs {
+    display: flex;
+
+    .category-tab {
+      padding: 8px 0;
+      font-size: 16px;
+      font-weight: 500;
+      color: #191a1b;
+      gap: 8px;
+
+      &.active {
+        color: #009100;
+        border-bottom: 2px solid #009100;
+      }
+    }
+  }
+
+  .category-content {
+    max-height: 50vh;
+    overflow-y: auto;
+    background: #ffffff;
+    border-radius: 8px;
+    margin: 12px 0;
+    padding: 4px 0;
+
+    .category-list {
+      .category-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        height: 40px;
+        padding: 0 12px;
+        border-bottom: 0.5px solid #e6e6e5;
+
+        &:last-child {
+          border-bottom: none;
+        }
+
+        &.active {
+          .item-text {
+            color: #009100;
+          }
+        }
+
+        .item-text {
+          font-size: 14px;
+          color: #191a1b;
+        }
+      }
+    }
+  }
+
+  .category-footer {
+    padding: 12px;
+    background: #ffffff;
+
+    .confirm-btn {
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #009100;
+      border-radius: 8px;
+      font-size: 14px;
+      color: #ffffff;
+    }
+  }
+}

@@ -7,7 +7,7 @@
         v-model="appSearchKeyWord"
         shape="round"
         :autofocus="true"
-        placeholder="搜索"
+        placeholder="输入VIN"
         @search="onLocalSearch"
         class="page-search-input"
       >
@@ -89,7 +89,7 @@ const searchLoading = ref(false)
 const hasSearched = ref(false)
 
 // 页面加载时
-onMounted(async () => {
+onMounted(async() => {
   globalStore.setTitle('')
 })
 
@@ -103,7 +103,7 @@ const onLocalSearch = (val) => {
 }
 
 // 搜索处理
-const handleSearch = async (keyword) => {
+const handleSearch = async(keyword) => {
   if (!keyword) return
 
   searchLoading.value = true
@@ -112,7 +112,7 @@ const handleSearch = async (keyword) => {
 
   try {
     const res = await getVehicleInfo({
-      searchVin: keyword,
+      searchVin: keyword
     })
     if (res.code === 200) {
       searchResults.value = res.data || []
@@ -133,11 +133,11 @@ const onCardClick = (item) => {
   router.push({
     name: 'workOrderCreate',
     query: {
-      id: item.id,
+      id: item.id
     },
     params: {
-      vehicleInfo: JSON.stringify(item),
-    },
+      vehicleInfo: JSON.stringify(item)
+    }
   })
 }
 </script>

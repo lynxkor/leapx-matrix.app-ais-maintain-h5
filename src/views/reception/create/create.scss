@@ -956,18 +956,19 @@
 .category-popup {
   .category-tabs {
     display: flex;
-    background: #ffffff;
-    padding: 12px;
-    gap: 8px;
+    // background: #ffffff;
+    // padding: 12px;
+    // gap: 8px;
 
     .category-tab {
-      flex: 1;
-      text-align: center;
+      // flex: 1;
+      // text-align: center;
       padding: 8px 0;
       font-size: 16px;
       font-weight: 500;
       color: #191a1b;
-      border-bottom: 2px solid transparent;
+      gap: 8px;
+      // border-bottom: 2px solid transparent;
 
       &.active {
         color: #009100;

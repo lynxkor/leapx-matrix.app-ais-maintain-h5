@@ -343,7 +343,7 @@
               :key="index"
               class="parts-card"
             >
-              <div class="card-delete">
+              <div class="card-delete" @click="onDeleteRepairItem(index)">
                 <van-icon name="delete-o" size="16" color="#b91919" />
               </div>
               <div class="card-content">
@@ -360,7 +360,9 @@
                     </div>
                   </div>
                   <div class="card-price">
-                    <div class="item-price">¥{{ item.repairAmount }}</div>
+                    <div class="item-price">
+                      ¥{{ (item.price * item.quantity - item.discountAmount).toFixed(2) }}
+                    </div>
                     <div class="discount-tags">
                       <span class="discount-tag">优惠</span>
                       <span class="discount-amount">¥{{ item.discountAmount }}</span>
@@ -368,7 +370,7 @@
                   </div>
                 </div>
                 <div class="card-bottom">
-                  <div class="item-subtotal">¥{{ item.repairAmount }}</div>
+                  <div class="item-subtotal">¥{{ item.price }}</div>
                   <div class="quantity-stepper">
                     <van-stepper v-model="item.quantity" :min="1" size="small" />
                   </div>
@@ -385,7 +387,7 @@
               :key="index"
               class="parts-card"
             >
-              <div class="card-delete">
+              <div class="card-delete" @click="onDeleteSparePart(index)">
                 <van-icon name="delete-o" size="16" color="#b91919" />
               </div>
               <div class="card-content">
@@ -402,7 +404,9 @@
                     </div>
                   </div>
                   <div class="card-price">
-                    <div class="item-price">¥{{ item.partsAmount }}</div>
+                    <div class="item-price">
+                      ¥{{ (item.price * item.quantity - item.discountAmount).toFixed(2) }}
+                    </div>
                     <div class="discount-tags">
                       <span class="discount-tag">优惠</span>
                       <span class="discount-amount">¥{{ item.discountAmount }}</span>
@@ -410,7 +414,7 @@
                   </div>
                 </div>
                 <div class="card-bottom">
-                  <div class="item-subtotal">¥{{ item.partsAmount }}</div>
+                  <div class="item-subtotal">¥{{ item.price }}</div>
                   <div class="quantity-stepper">
                     <van-stepper v-model="item.quantity" :min="1" size="small" />
                   </div>
@@ -420,7 +424,7 @@
           </div>
 
           <!-- 套餐列表 -->
-          <div v-if="partsData.packageRespList?.length > 0" class="parts-section">
+          <!-- <div v-if="partsData.packageRespList?.length > 0" class="parts-section">
             <div class="section-title">套餐</div>
             <div
               v-for="(pkg, pIndex) in partsData.packageRespList"
@@ -438,7 +442,7 @@
                 </div>
               </div>
             </div>
-          </div>
+          </div> -->
           <!-- 添加按钮 -->
           <div class="add-buttons">
             <div class="add-btn" @click="onAddParts">
@@ -1082,6 +1086,7 @@
       :show-header="false"
       title="请选择"
       @close="showCategoryPopup = false"
+      style="height: 75vh"
     >
       <template #content>
         <div class="category-popup">
@@ -1093,12 +1098,14 @@
             >
               {{ selectedCategory.repairItemTypeName || '维修类型' }}
             </div>
+            <div class="category-tab" style="margin: 0 5px">/</div>
             <div
               :class="['category-tab', { active: currentCategoryTab === 1 }]"
               @click="currentCategoryTab = 1"
             >
               {{ selectedCategory.checkoutTypeName || '结算方式' }}
             </div>
+            <div class="category-tab" style="margin: 0 5px">/</div>
             <div
               :class="['category-tab', { active: currentCategoryTab === 2 }]"
               @click="currentCategoryTab = 2"
@@ -1187,7 +1194,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, computed, onUnmounted, nextTick } from 'vue'
+import { ref, reactive, onMounted, computed, onUnmounted, nextTick, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { showToast, showConfirmDialog } from 'vant'
 import { useGlobalStore } from '@/stores/global'
@@ -1200,6 +1207,7 @@ import {
   getFaultModule,
   serviceAddOrUpdate,
   servicePreCheck,
+  getRemindInfo
 } from '@/api/reception'
 import '../create/create.scss'
 
@@ -1354,7 +1362,7 @@ const numberLetterRows = computed(() => {
     ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'P', '港', '澳'],
     ['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', '学'],
     ['Z', 'X', 'C', 'V', 'B', 'N', 'M', '警', '领', ''],
-    ['删除', '', '', '', '', '', '', '', '', '完成'],
+    ['删除', '', '', '', '', '', '', '', '', '完成']
   ]
 })
 
@@ -1433,17 +1441,17 @@ const moreActionsList = [
   { name: '权益查询', tag: '1', color: '#191a1b' },
   { name: '维修履历', tag: '2', color: '#191a1b' },
   { name: '实时故障', tag: '3', color: '#191a1b' },
-  { name: '作废', tag: '4', color: '#191a1b' },
+  { name: '作废', tag: '4', color: '#191a1b' }
 ]
 const faultModuleList = ref([])
 
 // 获取故障模块列表
-const fetchFaultModuleList = async () => {
+const fetchFaultModuleList = async() => {
   try {
     const res = await getFaultModule(faultSearchValue.value.trim())
     if (res.code === 200) {
       faultModuleList.value = (res.data || []).map((item) => ({
-        ...item,
+        ...item
       }))
     }
   } catch (error) {
@@ -1469,16 +1477,16 @@ const onSelectMoreAction = (action) => {
       query: {
         vin: detail.vin,
         plateNo: detail.plateNo,
-        vehicleModel: detail.vehicleModel,
-      },
+        vehicleModel: detail.vehicleModel
+      }
     })
   }
   if (action.name === '权益查询') {
     router.push({
       path: '/reception/rights-query',
       query: {
-        id: detail.id,
-      },
+        id: detail.id
+      }
     })
   }
 }
@@ -1556,7 +1564,7 @@ const selectedCategory = reactive({
   checkoutTypeId: '',
   checkoutTypeName: '',
   warrantyTypeId: '',
-  warrantyTypeName: '',
+  warrantyTypeName: ''
 })
 
 let currentEditItem = null // 当前编辑的项目
@@ -1567,7 +1575,7 @@ const businessTypeList = ref([
   { value: 20, label: '取送车到店' },
   { value: 30, label: '上门服务' },
   { value: 40, label: '外出驻点服务' },
-  { value: 50, label: '预约到店' },
+  { value: 50, label: '预约到店' }
 ])
 
 // 详情数据
@@ -1601,7 +1609,7 @@ const detail = reactive({
   faultAlertRecordRespList: [],
   hasFault: '1',
   faultModules: [],
-  customerFaultDesc: '',
+  customerFaultDesc: ''
 })
 
 // 项目零件数据
@@ -1611,7 +1619,7 @@ const partsData = reactive({
   maintenanceCostEstimation: '',
   repairItemRespList: [],
   packageRespList: [],
-  sparePartRespList: [],
+  sparePartRespList: []
 })
 
 // 签字确认数据
@@ -1621,8 +1629,58 @@ const signatureData = reactive({
   expectFinishAt: '',
   isLive: false,
   signChannel: '',
-  attachments: [],
+  attachments: []
 })
+
+// 重新计算费用合计
+const recalculateCosts = () => {
+  // 计算维修项目费用
+  const workCost = (partsData.repairItemRespList || []).reduce((sum, item) => {
+    return sum + (Number(item.price) * Number(item.quantity) - Number(item.discountAmount))
+  }, 0)
+  partsData.workCostCount = workCost.toFixed(2)
+
+  // 计算维修配件费用
+  const partsCost = (partsData.sparePartRespList || []).reduce((sum, item) => {
+    return sum + (Number(item.price) * Number(item.quantity) - Number(item.discountAmount))
+  }, 0)
+  partsData.barkCostCount = partsCost.toFixed(2)
+
+  // 费用合计
+  const total = workCost + partsCost
+  partsData.maintenanceCostEstimation = total.toFixed(2)
+  signatureData.maintenanceCostEstimation = total.toFixed(2)
+}
+
+// 监听维修项目数量变化
+watch(
+  () => partsData.repairItemRespList,
+  () => {
+    recalculateCosts()
+  },
+  { deep: true }
+)
+
+// 监听维修配件数量变化
+watch(
+  () => partsData.sparePartRespList,
+  () => {
+    recalculateCosts()
+  },
+  { deep: true }
+)
+
+// 删除维修项目（本地移除）
+const onDeleteRepairItem = (index) => {
+  partsData.repairItemRespList.splice(index, 1)
+  recalculateCosts()
+}
+
+// 删除维修配件（本地移除）
+const onDeleteSparePart = (index) => {
+  partsData.sparePartRespList.splice(index, 1)
+  recalculateCosts()
+}
 
 // 选择器显示状态
 const showDeliveryTimePicker = ref(false)
@@ -1645,7 +1703,7 @@ const generateDeliveryDates = () => {
     const day = String(date.getDate()).padStart(2, '0')
     dates.push({
       value: `${year}-${month}-${day}`,
-      label: `${year}-${month}-${day}`,
+      label: `${year}-${month}-${day}`
     })
   }
   deliveryDateList.value = dates
@@ -1664,26 +1722,26 @@ const deliveryTimeList = ref([
   { value: '10:00', label: '10:00' },
   { value: '10:15', label: '10:15' },
   { value: '10:30', label: '10:30' },
-  { value: '10:45', label: '10:45' },
+  { value: '10:45', label: '10:45' }
 ])
 
 // 签字渠道列表
 const signatureChannelList = ref([
   { value: 'paper', label: '纸质单据' },
-  { value: 'app', label: 'APP/短信/零小跑' },
+  { value: 'app', label: 'APP/短信/零小跑' }
 ])
 
 // 签字渠道转换
 const getSignChannelName = (channel) => {
   const channelMap = {
     1: '纸质单据',
-    2: 'APP/短信/零小跑',
+    2: 'APP/短信/零小跑'
   }
   return channelMap[channel] || ''
 }
 
 // 获取详情
-const fetchDetail = async () => {
+const fetchDetail = async() => {
   const id = route.query.id
   if (!id) return
 
@@ -1793,7 +1851,7 @@ const onChangeCarClose = () => {
 }
 
 // 搜索车辆
-const onCarSearch = async (value) => {
+const onCarSearch = async(value) => {
   console.log('搜索车辆:', value)
   // 重置选中车辆信息，展示搜索结果列表
   selectedCarInfo.value = null
@@ -1823,7 +1881,7 @@ const onSelectCar = (item) => {
 }
 
 // 获取车联网里程数
-const fetchVehicleMileage = async (vin) => {
+const fetchVehicleMileage = async(vin) => {
   if (!vin) return
   try {
     const res = await getVehicleMileage(vin)
@@ -1874,7 +1932,7 @@ const onEditPlate = () => {
 const onDeleteImage = (type, index) => {
   showConfirmDialog({
     title: '提示',
-    message: '确定删除该图片吗？',
+    message: '确定删除该图片吗？'
   })
     .then(() => {
       if (type === 'interior') {
@@ -1905,7 +1963,7 @@ const onCloseFaultModulePopup = () => {
 }
 
 // 故障模块搜索
-const onFaultSearch = async (value) => {
+const onFaultSearch = async(value) => {
   faultSearchValue.value = value
   await fetchFaultModuleList()
 }
@@ -2011,7 +2069,7 @@ const validateRepairPerson = () => {
 
 const savingLoading = ref(false)
 
-const onSave = async () => {
+const onSave = async() => {
   console.log('保存:', detail)
   if (!validateRepairPerson()) return
   // 如果选择"是"，客户故障描述必填
@@ -2147,10 +2205,10 @@ const onSave = async () => {
         vfgId: m.vfgCode || '',
         vfgName: m.vfgName || '',
         vrtId: m.vrtCode || '',
-        vrtName: m.vrtName || '',
+        vrtName: m.vrtName || ''
       })),
       latelyServiceProxy: '',
-      earlyServiceProxy: '',
+      earlyServiceProxy: ''
     })
     if (res.code === 200) {
       showToast('保存成功')
@@ -2166,7 +2224,7 @@ const onSave = async () => {
   }
 }
 
-const onComplete = async () => {
+const onComplete = async() => {
   if (!validateRepairPerson()) return
   // 如果选择"是"，客户故障描述必填
   if (detail.hasFault === '1' && !detail.customerFaultDesc.trim()) {
@@ -2175,12 +2233,12 @@ const onComplete = async () => {
   }
   showConfirmDialog({
     title: '提示',
-    message: '确定预检完成吗？',
+    message: '确定预检完成吗？'
   })
-    .then(async () => {
+    .then(async() => {
       try {
         const res = await servicePreCheck({
-          id: route.query.id,
+          id: route.query.id
         })
         if (res.code === 200) {
           showToast('预检完成')
@@ -2205,8 +2263,8 @@ const onAddParts = () => {
   router.push({
     path: '/reception/add-parts',
     query: {
-      serviceProxyId: route.query.id,
-    },
+      serviceProxyId: route.query.id
+    }
   })
 }
 
@@ -2215,8 +2273,8 @@ const onAddPackage = () => {
   router.push({
     path: '/reception/select-package',
     query: {
-      serviceProxyId: route.query.id,
-    },
+      serviceProxyId: route.query.id
+    }
   })
 }
 
@@ -2224,7 +2282,7 @@ const onAddPackage = () => {
 const onDeleteAttachment = (index) => {
   showConfirmDialog({
     title: '提示',
-    message: '确定删除该附件吗？',
+    message: '确定删除该附件吗？'
   })
     .then(() => {
       signatureData.attachments.splice(index, 1)
@@ -2327,6 +2385,10 @@ onMounted(() => {
   repairPersonPhoneInput.value = detail.repairPersonPhone
   // 初始化预计交车日期列表
   generateDeliveryDates()
+  // 获取提醒信息
+  if (route.query.id) {
+    getRemindInfo(route.query.id)
+  }
 })
 </script>
 <style lang="scss" scoped>

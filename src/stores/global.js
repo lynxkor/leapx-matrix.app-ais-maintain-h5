@@ -8,8 +8,8 @@ export const useGlobalStore = defineStore('global', {
     itemOptions: {
       repairItemTypeName: [], // 维修类型
       checkoutTypeName: [], // 结算方式
-      warrantyTypeName: [], // 保修类型
-    },
+      warrantyTypeName: [] // 保修类型
+    }
   }),
   actions: {
     setTitle(title) {
@@ -22,7 +22,7 @@ export const useGlobalStore = defineStore('global', {
           repairItemTypeId: item.code,
           repairItemTypeName: item.message,
           label: item.message,
-          value: item.code,
+          value: item.code
         }))
       })
       getEnum('StatementTypeEnum').then((res) => {
@@ -30,7 +30,7 @@ export const useGlobalStore = defineStore('global', {
           checkoutTypeId: item.code,
           checkoutTypeName: item.message,
           label: item.message,
-          value: item.code,
+          value: item.code
         }))
       })
       getEnum('WarrantyTypeEnum').then((res) => {
@@ -38,9 +38,9 @@ export const useGlobalStore = defineStore('global', {
           warrantyTypeId: item.code,
           warrantyTypeName: item.message,
           label: item.message,
-          value: item.code,
+          value: item.code
         }))
       })
-    },
-  },
+    }
+  }
 })

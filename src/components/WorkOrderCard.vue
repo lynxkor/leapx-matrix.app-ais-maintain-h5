@@ -3,7 +3,7 @@
   <div @click="onCardClick">
     <!-- 卡片头部 -->
     <div class="card-header">
-      <span class="order-no">{{ item.orderNo }}</span>
+      <span class="order-no">{{ item.code }}</span>
       <span :class="['status-tag', `status-${item.status}`]">{{ item.statusText }}</span>
     </div>
 
@@ -58,8 +58,8 @@ const props = defineProps({
   item: {
     type: Object,
     required: true,
-    default: () => ({}),
-  },
+    default: () => ({})
+  }
 })
 
 // 定义 emits

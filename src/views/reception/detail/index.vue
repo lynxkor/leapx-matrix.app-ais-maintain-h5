@@ -196,13 +196,13 @@
                   </div>
                 </div>
                 <div class="item-right">
-                  <div class="item-price">¥{{ repairItem.price }}</div>
+                  <div class="item-price">¥{{ repairItem.repairAmount }}</div>
                   <div class="item-discount">优惠 ¥{{ repairItem.discountAmount }}</div>
                 </div>
               </div>
               <div class="item-footer">
-                <span class="item-subtotal">¥{{ repairItem.repairAmount }}</span>
-                <span class="item-quantity">x{{ repairItem.quantity }}</span>
+                <span class="item-subtotal">¥{{ repairItem.price }}</span>
+                <!-- <span class="item-quantity">x{{ repairItem.quantity }}</span> -->
               </div>
             </div>
           </div>
@@ -399,7 +399,7 @@ const moreActionsList = [
   { name: '权益查询', tag: '1', color: '#191a1b' },
   { name: '维修履历', tag: '2', color: '#191a1b' },
   { name: '实时故障', tag: '3', color: '#191a1b' },
-  { name: '作废', tag: '4', color: '#191a1b' },
+  { name: '作废', tag: '4', color: '#191a1b' }
 ]
 // 作废原因弹框状态
 const showCancelReason = ref(false)
@@ -416,16 +416,16 @@ const onSelectMoreAction = (action) => {
     router.push({
       path: '/reception/maintenance-history',
       query: {
-        id: route.query.id,
-      },
+        id: route.query.id
+      }
     })
   }
   if (action.name === '权益查询') {
     router.push({
       path: '/reception/rights-query',
       query: {
-        id: route.query.id,
-      },
+        id: route.query.id
+      }
     })
   }
 }
@@ -438,7 +438,7 @@ const onConfirmCancel = () => {
   cancelLoading.value = true
   serviceProxyCancel({
     id: detail.value.id,
-    invaildDesc: cancelReason.value,
+    invaildDesc: cancelReason.value
   })
     .then((res) => {
       if (res.code === 200) {
@@ -503,7 +503,7 @@ const detail = ref({
   anomalyDescription: '',
   currentFault: '',
   faultAlertRecordRespList: [],
-  customerContent: '',
+  customerContent: ''
 })
 
 // 项目零件数据
@@ -513,7 +513,7 @@ const partsData = reactive({
   maintenanceCostEstimation: '',
   repairItemRespList: [],
   packageRespList: [],
-  sparePartRespList: [],
+  sparePartRespList: []
 })
 
 // 签字确认数据
@@ -523,11 +523,11 @@ const signatureData = reactive({
   expectFinishAt: '',
   isLive: false,
   signChannel: '',
-  attachments: [],
+  attachments: []
 })
 
 // 获取详情
-const fetchDetail = async () => {
+const fetchDetail = async() => {
   const id = route.query.id
   if (!id) return
   loading.value = true
@@ -590,7 +590,7 @@ const fetchDetail = async () => {
 const getSignChannelName = (channel) => {
   const channelMap = {
     1: '纸质单据',
-    2: 'APP/短信/零小跑',
+    2: 'APP/短信/零小跑'
   }
   return channelMap[channel] || ''
 }

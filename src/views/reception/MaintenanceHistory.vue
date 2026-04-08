@@ -141,7 +141,7 @@ const refreshListRef = ref(null)
 const vehicleInfo = reactive({
   vin: '',
   plateNo: '',
-  vehicleModel: '',
+  vehicleModel: ''
 })
 
 // 详情数据
@@ -158,7 +158,7 @@ const detailData = reactive({
   netMileageExtend: '',
   serviceAdvisorName: '',
   createTime: '',
-  historyList: [],
+  historyList: []
 })
 
 // 弹框控制
@@ -173,7 +173,7 @@ const popupData = reactive({
   netMileage: '',
   serviceAdvisorName: '',
   repairItems: [],
-  repairParts: [],
+  repairParts: []
 })
 const list = ref([])
 
@@ -205,7 +205,7 @@ const fetchDetail = () => {
 // RefreshList适配：包装api使其接受对象但内部提取id
 const requestData = reactive({
   api: (params) => getDetail(params.id),
-  data: { id: route.query.id },
+  data: { id: route.query.id }
 })
 // 设置列表数据
 const onSetData = (data) => {

@@ -70,7 +70,7 @@
                 </div>
                 <div class="item-code">{{ item.rightsCode }}</div>
               </div>
-              <div v-if="item.selected" class="item-status">已选</div>
+              <div v-if="item.used" class="item-status">已选</div>
             </div>
             <div v-if="equityList.length === 0 && !loading" class="no-data">
               <img src="@/assets/image/noList.png" alt="" />
@@ -227,18 +227,13 @@
               </div>
               <div class="repair-right">
                 <div class="repair-price">¥{{ item.price }}</div>
-                <div class="repair-discount" v-if="Number(item.discountAmount) > 0">
-                  优惠 ¥{{ item.discountAmount }}
-                </div>
+                <div class="repair-discount">优惠 ¥{{ item.discountAmount }}</div>
               </div>
             </div>
             <div class="repair-card-bottom">
               <div class="repair-info-row">
                 <span class="info-item">
-                  <span class="info-value">¥{{ item.price }}</span>
-                </span>
-                <span class="info-item">
-                  <span class="info-label">实际金额</span>
+                  <span class="info-label">项目金额</span>
                   <span class="info-value">¥{{ item.actualAmount }}</span>
                 </span>
               </div>
@@ -256,7 +251,9 @@
                     <div class="part-category">{{ part.repairItemTypeName }}</div>
                   </div>
                   <div class="part-right">
-                    <div class="part-price">¥{{ part.price }}</div>
+                    <div class="part-price">
+                      ¥{{ safeCalc(part.price, part.quantity, part.discountAmount) }}
+                    </div>
                     <div class="part-discount">优惠 ¥{{ part.discountAmount }}</div>
                   </div>
                 </div>
@@ -310,43 +307,81 @@
       close-icon-position="top-left"
       title="服务活动"
       @close="showServiceDetail = false"
+      style="max-height: 80vh"
     >
       <template #content>
         <!-- 活动信息 -->
         <div class="package-info">
           <div class="package-name">{{ selectedService.activityResponse.activityName }}</div>
         </div>
-        <!-- 内容区域 -->
-        <div class="package-detail">
-          <!-- 活动维修配件列表 -->
-          <div
-            v-for="(part, index) in selectedService.itemResponseList"
-            :key="index"
-            class="repair-card"
-          >
-            <div class="repair-card-content">
-              <div class="repair-left">
-                <div class="repair-name-row">
-                  <span class="repair-name">{{ part.repairItemName }}</span>
-                  <span class="repair-tag">{{ part.repairItemTypeName }}</span>
+        <!-- 维修项目列表 -->
+        <div v-if="selectedService.itemResponseList && selectedService.itemResponseList.length > 0">
+          <div class="mall-title">维修项目</div>
+          <div class="package-detail">
+            <div
+              v-for="(item, index) in selectedService.itemResponseList"
+              :key="index"
+              class="repair-card"
+            >
+              <div class="repair-card-content">
+                <div class="repair-left">
+                  <div class="repair-name-row">
+                    <span class="repair-name">{{ item.repairItemName }}</span>
+                    <span class="repair-tag">{{ item.repairItemTypeName }}</span>
+                  </div>
+                  <div class="repair-code">{{ item.repairItemCode }}</div>
+                  <div class="repair-category">{{ item.checkoutTypeName }}</div>
                 </div>
-                <div class="repair-code">{{ part.partsCode }}</div>
-                <div class="repair-category">{{ part.checkoutTypeName }}</div>
+                <div class="repair-right">
+                  <div class="repair-price">¥{{ item.claimPrice }}</div>
+                  <div class="repair-discount">优惠 ¥{{ item.discountAmount }}</div>
+                </div>
               </div>
-              <div class="repair-right">
-                <div class="repair-price">¥{{ part.claimPrice }}</div>
-                <div class="repair-discount">优惠 ¥{{ part.discountAmount }}</div>
+              <div class="repair-card-bottom">
+                <div class="repair-info-row">
+                  <span class="info-item">
+                    <span class="info-label">工时费</span>
+                    <span class="info-value">¥{{ item.price || '0.00' }}</span>
+                  </span>
+                  <span class="info-item">
+                    <span class="info-label">数量</span>
+                    <span class="info-value">x{{ item.quantity }}</span>
+                  </span>
+                </div>
               </div>
             </div>
-            <div class="repair-card-bottom">
-              <div class="repair-info-row">
-                <span class="info-item">
-                  <span class="info-value">¥{{ part.price }}</span>
-                </span>
-                <span class="info-item">
-                  <span class="info-label">数量</span>
-                  <span class="info-value">x{{ part.quantity }}</span>
-                </span>
+          </div>
+        </div>
+        <!-- 维修零件列表 -->
+        <div v-if="selectedService.partResponseList && selectedService.partResponseList.length > 0">
+          <div class="mall-title">维修零件</div>
+          <div class="package-detail">
+            <div
+              v-for="(part, pIndex) in selectedService.partResponseList"
+              :key="pIndex"
+              class="repair-card"
+            >
+              <div class="repair-card-content">
+                <div class="repair-left">
+                  <div class="repair-name-row">
+                    <span class="repair-name">{{ part.oldPartName }}</span>
+                    <span class="repair-tag">{{ part.repairItemTypeName }}</span>
+                  </div>
+                  <div class="repair-code">{{ part.oldPartCode }}</div>
+                  <!-- <div class="repair-category">{{ part.checkoutTypeName }}</div> -->
+                </div>
+                <div class="repair-right">
+                  <div class="repair-price">¥{{ part.unitPrice }}</div>
+                  <div class="repair-discount">优惠 ¥{{ part.discountAmount }}</div>
+                </div>
+              </div>
+              <div class="repair-card-bottom">
+                <div class="repair-info-row">
+                  <span class="info-item">
+                    <span class="info-label">数量</span>
+                    <span class="info-value">x{{ part.quantity }}</span>
+                  </span>
+                </div>
               </div>
             </div>
           </div>
@@ -371,6 +406,7 @@
       close-icon-position="top-left"
       title="免保项目"
       @close="showFreeDetail = false"
+      style="max-height: 80vh"
     >
       <template #content>
         <!-- 免保项目信息 -->
@@ -443,9 +479,7 @@
               </div>
               <div class="repair-right">
                 <div class="repair-price">¥{{ item.receivableAmount }}</div>
-                <div class="repair-discount" v-if="Number(item.discountAmount) > 0">
-                  优惠 ¥{{ item.discountAmount }}
-                </div>
+                <div class="repair-discount">优惠 ¥{{ item.discountAmount }}</div>
               </div>
             </div>
             <div class="repair-card-bottom">
@@ -472,11 +506,110 @@
         </div>
       </template>
     </ais-popup>
+
+    <!-- 权益套餐详情弹窗 -->
+    <ais-popup
+      :show="showEquityDetail"
+      position="bottom"
+      closeable
+      close-icon="cross"
+      close-icon-position="top-left"
+      title="权益套餐"
+      @close="showEquityDetail = false"
+      style="max-height: 80vh"
+    >
+      <template #content>
+        <!-- 套餐信息 -->
+        <div class="package-info">
+          <div class="package-name">{{ selectedEquity.data.rightsName }}</div>
+          <div class="package-code">{{ selectedEquity.data.rightsCode }}</div>
+        </div>
+        <!-- 维修项目列表 -->
+        <div v-if="selectedEquity.repairItemList && selectedEquity.repairItemList.length > 0">
+          <div class="mall-title">维修项目</div>
+          <div class="package-detail">
+            <div
+              v-for="(item, index) in selectedEquity.repairItemList"
+              :key="index"
+              class="repair-card"
+            >
+              <div class="repair-card-content">
+                <div class="repair-left">
+                  <div class="repair-name-row">
+                    <span class="repair-name">{{ item.repairItemName }}</span>
+                    <span class="repair-tag">{{ item.repairItemTypeName }}</span>
+                  </div>
+                  <div class="repair-code">{{ item.repairItemCode }}</div>
+                  <div class="repair-category">{{ item.checkoutTypeName }}</div>
+                </div>
+                <div class="repair-right">
+                  <div class="repair-price">¥{{ item.price }}</div>
+                  <div class="repair-discount">优惠 ¥{{ item.discountAmount }}</div>
+                </div>
+              </div>
+              <div class="repair-card-bottom">
+                <div class="repair-info-row">
+                  <span class="info-item">
+                    <span class="info-label">工时费</span>
+                    <span class="info-value">¥{{ item.workHour || '0.00' }}</span>
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- 维修零件列表 -->
+        <div v-if="selectedEquity.repairPartList && selectedEquity.repairPartList.length > 0">
+          <div class="mall-title">维修零件</div>
+          <div class="package-detail">
+            <div
+              v-for="(part, pIndex) in selectedEquity.repairPartList"
+              :key="pIndex"
+              class="repair-card"
+            >
+              <div class="repair-card-content">
+                <div class="repair-left">
+                  <div class="repair-name-row">
+                    <span class="repair-name">{{ part.partsName }}</span>
+                    <span class="repair-tag">{{ part.repairItemTypeName }}</span>
+                  </div>
+                  <div class="repair-code">{{ part.partsCode }}</div>
+                  <div class="repair-category">{{ part.checkoutTypeName }}</div>
+                </div>
+                <div class="repair-right">
+                  <div class="repair-price">¥{{ part.receivableAmount }}</div>
+                  <div class="repair-discount" v-if="Number(part.discountAmount) > 0">
+                    优惠 ¥{{ part.discountAmount }}
+                  </div>
+                </div>
+              </div>
+              <div class="repair-card-bottom">
+                <div class="repair-info-row">
+                  <span class="info-item">
+                    <span class="info-label">单价</span>
+                    <span class="info-value">¥{{ part.unitPrice }}</span>
+                  </span>
+                  <span class="info-item">
+                    <span class="info-label">数量</span>
+                    <span class="info-value">x{{ part.quantity }}</span>
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </template>
+      <template #footer>
+        <div class="detail-actions" :class="{ 'single-btn': isEquitySelected }">
+          <div class="confirm-btn full-btn" @click="onConfirmEquity">选择</div>
+        </div>
+      </template>
+    </ais-popup>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { showToast } from 'vant'
 import AisPopup from '@/libs/components/AisPopup.vue'
@@ -490,11 +623,27 @@ import {
   getSpecialActivityList,
   getSpecialActivityDetail,
   getSpecialFreeDetail,
+  specialEquityUse,
+  specialGoodsUse,
+  specialActivityUse,
+  specialFreeUse,
+  specialPackageUse
 } from '@/api/reception'
 import './select-package.scss'
 
 const router = useRouter()
 const route = useRoute()
+
+// 公共参数
+const serviceProxyId = computed(() => route.query.serviceProxyId || route.query.id)
+
+// 金额计算安全函数
+const safeCalc = (price, qty, discount = 0) => {
+  const p = Number(price) || 0
+  const q = Number(qty) || 0
+  const d = Number(discount) || 0
+  return (p * q - d).toFixed(2)
+}
 
 // Tab状态
 const activeTab = ref('repair')
@@ -510,6 +659,7 @@ const showPackageDetail = ref(false)
 const showServiceDetail = ref(false)
 const showFreeDetail = ref(false)
 const showMallDetail = ref(false)
+const showEquityDetail = ref(false)
 
 // 维修项目折叠状态
 const activeRepairItem = ref([])
@@ -525,28 +675,39 @@ const isMallSelected = ref(false)
 
 // 选中的套餐
 const selectedPackage = reactive({
+  id: '',
   name: '',
   code: '',
   totalPrice: '0.00',
-  itemRespList: [],
+  itemRespList: []
 })
 
 // 选中的服务活动
 const selectedService = reactive({
+  id: '',
   activityResponse: {},
   itemResponseList: [],
+  partResponseList: []
 })
 
 // 选中的免保项目
 const selectedFree = reactive({
   data: {},
-  partDetailList: [],
+  partDetailList: []
 })
 
 // 选中的商城订单
-const selectedMall = reactive({
-  interestsGoodsResp: {},
+const selectedMall = ref({})
+
+// 选中的权益套餐
+const selectedEquity = reactive({
+  data: {},
+  repairItemList: [],
+  repairPartList: []
 })
+
+// 当前权益是否已选
+const isEquitySelected = ref(false)
 
 // 展开/收起配件列表
 const togglePartsExpand = (index) => {
@@ -570,7 +731,7 @@ const serviceList = ref([])
 
 // 页面加载时获取维修套餐列表
 onMounted(() => {
-  const id = route.query.serviceProxyId || route.query.id
+  const id = serviceProxyId.value
   if (id) {
     loading.value = true
     getSpecialPackageList({ id })
@@ -578,7 +739,7 @@ onMounted(() => {
         if (res.code === 200 && res.data) {
           packageList.value = res.data.map((item) => ({
             ...item,
-            selected: false,
+            selected: false
           }))
         } else {
           showToast(res.message || '请求失败')
@@ -595,10 +756,9 @@ onMounted(() => {
 
 // 获取列表数据的通用函数
 const fetchListData = (tabName, searchKey = '') => {
-  const serviceProxyId = route.query.serviceProxyId || route.query.id
-  if (!serviceProxyId) return
+  if (!serviceProxyId.value) return
 
-  const params = { id: serviceProxyId }
+  const params = { id: serviceProxyId.value }
   if (searchKey) params.searchKey = searchKey
 
   let api
@@ -673,121 +833,186 @@ const onSearchClear = () => {
 
 // 点击维修套餐
 const onPackageClick = (item) => {
-  const serviceProxyId = route.query.id
-  getSpecialPackageDetail({ id: serviceProxyId, packageId: item.id }).then((res) => {
+  getSpecialPackageDetail({ id: serviceProxyId.value, packageId: item.id }).then((res) => {
     if (res.code === 200) {
       const data = res.data
+      selectedPackage.id = data.id
       selectedPackage.name = data.packageName || ''
       selectedPackage.code = data.code || ''
       selectedPackage.totalPrice = data.totalAmount || '0.00'
       selectedPackage.itemRespList = data.itemRespList || []
       activeRepairItem.value = []
       expandedPartsIndex.value = -1
+      isPackageSelected.value = data.used
     }
   })
-  isPackageSelected.value = !!item.selected
   showPackageDetail.value = true
 }
 
 // 点击权益套餐
 const onEquityClick = (item) => {
-  selectedPackage.name = item.name
-  selectedPackage.code = item.code
-  selectedPackage.totalPrice = '0.00'
-  selectedPackage.projects = [
-    {
-      name: '免费保养一次',
-      tag: '',
-      code: '',
-      category: '',
-      price: '0.00',
-      discount: 0,
-      originalPrice: '0.00',
-      qty: '1.00',
-      actualQty: '1',
-      returnQty: '0',
-    },
-  ]
-  isPackageSelected.value = !!item.selected
-  showPackageDetail.value = true
+  selectedEquity.data = item
+  selectedEquity.repairItemList = item.repairItemList || []
+  selectedEquity.repairPartList = item.repairPartList || []
+  isEquitySelected.value = !!item.selected
+  showEquityDetail.value = true
 }
 
 // 点击商城订单
 const onMallClick = (item) => {
-  const serviceProxyId = route.query.serviceProxyId || route.query.id
   getSpecialGoodsDetail({
-    id: serviceProxyId,
-    packageId: item.id,
+    id: serviceProxyId.value,
+    packageId: item.id
   }).then((res) => {
     if (res.code === 200) {
       const data = res.data
-      selectedMall.interestsGoodsResp = data.interestsGoodsResp || {}
+      selectedMall.value = data || {}
+      isMallSelected.value = !!item.selected
+      showMallDetail.value = true
     }
   })
-  isMallSelected.value = !!item.selected
-  showMallDetail.value = true
 }
 
 // 点击免保项目
 const onFreeClick = (item) => {
-  const serviceProxyId = route.query.serviceProxyId || route.query.id
   getSpecialFreeDetail({
-    id: serviceProxyId,
-    packageId: item.id,
+    id: serviceProxyId.value,
+    packageId: item.id
   }).then((res) => {
     if (res.code === 200) {
       const data = res.data
       selectedFree.data = data || {}
       selectedFree.partDetailList = data.partDetailList || []
+      isFreeSelected.value = data.used
     }
   })
-  isFreeSelected.value = !!item.selected
   showFreeDetail.value = true
 }
 
 // 点击服务活动
 const onServiceClick = (item) => {
-  const serviceProxyId = route.query.serviceProxyId || route.query.id
   getSpecialActivityDetail({
     activityId: item.activityId,
-    id: serviceProxyId,
-    packageId: item.id,
+    id: serviceProxyId.value,
+    packageId: item.id
   }).then((res) => {
     if (res.code === 200) {
       const data = res.data
+      selectedService.id = data.id
       selectedService.activityResponse = data.activityResponse || {}
       selectedService.itemResponseList = data.itemResponseList || []
+      selectedService.partResponseList = data.partResponseList || []
+      isServiceSelected.value = data.activityUsed
+      showServiceDetail.value = true
     }
   })
-  isServiceSelected.value = !!item.selected
-  showServiceDetail.value = true
 }
 
 // 确认选择套餐
 const onConfirmPackage = () => {
-  showToast('已添加: ' + selectedPackage.name)
-  showPackageDetail.value = false
-  router.back()
+  specialPackageUse({
+    id: serviceProxyId.value,
+    packageId: selectedPackage.id
+  })
+    .then((res) => {
+      if (res.code === 200) {
+        showToast('已添加: ' + selectedPackage.packageName)
+        showPackageDetail.value = false
+        router.back()
+      } else {
+        showToast(res.message || '添加失败')
+      }
+    })
+    .catch(() => {
+      showToast('网络错误')
+    })
 }
 
 // 确认选择服务活动
 const onConfirmService = () => {
-  showToast('已添加: ' + selectedService.activityResponse.activityName)
-  showServiceDetail.value = false
-  router.back()
+  specialActivityUse({
+    id: serviceProxyId.value,
+    packageId: selectedService.id,
+    activityId: selectedService.activityResponse.id,
+    itemList: selectedService.itemResponseList,
+    partsList: selectedService.partResponseList
+  })
+    .then((res) => {
+      if (res.code === 200) {
+        showToast('已添加: ' + selectedService.activityResponse.activityName)
+        showServiceDetail.value = false
+        router.back()
+      } else {
+        showToast(res.message || '添加失败')
+      }
+    })
+    .catch(() => {
+      showToast('网络错误')
+    })
 }
 
 // 确认选择免保项目
 const onConfirmFree = () => {
-  showToast('已添加: ' + selectedFree.data.policyName)
-  showFreeDetail.value = false
-  router.back()
+  specialFreeUse({
+    id: serviceProxyId.value,
+    packageId: selectedFree.data.id
+  })
+    .then((res) => {
+      if (res.code === 200) {
+        showToast('已添加: ' + selectedFree.data.policyName)
+        showFreeDetail.value = false
+        router.back()
+      } else {
+        showToast(res.message || '添加失败')
+      }
+    })
+    .catch(() => {
+      showToast('网络错误')
+    })
 }
 
 // 确认选择商城订单
 const onConfirmMall = () => {
-  showToast('已添加: ' + selectedMall.interestsGoodsResp.commodityName)
-  showMallDetail.value = false
-  router.back()
+  specialGoodsUse({
+    id: serviceProxyId.value,
+    packageId: selectedMall.value.id
+  })
+    .then((res) => {
+      if (res.code === 200) {
+        showToast('已添加: ' + selectedMall.value.interestsGoodsName)
+        showMallDetail.value = false
+        // router.back()
+      } else {
+        showToast(res.message || '添加失败')
+      }
+    })
+    .catch(() => {
+      showToast('网络错误')
+    })
+}
+
+// 确认选择权益套餐
+const onConfirmEquity = () => {
+  const params = {
+    id: serviceProxyId.value,
+    equityUseId: selectedEquity.data.useId,
+    equityName: selectedEquity.data.rightsName,
+    equityCode: selectedEquity.data.rightsCode,
+    repairItemList: selectedEquity.data.repairItemList,
+    repairPartList: selectedEquity.data.repairPartList
+  }
+  specialEquityUse(params)
+    .then((res) => {
+      if (res.code === 200) {
+        showToast('已添加: ' + selectedEquity.data.equityName)
+        showEquityDetail.value = false
+        // router.back()
+      } else {
+        showToast(res.msg || '添加失败')
+      }
+    })
+    .catch(() => {
+      showToast(res.msg || '网络错误')
+    })
 }
 </script>

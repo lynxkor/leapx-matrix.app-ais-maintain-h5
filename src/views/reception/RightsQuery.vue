@@ -69,9 +69,9 @@ const requestData = reactive({
   data: {
     rightsTypeList: [1, 3],
     serviceProxyId: route.query.id,
-    status: 2,
+    status: 2
   },
-  api: getRightsList,
+  api: getRightsList
 })
 
 // Tab 切换
