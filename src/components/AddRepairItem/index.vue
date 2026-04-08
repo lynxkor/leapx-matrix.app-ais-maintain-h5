@@ -67,7 +67,7 @@
       <!-- 结算类型选择弹窗 -->
       <AisCascader
         v-model:show="showCheckoutPicker"
-        title="选择结算类型"
+        title="请选择"
         :options="cascaderOptions"
         :model-value="editingItem?.warrantyTypeId || ''"
         @confirm="onCheckoutConfirm"
@@ -390,7 +390,7 @@ const loadInitialData = async() => {
     display: flex;
     flex-direction: column;
     height: 100%;
-    background: #f7f7f7;
+    background: var(--leap-color-default-light-5);
   }
 
   // 标题栏
@@ -415,7 +415,6 @@ const loadInitialData = async() => {
 
     .header-title {
       font-size: 16px;
-      font-family: 'PingFang SC', sans-serif;
       font-weight: 500;
       color: var(--leap-color-default);
       line-height: 22px;
@@ -438,18 +437,17 @@ const loadInitialData = async() => {
     }
 
     ::v-deep(.van-tab) {
-      font-family: 'PingFang SC', sans-serif;
       font-size: 14px;
-      color: #545454;
+      color: var(--leap-color-default-light-1);
     }
 
     ::v-deep(.van-tab--active) {
-      color: #009100;
+      color: var(--leap-color-primary);
       font-weight: 500;
     }
 
     ::v-deep(.van-tabs__line) {
-      background: #009100;
+      background: var(--leap-color-primary);
       width: 84px;
     }
   }
@@ -465,10 +463,9 @@ const loadInitialData = async() => {
     }
 
     .section-title {
-      font-family: 'PingFang SC', sans-serif;
       font-size: 14px;
       font-weight: 500;
-      color: #191a1b;
+      color: var(--leap-color-default);
       line-height: 20px;
       padding-left: 4px;
     }
@@ -487,9 +484,8 @@ const loadInitialData = async() => {
       justify-content: center;
       width: 100%;
       height: 40px;
-      background: #009100;
+      background: var(--leap-color-primary);
       border-radius: 8px;
-      font-family: 'PingFang SC', sans-serif;
       font-size: 14px;
       color: #ffffff;
       cursor: pointer;

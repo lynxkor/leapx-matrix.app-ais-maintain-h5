@@ -87,14 +87,13 @@ const handleClose = () => {
   padding: 16px 0;
   padding-bottom: calc(16px + env(safe-area-inset-bottom));
   position: relative;
-  background: #f4f4f4;
+  background: var(--leap-color-default-light-5);
 
   .ais-cascader-title {
     text-align: center;
-    font-family: 'PingFang SC', sans-serif;
     font-size: 14px;
     font-weight: 500;
-    color: #191a1b;
+    color: var(--leap-color-default);
     line-height: 22px;
     margin-bottom: 16px;
   }
@@ -117,13 +116,13 @@ const handleClose = () => {
     }
   }
   ::v-deep .van-tabs__nav {
-    background: #f4f4f4;
+    background: var(--leap-color-default-light-5);
   }
   ::v-deep .van-cascader__tab {
     &::after {
       content: '/';
       transform: translateX(8px);
-      color: #191a1b;
+      color: var(--leap-color-default);
     }
     &:nth-last-child(2)::after {
       display: none;
@@ -148,7 +147,7 @@ const handleClose = () => {
       left: 12px;
       right: 12px;
       height: 1px;
-      background-color: #E6E6E5;
+      background-color: var(--leap-color-default-light-4);
     }
     &:first-child {
       border-radius: 8px 8px 0 0;

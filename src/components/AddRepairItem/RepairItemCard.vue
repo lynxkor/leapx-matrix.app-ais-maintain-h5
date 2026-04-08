@@ -153,7 +153,7 @@ const saveName = () => {
   align-items: center;
   gap: 12px;
   padding: 15px 4px;
-  border-bottom: 0.5px solid #e6e6e5;
+  border-bottom: 0.5px solid var(--leap-color-default-light-4);
   &:last-child {
     border-bottom: none;
   }
@@ -171,7 +171,7 @@ const saveName = () => {
       justify-content: center;
       width: 28px;
       height: 28px;
-      background: #f8e8e8; // 功能色/danger-10%
+      background: #f8e8e8;
       border-radius: 60px;
       cursor: pointer;
 
@@ -208,10 +208,9 @@ const saveName = () => {
           height: 20px;
 
           .card-name {
-            font-family: 'PingFang SC', sans-serif;
             font-size: 14px;
             font-weight: 500;
-            color: #191a1b;
+            color: var(--leap-color-default);
             line-height: 20px;
             cursor: pointer;
           }
@@ -225,9 +224,8 @@ const saveName = () => {
         .code-row {
           margin: 2px 0;
           .card-code {
-            font-family: 'PingFang SC', sans-serif;
             font-size: 12px;
-            color: #545454;
+            color: var(--leap-color-default-light-1);
             line-height: 17px;
           }
         }
@@ -242,9 +240,8 @@ const saveName = () => {
           cursor: pointer;
 
           .checkout-label {
-            font-family: 'PingFang SC', sans-serif;
             font-size: 12px;
-            color: #545454;
+            color: var(--leap-color-default-light-1);
             line-height: 17px;
           }
 
@@ -267,10 +264,9 @@ const saveName = () => {
         flex-shrink: 0;
 
         .main-price {
-          font-family: 'PingFang SC', sans-serif;
           font-size: 14px;
           font-weight: 500;
-          color: #191a1b;
+          color: var(--leap-color-default);
           line-height: 20px;
           text-align: right;
         }
@@ -281,7 +277,7 @@ const saveName = () => {
           margin-top: 3px;
           padding: 4px;
           border-radius: 4px;
-          background: #faf6ea; // 功能色/warning-10%
+          background: #faf6ea;
           align-items: center;
           justify-content: space-between;
           width: 92px;
@@ -289,24 +285,23 @@ const saveName = () => {
           cursor: pointer;
 
           .discount-tag-label {
-            color: #545454;
+            color: var(--leap-color-default-light-1);
           }
 
           .discount-tag-amount {
-            color: #c8a12b;
+            color: var(--leap-color-warning);
           }
 
           .discount-input {
             width: 50px;
             height: 20px;
             text-align: right;
-            border: 1px solid #191A1B;
+            border: 1px solid var(--leap-color-default);
             border-radius: 2px;
             padding: 0 4px;
-            font-family: 'PingFang SC', sans-serif;
             font-size: 12px;
-            color: #c8a12b;
-            background: #faf6ea; // 功能色/warning-10%
+            color: var(--leap-color-warning);
+            background: #faf6ea;
             outline: none;
             &:focus {
               border-color: #faf6ea;
@@ -325,23 +320,22 @@ const saveName = () => {
       height: 32px;
 
       .original-price {
-        font-family: 'PingFang SC', sans-serif;
         font-size: 12px;
-        color: #545454;
+        color: var(--leap-color-default-light-1);
         line-height: 17px;
       }
 
       .card-stepper {
-        border: 1px solid #191A1B;
-        color: #191A1B;
+        border: 1px solid var(--leap-color-default);
+        color: var(--leap-color-default);
         border-radius: 4px;
         ::v-deep .van-stepper__minus, ::v-deep .van-stepper__plus {
           background: #fff;
-          color: #191A1B;
+          color: var(--leap-color-default);
           font-weight: 500;
         }
         ::v-deep .van-stepper__minus--disabled, ::v-deep.van-stepper__plus--disabled {
-          color: #ddd;
+          color: var(--leap-color-default-light-3);
         }
         ::v-deep .van-stepper__input {
           background: #fff;
@@ -360,10 +354,9 @@ const saveName = () => {
   border-radius: 8px;
 
   .popup-title {
-    font-family: 'PingFang SC', sans-serif;
     font-size: 16px;
     font-weight: 500;
-    color: #191a1b;
+    color: var(--leap-color-default);
     line-height: 24px;
     text-align: center;
     margin-bottom: 8px;
@@ -376,27 +369,6 @@ const saveName = () => {
     ::v-deep .van-field{
       background: rgba(0, 0, 0, 0.04);
       border-radius: 7px;
-    }
-    .name-input {
-      width: 100%;
-      height: 40px;
-      padding: 0 40px 0 7px;
-      background: rgba(0, 0, 0, 0.04);
-      border: none;
-      border-radius: 11.2px;
-      font-family: 'PingFang SC', sans-serif;
-      font-size: 14px;
-      color: #191a1b;
-      line-height: 20px;
-      outline: none;
-
-      &::placeholder {
-        color: #9d9f9d;
-      }
-
-      &:focus {
-        background: rgba(0, 0, 0, 0.04);
-      }
     }
 
     .error-icon {
@@ -421,7 +393,7 @@ const saveName = () => {
     display: flex;
     align-items: center;
     height: 54px;
-    border-top: 0.5px solid #e6e6e5;
+    border-top: 0.5px solid var(--leap-color-default-light-4);
     padding: 0 16px;
 
     .action-btn {
@@ -430,9 +402,8 @@ const saveName = () => {
       align-items: center;
       justify-content: center;
       height: 22px;
-      font-family: 'PingFang SC', sans-serif;
       font-size: 14px;
-      color: #191a1b;
+      color: var(--leap-color-default);
       line-height: 22px;
       cursor: pointer;
 
@@ -442,13 +413,13 @@ const saveName = () => {
     }
 
     .save-btn {
-      color: #009100;
+      color: var(--leap-color-primary);
     }
 
     .divider {
       height: 54px;
       width: 0.5px;
-      background: #e6e6e5;
+      background: var(--leap-color-default-light-4);
       margin: 0 16px;
     }
   }

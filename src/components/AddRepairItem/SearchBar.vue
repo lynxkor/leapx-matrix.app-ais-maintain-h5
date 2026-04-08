@@ -188,13 +188,12 @@ defineExpose({ setResults, showActiveCards, close, reset })
       outline: none;
       background: transparent;
       font-size: 12px;
-      font-family: 'PingFang SC', sans-serif;
-      color: #191a1b;
+      color: var(--leap-color-default);
       line-height: 28px;
       padding: 0;
 
       &::placeholder {
-        color: #888888;
+        color: var(--leap-color-default-light-2);
       }
 
       &::-webkit-search-cancel-button {
@@ -209,10 +208,9 @@ defineExpose({ setResults, showActiveCards, close, reset })
       justify-content: center;
       width: 52px;
       height: 26px;
-      background: #009100;
+      background: var(--leap-color-primary);
       border-radius: 13px;
       font-size: 12px;
-      font-family: 'PingFang SC', sans-serif;
       color: #ffffff;
       cursor: pointer;
 
@@ -234,7 +232,7 @@ defineExpose({ setResults, showActiveCards, close, reset })
     align-items: center;
     min-height: 50px;
     padding: 10px 12px;
-    border-bottom: 0.5px solid #e6e6e5;
+    border-bottom: 0.5px solid var(--leap-color-default-light-4);
     cursor: pointer;
 
     &:last-child {
@@ -242,31 +240,29 @@ defineExpose({ setResults, showActiveCards, close, reset })
     }
 
     &:active {
-      background: #f7f8fa;
+      background: var(--leap-color-default-light-5);
     }
 
     .item-text {
-      font-family: 'PingFang SC', sans-serif;
       font-size: 14px;
-      color: #191a1b;
+      color: var(--leap-color-default);
       line-height: 20px;
 
       ::v-deep(em) {
         font-style: normal;
-        color: #009100;
+        color: var(--leap-color-primary);
       }
     }
 
     .item-code {
-      font-family: 'PingFang SC', sans-serif;
       font-size: 14px;
-      color: #191a1b;
+      color: var(--leap-color-default);
       margin-left: 2px;
       flex-shrink: 0;
 
       ::v-deep(em) {
         font-style: normal;
-        color: #009100;
+        color: var(--leap-color-primary);
       }
     }
   }
@@ -287,7 +283,6 @@ defineExpose({ setResults, showActiveCards, close, reset })
         justify-content: center;
         height: 36px;
         border-radius: 8px;
-        font-family: 'PingFang SC', sans-serif;
         font-size: 14px;
         cursor: pointer;
 
@@ -297,12 +292,12 @@ defineExpose({ setResults, showActiveCards, close, reset })
       }
 
       .continue-btn {
-        background: #f5f5f5;
-        color: #545454;
+        background: var(--leap-color-default-light-5);
+        color: var(--leap-color-default-light-1);
       }
 
       .done-btn {
-        background: #009100;
+        background: var(--leap-color-primary);
         color: #ffffff;
       }
     }
