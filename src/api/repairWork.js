@@ -47,7 +47,7 @@ export function selectServiceProxy(data) {
  * @param {string} serviceProxyId - 施工单ID
  */
 export function getRepairItemInfo(serviceProxyId) {
-  return post(prefix + '/repairItemInfo', serviceProxyId)
+  return postJson(prefix + '/repairItemInfo', serviceProxyId)
 }
 
 /**
@@ -224,13 +224,13 @@ export function filterRepairParts(data) {
  * @param {String} key
  */
 export function getEnum(key) {
-  return post(`/maintain/web/common/enum/${key}`)
+  return post(`maintain/web/common/enum/${key}`)
 }
 
 /**
  * 获取保修类型和结算类型映射关系
  */
 export function getRepairItemTypeMap() {
-  return post(`/maintain/web/basic/repairItemType/list`, { 'categorys': [20] })
+  return post(`maintain/app/sp/serviceProxy/type/list`, { 'categorys': [20] })
 }
 

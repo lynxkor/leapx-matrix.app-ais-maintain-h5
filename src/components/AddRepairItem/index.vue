@@ -92,7 +92,7 @@
 import { ref, computed, watch } from 'vue'
 import { showToast } from 'vant'
 import Empty from '@/views/repairWork/components/Empty.vue'
-import { filterRepairItems, filterRepairParts } from '@/api/repairWork'
+import { filterRepairItems, filterRepairParts, getRepairItemInfo, saveRepairItemInfo } from '@/api/repairWork'
 import SearchBar from './SearchBar.vue'
 import RepairItemCard from './RepairItemCard.vue'
 import CheckoutPicker from './CheckoutPicker.vue'
@@ -133,6 +133,9 @@ const selectedParts = ref([])
 const showCheckoutPicker = ref(false)
 const editingItem = ref(null)
 
+// 加载状态
+const loading = ref(false)
+
 const hasAnySelectedItems = computed(() => {
   return selectedItems.value.length > 0 || selectedParts.value.length > 0
 })
@@ -161,23 +164,22 @@ const performSearch = async(keyword) => {
 // 统一字段映射（零件用 partName/partCode/salePrice，项目用 name/code/price）
 const normalizeItem = (raw) => ({
   ...raw,
-  name: raw.partName || raw.name,
-  code: raw.partCode || raw.code,
+  name: raw.repairItemName || raw.name,
+  code: raw.repairItemCode || raw.code,
   price: raw.salePrice || raw.workhourPrice || raw.price || '0.00',
   checkoutType: '',
-  quantity: 1,
-  discount: raw.discount || ''
+  quantity: raw.workHour || raw.quantity || 1,
+  discountAmount: raw.discountAmount
 })
 
 const normalizePart = (raw) => ({
   ...raw,
-  id: raw.partsId || raw.id,
   name: raw.partsName || raw.partName || raw.name,
   code: raw.partsCode || raw.partCode || raw.code,
   price: raw.salePrice || raw.price || '0.00',
   checkoutType: '',
-  quantity: 1,
-  discount: raw.discount || ''
+  quantity: raw.quantity || 1,
+  discountAmount: raw.discountAmount
 })
 
 // 搜索结果点击 → 区分维修项目/零件
@@ -244,13 +246,32 @@ const onCheckoutConfirm = (value) => {
 }
 
 // 保存
-const handleSave = () => {
+const handleSave = async() => {
   if (!hasAnySelectedItems.value) return
-  emit('confirm', {
-    items: selectedItems.value,
-    parts: selectedParts.value
-  })
-  handleClose()
+  try {
+    loading.value = true
+    const res = await saveRepairItemInfo({
+      itemList: selectedItems.value,
+      partsList: selectedParts.value,
+      discountId: '',
+      serviceProxyId: props.serviceProxyId
+    })
+    if (res?.code === 200) {
+      showToast({ message: '保存成功', 'z-index': 5100 })
+      emit('confirm', {
+        items: selectedItems.value,
+        parts: selectedParts.value
+      })
+      handleClose()
+    } else {
+      showToast({ message: res?.message || '保存失败', 'z-index': 5100 })
+    }
+  } catch (error) {
+    console.error('保存失败:', error)
+    showToast({ message: '保存失败', 'z-index': 5100 })
+  } finally {
+    loading.value = false
+  }
 }
 
 // 关闭弹窗
@@ -268,15 +289,34 @@ const resetAllState = () => {
   editingItem.value = null
 }
 
-// 弹窗打开时重置状态
+// 弹窗打开时重置状态并加载数据
 watch(
   () => props.visible,
-  (newVal) => {
+  async(newVal) => {
     if (newVal) {
       resetAllState()
+      await loadInitialData()
     }
   }
 )
+
+// 加载初始数据
+const loadInitialData = async() => {
+  if (!props.serviceProxyId) return
+  try {
+    loading.value = true
+    const res = await getRepairItemInfo(props.serviceProxyId)
+    if (res?.code === 200 && res?.data) {
+      const { repairItemRespList = [], sparePartRespList = [] } = res.data
+      selectedItems.value = repairItemRespList.map(normalizeItem)
+      selectedParts.value = sparePartRespList.map(normalizePart)
+    }
+  } catch (error) {
+    console.error('加载维修项目数据失败:', error)
+  } finally {
+    loading.value = false
+  }
+}
 </script>
 
 <style lang="scss" scoped>

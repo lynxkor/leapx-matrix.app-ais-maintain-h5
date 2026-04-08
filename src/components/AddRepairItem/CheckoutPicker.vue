@@ -115,6 +115,7 @@ const handleClose = () => {
   padding: 16px 0;
   padding-bottom: calc(16px + env(safe-area-inset-bottom));
   position: relative;
+  background: #f4f4f4;
 
   .checkout-picker-title {
     text-align: center;
@@ -141,6 +142,55 @@ const handleClose = () => {
     .van-icon {
       font-size: 12px;
       color: #fff;
+    }
+  }
+  ::v-deep .van-tabs__nav {
+    background: #f4f4f4;
+  }
+  ::v-deep .van-cascader__tab {
+    &::after {
+      content: '/';
+      transform: translateX(8px);
+      color:#191a1b;
+    }
+    // 倒数第二个不加 /
+    &:nth-last-child(2)::after {
+      display: none;
+    }
+  }
+  ::v-deep .van-tab--active {
+    color: var(--leap-color-primary);
+  }
+  ::v-deep .van-tabs__line {
+    display: none;
+  }
+  ::v-deep .van-cascader__options{
+    padding: 0 12px;
+  }
+  ::v-deep .van-cascader__option {
+    background: #fff;
+    position: relative;
+    &::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 12px;  /* 左侧留白 */
+      right: 12px; /* 右侧留白 */
+      height: 1px;
+      background-color: #E6E6E5;
+    }
+    &:first-child {
+      border-radius: 8px 8px 0 0;
+    }
+    &:last-child {
+      border-radius: 0 0 8px 8px;
+      border-bottom: 0;
+    }
+    &:first-child:last-child {
+      border-radius: 8px;
+    }
+    &:last-child::after {
+      display: none;
     }
   }
 }

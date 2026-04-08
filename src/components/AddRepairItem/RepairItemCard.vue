@@ -24,22 +24,23 @@
         </div>
         <!-- 右列 -->
         <div class="info-right">
-          <div class="main-price">¥{{ item.price || '0.00' }}</div>
+          <div class="main-price">¥{{ item.price * item.quantity || '0.00' }}</div>
           <div class="discount-wrapper">
             <span class="discount-tag-label">优惠</span>
-            <span class="discount-tag-amount">¥{{ item.discount || 0 }}</span>
+            <span class="discount-tag-amount">¥{{ item.discountAmount || 0 }}</span>
           </div>
         </div>
       </div>
       <!-- 下半区：原价 + 步进器 -->
       <div class="card-bottom-row">
-        <span class="original-price">¥{{ item.originalPrice || item.price || '0.00' }}</span>
+        <span class="original-price">¥{{ item.price || '0.00' }}</span>
         <van-stepper
           :model-value="item.quantity"
           min="1"
           class="card-stepper"
           input-width="32px"
           button-size="32px"
+          @change="(val) => $emit('quantity-change', item, val)"
         />
       </div>
     </div>
