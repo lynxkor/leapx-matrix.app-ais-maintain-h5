@@ -22,9 +22,6 @@
   "lint-staged": {
     "src/**/*.{js,vue}": [
       "eslint"
-    ],
-    "src/**/*.{css,scss,vue}": [
-      "stylelint"
     ]
   },
   "author": "pan_ji2@leapmotor.com",

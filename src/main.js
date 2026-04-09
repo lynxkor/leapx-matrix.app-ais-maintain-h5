@@ -2,7 +2,7 @@ import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import {
   List, Cell, Search, NavBar, PullRefresh, Image as VanImage, Lazyload, Swipe, SwipeItem, ActionSheet, ActionBar, ActionBarButton, Button, Form, Field, CellGroup, Icon, Dialog, Popup, DatePicker, TimePicker, Tab, Tabs, RadioGroup, Radio, Highlight,
-  Stepper, Switch, NumberKeyboard, Collapse, CollapseItem, Loading, Overlay
+  Stepper, Switch, NumberKeyboard, Collapse, CollapseItem, Loading, Overlay, Sticky
 } from 'vant'
 import * as Sentry from '@sentry/vue'
 
@@ -12,12 +12,14 @@ import router from './router'
 import 'vant/lib/index.css'
 // 必须写在vant样式后，覆盖vant样式
 import './assets/main.css'
+// 引入全局样式变量
+import '@/libs/assets/styles/variables.scss'
 
 const setHtmlFontsize = () => {
   var htmlWidth = document.documentElement.clientWidth || document.body.clientWidth
   console.log('width：', htmlWidth)
   var htmlDom = document.getElementsByTagName('html')[0]
-  htmlDom.style.fontSize = (htmlWidth / 37.5) + 'px'
+  htmlDom.style.fontSize = htmlWidth / 37.5 + 'px'
 }
 window.onresize = setHtmlFontsize
 setHtmlFontsize()
@@ -25,7 +27,7 @@ setHtmlFontsize()
 const app = createApp(App)
 
 // 初始化 Sentry 错误追踪
-const environment = import.meta.env.VITE_SENTRY_ENV
+const environment = window.APP_AIS_H5_CONFIG.VITE_SENTRY_ENV
 if (environment) {
   Sentry.init({
     app,
@@ -77,6 +79,9 @@ app.use(Collapse)
 app.use(CollapseItem)
 app.use(Loading)
 app.use(Overlay)
+app.use(Tabs)
+app.use(Tab)
+app.use(Sticky)
 
 // 注册时可以配置额外的选项
 app.use(Lazyload, {
