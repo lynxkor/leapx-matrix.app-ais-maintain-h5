@@ -4,7 +4,7 @@
     <div class="vehicle-card">
       <div class="plate-row">
         <span class="plate-no">{{ detail.plateNo }}</span>
-        <span class="appointment-tag">{{ detail.custTypeLabel }}</span>
+        <span class="appointment-tag">{{ detail.custTypeLabel || '随到客户' }}</span>
         <span class="edit-plate edit-plate-after" @click="onChangeCar">
           <span><img src="@/assets/image/car.png" alt="" /></span>
           <span>换车</span>
@@ -179,9 +179,10 @@
                   v-for="(img, index) in detail.interiorImages"
                   :key="'interior-' + index"
                   class="image-item"
+                  @click="onPreviewImage('interior', index)"
                 >
                   <van-image :src="img" fit="cover" />
-                  <span class="delete-btn" @click="onDeleteImage('interior', index)">
+                  <span class="delete-btn" @click.stop="onDeleteImage('interior', index)">
                     <van-icon name="cross" />
                   </span>
                 </div>
@@ -200,9 +201,10 @@
                   v-for="(img, index) in detail.exteriorImages"
                   :key="'exterior-' + index"
                   class="image-item"
+                  @click="onPreviewImage('exterior', index)"
                 >
                   <van-image :src="img" fit="cover" />
-                  <span class="delete-btn" @click="onDeleteImage('exterior', index)">
+                  <span class="delete-btn" @click.stop="onDeleteImage('exterior', index)">
                     <van-icon name="cross" />
                   </span>
                 </div>
@@ -338,89 +340,203 @@
           <!-- 维修项目列表 -->
           <div v-if="partsData.repairItemRespList?.length > 0" class="parts-section">
             <div class="section-title">维修项目</div>
-            <div
-              v-for="(item, index) in partsData.repairItemRespList"
-              :key="index"
-              class="parts-card"
-            >
-              <div class="card-delete" @click="onDeleteRepairItem(index)">
-                <van-icon name="delete-o" size="16" color="#b91919" />
-              </div>
-              <div class="card-content">
-                <div class="card-top">
-                  <div class="card-info">
-                    <div class="item-name">{{ item.repairItemName }}</div>
-                    <div class="item-category" @click="onCategoryClick(item)">
-                      <span class="category-text">
-                        {{ item.repairItemTypeName || '请选择' }}-{{
-                          item.checkoutTypeName || ''
-                        }}-{{ item.warrantyTypeName || '' }}
-                      </span>
-                      <van-icon name="arrow" size="12" color="#545454" />
-                    </div>
+            <template v-for="(group, gIndex) in groupedRepairItems" :key="'repair-' + gIndex">
+              <!-- 套餐分组：需要加标题并用div包裹 -->
+              <div v-if="group.isPackage" class="package-group">
+                <div class="package-group-header">
+                  <span class="package-label">{{ group.packageTypeLabel }}-</span>
+                  <span class="package-code">{{ group.packageCode }}</span>
+                </div>
+                <div
+                  v-for="(item, index) in group.items"
+                  :key="'repair-item-' + index"
+                  class="parts-card"
+                >
+                  <div
+                    class="card-delete"
+                    @click="onDeleteRepairItem(partsData.repairItemRespList.indexOf(item))"
+                  >
+                    <van-icon name="delete-o" size="16" color="#b91919" />
                   </div>
-                  <div class="card-price">
-                    <div class="item-price">
-                      ¥{{ (item.price * item.quantity - item.discountAmount).toFixed(2) }}
+                  <div class="card-content">
+                    <div class="card-top">
+                      <div class="card-info">
+                        <div class="item-name">{{ item.repairItemName }}</div>
+                        <div class="item-category" @click="onCategoryClick(item)">
+                          <span class="category-text">
+                            {{ item.repairItemTypeName || '请选择' }}-{{
+                              item.checkoutTypeName || ''
+                            }}-{{ item.warrantyTypeName || '' }}
+                          </span>
+                          <van-icon name="arrow" size="12" color="#545454" />
+                        </div>
+                      </div>
+                      <div class="card-price">
+                        <div class="item-price">
+                          ¥{{ (item.price * item.quantity - item.discountAmount).toFixed(2) }}
+                        </div>
+                        <div class="discount-tags">
+                          <span class="discount-tag">优惠</span>
+                          <span class="discount-amount">¥{{ item.discountAmount }}</span>
+                        </div>
+                      </div>
                     </div>
-                    <div class="discount-tags">
-                      <span class="discount-tag">优惠</span>
-                      <span class="discount-amount">¥{{ item.discountAmount }}</span>
+                    <div class="card-bottom">
+                      <div class="item-subtotal">¥{{ item.price }}</div>
+                      <div class="quantity-stepper">
+                        <van-stepper v-model="item.quantity" :min="1" size="small" />
+                      </div>
                     </div>
                   </div>
                 </div>
-                <div class="card-bottom">
-                  <div class="item-subtotal">¥{{ item.price }}</div>
-                  <div class="quantity-stepper">
-                    <van-stepper v-model="item.quantity" :min="1" size="small" />
+              </div>
+              <!-- 非套餐项目：直接展示卡片，不加标题 -->
+              <div v-else>
+                <div
+                  v-for="(item, index) in group.items"
+                  :key="'repair-item-' + index"
+                  class="parts-card"
+                >
+                  <div
+                    class="card-delete"
+                    @click="onDeleteRepairItem(partsData.repairItemRespList.indexOf(item))"
+                  >
+                    <van-icon name="delete-o" size="16" color="#b91919" />
+                  </div>
+                  <div class="card-content">
+                    <div class="card-top">
+                      <div class="card-info">
+                        <div class="item-name">{{ item.repairItemName }}</div>
+                        <div class="item-category" @click="onCategoryClick(item)">
+                          <span class="category-text">
+                            {{ item.repairItemTypeName || '请选择' }}-{{
+                              item.checkoutTypeName || ''
+                            }}-{{ item.warrantyTypeName || '' }}
+                          </span>
+                          <van-icon name="arrow" size="12" color="#545454" />
+                        </div>
+                      </div>
+                      <div class="card-price">
+                        <div class="item-price">
+                          ¥{{ (item.price * item.quantity - item.discountAmount).toFixed(2) }}
+                        </div>
+                        <div class="discount-tags">
+                          <span class="discount-tag">优惠</span>
+                          <span class="discount-amount">¥{{ item.discountAmount }}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="card-bottom">
+                      <div class="item-subtotal">¥{{ item.price }}</div>
+                      <div class="quantity-stepper">
+                        <van-stepper v-model="item.quantity" :min="1" size="small" />
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
+            </template>
           </div>
 
           <!-- 维修配件列表 -->
           <div v-if="partsData.sparePartRespList?.length > 0" class="parts-section">
             <div class="section-title">维修配件</div>
-            <div
-              v-for="(item, index) in partsData.sparePartRespList"
-              :key="index"
-              class="parts-card"
-            >
-              <div class="card-delete" @click="onDeleteSparePart(index)">
-                <van-icon name="delete-o" size="16" color="#b91919" />
-              </div>
-              <div class="card-content">
-                <div class="card-top">
-                  <div class="card-info">
-                    <div class="item-name">{{ item.packageName }}</div>
-                    <div class="item-category" @click="onCategoryClick(item)">
-                      <span class="category-text">
-                        {{ item.repairItemTypeName || '请选择' }}-{{
-                          item.checkoutTypeName || ''
-                        }}-{{ item.warrantyTypeName || '' }}
-                      </span>
-                      <van-icon name="arrow" size="12" color="#545454" />
-                    </div>
+            <template v-for="(group, gIndex) in groupedSpareParts" :key="'spare-' + gIndex">
+              <!-- 套餐分组：需要加标题并用div包裹 -->
+              <div v-if="group.isPackage" class="package-group">
+                <div class="package-group-header">
+                  <span class="package-label">{{ group.packageTypeLabel }}-</span>
+                  <span class="package-code">{{ group.packageCode }}</span>
+                </div>
+                <div
+                  v-for="(item, index) in group.items"
+                  :key="'spare-item-' + index"
+                  class="parts-card"
+                >
+                  <div
+                    class="card-delete"
+                    @click="onDeleteSparePart(partsData.sparePartRespList.indexOf(item))"
+                  >
+                    <van-icon name="delete-o" size="16" color="#b91919" />
                   </div>
-                  <div class="card-price">
-                    <div class="item-price">
-                      ¥{{ (item.price * item.quantity - item.discountAmount).toFixed(2) }}
+                  <div class="card-content">
+                    <div class="card-top">
+                      <div class="card-info">
+                        <div class="item-name">{{ item.packageName }}</div>
+                        <div class="item-category" @click="onCategoryClick(item)">
+                          <span class="category-text">
+                            {{ item.repairItemTypeName || '请选择' }}-{{
+                              item.checkoutTypeName || ''
+                            }}-{{ item.warrantyTypeName || '' }}
+                          </span>
+                          <van-icon name="arrow" size="12" color="#545454" />
+                        </div>
+                      </div>
+                      <div class="card-price">
+                        <div class="item-price">
+                          ¥{{ (item.price * item.quantity - item.discountAmount).toFixed(2) }}
+                        </div>
+                        <div class="discount-tags">
+                          <span class="discount-tag">优惠</span>
+                          <span class="discount-amount">¥{{ item.discountAmount }}</span>
+                        </div>
+                      </div>
                     </div>
-                    <div class="discount-tags">
-                      <span class="discount-tag">优惠</span>
-                      <span class="discount-amount">¥{{ item.discountAmount }}</span>
+                    <div class="card-bottom">
+                      <div class="item-subtotal">¥{{ item.price }}</div>
+                      <div class="quantity-stepper">
+                        <van-stepper v-model="item.quantity" :min="1" size="small" />
+                      </div>
                     </div>
                   </div>
                 </div>
-                <div class="card-bottom">
-                  <div class="item-subtotal">¥{{ item.price }}</div>
-                  <div class="quantity-stepper">
-                    <van-stepper v-model="item.quantity" :min="1" size="small" />
+              </div>
+              <!-- 非套餐配件：直接展示卡片，不加标题 -->
+              <div v-else>
+                <div
+                  v-for="(item, index) in group.items"
+                  :key="'spare-item-' + index"
+                  class="parts-card"
+                >
+                  <div
+                    class="card-delete"
+                    @click="onDeleteSparePart(partsData.sparePartRespList.indexOf(item))"
+                  >
+                    <van-icon name="delete-o" size="16" color="#b91919" />
+                  </div>
+                  <div class="card-content">
+                    <div class="card-top">
+                      <div class="card-info">
+                        <div class="item-name">{{ item.packageName }}</div>
+                        <div class="item-category" @click="onCategoryClick(item)">
+                          <span class="category-text">
+                            {{ item.repairItemTypeName || '请选择' }}-{{
+                              item.checkoutTypeName || ''
+                            }}-{{ item.warrantyTypeName || '' }}
+                          </span>
+                          <van-icon name="arrow" size="12" color="#545454" />
+                        </div>
+                      </div>
+                      <div class="card-price">
+                        <div class="item-price">
+                          ¥{{ (item.price * item.quantity - item.discountAmount).toFixed(2) }}
+                        </div>
+                        <div class="discount-tags">
+                          <span class="discount-tag">优惠</span>
+                          <span class="discount-amount">¥{{ item.discountAmount }}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="card-bottom">
+                      <div class="item-subtotal">¥{{ item.price }}</div>
+                      <div class="quantity-stepper">
+                        <van-stepper v-model="item.quantity" :min="1" size="small" />
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
+            </template>
           </div>
 
           <!-- 套餐列表 -->
@@ -836,6 +952,20 @@
       @select="onSelectMoreAction"
     >
     </van-action-sheet>
+
+    <!-- 图片上传选择 -->
+    <van-action-sheet
+      v-model:show="showImageUploadSheet"
+      cancel-text="取消"
+      close-on-click-action
+      @select="onSelectImageSource"
+    >
+      <template #default>
+        <div class="action-sheet-item" @click="onSelectImageSource('camera')">拍照</div>
+        <div class="action-sheet-item" @click="onSelectImageSource('album')">从相册中选择</div>
+      </template>
+    </van-action-sheet>
+
     <!-- 添加故障模块 -->
     <ais-popup
       :show="addFaultModuleShow"
@@ -1190,16 +1320,26 @@
         <van-loading size="24px" vertical color="#009100">请稍候...</van-loading>
       </div>
     </van-overlay>
+
+    <!-- 图片上传隐藏文件输入 -->
+    <input
+      ref="imageUploadRef"
+      type="file"
+      accept="image/*"
+      style="display: none"
+      @change="handleImageFileChange"
+    />
   </div>
 </template>
 
 <script setup>
 import { ref, reactive, onMounted, computed, onUnmounted, nextTick, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { showToast, showConfirmDialog } from 'vant'
+import { showToast, showConfirmDialog, showImagePreview } from 'vant'
 import { useGlobalStore } from '@/stores/global'
 import AisPopup from '@/libs/components/AisPopup.vue'
-import PartsItemCard from '@/components/PartsItemCard.vue'
+import { uploadFileByUrl, getUploadConfig, getFileList } from '@/libs/api/fileConfig'
+import { getAppImgLimit } from '@/libs/utils/nativeFn'
 import {
   getDetail,
   getVehicleInfo,
@@ -1217,6 +1357,19 @@ const globalStore = useGlobalStore()
 const addFaultModuleShow = ref(false)
 const changeCarDialog = ref(false)
 const changePlateDialog = ref(false)
+
+// 图片上传相关
+const currentUploadType = ref('') // 'interior' or 'exterior'
+const currentUploadIndex = ref(0)
+const imageUploadRef = ref(null) // 文件输入引用
+const showImageUploadSheet = ref(false)
+const uploadConfig = ref({})
+
+// 根据附件类型获取配置
+const getAttachConfig = (attachType) => {
+  const detailList = uploadConfig.value?.detailList || []
+  return detailList.find((item) => item.attachType === attachType) || {}
+}
 
 // 施工单状态
 const isSaved = ref(false) // 是否已保存
@@ -1580,6 +1733,7 @@ const businessTypeList = ref([
 
 // 详情数据
 const detail = reactive({
+  id: '', // 施工单ID
   vehicleProfileServiceResp: {}, // 车辆档案
   plateNo: '',
   custTypeLabel: '',
@@ -1620,6 +1774,85 @@ const partsData = reactive({
   repairItemRespList: [],
   packageRespList: [],
   sparePartRespList: []
+})
+
+// 是否存在套餐
+const hasPackages = computed(() => {
+  return partsData.packageRespList && partsData.packageRespList.length > 0
+})
+
+// 按套餐分组的维修项目
+const groupedRepairItems = computed(() => {
+  if (!hasPackages.value) {
+    return [{ items: partsData.repairItemRespList, isPackage: false }]
+  }
+
+  const groups = []
+  const usedPackages = new Set()
+
+  // 按套餐分组
+  partsData.packageRespList.forEach((pkg) => {
+    const matchedItems = partsData.repairItemRespList.filter(
+      (item) => item.packageType === pkg.packageType
+    )
+    if (matchedItems.length > 0) {
+      groups.push({
+        packageTypeLabel: pkg.packageTypeLabel,
+        packageCode: matchedItems[0]?.packageCode,
+        packageType: pkg.packageType,
+        items: matchedItems,
+        isPackage: true
+      })
+      usedPackages.add(pkg.packageType)
+    }
+  })
+
+  // 未分组的项目（不属于任何套餐）
+  const ungroupedItems = partsData.repairItemRespList.filter(
+    (item) => !usedPackages.has(item.packageType)
+  )
+  if (ungroupedItems.length > 0) {
+    groups.push({ items: ungroupedItems, isPackage: false })
+  }
+
+  return groups
+})
+
+// 按套餐分组的维修配件
+const groupedSpareParts = computed(() => {
+  if (!hasPackages.value) {
+    return [{ items: partsData.sparePartRespList, isPackage: false }]
+  }
+
+  const groups = []
+  const usedPackages = new Set()
+
+  // 按套餐分组
+  partsData.packageRespList.forEach((pkg) => {
+    const matchedItems = partsData.sparePartRespList.filter(
+      (item) => item.packageType === pkg.packageType
+    )
+    if (matchedItems.length > 0) {
+      groups.push({
+        packageTypeLabel: pkg.packageTypeLabel,
+        packageCode: matchedItems[0]?.packageCode,
+        packageType: pkg.packageType,
+        items: matchedItems,
+        isPackage: true
+      })
+      usedPackages.add(pkg.packageType)
+    }
+  })
+
+  // 未分组的配件
+  const ungroupedItems = partsData.sparePartRespList.filter(
+    (item) => !usedPackages.has(item.packageType)
+  )
+  if (ungroupedItems.length > 0) {
+    groups.push({ items: ungroupedItems, isPackage: false })
+  }
+
+  return groups
 })
 
 // 签字确认数据
@@ -1771,7 +2004,9 @@ const fetchDetail = async() => {
             : detail.repairPerson === data.bindingUser
               ? '绑车人'
               : '其他'
-        detail.businessType = data.businessType || 10
+        detail.id = data.id || ''
+        // 预约客户默认预约到店，否则默认自然到店
+        detail.businessType = data.businessType || (detail.isAppointment ? 50 : 10)
         detail.mileage = data.mileage || ''
         detail.networkMileageTotal = data.netMileage || ''
         detail.networkMileageAdd = data.netMileageExtend || ''
@@ -1945,10 +2180,138 @@ const onDeleteImage = (type, index) => {
     .catch(() => {})
 }
 
+// 预览图片
+const onPreviewImage = (type, index) => {
+  const imageArray = type === 'interior' ? detail.interiorImages : detail.exteriorImages
+  showImagePreview({
+    images: imageArray,
+    startPosition: index,
+    showIndex: true
+  })
+}
+
 // 上传图片
 const onUploadImage = (type) => {
-  showToast('上传图片: ' + type)
+  currentUploadType.value = type
+  currentUploadIndex.value = 0
+  // 获取配置中的最大文件大小
+  const config = getAttachConfig(type === 'interior' ? '车内检查' : '车外检查')
+  const maxSize = config.maxSize || 10
+  getAppImgLimit(maxSize)
 }
+
+// 选择图片来源
+const onSelectImageSource = (source) => {
+  showImageUploadSheet.value = false
+  if (source === 'camera') {
+    // 拍照模式，让原生处理
+  } else {
+    // 从相册选择
+    imageUploadRef.value?.click()
+  }
+}
+
+// 处理图片文件选择
+const handleImageFileChange = async(event) => {
+  const files = event.target.files
+  if (!files || files.length === 0) return
+
+  const file = files[0]
+  const previewUrl = URL.createObjectURL(file)
+  const imageArray =
+    currentUploadType.value === 'interior' ? detail.interiorImages : detail.exteriorImages
+
+  // 添加临时预览
+  imageArray.push(previewUrl)
+
+  try {
+    const params = [
+      {
+        fileUrl: previewUrl,
+        businessId: route.query.id || '',
+        configCode: 'mcs_serviceproxy',
+        attachType: currentUploadType.value === 'interior' ? '车内检查' : '车外检查'
+      }
+    ]
+
+    const res = await uploadFileByUrl(params)
+
+    if (res.code === 200) {
+      const uploadData = res.data && res.data.length > 0 ? res.data[0] : {}
+      // 更新为实际上传后的URL
+      const index = imageArray.indexOf(previewUrl)
+      if (index > -1) {
+        imageArray[index] = uploadData.authFileUrl || previewUrl
+      }
+      showToast('上传成功')
+    } else {
+      // 上传失败，移除临时预览
+      const index = imageArray.indexOf(previewUrl)
+      if (index > -1) {
+        imageArray.splice(index, 1)
+      }
+      showToast(res.msg || '上传失败')
+    }
+  } catch (e) {
+    console.error('上传出错:', e)
+    const index = imageArray.indexOf(previewUrl)
+    if (index > -1) {
+      imageArray.splice(index, 1)
+    }
+    showToast('上传出错')
+  }
+
+  // 清空 input 值，允许重复选择同一文件
+  event.target.value = ''
+}
+
+// 注册原生图片回调
+onMounted(() => {
+  window.getImage = async(url) => {
+    if (!url) return
+
+    const imageArray =
+      currentUploadType.value === 'interior' ? detail.interiorImages : detail.exteriorImages
+
+    // 添加临时预览
+    imageArray.push(url)
+
+    try {
+      const params = [
+        {
+          fileUrl: url,
+          businessId: route.query.id || '',
+          configCode: 'mcs_serviceproxy',
+          attachType: currentUploadType.value === 'interior' ? '车内检查' : '车外检查'
+        }
+      ]
+
+      const res = await uploadFileByUrl(params)
+
+      if (res.code === 200) {
+        const uploadData = res.data && res.data.length > 0 ? res.data[0] : {}
+        const index = imageArray.indexOf(url)
+        if (index > -1) {
+          imageArray[index] = uploadData.authFileUrl || url
+        }
+        showToast('上传成功')
+      } else {
+        const index = imageArray.indexOf(url)
+        if (index > -1) {
+          imageArray.splice(index, 1)
+        }
+        showToast(res.msg || '上传失败')
+      }
+    } catch (e) {
+      console.error('上传出错:', e)
+      const index = imageArray.indexOf(url)
+      if (index > -1) {
+        imageArray.splice(index, 1)
+      }
+      showToast('上传出错')
+    }
+  }
+})
 
 // 添加故障模块
 const onAddFaultModule = () => {
@@ -2388,6 +2751,14 @@ onMounted(() => {
   // 获取提醒信息
   if (route.query.id) {
     getRemindInfo(route.query.id)
+  }
+  // 获取上传配置
+  if (route.query.id) {
+    getUploadConfig({ configCode: 'mcs_serviceproxy' }).then((res) => {
+      if (res.code === 200) {
+        uploadConfig.value = res.data || {}
+      }
+    })
   }
 })
 </script>
@@ -2995,6 +3366,31 @@ onMounted(() => {
     margin-bottom: 12px;
   }
 
+  .package-group {
+    margin-bottom: 12px;
+    border-radius: 8px;
+    overflow: hidden;
+    border-top: 0.5px solid rgba(0, 145, 0, 0.1);
+    border-bottom: 0.5px solid rgba(0, 145, 0, 0.1);
+
+    .package-group-header {
+      display: flex;
+      align-items: center;
+      padding: 8px 12px;
+
+      .package-label {
+        font-size: 14px;
+        font-weight: 500;
+        color: #191a1b;
+      }
+
+      .package-code {
+        font-size: 12px;
+        color: #191a1b;
+      }
+    }
+  }
+
   .parts-card {
     background: #ffffff;
     border: 0.5px solid rgba(0, 0, 0, 0.06);
@@ -3124,5 +3520,24 @@ onMounted(() => {
       }
     }
   }
+}
+
+// 图片上传action sheet样式
+:deep(.van-action-sheet) {
+  .van-action-sheet__cancel {
+    margin-bottom: 34px !important;
+  }
+}
+
+.action-sheet-item {
+  padding: 12px;
+  text-align: center;
+  font-size: 16px;
+  color: #333;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.action-sheet-item:last-child {
+  border-bottom: none;
 }
 </style>

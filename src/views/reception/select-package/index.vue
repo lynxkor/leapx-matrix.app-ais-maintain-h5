@@ -176,6 +176,7 @@
                 <div class="item-name">{{ item.activityName }}</div>
                 <div class="item-code">{{ item.schemeName }}</div>
               </div>
+              <div v-if="item.used" class="item-status used">已使用</div>
             </div>
             <div v-if="serviceList.length === 0 && !loading" class="no-data">
               <img src="@/assets/image/noList.png" alt="" />
@@ -202,6 +203,11 @@
       title="维修套餐"
       @close="showPackageDetail = false"
     >
+      <van-overlay :show="packageSubmitting" style="z-index: 100">
+        <div class="loading-wrapper">
+          <van-loading size="24px" vertical color="#009100">请稍候...</van-loading>
+        </div>
+      </van-overlay>
       <template #content>
         <!-- 套餐信息 -->
         <div class="package-info">
@@ -309,6 +315,11 @@
       @close="showServiceDetail = false"
       style="max-height: 80vh"
     >
+      <van-overlay :show="serviceSubmitting" style="z-index: 100">
+        <div class="loading-wrapper">
+          <van-loading size="24px" vertical color="#009100">请稍候...</van-loading>
+        </div>
+      </van-overlay>
       <template #content>
         <!-- 活动信息 -->
         <div class="package-info">
@@ -316,14 +327,21 @@
         </div>
         <!-- 维修项目列表 -->
         <div v-if="selectedService.itemResponseList && selectedService.itemResponseList.length > 0">
-          <div class="mall-title">维修项目</div>
+          <div class="mall-title">项目零件</div>
           <div class="package-detail">
             <div
               v-for="(item, index) in selectedService.itemResponseList"
               :key="index"
               class="repair-card"
+              :class="{ selected: item.selected }"
+              @click="onToggleItem(item)"
             >
               <div class="repair-card-content">
+                <div class="checkbox-wrapper">
+                  <div :class="['checkbox', { checked: item.selected }]">
+                    <van-icon v-if="item.selected" name="success" size="14" color="#fff" />
+                  </div>
+                </div>
                 <div class="repair-left">
                   <div class="repair-name-row">
                     <span class="repair-name">{{ item.repairItemName }}</span>
@@ -355,13 +373,26 @@
         <!-- 维修零件列表 -->
         <div v-if="selectedService.partResponseList && selectedService.partResponseList.length > 0">
           <div class="mall-title">维修零件</div>
-          <div class="package-detail">
+          <div v-show="partsExpanded" class="package-detail">
             <div
               v-for="(part, pIndex) in selectedService.partResponseList"
               :key="pIndex"
               class="repair-card"
+              :class="{ selected: part.selected, disabled: part.allowDelete == 0 }"
+              @click="onTogglePart(part)"
             >
               <div class="repair-card-content">
+                <div class="checkbox-wrapper">
+                  <div
+                    :class="[
+                      'checkbox',
+                      { checked: part.selected },
+                      { disabled: part.allowDelete == 0 },
+                    ]"
+                  >
+                    <van-icon v-if="part.selected" name="success" size="14" color="#fff" />
+                  </div>
+                </div>
                 <div class="repair-left">
                   <div class="repair-name-row">
                     <span class="repair-name">{{ part.oldPartName }}</span>
@@ -381,9 +412,17 @@
                     <span class="info-label">数量</span>
                     <span class="info-value">x{{ part.quantity }}</span>
                   </span>
+                  <span class="info-item">
+                    <span class="info-label">是否允许删除:</span>
+                    <span class="info-value">{{ part.allowDelete == 1 ? '是' : '否' }}</span>
+                  </span>
                 </div>
               </div>
             </div>
+          </div>
+          <div class="expand-btn" @click="partsExpanded = !partsExpanded">
+            <span class="expand-text">{{ partsExpanded ? '收起' : '展开' }}维修配件</span>
+            <van-icon :name="partsExpanded ? 'arrow-up' : 'arrow-down'" size="14" color="#009100" />
           </div>
         </div>
       </template>
@@ -408,6 +447,11 @@
       @close="showFreeDetail = false"
       style="max-height: 80vh"
     >
+      <van-overlay :show="freeSubmitting" style="z-index: 100">
+        <div class="loading-wrapper">
+          <van-loading size="24px" vertical color="#009100">请稍候...</van-loading>
+        </div>
+      </van-overlay>
       <template #content>
         <!-- 免保项目信息 -->
         <div class="package-info">
@@ -457,6 +501,11 @@
       title="商城订单"
       @close="showMallDetail = false"
     >
+      <van-overlay :show="mallSubmitting" style="z-index: 100">
+        <div class="loading-wrapper">
+          <van-loading size="24px" vertical color="#009100">请稍候...</van-loading>
+        </div>
+      </van-overlay>
       <template #content>
         <!-- 商品明细标题 -->
         <div class="mall-title">商品明细</div>
@@ -666,12 +715,19 @@ const activeRepairItem = ref([])
 
 // 配件展开状态
 const expandedPartsIndex = ref(-1)
+const partsExpanded = ref(true) // 维修零件默认展开
 
 // 当前详情是否已选
 const isPackageSelected = ref(false)
 const isServiceSelected = ref(false)
 const isFreeSelected = ref(false)
 const isMallSelected = ref(false)
+
+// 提交中状态
+const serviceSubmitting = ref(false)
+const freeSubmitting = ref(false)
+const mallSubmitting = ref(false)
+const packageSubmitting = ref(false)
 
 // 选中的套餐
 const selectedPackage = reactive({
@@ -800,7 +856,7 @@ const fetchListData = (tabName, searchKey = '') => {
             freeList.value = res.data.map((item) => ({ ...item, selected: false }))
             break
           case 'service':
-            serviceList.value = res.data.map((item) => ({ ...item, selected: false }))
+            serviceList.value = res.data.map((item) => ({ ...item, selected: item.used }))
             break
         }
       } else {
@@ -900,8 +956,15 @@ const onServiceClick = (item) => {
       const data = res.data
       selectedService.id = data.id
       selectedService.activityResponse = data.activityResponse || {}
-      selectedService.itemResponseList = data.itemResponseList || []
-      selectedService.partResponseList = data.partResponseList || []
+      // 为每个项目和配件添加selected字段，默认false
+      selectedService.itemResponseList = (data.itemResponseList || []).map((item) => ({
+        ...item,
+        selected: false
+      }))
+      selectedService.partResponseList = (data.partResponseList || []).map((part) => ({
+        ...part,
+        selected: part.allowDelete == 0 // allowDelete == 0 时默认选中
+      }))
       isServiceSelected.value = data.activityUsed
       showServiceDetail.value = true
     }
@@ -910,6 +973,7 @@ const onServiceClick = (item) => {
 
 // 确认选择套餐
 const onConfirmPackage = () => {
+  packageSubmitting.value = true
   specialPackageUse({
     id: serviceProxyId.value,
     packageId: selectedPackage.id
@@ -926,16 +990,58 @@ const onConfirmPackage = () => {
     .catch(() => {
       showToast('网络错误')
     })
+    .finally(() => {
+      packageSubmitting.value = false
+    })
+}
+
+// 勾选/取消勾选项目
+const onToggleItem = (item) => {
+  item.selected = !item.selected
+}
+
+// 勾选/取消勾选配件
+const onTogglePart = (part) => {
+  // allowDelete == 0 时不可编辑
+  if (part.allowDelete == 0) return
+  part.selected = !part.selected
 }
 
 // 确认选择服务活动
 const onConfirmService = () => {
+  // 只发送选中的项目和配件
+  const selectedItems = selectedService.itemResponseList.filter((item) => item.selected)
+  const selectedParts = selectedService.partResponseList.filter((part) => part.selected)
+
+  // 从 activityResponse 获取公共字段
+  const activityResp = selectedService.activityResponse
+
+  // 补充 itemList 缺少的字段
+  const enrichedItems = selectedItems.map((item) => ({
+    ...item,
+    checkoutTypeId: activityResp.checkoutTypeId || '',
+    checkoutTypeName: activityResp.checkoutTypeName || '',
+    workHour: item.workHour || 1
+  }))
+
+  // 补充 partsList 缺少的字段
+  const enrichedParts = selectedParts.map((part) => ({
+    ...part,
+    partsName: part.partName || '', // 零件名称
+    isOemPart: activityResp.isOemPart || 1, // 是否OEM件
+    partsId: part.partId || part.oldPartId || '', // 零件代码id
+    checkoutTypeId: activityResp.checkoutTypeId || '',
+    checkoutTypeName: activityResp.checkoutTypeName || '',
+    partsCode: part.partCode || part.oldPartCode || '' // 零件代码
+  }))
+
+  serviceSubmitting.value = true
   specialActivityUse({
     id: serviceProxyId.value,
     packageId: selectedService.id,
-    activityId: selectedService.activityResponse.id,
-    itemList: selectedService.itemResponseList,
-    partsList: selectedService.partResponseList
+    activityId: activityResp.id,
+    itemList: enrichedItems,
+    partsList: enrichedParts
   })
     .then((res) => {
       if (res.code === 200) {
@@ -949,10 +1055,14 @@ const onConfirmService = () => {
     .catch(() => {
       showToast('网络错误')
     })
+    .finally(() => {
+      serviceSubmitting.value = false
+    })
 }
 
 // 确认选择免保项目
 const onConfirmFree = () => {
+  freeSubmitting.value = true
   specialFreeUse({
     id: serviceProxyId.value,
     packageId: selectedFree.data.id
@@ -969,10 +1079,14 @@ const onConfirmFree = () => {
     .catch(() => {
       showToast('网络错误')
     })
+    .finally(() => {
+      freeSubmitting.value = false
+    })
 }
 
 // 确认选择商城订单
 const onConfirmMall = () => {
+  mallSubmitting.value = true
   specialGoodsUse({
     id: serviceProxyId.value,
     packageId: selectedMall.value.id
@@ -988,6 +1102,9 @@ const onConfirmMall = () => {
     })
     .catch(() => {
       showToast('网络错误')
+    })
+    .finally(() => {
+      mallSubmitting.value = false
     })
 }
 
