@@ -46,6 +46,11 @@
           v-for="card in activeItemCards"
           :key="card.id"
           :item="card"
+          :stepper-disabled="!isWorkHourEditable(card)"
+          :discount-disabled="!isDiscountEditable(card)"
+          :name-editable="isNameEditable(card)"
+          :deletable="isItemDeletable(card)"
+          @delete="onDeleteItem(card, 'item')"
           @update-item="(item, updates) => emit('update-item', item, updates)"
         />
       </div>
@@ -55,6 +60,11 @@
           v-for="card in activePartCards"
           :key="card.id"
           :item="card"
+          :stepper-disabled="!isQuantityEditable(card)"
+          :discount-disabled="!isDiscountEditable(card)"
+          :name-editable="false"
+          :deletable="isPartDeletable(card)"
+          @delete="onDeleteItem(card, 'part')"
           @update-item="(item, updates) => emit('update-item', item, updates)"
         />
       </div>
@@ -65,6 +75,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import RepairItemCard from './RepairItemCard.vue'
+import { isWorkHourEditable, isQuantityEditable, isDiscountEditable, isNameEditable, isItemDeletable, isPartDeletable } from './hooks/repairItemRules'
 
 defineProps({
   placeholder: {
@@ -73,7 +84,7 @@ defineProps({
   }
 })
 
-const emit = defineEmits(['search', 'add-item-with-parts', 'update-item', 'done'])
+const emit = defineEmits(['search', 'add-item-with-parts', 'update-item', 'delete-item', 'done'])
 
 const keyword = ref('')
 const results = ref([])
@@ -86,6 +97,11 @@ const showBtn = computed(() => isFocused.value || keyword.value.trim().length > 
 
 const activeItemCards = computed(() => activeCards.value.filter((c) => !c.partsId))
 const activePartCards = computed(() => activeCards.value.filter((c) => !!c.partsId))
+
+const onDeleteItem = (card, type) => {
+  emit('delete-item', card, type)
+  activeCards.value = activeCards.value.filter(c => c !== card)
+}
 
 const onInput = () => {
   clearTimeout(debounceTimer)

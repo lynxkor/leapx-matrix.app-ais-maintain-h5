@@ -42,6 +42,7 @@
         @search="performSearch"
         @add-item-with-parts="handleAddItemWithParts"
         @update-item="handleItemUpdateWrapper"
+        @delete-item="removeItem"
         @done="onSearchDone"
       />
 
@@ -265,8 +266,8 @@ watch(activeTab, () => {
 })
 
 watch(() => props.visible, async(newVal) => {
+  resetData()
   if (newVal) {
-    resetData()
     await loadInitialData()
   }
 })
