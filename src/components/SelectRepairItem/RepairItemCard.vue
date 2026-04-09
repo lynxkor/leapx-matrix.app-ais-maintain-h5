@@ -370,7 +370,6 @@ const openCascaderPopup = () => {
       .original-price {
         font-size: 12px;
         color: var(--leap-color-default-light-1);
-        line-height: 17px;
       }
 
       .static-quantity {
