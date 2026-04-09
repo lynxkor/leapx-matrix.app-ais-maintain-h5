@@ -42,8 +42,8 @@
           <template #header>
             <div class="item-header">
               <span class="order-no">{{ item.code }}</span>
-              <span class="status-tag" :class="getStatusClass(item.status)">
-                {{ getStatusText(item.status) }}
+              <span class="status-tag" :class="getStatusClass(item.approvalStatusLabel)">
+                {{ item.approvalStatusLabel }}
               </span>
             </div>
           </template>
@@ -60,7 +60,9 @@
               </van-col>
               <van-col span="24" class="card-info-col">
                 <span class="card-info-title">保修时间</span>
-                <span class="card-info-des">{{ item.guaranteeStartDate }} - {{ item.warrantyEndTime }}</span>
+                <span class="card-info-des"
+                  >{{ item.guaranteeStartDate }} - {{ item.warrantyEndTime }}</span
+                >
               </van-col>
               <van-col span="24" class="card-info-col">
                 <span class="card-info-title">进店里程</span>
@@ -194,11 +196,6 @@ const onFilterSearch = (filterParams) => {
   }
 }
 
-const onTabChange = (name) => {
-  // Tab 切换功能已移除，保留此方法避免报错
-  console.log('Tab change:', name)
-}
-
 const setData = (res) => {
   // RefreshList emit: { list: records, isRefresh: current === 1 }
   const list = res?.list || []
@@ -238,42 +235,13 @@ const handleResetFilter = () => {
   }
 }
 
-const getStatusText = (status) => {
-  switch (status) {
-    case 0:
-      return '未提交'
-    case 1:
-      return '已提交'
-    case 2:
-      return '待审核'
-    case 3:
-      return '已通过'
-    case 4:
-      return '已驳回'
-    case 5:
-      return '已作废'
-    default:
-      return '未知'
-  }
-}
-
-const getStatusClass = (status) => {
-  switch (status) {
-    case 0:
-      return 'status-blue'
-    case 1:
-      return 'status-green'
-    case 2:
-      return 'status-yellow'
-    case 3:
-      return 'status-green'
-    case 4:
-      return 'status-red'
-    case 5:
-      return 'status-gray'
-    default:
-      return ''
-  }
+const getStatusClass = (label) => {
+  if (!label) return ''
+  if (label === '待提交') return 'status-blue'
+  if (label === '审批中') return 'status-yellow'
+  if (label === '审批通过') return 'status-green'
+  if (label === '审批驳回' || label === '已拒绝') return 'status-red'
+  return ''
 }
 
 const handleContact = (item) => {
@@ -365,66 +333,40 @@ const createAuthorization = () => {
     .order-no {
       font-family: 'PingFang SC';
       font-size: 16px;
-      font-weight: 500;
+      font-weight: 600;
       color: #191a1b;
     }
 
     .status-tag {
       font-family: 'PingFang SC';
       font-size: 12px;
-      font-weight: 500;
-      padding: 2px 8px;
-      border-radius: 4px;
-
-      &.status-blue {
-        color: #2261dd;
-        background: rgba(34, 97, 221, 0.1);
-      }
-
-      &.status-green {
-        color: #009100;
-        background: rgba(0, 145, 0, 0.1);
-      }
-
-      &.status-yellow {
-        color: #c8a12b;
-        background: rgba(200, 161, 43, 0.1);
-      }
-
-      &.status-red {
-        color: #ee0a24;
-        background: rgba(238, 10, 36, 0.1);
-      }
-
-      &.status-gray {
-        color: #969799;
-        background: rgba(150, 151, 153, 0.1);
-      }
+      font-weight: 600;
     }
   }
 
   .card-info {
     box-sizing: border-box;
-    margin-top: 6px;
-    padding-bottom: 6px;
+    margin-top: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
 
     .card-info-col {
       font-family: 'PingFang SC';
       font-size: 14px;
-      padding: 6px 12px 0 0;
+      line-height: 20px;
       display: flex;
       gap: 12px;
 
       .card-info-title {
         color: #545454;
-        width: 90px;
+        width: 56px;
         flex-shrink: 0;
       }
 
       .card-info-des {
         color: #191a1b;
         flex: 1;
-        margin-left: 12px;
         word-break: break-all;
       }
     }
@@ -456,5 +398,20 @@ const createAuthorization = () => {
       color: #ffffff;
     }
   }
+}
+.status-blue {
+  color: #2261dd;
+}
+
+.status-yellow {
+  color: #c8a12b;
+}
+
+.status-green {
+  color: #009100;
+}
+
+.status-red {
+  color: #E43122;
 }
 </style>

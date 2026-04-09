@@ -497,9 +497,7 @@
               class="feedback-select-item"
               @click="onFeedbackSelect(item)"
             >
-              <div class="feedback-serial">
-                {{ getSerialPrefix(item.code) }}<span class="date-part">{{ getSerialDate(item.code) }}</span>{{ getSerialRest(item.code) }}
-              </div>
+              <div class="feedback-serial" v-html="highlightSearch(item.code, feedbackSearchText)"></div>
               <div class="feedback-type" v-if="item.reportType">{{ item.reportType }}</div>
               <div class="feedback-desc" v-if="item.customerContent">{{ item.customerContent }}</div>
             </div>
@@ -855,6 +853,16 @@ const setConstructionData = (res) => {
 const feedbackSearchText = ref('')
 const feedbackList = ref([])
 
+// 监听质量反馈搜索词变化，实时搜索
+watch(feedbackSearchText, (newVal) => {
+  feedbackRequestData.data = {
+    pageNum: 1,
+    pageSize: 10,
+    appSearchKeyWord: newVal,
+    _t: Date.now()
+  }
+})
+
 // 质量反馈列表请求配置
 const feedbackRequestData = reactive({
   data: {
@@ -877,16 +885,22 @@ const setFeedbackData = (res) => {
 
 // 施工单搜索按钮点击
 const handleConstructionSearch = () => {
-  constructionRequestData.data.appSearchKeyWord = constructionSearchText.value
-  constructionRequestData.data.pageNum = 1
-  constructionRefreshListRef.value?.reset()
+  constructionRequestData.data = {
+    pageNum: 1,
+    pageSize: 10,
+    appSearchKeyWord: constructionSearchText.value,
+    _t: Date.now()
+  }
 }
 
 // 质量反馈搜索按钮点击
 const handleFeedbackSearch = () => {
-  feedbackRequestData.data.appSearchKeyWord = feedbackSearchText.value
-  feedbackRequestData.data.pageNum = 1
-  feedbackRefreshListRef.value?.reset()
+  feedbackRequestData.data = {
+    pageNum: 1,
+    pageSize: 10,
+    appSearchKeyWord: feedbackSearchText.value,
+    _t: Date.now()
+  }
 }
 
 // 获取单号前缀（ZLR-）
@@ -904,6 +918,13 @@ const getSerialDate = (serialNumber) => {
 const getSerialRest = (serialNumber) => {
   const parts = serialNumber.split('-')
   return parts[1]?.substring(4) || ''
+}
+
+// 高亮搜索匹配的文本
+const highlightSearch = (text, searchText) => {
+  if (!searchText || !text) return text
+  const regex = new RegExp(`(${searchText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi')
+  return text.replace(regex, '<span class="highlight-match">$1</span>')
 }
 
 // 根据预警级别获取颜色 10=绿色, 20=黄色, 30=红色
@@ -943,7 +964,7 @@ const handleSubmit = async() => {
       serviceProxyId: constructionId.value,
       qualityOrderReportId: feedbackId.value,
       reason: applyReason.value,
-      saveOrSubmit: '1'
+      saveOrSubmit: true
     }
 
     const res = await preAuthAddOrUpdate(submitData)
@@ -965,18 +986,34 @@ const handleSubmit = async() => {
 
 // 方法
 const openConstructionPicker = () => {
+  constructionSearchText.value = ''
   constructionList.value = []
   showConstructionPicker.value = true
+  // 触发重新查询 - 使用随机数强制刷新
   nextTick(() => {
-    constructionRefreshListRef.value?.reset()
+    const timestamp = Date.now()
+    constructionRequestData.data = {
+      pageNum: 1,
+      pageSize: 10,
+      appSearchKeyWord: '',
+      _t: timestamp
+    }
   })
 }
 
 const openFeedbackPicker = () => {
+  feedbackSearchText.value = ''
   feedbackList.value = []
   showFeedbackPicker.value = true
+  // 触发重新查询 - 使用随机数强制刷新
   nextTick(() => {
-    feedbackRefreshListRef.value?.reset()
+    const timestamp = Date.now()
+    feedbackRequestData.data = {
+      pageNum: 1,
+      pageSize: 10,
+      appSearchKeyWord: '',
+      _t: timestamp
+    }
   })
 }
 
@@ -987,8 +1024,9 @@ const onAuthTypeChange = (type) => {
 }
 
 const onConstructionSelect = async(item) => {
+  console.log('施工单选中项:', item)
   constructionNo.value = item.code
-  constructionId.value = item.id
+  constructionId.value = item.id || item.serviceProxyId
   showConstructionPicker.value = false
   hasEdited.value = true
   showVehicleInfo.value = true
@@ -1069,8 +1107,9 @@ const onConstructionSelect = async(item) => {
 }
 
 const onFeedbackSelect = (item) => {
+  console.log('质量反馈选中项:', item)
   feedbackNo.value = item.code
-  feedbackId.value = item.id || ''
+  feedbackId.value = item.id || item.qualityOrderReportId || ''
   feedbackDesc.value = item.customerContent || ''
   feedbackProcess.value = item.diagnosisContent || ''
   showFeedbackPicker.value = false
@@ -1088,11 +1127,49 @@ const deleteAttachment = (type, index) => {
   hasEdited.value = true
 }
 
-const onSaveConfirm = () => {
+const onSaveConfirm = async() => {
+  // 校验
+  if (!constructionId.value) {
+    showToast('请选择施工单')
+    return
+  }
+  if (!feedbackId.value) {
+    showToast('请选择质量反馈单号')
+    return
+  }
+  if (!applyReason.value.trim()) {
+    showToast('请填写申请原因')
+    return
+  }
+
   showSaveConfirmDialog.value = false
-  showToast('已保存草稿')
-  hasEdited.value = false
-  router.back()
+
+  try {
+    showLoadingToast({ message: '保存中...', forbidClick: true })
+
+    const saveData = {
+      serviceProxyId: constructionId.value,
+      qualityOrderReportId: feedbackId.value,
+      reason: applyReason.value,
+      saveOrSubmit: false
+    }
+    console.log('保存草稿参数:', saveData)
+
+    const res = await preAuthAddOrUpdate(saveData)
+    closeToast()
+
+    if (res?.code === 0 || res?.code === 200) {
+      showToast('保存成功')
+      hasEdited.value = false
+      router.back()
+    } else {
+      showToast(res?.msg || '保存失败')
+    }
+  } catch (error) {
+    closeToast()
+    console.error('保存失败:', error)
+    showToast('保存失败，请稍后重试')
+  }
 }
 
 const onSaveCancel = () => {
@@ -1105,9 +1182,10 @@ defineExpose({
   onBeforeBack: () => {
     if (hasEdited.value) {
       showSaveConfirmDialog.value = true
-    } else {
-      router.back()
+      return false // 阻止默认返回行为
     }
+    // 没有编辑时返回 true，允许默认返回
+    return true
   }
 })
 </script>
@@ -1719,9 +1797,8 @@ defineExpose({
 
 // 施工单弹窗
 .construction-popup {
-  height: 727px;
+  height: 583px;
   background: #f4f4f4;
-  border-radius: 16px 16px 0 0;
   display: flex;
   flex-direction: column;
 
@@ -1787,6 +1864,12 @@ defineExpose({
   .popup-refresh-list {
     flex: 1;
     overflow-y: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+
+    &::-webkit-scrollbar {
+      display: none;
+    }
 
     .construction-item {
       background: #ffffff;
@@ -1995,15 +2078,20 @@ defineExpose({
   }
 }
 
+// 高亮匹配文本
+:deep(.highlight-match) {
+  color: #009100 !important;
+}
+
 // 质量反馈弹窗
 .feedback-popup {
-  height: 727px;
+  height: 583px;
   background: #f4f4f4;
   display: flex;
   flex-direction: column;
 
   .popup-header {
-    padding: 12px;
+    padding-bottom: 12px;
     flex-shrink: 0;
 
     .search-box {
@@ -2060,7 +2148,12 @@ defineExpose({
   .popup-refresh-list {
     flex: 1;
     overflow-y: auto;
-    padding: 0 12px;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+
+    &::-webkit-scrollbar {
+      display: none;
+    }
 
     .feedback-select-item {
       background: #ffffff;
@@ -2083,6 +2176,7 @@ defineExpose({
         .date-part {
           color: #009100;
         }
+
       }
 
       .feedback-type {

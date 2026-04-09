@@ -51,12 +51,16 @@
       "Bash(npx claude-statusline:*)",
       "Bash(where claude-statusline:*)",
       "Bash(ls -la ~/AppData/Roaming/npm/claude-statusline*)",
-      "Bash(~/AppData/Roaming/npm/claude-statusline.cmd:*)"
+      "Bash(~/AppData/Roaming/npm/claude-statusline.cmd:*)",
+      "Bash(claude-statusline)",
+      "Bash(bash:*)",
+      "Bash(python3:*)"
     ]
   },
   "statusLine": {
     "type": "command",
-    "command": "claude-statusline",
+    "command": "bash",
+    "args": ["-c", "CTX_EST=0; if [ -d .claude ]; then CLAUDE_SIZE=$(du -sb .claude 2>/dev/null | awk '{print $1}') || CLAUDE_SIZE=0; CTX_EST=$((CLAUDE_SIZE / 1024 / 1024 * 5)); fi; COMMITS=$(git log --oneline -20 2>/dev/null | wc -l); CTX_EST=$((CTX_EST + COMMITS / 2)); if [ $CTX_EST -gt 100 ]; then CTX_EST=100; elif [ $CTX_EST -eq 0 ]; then CTX_EST='?'; fi; echo \"$(date '+%H:%M') 👤 $(whoami) 📁 $(basename $(pwd)) 🌿 $(git branch --show-current 2>/dev/null || echo 'N/A') 📊 ${CTX_EST}%\""],
     "padding": 1
   }
 }
