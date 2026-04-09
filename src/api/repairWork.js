@@ -47,7 +47,15 @@ export function selectServiceProxy(data) {
  * @param {string} serviceProxyId - 施工单ID
  */
 export function getRepairItemInfo(serviceProxyId) {
-  return post(prefix + '/repairItemInfo', serviceProxyId)
+  return postJson(prefix + '/repairItemInfo', serviceProxyId)
+}
+
+/**
+ * 维修项目--保存
+ * @param {Object} data
+ */
+export function saveRepairItemInfo(data) {
+  return post(prefix + '/repairItem/save', data)
 }
 
 /**
@@ -192,4 +200,44 @@ export function getBatteryUnitList(data) {
  */
 export function updateFaultAlertRecord(data) {
   return post(prefix + '/addFaultRecord', data)
+}
+
+/**
+ * 维修项目筛选（搜索）
+ * POST /app/sp/serviceProxy/repairItem/filter
+ * 请求体: { serviceProxyId, nameOrCodeOrPinyinLike, pageSize }
+ * 响应 data: RepairItemResp[]
+ */
+export function filterRepairItems(data) {
+  return postJson(prefix + '/repairItem/filter', data)
+}
+
+/**
+ * 维修零件筛选（搜索）— 接口暂无，预留占位
+ */
+export function filterRepairParts(data) {
+  return postJson('sp/app/basic/sparePart/repairItem/filter', data)
+}
+
+/**
+ * 获取枚举接口
+ * @param {String} key
+ */
+export function getEnum(key) {
+  return post(`maintain/web/common/enum/${key}`)
+}
+
+/**
+ * 获取保修类型和结算类型映射关系
+ */
+export function getRepairItemTypeMap() {
+  return post(`maintain/app/sp/serviceProxy/type/list`, { 'categorys': [20] })
+}
+
+/**
+ * 查询用户功能权限
+ * @param data
+ */
+export function getDealerPermission(data) {
+  return post('maintain/app/common/dealer/permission/list', data)
 }
