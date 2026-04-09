@@ -22,6 +22,7 @@
         v-model:visible="showAddRepairPopup"
         :service-proxy-id="workOrder.serviceProxyId"
         @confirm="handleAddRepairConfirm"
+        mode="popup"
       />
 
       <!-- 标题栏 -->
