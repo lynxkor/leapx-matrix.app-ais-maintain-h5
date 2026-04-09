@@ -175,9 +175,17 @@
             <div class="section-card borderB">
               <div class="section-title">车内检查</div>
               <div class="upload-content">
-                <div class="upload-box" v-for="(file, index) in interiorFileList" :key="file.id || index">
+                <div
+                  class="upload-box"
+                  v-for="(file, index) in interiorFileList"
+                  :key="file.id || index"
+                >
                   <img :src="file.url" @click="showImg(file.url)" />
-                  <img class="delete_icon" src="@/assets/img/delete_icon.png" @click="handleInteriorDelete(file)" />
+                  <img
+                    class="delete_icon"
+                    src="@/assets/image/delete_icon.png"
+                    @click="handleInteriorDelete(file)"
+                  />
                 </div>
                 <div
                   class="upload-box upload-placeholder"
@@ -195,9 +203,17 @@
             <div class="section-card borderB">
               <div class="section-title">车外检查</div>
               <div class="upload-content">
-                <div class="upload-box" v-for="(file, index) in exteriorFileList" :key="file.id || index">
+                <div
+                  class="upload-box"
+                  v-for="(file, index) in exteriorFileList"
+                  :key="file.id || index"
+                >
                   <img :src="file.url" @click="showImg(file.url)" />
-                  <img class="delete_icon" src="@/assets/img/delete_icon.png" @click="handleExteriorDelete(file)" />
+                  <img
+                    class="delete_icon"
+                    src="@/assets/image/delete_icon.png"
+                    @click="handleExteriorDelete(file)"
+                  />
                 </div>
                 <div
                   class="upload-box upload-placeholder"
@@ -1631,7 +1647,7 @@ const uploadGeneric = (type) => {
   // 获取配置中的最大文件大小，默认10M
   const configMap = {
     interior: interiorConfig,
-    exterior: exteriorConfig
+    exterior: exteriorConfig,
   }
   const maxSize = configMap[type]?.value?.maxSize || 10
   getAppImgLimit(maxSize)
@@ -1643,22 +1659,22 @@ const showImg = (url) => {
 }
 
 // 处理车内检查删除
-const handleInteriorDelete = async(file) => {
+const handleInteriorDelete = async (file) => {
   if (file.id) {
     await deleteAttachmentConfig([file.id])
   }
-  const index = interiorFileList.value.findIndex(item => item === file)
+  const index = interiorFileList.value.findIndex((item) => item === file)
   if (index > -1) {
     interiorFileList.value.splice(index, 1)
   }
 }
 
 // 处理车外检查删除
-const handleExteriorDelete = async(file) => {
+const handleExteriorDelete = async (file) => {
   if (file.id) {
     await deleteAttachmentConfig([file.id])
   }
-  const index = exteriorFileList.value.findIndex(item => item === file)
+  const index = exteriorFileList.value.findIndex((item) => item === file)
   if (index > -1) {
     exteriorFileList.value.splice(index, 1)
   }
@@ -1910,8 +1926,8 @@ const onSave = async () => {
       targetUnitCode: '',
       beforeChangeCode: '',
       afterChangeCode: '',
-      exteriorPhotos: exteriorFileList.value.map(f => f.url).join(','),
-      interiorPhotos: interiorFileList.value.map(f => f.url).join(','),
+      exteriorPhotos: exteriorFileList.value.map((f) => f.url).join(','),
+      interiorPhotos: interiorFileList.value.map((f) => f.url).join(','),
       isStoreLive: '',
       faultAlertRecordParams: detail.faultModules.map((m) => ({
         cccId: m.cccCode || '',
@@ -2100,7 +2116,7 @@ onMounted(() => {
 
   // 获取上传配置
   getUploadConfig({
-    configCode: 'mcs_subsidies'
+    configCode: 'mcs_subsidies',
   }).then((res) => {
     if (res.code === 200) {
       uploadConfig.value = res.data
@@ -2108,14 +2124,14 @@ onMounted(() => {
   })
 
   // 注册原生图片选择回调
-  window.getImage = async(url) => {
+  window.getImage = async (url) => {
     console.log('原生返回图片地址:', url)
     if (!url) return
 
     // attachType 映射
     const attachTypeMap = {
       interior: '车内检查',
-      exterior: '车外检查'
+      exterior: '车外检查',
     }
 
     // 先添加临时预览
@@ -2123,7 +2139,7 @@ onMounted(() => {
       url: url,
       status: 'uploading',
       message: '上传中...',
-      id: null
+      id: null,
     }
 
     // 根据当前上传类型添加到对应的文件列表
@@ -2139,7 +2155,7 @@ onMounted(() => {
         fileUrl: url,
         businessId: route.query.id,
         configCode: 'mcs_subsidies',
-        attachType: attachTypeMap[currentUploadType.value]
+        attachType: attachTypeMap[currentUploadType.value],
       }
 
       const res = await uploadFileByUrl([params])
@@ -2148,7 +2164,8 @@ onMounted(() => {
         const uploadData = res.data && res.data.length > 0 ? res.data[0] : {}
 
         // 更新文件状态
-        const targetList = currentUploadType.value === 'interior' ? interiorFileList.value : exteriorFileList.value
+        const targetList =
+          currentUploadType.value === 'interior' ? interiorFileList.value : exteriorFileList.value
         if (targetList.length > 0) {
           const lastIndex = targetList.length - 1
           targetList[lastIndex] = {
@@ -2156,14 +2173,15 @@ onMounted(() => {
             status: 'done',
             message: '',
             id: uploadData.id || null,
-            url: uploadData.authFileUrl || url
+            url: uploadData.authFileUrl || url,
           }
         }
 
         showToast('上传成功')
       } else {
         // 上传失败，移除临时文件
-        const targetList = currentUploadType.value === 'interior' ? interiorFileList.value : exteriorFileList.value
+        const targetList =
+          currentUploadType.value === 'interior' ? interiorFileList.value : exteriorFileList.value
         if (targetList.length > 0) {
           targetList.pop()
         }
@@ -2172,7 +2190,8 @@ onMounted(() => {
     } catch (e) {
       console.error('上传出错:', e)
       // 出错时移除临时文件
-      const targetList = currentUploadType.value === 'interior' ? interiorFileList.value : exteriorFileList.value
+      const targetList =
+        currentUploadType.value === 'interior' ? interiorFileList.value : exteriorFileList.value
       if (targetList.length > 0) {
         targetList.pop()
       }
