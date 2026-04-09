@@ -40,16 +40,24 @@
 
     <!-- 已添加项操作卡片 -->
     <div v-if="activeCards.length > 0" class="active-card-wrapper">
-      <RepairItemCard
-        v-for="card in activeCards"
-        :key="card.id"
-        :item="card"
-        @update-item="(item, updates) => emit('update-item', item, updates)"
-      />
-      <!-- <div class="active-card-actions">
-        <div class="action-btn continue-btn" @click="onContinue">继续添加</div>
-        <div class="action-btn done-btn" @click="onDone">完成</div>
-      </div> -->
+      <div v-if="activeItemCards.length > 0" class="active-card-section">
+        <div class="section-title">维修项目</div>
+        <RepairItemCard
+          v-for="card in activeItemCards"
+          :key="card.id"
+          :item="card"
+          @update-item="(item, updates) => emit('update-item', item, updates)"
+        />
+      </div>
+      <div v-if="activePartCards.length > 0" class="active-card-section">
+        <div class="section-title">维修配件</div>
+        <RepairItemCard
+          v-for="card in activePartCards"
+          :key="card.id"
+          :item="card"
+          @update-item="(item, updates) => emit('update-item', item, updates)"
+        />
+      </div>
     </div>
   </van-popup>
 </template>
@@ -75,6 +83,9 @@ const isFocused = ref(false)
 let debounceTimer = null
 
 const showBtn = computed(() => isFocused.value || keyword.value.trim().length > 0)
+
+const activeItemCards = computed(() => activeCards.value.filter((c) => !c.partsId))
+const activePartCards = computed(() => activeCards.value.filter((c) => !!c.partsId))
 
 const onInput = () => {
   clearTimeout(debounceTimer)
@@ -271,34 +282,18 @@ defineExpose({ setResults, showActiveCards, close, reset })
     background: #fff;
     padding: 12px;
 
-    .active-card-actions {
-      display: flex;
-      gap: 12px;
-      margin-top: 12px;
+    .active-card-section {
+      & + .active-card-section {
+        margin-top: 12px;
+      }
 
-      .action-btn {
-        flex: 1;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        height: 36px;
-        border-radius: 8px;
+      .section-title {
         font-size: 14px;
-        cursor: pointer;
-
-        &:active {
-          opacity: 0.8;
-        }
-      }
-
-      .continue-btn {
-        background: var(--leap-color-default-light-5);
-        color: var(--leap-color-default-light-1);
-      }
-
-      .done-btn {
-        background: var(--leap-color-primary);
-        color: #ffffff;
+        font-weight: 500;
+        color: var(--leap-color-default);
+        line-height: 20px;
+        padding-left: 4px;
+        margin-bottom: 8px;
       }
     }
   }

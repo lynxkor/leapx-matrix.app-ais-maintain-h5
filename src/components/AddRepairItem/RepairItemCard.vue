@@ -22,14 +22,14 @@
           <div class="code-row">
             <span class="card-code">{{ item.code }}</span>
           </div>
-          <div class="checkout-row" @click="emit('update-item', item, { _action: 'checkout' })">
+          <div class="checkout-row" @click="openCascaderPopup">
             <span class="checkout-label">{{ checkoutLabel }}</span>
-            <van-icon name="arrow-down" size="12" color="#545454" class="checkout-arrow" />
+            <van-icon v-if="!item.packageId" name="arrow-down" size="12" color="#545454" class="checkout-arrow" />
           </div>
         </div>
         <!-- 右列 -->
         <div class="info-right">
-          <div class="main-price">¥{{ (item.price * item.quantity - item.discountAmount) || '0.00' }}</div>
+          <div class="main-price">¥{{ (item.price * item.quantity - item.discountAmount).toFixed(2) || '0.00' }}</div>
           <div
             class="discount-wrapper"
             :class="{ 'discount-disabled': discountDisabled }"
@@ -174,6 +174,15 @@ const saveName = () => {
   showNameEditPopup.value = false
   tempName.value = ''
 }
+
+// 打开维修类型等切换弹窗
+const openCascaderPopup = () => {
+  // 获取维修类型、工时、工时类型、保内、保外、优惠、名称、单价、数量
+  const { item } = props
+  if (!item.packageId) {
+    emit('update-item', item, { _action: 'checkout' })
+  }
+}
 </script>
 
 <style lang="scss" scoped>
@@ -183,6 +192,7 @@ const saveName = () => {
   gap: 12px;
   padding: 15px 4px;
   border-bottom: 0.5px solid var(--leap-color-default-light-4);
+  background-color: #fff;
   &:last-child {
     border-bottom: none;
   }

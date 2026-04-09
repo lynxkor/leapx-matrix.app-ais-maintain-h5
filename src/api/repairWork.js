@@ -239,5 +239,5 @@ export function getRepairItemTypeMap() {
  * @param data
  */
 export function getDealerPermission(data) {
-  return post('maintain/web/basic/dealerPermission/list', data)
+  return post('maintain/app/common/dealer/permission/list', data)
 }

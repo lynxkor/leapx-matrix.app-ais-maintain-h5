@@ -41,30 +41,58 @@
       <div class="content-area">
         <div class="content-area-section" v-if="selectedItems.length > 0">
           <div class="section-title">维修项目</div>
+           <div v-for="group in packageItemGroups" :key="'pkg-item-' + group.key" class="package-group">
+            <div class="package-group-title">{{ group.title }}<van-icon name="arrow" /></div>
+            <RepairItemCard
+              v-for="item in group.items"
+              :key="item.id || item.repairItemId"
+              :item="item"
+              :stepper-disabled="!isWorkHourEditable(item)"
+              :discount-disabled="!isDiscountEditable(item)"
+              :name-editable="isNameEditable(item)"
+              :deletable="isItemDeletable(item)"
+              @delete="removeItem(item, 'item')"
+              @update-item="handleItemUpdate"
+            />
+          </div>
           <RepairItemCard
-            v-for="(item, index) in selectedItems"
+            v-for="item in regularItems"
             :key="item.id || item.repairItemId"
             :item="item"
             :stepper-disabled="!isWorkHourEditable(item)"
             :discount-disabled="!isDiscountEditable(item)"
             :name-editable="isNameEditable(item)"
             :deletable="isItemDeletable(item)"
-            @delete="removeItem(index, 'item')"
+            @delete="removeItem(item, 'item')"
             @update-item="handleItemUpdate"
           />
         </div>
 
         <div class="content-area-section" v-if="selectedParts.length > 0">
           <div class="section-title">维修配件</div>
+          <div v-for="group in packagePartGroups" :key="'pkg-part-' + group.key" class="package-group">
+            <div class="package-group-title">{{ group.title }}<van-icon name="arrow" /></div>
+            <RepairItemCard
+              v-for="item in group.items"
+              :key="item.id || item.partsId"
+              :item="item"
+              :stepper-disabled="!isQuantityEditable(item)"
+              :discount-disabled="!isDiscountEditable(item)"
+              :name-editable="false"
+              :deletable="isPartDeletable(item)"
+              @delete="removeItem(item, 'part')"
+              @update-item="handleItemUpdate"
+            />
+          </div>
           <RepairItemCard
-            v-for="(item, index) in selectedParts"
+            v-for="item in regularParts"
             :key="item.id || item.partsId"
             :item="item"
             :stepper-disabled="!isQuantityEditable(item)"
             :discount-disabled="!isDiscountEditable(item)"
             :name-editable="false"
             :deletable="isPartDeletable(item)"
-            @delete="removeItem(index, 'part')"
+            @delete="removeItem(item, 'part')"
             @update-item="handleItemUpdate"
           />
         </div>
@@ -97,7 +125,7 @@
 
 <script setup>
 import { ref, computed, watch } from 'vue'
-import { showToast } from 'vant'
+import { showToast, showConfirmDialog } from 'vant'
 import Empty from '@/views/repairWork/components/Empty.vue'
 import { CheckoutTypeEnum, WarrantyTypeEnum, UNIVERSAL_LABOR_HOUR_ITEM_ID, WorkRecordStatusEnum } from '@/views/repairWork/constant'
 import { filterRepairItems, filterRepairParts, getRepairItemInfo, saveRepairItemInfo, getEnum, getRepairItemTypeMap, getDealerPermission } from '@/api/repairWork'
@@ -224,6 +252,47 @@ const getPermFilteredDefaults = (isPart) => {
 
 const hasAnySelectedItems = computed(() => {
   return selectedItems.value.length > 0 || selectedParts.value.length > 0
+})
+
+// 分组展示：常规项目 / 套餐项目
+const regularItems = computed(() => {
+  return selectedItems.value.filter(item => !item.packageId)
+})
+
+const packageItemGroups = computed(() => {
+  const map = {}
+  selectedItems.value.filter(item => item.packageId).forEach(item => {
+    const key = item.packageId
+    if (!map[key]) {
+      map[key] = {
+        key,
+        title: `${item.packageTypeLabel || ''}-${item.packageCode || ''}`,
+        items: []
+      }
+    }
+    map[key].items.push(item)
+  })
+  return Object.values(map)
+})
+
+const regularParts = computed(() => {
+  return selectedParts.value.filter(item => !item.packageId)
+})
+
+const packagePartGroups = computed(() => {
+  const map = {}
+  selectedParts.value.filter(item => item.packageId).forEach(item => {
+    const key = item.packageId
+    if (!map[key]) {
+      map[key] = {
+        key,
+        title: `${item.packageTypeLabel || ''}-${item.packageCode || ''}`,
+        items: []
+      }
+    }
+    map[key].items.push(item)
+  })
+  return Object.values(map)
 })
 
 // 搜索
@@ -425,9 +494,31 @@ const isPartDeletable = (item) => {
 }
 
 // 移除已选项
-const removeItem = (index, type) => {
+const removeItem = (item, type) => {
   const list = type === 'item' ? selectedItems : selectedParts
-  list.value.splice(index, 1)
+  const idx = list.value.indexOf(item)
+  if (idx === -1) return
+
+  // 如果是套餐内的项目或零件，需要确认删除整个套餐
+  if (item.packageId) {
+    showConfirmDialog({
+      title: '提示',
+      message: '本操作视为您取消核销本次权益套餐，请确认',
+      confirmButtonText: '确认',
+      cancelButtonText: '取消',
+      'z-index': 5100
+    }).then(() => {
+      // 确认后删除该套餐相关的所有项目和零件
+      const packageId = item.packageId
+      selectedItems.value = selectedItems.value.filter(i => i.packageId !== packageId)
+      selectedParts.value = selectedParts.value.filter(i => i.packageId !== packageId)
+    }).catch(() => {
+      // 取消删除，不做任何操作
+    })
+  } else {
+    // 普通项目/零件，直接删除
+    list.value.splice(idx, 1)
+  }
 }
 
 // 统一字段更新
@@ -741,6 +832,32 @@ const loadInitialData = async() => {
       color: var(--leap-color-default);
       line-height: 20px;
       padding-left: 4px;
+    }
+
+    .package-group {
+      margin: 8px -12px 0 -12px;
+      padding-bottom: 12px;
+      background-color: var(--leap-color-default-light-5);
+      border-width: 0.5px 0px 0.5px 0px;
+      border-style: solid;
+      border-color: #B3DEB3;
+      border-radius: 12px;
+      ::v-deep .repair-item-card {
+        margin: 0 8px 8px 8px;
+        border-radius: 8px;
+        padding: 15px 8px;
+        &:last-child {
+          margin-bottom: 0;
+        }
+      }
+      .package-group-title {
+        font-size: 12px;
+        color: var(--leap-color-default-dark-1);
+        padding: 12px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
     }
   }
 
