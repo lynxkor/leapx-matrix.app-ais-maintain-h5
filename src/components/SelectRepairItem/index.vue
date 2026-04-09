@@ -51,7 +51,7 @@
         <div class="content-area-section" v-if="selectedItems.length > 0">
           <div class="section-title">维修项目</div>
            <div v-for="group in packageItemGroups" :key="'pkg-item-' + group.key" class="package-group">
-            <div class="package-group-title">{{ group.title }}<van-icon name="arrow" /></div>
+            <div class="package-group-title"  @click="handleShowActivity">{{ group.title }}<van-icon name="arrow" /></div>
             <RepairItemCard
               v-for="item in group.items"
               :key="item.id || item.repairItemId"
@@ -80,7 +80,7 @@
         <div class="content-area-section" v-if="selectedParts.length > 0">
           <div class="section-title">维修配件</div>
           <div v-for="group in packagePartGroups" :key="'pkg-part-' + group.key" class="package-group">
-            <div class="package-group-title">{{ group.title }}<van-icon name="arrow" /></div>
+            <div class="package-group-title" @click="handleShowActivity">{{ group.title }}<van-icon name="arrow" /></div>
             <RepairItemCard
               v-for="item in group.items"
               :key="item.id || item.partsId"
@@ -258,6 +258,11 @@ const onSave = async() => {
   if (success) {
     handleClose()
   }
+}
+
+const handleShowActivity = () => {
+  // TODO: 打开活动或者套餐的弹层
+  console.log('handleShowActivity')
 }
 
 // 监听器

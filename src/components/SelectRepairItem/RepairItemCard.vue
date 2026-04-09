@@ -2,12 +2,12 @@
   <div class="repair-item-card">
     <div v-if="deletable" class="card-delete" @click="$emit('delete')">
       <div class="delete-circle">
-        <van-icon name="delete-o" size="16" color="#B91919" />
+        <img :src="icon_delete">
       </div>
     </div>
     <div v-else class="card-delete">
       <div class="delete-circle disabled">
-        <van-icon name="delete-o" size="16" color="#B91919" />
+        <img :src="icon_delete">
       </div>
     </div>
     <div class="card-body">
@@ -17,7 +17,7 @@
         <div class="info-left">
           <div class="name-row">
             <span class="card-name">{{ item.name }}</span>
-            <van-icon v-if="nameEditable" name="edit" size="16" color="#888888" class="edit-icon" @click="openNameEditPopup" />
+            <img v-if="nameEditable" :src="icon_edit"  class="edit-icon" alt="" @click="openNameEditPopup">
           </div>
           <div class="code-row">
             <span class="card-code">{{ item.code }}</span>
@@ -85,6 +85,8 @@
 
 <script setup>
 import { ref, nextTick, computed } from 'vue'
+import icon_delete from '@/assets/images/icon_delete.svg'
+import icon_edit from '@/assets/images/icon_edit.svg'
 
 const props = defineProps({
   item: {
