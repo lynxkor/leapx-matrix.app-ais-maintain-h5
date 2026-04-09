@@ -1,7 +1,12 @@
 <template>
   <div class="repair-item-card">
-    <div class="card-delete" @click="$emit('delete')">
+    <div v-if="deletable" class="card-delete" @click="$emit('delete')">
       <div class="delete-circle">
+        <van-icon name="delete-o" size="16" color="#B91919" />
+      </div>
+    </div>
+    <div v-else class="card-delete">
+      <div class="delete-circle disabled">
         <van-icon name="delete-o" size="16" color="#B91919" />
       </div>
     </div>
@@ -11,8 +16,8 @@
         <!-- 左列 -->
         <div class="info-left">
           <div class="name-row">
-            <span class="card-name" @click="openNameEditPopup">{{ item.name }}</span>
-            <van-icon name="edit" size="16" color="#888888" class="edit-icon" @click="openNameEditPopup" />
+            <span class="card-name">{{ item.name }}</span>
+            <van-icon v-if="nameEditable" name="edit" size="16" color="#888888" class="edit-icon" @click="openNameEditPopup" />
           </div>
           <div class="code-row">
             <span class="card-code">{{ item.code }}</span>
@@ -25,7 +30,11 @@
         <!-- 右列 -->
         <div class="info-right">
           <div class="main-price">¥{{ (item.price * item.quantity - item.discountAmount) || '0.00' }}</div>
-          <div class="discount-wrapper" @click="startEditDiscount">
+          <div
+            class="discount-wrapper"
+            :class="{ 'discount-disabled': discountDisabled }"
+            @click="startEditDiscount"
+          >
             <span class="discount-tag-label">优惠</span>
             <template v-if="editingDiscount">
               <input
@@ -45,6 +54,7 @@
       <div class="card-bottom-row">
         <span class="original-price">¥{{ item.price || '0.00' }}</span>
         <van-stepper
+          v-if="!stepperDisabled"
           :model-value="item.quantity"
           min="1"
           class="card-stepper"
@@ -52,6 +62,7 @@
           button-size="32px"
           @change="(val) => emit('update-item', item, { quantity: val })"
         />
+        <span v-else class="static-quantity">x{{ item.quantity }}</span>
       </div>
     </div>
 
@@ -79,6 +90,22 @@ const props = defineProps({
   item: {
     type: Object,
     required: true
+  },
+  stepperDisabled: {
+    type: Boolean,
+    default: false
+  },
+  discountDisabled: {
+    type: Boolean,
+    default: false
+  },
+  nameEditable: {
+    type: Boolean,
+    default: false
+  },
+  deletable: {
+    type: Boolean,
+    default: true
   }
 })
 
@@ -96,6 +123,7 @@ const nameInputRef = ref(null)
 
 // 打开名称编辑弹窗并初始化数据
 const openNameEditPopup = () => {
+  if (!props.nameEditable) return
   tempName.value = props.item.name || ''
   showNameEditPopup.value = true
   nextTick(() => {
@@ -110,6 +138,7 @@ const checkoutLabel = computed(() => {
 
 // 开始编辑优惠金额
 const startEditDiscount = () => {
+  if (props.discountDisabled) return
   editingDiscount.value = true
   tempDiscountAmount.value = String(props.item.discountAmount || 0)
   nextTick(() => {
@@ -177,6 +206,11 @@ const saveName = () => {
 
       &:active {
         opacity: 0.7;
+      }
+
+      &.disabled {
+        opacity: 0.3;
+        cursor: not-allowed;
       }
     }
   }
@@ -307,6 +341,11 @@ const saveName = () => {
               border-color: #faf6ea;
             }
           }
+
+          &.discount-disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+          }
         }
       }
     }
@@ -323,6 +362,12 @@ const saveName = () => {
         font-size: 12px;
         color: var(--leap-color-default-light-1);
         line-height: 17px;
+      }
+
+      .static-quantity {
+        font-size: 14px;
+        color: var(--leap-color-default);
+        font-weight: 500;
       }
 
       .card-stepper {

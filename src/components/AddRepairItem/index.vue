@@ -43,8 +43,12 @@
           <div class="section-title">维修项目</div>
           <RepairItemCard
             v-for="(item, index) in selectedItems"
-            :key="item.id"
+            :key="item.id || item.repairItemId"
             :item="item"
+            :stepper-disabled="!isWorkHourEditable(item)"
+            :discount-disabled="!isDiscountEditable(item)"
+            :name-editable="isNameEditable(item)"
+            :deletable="isItemDeletable(item)"
             @delete="removeItem(index, 'item')"
             @update-item="handleItemUpdate"
           />
@@ -54,8 +58,12 @@
           <div class="section-title">维修配件</div>
           <RepairItemCard
             v-for="(item, index) in selectedParts"
-            :key="item.id"
+            :key="item.id || item.partsId"
             :item="item"
+            :stepper-disabled="!isQuantityEditable(item)"
+            :discount-disabled="!isDiscountEditable(item)"
+            :name-editable="false"
+            :deletable="isPartDeletable(item)"
             @delete="removeItem(index, 'part')"
             @update-item="handleItemUpdate"
           />
@@ -91,10 +99,16 @@
 import { ref, computed, watch } from 'vue'
 import { showToast } from 'vant'
 import Empty from '@/views/repairWork/components/Empty.vue'
+import { CheckoutTypeEnum, WarrantyTypeEnum, UNIVERSAL_LABOR_HOUR_ITEM_ID } from '@/views/repairWork/constant'
 import { filterRepairItems, filterRepairParts, getRepairItemInfo, saveRepairItemInfo, getEnum, getRepairItemTypeMap } from '@/api/repairWork'
 import SearchBar from './SearchBar.vue'
 import RepairItemCard from './RepairItemCard.vue'
 import AisCascader from '@/components/AisCascader/index.vue'
+
+// 判断结算类型是否为保修或合同
+const checkoutTypeIncluded = (typeId) => {
+  return typeId === CheckoutTypeEnum.WARRANTY || typeId === CheckoutTypeEnum.CONTRACT
+}
 
 const props = defineProps({
   visible: {
@@ -135,6 +149,9 @@ const editingItem = ref(null)
 // 级联选择器数据与枚举默认值
 const cascaderOptions = ref([])
 const enumDefaults = ref({})
+const rawCheckoutTypes = ref([]) // 原始结算类型枚举
+const rawRepairItemTypes = ref([]) // 原始保修类型映射数据
+const rawMaintenanceTypes = ref([]) // 原始维修类型枚举
 
 // 加载状态
 const loading = ref(false)
@@ -165,21 +182,52 @@ const performSearch = async(keyword) => {
 }
 
 // 统一字段映射（零件用 partName/partCode/salePrice，项目用 name/code/price）
-const normalizeItem = (raw) => ({
-  ...enumDefaults.value,
-  name: raw.repairItemName || raw.name,
-  code: raw.repairItemCode || raw.code,
-  price: raw.workhourPrice || raw.price || '0.00',
-  quantity: raw.workHour || 1,
-  discountAmount: raw.discountAmount || 0,
-  workHour: raw.workHour || 1,
-  repairItemName: raw.repairItemName || raw.name,
-  repairItemCode: raw.repairItemCode || raw.code,
-  repairItemId: raw.repairItemId || raw.id,
-  packageCode: raw.packageCode || '',
-  isWarranty: raw.isWarranty || 0,
-  isProdType: raw.isProdType || 0
-})
+const normalizeItem = (raw) => {
+  const isUniversal = (raw.repairItemId || raw.id) === UNIVERSAL_LABOR_HOUR_ITEM_ID
+  // 万能工时：默认结算类型跳过保修/合同
+  let defaultCheckoutTypeId = enumDefaults.value.checkoutTypeId
+  let defaultCheckoutTypeName = enumDefaults.value.checkoutTypeName
+  let defaultWarrantyTypeId = enumDefaults.value.warrantyTypeId
+  let defaultWarrantyTypeName = enumDefaults.value.warrantyTypeName
+  if (isUniversal) {
+    const nonIncluded = rawCheckoutTypes.value.find(ct => !checkoutTypeIncluded(ct.code))
+    if (nonIncluded) {
+      defaultCheckoutTypeId = nonIncluded.code
+      defaultCheckoutTypeName = nonIncluded.message
+      const matchingWarranty = rawRepairItemTypes.value.find(rit => rit.checkoutTypeId === nonIncluded.code)
+      defaultWarrantyTypeId = matchingWarranty?.id || ''
+      defaultWarrantyTypeName = matchingWarranty?.name || ''
+    }
+  }
+  return {
+    ...enumDefaults.value,
+    name: raw.repairItemName || raw.name,
+    code: raw.repairItemCode || raw.code,
+    price: raw.workhourPrice || raw.price || '0.00',
+    quantity: raw.workHour || 1,
+    discountAmount: raw.discountAmount || 0,
+    workHour: raw.workHour || 1,
+    repairItemName: raw.repairItemName || raw.name,
+    repairItemCode: raw.repairItemCode || raw.code,
+    repairItemId: raw.repairItemId || raw.id,
+    packageCode: raw.packageCode || '',
+    packageId: raw.packageId || '',
+    isWarranty: raw.isWarranty || 0,
+    isProdType: raw.isProdType || 0,
+    workRecordStatus: raw.workRecordStatus || 0,
+    // 搜索结果有自己的维修类型时优先使用
+    ...(raw.repairItemTypeId ? { repairItemTypeId: raw.repairItemTypeId, repairItemTypeName: raw.repairItemTypeName } : {}),
+    // 已保存数据保留其结算/保修类型
+    ...(raw.checkoutTypeId ? { checkoutTypeId: raw.checkoutTypeId, checkoutTypeName: raw.checkoutTypeName } : {
+      checkoutTypeId: defaultCheckoutTypeId,
+      checkoutTypeName: defaultCheckoutTypeName
+    }),
+    ...(raw.warrantyTypeId ? { warrantyTypeId: raw.warrantyTypeId, warrantyTypeName: raw.warrantyTypeName } : {
+      warrantyTypeId: defaultWarrantyTypeId,
+      warrantyTypeName: defaultWarrantyTypeName
+    })
+  }
+}
 
 const normalizePart = (raw) => ({
   ...enumDefaults.value,
@@ -193,10 +241,17 @@ const normalizePart = (raw) => ({
   discountAmount: raw.discountAmount || 0,
   repairItemName: raw.name || '',
   packageCode: raw.packageCode || '',
+  packageId: raw.packageId || '',
   repairItemId: raw.repairItemId, // 关联维修项目ID
   repairitemcode: raw.code,
   isOemPart: raw.isOemPart || 0,
-  isBindltem: 0
+  isBindltem: 0,
+  isOutstock: raw.isOutstock || false,
+  workRecordStatus: raw.workRecordStatus || 0,
+  // 已保存数据保留其类型
+  ...(raw.repairItemTypeId ? { repairItemTypeId: raw.repairItemTypeId, repairItemTypeName: raw.repairItemTypeName } : {}),
+  ...(raw.checkoutTypeId ? { checkoutTypeId: raw.checkoutTypeId, checkoutTypeName: raw.checkoutTypeName } : {}),
+  ...(raw.warrantyTypeId ? { warrantyTypeId: raw.warrantyTypeId, warrantyTypeName: raw.warrantyTypeName } : {})
 })
 
 // 搜索结果点击 → 区分维修项目/零件
@@ -237,6 +292,55 @@ const onSearchDone = () => {
   searchBarRef.value?.reset()
 }
 
+// ==================== 字段可编辑性判断 ====================
+
+/** 工时可编辑（维修项目步进器） */
+const isWorkHourEditable = (item) => {
+  const isUniversal = item.repairItemId === UNIVERSAL_LABOR_HOUR_ITEM_ID
+  // 保修/合同 + (保修专用 or 生产类专用) → 可编辑
+  if (checkoutTypeIncluded(item.checkoutTypeId) && (item.isWarranty === 1 || item.isProdType === 1)) {
+    return true
+  }
+  // 万能工时 + 未完工 → 可编辑
+  if (isUniversal && item.workRecordStatus !== 40) {
+    return true
+  }
+  return false
+}
+
+/** 数量可编辑（零件步进器） */
+const isQuantityEditable = (item) => {
+  return !item.isOutstock
+}
+
+/** 优惠金额可编辑 */
+const isDiscountEditable = (item) => {
+  return !checkoutTypeIncluded(item.checkoutTypeId)
+}
+
+/** 维修项目名称可编辑：仅万能工时新增未保存 */
+const isNameEditable = (item) => {
+  const isUniversal = item.repairItemId === UNIVERSAL_LABOR_HOUR_ITEM_ID
+  return isUniversal && !item.id && !item.packageId
+}
+
+/** 零件名称始终不可编辑，通过 isPart 判断 */
+
+// ==================== 删除禁用判断 ====================
+
+/** 维修项目是否可删除 */
+const isItemDeletable = (item) => {
+  if (item.packageId && item.workRecordStatus === 40) return false
+  return true
+}
+
+/** 零件是否可删除 */
+const isPartDeletable = (item) => {
+  if (item.isOutstock) return false
+  if (item.packageId && item.workRecordStatus === 40) return false
+  return true
+}
+
 // 移除已选项
 const removeItem = (index, type) => {
   const list = type === 'item' ? selectedItems : selectedParts
@@ -247,6 +351,8 @@ const removeItem = (index, type) => {
 const handleItemUpdate = (item, updates) => {
   if (updates._action === 'checkout') {
     editingItem.value = item
+    // 根据编辑项动态构建级联选项
+    cascaderOptions.value = buildCascaderOptions(item)
     showCheckoutPicker.value = true
     return
   }
@@ -272,6 +378,15 @@ const onCheckoutConfirm = ({ selectedOptions }) => {
 // 保存
 const handleSave = async() => {
   if (!hasAnySelectedItems.value) return
+
+  // 售前保修只能单独开单
+  const allItems = [...selectedItems.value, ...selectedParts.value]
+  const preSaleItems = allItems.filter(i => i.warrantyTypeId === WarrantyTypeEnum.PRE_SALE_WARRANTY)
+  if (preSaleItems.length > 0 && allItems.length > preSaleItems.length) {
+    showToast({ message: '售前保修只能单独开单', 'z-index': 5100 })
+    return
+  }
+
   try {
     loading.value = true
     const res = await saveRepairItemInfo({
@@ -335,17 +450,13 @@ const loadEnumData = async() => {
   const checkoutTypes = ctRes?.data || []
   const repairItemTypes = ritRes?.data || []
 
-  cascaderOptions.value = maintenanceTypes.map(mt => ({
-    text: mt.message,
-    value: mt.code,
-    children: checkoutTypes.map(ct => ({
-      text: ct.message,
-      value: ct.code,
-      children: repairItemTypes
-        .filter(rit => rit.checkoutTypeId === ct.code)
-        .map(rit => ({ text: rit.name, value: rit.id }))
-    }))
-  }))
+  // 保存原始数据供后续过滤使用
+  rawMaintenanceTypes.value = maintenanceTypes
+  rawCheckoutTypes.value = checkoutTypes
+  rawRepairItemTypes.value = repairItemTypes
+
+  // 构建默认级联选项（无过滤）
+  cascaderOptions.value = buildCascaderOptions(null)
 
   // 取第一个选项作为新增时的默认值
   const firstMt = maintenanceTypes[0]
@@ -359,6 +470,66 @@ const loadEnumData = async() => {
     warrantyTypeId: firstRit?.id || '',
     warrantyTypeName: firstRit?.name || ''
   }
+}
+
+/**
+ * 根据编辑项上下文动态构建级联选项（带禁用规则）
+ * @param {Object|null} item - 正在编辑的维修项目/零件，null表示无过滤
+ */
+const buildCascaderOptions = (item) => {
+  const maintenanceTypes = rawMaintenanceTypes.value
+  const checkoutTypes = rawCheckoutTypes.value
+  const repairItemTypes = rawRepairItemTypes.value
+
+  const isUniversal = item?.repairItemId === UNIVERSAL_LABOR_HOUR_ITEM_ID
+  const isPart = !!item?.partsId
+  const isOemPart = item?.isOemPart === 1
+
+  return maintenanceTypes.map(mt => ({
+    text: mt.message,
+    value: mt.code,
+    children: checkoutTypes.map(ct => {
+      // 结算类型禁用规则
+      let ctDisabled = false
+      if (isUniversal && checkoutTypeIncluded(ct.code)) {
+        // 万能工时 → 禁用保修/合同
+        ctDisabled = true
+      }
+      if (isPart && !isOemPart && checkoutTypeIncluded(ct.code)) {
+        // 非原厂零件 → 禁用保修/合同
+        ctDisabled = true
+      }
+
+      return {
+        text: ct.message,
+        value: ct.code,
+        disabled: ctDisabled,
+        children: repairItemTypes
+          .filter(rit => rit.checkoutTypeId === ct.code)
+          .map(rit => {
+            // 保修类型禁用规则
+            let wtDisabled = false
+            if (ct.code === CheckoutTypeEnum.WARRANTY && rit.id === WarrantyTypeEnum.TECHNICAL_SERVICE_ACTIVITY) {
+              // 结算=保修 → 禁用技术服务活动
+              wtDisabled = true
+            }
+            if (ct.code === CheckoutTypeEnum.CONTRACT && [
+              WarrantyTypeEnum.FREE_MAINTENANCE,
+              WarrantyTypeEnum.LIFETIME_MAINTENANCE,
+              WarrantyTypeEnum.MAINTENANCE_PACKAGE
+            ].includes(rit.id)) {
+              // 结算=合同 → 禁用免费保养/终身保养/保养套餐
+              wtDisabled = true
+            }
+            return {
+              text: rit.name,
+              value: rit.id,
+              disabled: wtDisabled
+            }
+          })
+      }
+    })
+  }))
 }
 
 // 加载初始数据
