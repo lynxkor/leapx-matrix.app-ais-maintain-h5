@@ -99,7 +99,7 @@
 import { ref, computed, watch } from 'vue'
 import { showToast } from 'vant'
 import Empty from '@/views/repairWork/components/Empty.vue'
-import { CheckoutTypeEnum, WarrantyTypeEnum, UNIVERSAL_LABOR_HOUR_ITEM_ID } from '@/views/repairWork/constant'
+import { CheckoutTypeEnum, WarrantyTypeEnum, UNIVERSAL_LABOR_HOUR_ITEM_ID, WorkRecordStatusEnum } from '@/views/repairWork/constant'
 import { filterRepairItems, filterRepairParts, getRepairItemInfo, saveRepairItemInfo, getEnum, getRepairItemTypeMap } from '@/api/repairWork'
 import SearchBar from './SearchBar.vue'
 import RepairItemCard from './RepairItemCard.vue'
@@ -200,6 +200,7 @@ const normalizeItem = (raw) => {
     }
   }
   return {
+    ...raw,
     ...enumDefaults.value,
     name: raw.repairItemName || raw.name,
     code: raw.repairItemCode || raw.code,
@@ -210,11 +211,8 @@ const normalizeItem = (raw) => {
     repairItemName: raw.repairItemName || raw.name,
     repairItemCode: raw.repairItemCode || raw.code,
     repairItemId: raw.repairItemId || raw.id,
-    packageCode: raw.packageCode || '',
-    packageId: raw.packageId || '',
     isWarranty: raw.isWarranty || 0,
     isProdType: raw.isProdType || 0,
-    workRecordStatus: raw.workRecordStatus || 0,
     // 搜索结果有自己的维修类型时优先使用
     ...(raw.repairItemTypeId ? { repairItemTypeId: raw.repairItemTypeId, repairItemTypeName: raw.repairItemTypeName } : {}),
     // 已保存数据保留其结算/保修类型
@@ -230,6 +228,7 @@ const normalizeItem = (raw) => {
 }
 
 const normalizePart = (raw) => ({
+  ...raw,
   ...enumDefaults.value,
   name: raw.partsName || raw.partName || raw.name,
   code: raw.partsCode || raw.partCode || raw.code,
@@ -240,14 +239,10 @@ const normalizePart = (raw) => ({
   quantity: raw.quantity || 1,
   discountAmount: raw.discountAmount || 0,
   repairItemName: raw.name || '',
-  packageCode: raw.packageCode || '',
-  packageId: raw.packageId || '',
   repairItemId: raw.repairItemId, // 关联维修项目ID
   repairitemcode: raw.code,
   isOemPart: raw.isOemPart || 0,
   isBindltem: 0,
-  isOutstock: raw.isOutstock || false,
-  workRecordStatus: raw.workRecordStatus || 0,
   // 已保存数据保留其类型
   ...(raw.repairItemTypeId ? { repairItemTypeId: raw.repairItemTypeId, repairItemTypeName: raw.repairItemTypeName } : {}),
   ...(raw.checkoutTypeId ? { checkoutTypeId: raw.checkoutTypeId, checkoutTypeName: raw.checkoutTypeName } : {}),
@@ -302,7 +297,7 @@ const isWorkHourEditable = (item) => {
     return true
   }
   // 万能工时 + 未完工 → 可编辑
-  if (isUniversal && item.workRecordStatus !== 40) {
+  if (isUniversal && item.workRecordStatus !== WorkRecordStatusEnum.COMPLETED) {
     return true
   }
   return false
@@ -330,14 +325,14 @@ const isNameEditable = (item) => {
 
 /** 维修项目是否可删除 */
 const isItemDeletable = (item) => {
-  if (item.packageId && item.workRecordStatus === 40) return false
+  if (item.packageId && item.workRecordStatus === WorkRecordStatusEnum.COMPLETED) return false
   return true
 }
 
 /** 零件是否可删除 */
 const isPartDeletable = (item) => {
   if (item.isOutstock) return false
-  if (item.packageId && item.workRecordStatus === 40) return false
+  if (item.packageId && item.workRecordStatus === WorkRecordStatusEnum.COMPLETED) return false
   return true
 }
 

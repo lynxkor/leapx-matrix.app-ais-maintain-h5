@@ -62,7 +62,7 @@
           button-size="32px"
           @change="(val) => emit('update-item', item, { quantity: val })"
         />
-        <span v-else class="static-quantity">x{{ item.quantity }}</span>
+        <span v-else class="static-quantity">{{ item.quantity }}</span>
       </div>
     </div>
 
