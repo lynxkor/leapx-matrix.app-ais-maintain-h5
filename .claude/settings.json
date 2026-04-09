@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run:*)",
+      "WebFetch(domain:mastergo.com)",
+      "Bash(node -e \":*)",
+      "mcp___leapmotor_yapi-mcp__getYapiInterfaceDetailsById",
+      "Read(//dev/**)",
+      "Bash(exit 0)",
+      "mcp___master_mastergo-magic-mcp__mcp__getMeta"
+    ]
+  }
+}

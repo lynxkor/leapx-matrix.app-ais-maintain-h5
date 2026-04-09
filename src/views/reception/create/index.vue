@@ -1,0 +1,2776 @@
+<template>
+  <div class="work-order-create">
+    <!-- 车辆信息卡片 -->
+    <div class="vehicle-card">
+      <div class="plate-row">
+        <span class="plate-no">{{ detail.plateNo }}</span>
+        <span class="appointment-tag" style="opacity: 0">预约客户</span>
+        <span class="edit-plate edit-plate-after" @click="onChangeCar">
+          <span><img src="@/assets/image/car.png" alt="" /></span>
+          <span>换车</span>
+        </span>
+        <span class="edit-plate" @click="onEditPlate">
+          <span><img src="@/assets/image/edit.png" alt="" /></span>
+          <span>修改车牌</span>
+        </span>
+      </div>
+      <div class="vehicle-model">{{ detail.vehicleModel }} · {{ detail.vin }}</div>
+      <div class="info-row">
+        <span class="label">保修日期：</span>
+        <span class="value"
+          >{{ detail.vehicleProfileServiceResp.warrantyStartdate }} 至
+          {{ detail.vehicleProfileServiceResp.warrantyEnddate }}</span
+        >
+      </div>
+      <div class="info-row">
+        <span class="label">车主：</span>
+        <span class="value">{{ detail.owner }} {{ detail.ownerPhone }}</span>
+      </div>
+      <div class="info-row">
+        <span class="label">绑车人：</span>
+        <span class="value">{{ detail.bindingUser }} {{ detail.binderPhone }}</span>
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- 送修人折叠面板 -->
+      <van-collapse v-model="repairPersonCollapse" class="collapse-panel">
+        <van-collapse-item name="repairPerson">
+          <template #title>
+            <div class="select-row">
+              <span class="label">送修人</span>
+              <div class="value-wrapper">
+                <span class="tag">[{{ detail.repairPersonTag }}]</span>
+                <span class="value">{{ detail.repairPerson }} {{ detail.repairPersonPhone }}</span>
+              </div>
+            </div>
+          </template>
+          <div class="collapse-content">
+            <!-- 类型选择 -->
+            <div class="type-selector">
+              <div
+                :class="['type-item', { active: repairPersonType === 'owner' }]"
+                @click="onSelectRepairPersonType('owner')"
+              >
+                车主
+              </div>
+              <div
+                :class="['type-item', { active: repairPersonType === 'bindingUser' }]"
+                @click="onSelectRepairPersonType('bindingUser')"
+              >
+                绑车人
+              </div>
+              <div
+                :class="['type-item', { active: repairPersonType === 'other' }]"
+                @click="onSelectRepairPersonType('other')"
+              >
+                其他
+              </div>
+            </div>
+            <!-- 送修人信息 -->
+            <div class="repair-person-info">
+              <div class="info-row">
+                <span class="label">送修人姓名</span>
+                <div class="value-wrapper">
+                  <input
+                    v-model="repairPersonNameInput"
+                    type="text"
+                    :placeholder="repairPersonInputDisabled ? '' : '请输入姓名'"
+                    class="edit-input"
+                    :disabled="repairPersonInputDisabled"
+                    @input="onRepairPersonNameChange"
+                  />
+                  <van-icon
+                    v-if="!repairPersonInputDisabled"
+                    name="edit"
+                    size="16"
+                    color="#888888"
+                  />
+                </div>
+              </div>
+              <div class="info-row">
+                <span class="label">送修人手机</span>
+                <div class="value-wrapper">
+                  <input
+                    v-model="repairPersonPhoneInput"
+                    type="tel"
+                    :placeholder="repairPersonInputDisabled ? '' : '请输入手机号'"
+                    class="edit-input"
+                    :disabled="repairPersonInputDisabled"
+                    @input="onRepairPersonPhoneChange"
+                  />
+                  <van-icon
+                    v-if="!repairPersonInputDisabled"
+                    name="edit"
+                    size="16"
+                    color="#888888"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </van-collapse-item>
+      </van-collapse>
+
+      <!-- 业务类型折叠面板 -->
+      <van-collapse v-model="businessTypeCollapse" class="collapse-panel">
+        <van-collapse-item name="businessType">
+          <template #title>
+            <div class="select-row">
+              <span class="label">业务类型</span>
+              <span class="value">{{
+                businessTypeList.find((i) => i.value === detail.businessType)?.label
+              }}</span>
+            </div>
+          </template>
+          <div class="collapse-content">
+            <div class="type-grid">
+              <div
+                v-for="item in businessTypeList"
+                :key="item.value"
+                :class="['type-item', { active: detail.businessType === item.value }]"
+                @click="onSelectBusinessType(item)"
+              >
+                {{ item.label }}
+              </div>
+            </div>
+          </div>
+        </van-collapse-item>
+      </van-collapse>
+    </div>
+
+    <!-- Tab导航 -->
+    <van-tabs v-model:active="activeTab" sticky offset-top="42px" @scroll="onTabScroll">
+      <van-tab title="环检信息" name="inspection">
+        <div class="tab-content">
+          <div class="inspection-info">
+            <!-- 进店里程数 -->
+            <div class="section-card borderB">
+              <div class="section-title">
+                <div>进店里程数</div>
+                <div class="editable-value" @click="showMileageInput = true">
+                  <span class="number">{{ detail.mileage }}</span>
+                  <span class="unit">km</span>
+                  <van-icon name="edit" size="14" color="#888888" />
+                </div>
+              </div>
+              <div class="sub-info">车联网里程数(总)：{{ detail.networkMileageTotal }} km</div>
+              <div class="sub-info">车联网里程数(增)：{{ detail.networkMileageAdd }} km</div>
+            </div>
+
+            <!-- 进店电量 -->
+            <div class="section-card borderB">
+              <div class="section-title">
+                <div>进店电量</div>
+                <div class="editable-value" @click="showBatteryInput = true">
+                  <span class="number">{{ detail.battery }}</span>
+                  <span class="unit">%</span>
+                  <van-icon name="edit" size="14" color="#888888" />
+                </div>
+              </div>
+              <div class="sub-info">车联网电量: {{ detail.networkBattery }}%</div>
+            </div>
+
+            <!-- 车内检查 -->
+            <div class="section-card borderB">
+              <div class="section-title">车内检查</div>
+              <div class="upload-content">
+                <div class="upload-box" v-for="(file, index) in interiorFileList" :key="file.id || index">
+                  <img :src="file.url" @click="showImg(file.url)" />
+                  <img class="delete_icon" src="@/assets/img/delete_icon.png" @click="handleInteriorDelete(file)" />
+                </div>
+                <div
+                  class="upload-box upload-placeholder"
+                  v-if="interiorFileList.length < (interiorConfig.maxNum || 3)"
+                  @click="uploadGeneric('interior')"
+                >
+                  <svg class="icon upload-img" aria-hidden="true">
+                    <use xlink:href="#icon-lxp-h5upload-mob"></use>
+                  </svg>
+                </div>
+              </div>
+            </div>
+
+            <!-- 车外检查 -->
+            <div class="section-card borderB">
+              <div class="section-title">车外检查</div>
+              <div class="upload-content">
+                <div class="upload-box" v-for="(file, index) in exteriorFileList" :key="file.id || index">
+                  <img :src="file.url" @click="showImg(file.url)" />
+                  <img class="delete_icon" src="@/assets/img/delete_icon.png" @click="handleExteriorDelete(file)" />
+                </div>
+                <div
+                  class="upload-box upload-placeholder"
+                  v-if="exteriorFileList.length < (exteriorConfig.maxNum || 3)"
+                  @click="uploadGeneric('exterior')"
+                >
+                  <svg class="icon upload-img" aria-hidden="true">
+                    <use xlink:href="#icon-lxp-h5upload-mob"></use>
+                  </svg>
+                </div>
+              </div>
+            </div>
+
+            <!-- 异常描述 -->
+            <div class="section-card">
+              <div class="section-title" style="justify-content: flex-start">
+                <span class="required">*</span>异常描述
+              </div>
+              <van-field
+                v-model="detail.abnormalDesc"
+                type="textarea"
+                placeholder="请输入异常描述"
+                rows="3"
+                autosize
+                show-word-limit
+                maxlength="500"
+                style="background: #f5f5f5; border-radius: 6px"
+              />
+            </div>
+            <div class="section-card">
+              <div class="section-title" style="justify-content: flex-start">
+                <span class="required">*</span>客户经理建议
+              </div>
+              <van-field
+                v-model="detail.testResult"
+                type="textarea"
+                placeholder="请输入客户经理建议"
+                rows="3"
+                autosize
+                show-word-limit
+                maxlength="500"
+                style="background: #f5f5f5; border-radius: 6px"
+              />
+            </div>
+          </div>
+          <div class="fault-info">
+            <!-- 是否存在故障 -->
+            <div class="section-card">
+              <div class="fault-header">
+                <span class="title">本次进店是否存在故障</span>
+                <div class="radio-group">
+                  <van-radio-group
+                    v-model="detail.hasFault"
+                    direction="horizontal"
+                    @change="onHasFaultChange"
+                  >
+                    <van-radio name="1">是</van-radio>
+                    <van-radio name="2">否</van-radio>
+                  </van-radio-group>
+                </div>
+              </div>
+
+              <!-- 故障模块列表 -->
+              <div class="fault-modules" v-if="detail.hasFault === '1'">
+                <div class="add-module" @click="onAddFaultModule">
+                  <van-icon name="plus" />
+                  <span>添加故障模块</span>
+                </div>
+
+                <!-- 模块列表容器，支持滚动 -->
+                <div class="modules-container" :class="{ expanded: showAllModules }">
+                  <div
+                    v-for="(module, index) in displayModules"
+                    :key="index"
+                    class="fault-module-item"
+                  >
+                    <span class="module-name">{{ module.vfgName }}-{{ module.cccName }}</span>
+                    <van-icon name="delete-o" @click="onDeleteFaultModule(module)" />
+                  </div>
+                </div>
+
+                <!-- 查看全部按钮 -->
+                <div
+                  v-if="detail.faultModules.length > 3"
+                  class="view-all"
+                  @click="onViewAllModules"
+                >
+                  <span>{{ showAllModules ? '收起' : '查看全部' }}</span>
+                  <van-icon :name="showAllModules ? 'arrow-up' : 'arrow-down'" />
+                </div>
+              </div>
+            </div>
+
+            <!-- 客户故障描述 -->
+            <div class="section-card">
+              <div class="section-title" style="justify-content: flex-start">
+                <span v-if="detail.hasFault === '1'" class="required">*</span>客户故障描述
+              </div>
+              <van-field
+                v-model="detail.customerFaultDesc"
+                type="textarea"
+                placeholder="请输入客户故障描述"
+                rows="3"
+                autosize
+                show-word-limit
+                maxlength="500"
+                style="background: #f5f5f5; border-radius: 6px"
+              />
+            </div>
+          </div>
+        </div>
+      </van-tab>
+
+      <van-tab v-if="isSaved" title="项目零件" name="parts">
+        <div class="tab-content parts-tab">
+          <!-- 费用汇总 -->
+          <div style="padding: 12px; background: #fff">
+            <div class="cost-summary">
+              <div class="summary-row">
+                <span class="label">维修项目</span>
+                <span class="amount">¥{{ partsData.repairAmount }}</span>
+              </div>
+              <span class="operator">+</span>
+              <div class="summary-row">
+                <span class="label">维修配件</span>
+                <span class="amount">¥{{ partsData.partsAmount }}</span>
+              </div>
+              <span class="operator">=</span>
+              <div class="summary-row total">
+                <span class="label">费用合计</span>
+                <span class="amount">¥{{ partsData.totalAmount }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 套餐列表 -->
+          <div style="padding: 12px">
+            <div
+              v-for="(packageItem, pIndex) in partsData.packages"
+              :key="'package-' + pIndex"
+              class="package-card"
+            >
+              <div class="package-header">
+                <span class="package-name">{{ packageItem.name }}</span>
+              </div>
+              <!-- 项目列表 -->
+              <div v-for="itemData in packageItem.items" :key="itemData.code" class="parts-item">
+                <PartsItemCard
+                  :data="itemData"
+                  @delete="onDelete"
+                  @change="onChange"
+                  @categoryClick="onCategoryClick"
+                />
+              </div>
+            </div>
+          </div>
+          <!-- 添加按钮 -->
+          <div class="add-buttons">
+            <div class="add-btn" @click="onAddParts">
+              <van-icon name="plus" />
+              <span>添加项目/零件</span>
+            </div>
+            <div class="add-btn" @click="onAddPackage">
+              <van-icon name="plus" />
+              <span>添加套餐及其他</span>
+            </div>
+          </div>
+        </div>
+      </van-tab>
+
+      <van-tab v-if="isSaved" title="签字确认" name="signature">
+        <div class="tab-content signature-tab">
+          <!-- 费用合计 -->
+          <div class="signature-section">
+            <div class="signature-row">
+              <span class="label">费用合计</span>
+              <span class="value">¥{{ signatureData.totalAmount }}</span>
+            </div>
+            <div class="signature-row">
+              <span class="label">维修类型</span>
+              <span class="value">{{ signatureData.repairTypes }}</span>
+            </div>
+            <div class="signature-row" @click="onOpenDeliveryTimePicker">
+              <span class="label">预计交车时间</span>
+              <div class="value-wrapper">
+                <span :class="['value', { placeholder: !signatureData.deliveryTime }]">
+                  {{ signatureData.deliveryTime || '请选择' }}
+                </span>
+                <van-icon name="arrow" size="12" color="#545454" />
+              </div>
+            </div>
+            <!-- <div class="signature-row">
+              <span class="label">开启维修直播</span>
+              <van-switch v-model="signatureData.liveEnabled" size="20" active-color="#009100" />
+            </div> -->
+            <div class="signature-row" @click="showSignatureChannelPicker = true">
+              <span class="label">签字渠道</span>
+
+              <div class="value-wrapper">
+                <span :class="['value', { placeholder: !signatureData.signatureChannel }]">
+                  {{ signatureData.signatureChannel || '请选择' }}
+                </span>
+                <van-icon name="arrow" size="12" color="#545454" />
+              </div>
+            </div>
+          </div>
+
+          <!-- 附件信息 -->
+          <div class="attachment-section">
+            <div class="section-title">附件信息</div>
+            <div class="image-grid">
+              <div
+                v-for="(img, index) in signatureData.attachments"
+                :key="'attachment-' + index"
+                class="image-item"
+              >
+                <van-image :src="img" fit="cover" />
+                <span class="delete-btn" @click="onDeleteAttachment(index)">
+                  <van-icon name="cross" />
+                </span>
+              </div>
+              <div class="image-item upload-item" @click="onUploadAttachment">
+                <van-icon name="photo-o" size="24" />
+                <span>上传</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </van-tab>
+    </van-tabs>
+
+    <!-- 底部操作栏 -->
+    <div class="bottom-bar">
+      <!-- <span v-if="!isPreCheckCompleted" class="more-btn" @click="onMore">更多</span> -->
+      <template v-if="!isSaved">
+        <span class="save-btn" @click="onSave">保存</span>
+      </template>
+      <template v-else-if="!isPreCheckCompleted">
+        <span class="save-btn" @click="onSave">保存</span>
+        <span class="complete-btn" @click="onComplete">预检完成</span>
+      </template>
+      <template v-else>
+        <span class="save-btn" @click="onAddParts">添加项目零件</span>
+        <span class="complete-btn" @click="onAddPackage">添加套餐</span>
+      </template>
+    </div>
+    <!-- 更换车牌 -->
+    <van-dialog
+      v-model:show="changePlateDialog"
+      title="更换车牌"
+      show-cancel-button
+      confirmButtonText="保存"
+      cancelButtonText="取消"
+      confirmButtonColor="#009100"
+      cancelButtonColor="#191A1B"
+      @confirm="onConfirmChangePlate"
+      @opened="onPlateDialogOpened"
+      @closed="onPlateDialogClosed"
+      :style="{ marginBottom: showPlateKeyboard ? '220px' : '0' }"
+    >
+      <template #title>
+        <div class="dialog-title">实名认证车辆</div>
+        <div class="dialog-subtitle">原车牌：{{ detail.plateNo }}</div>
+      </template>
+      <template #default>
+        <div class="plate-input-wrapper">
+          <div class="plate-input-box">
+            <div
+              v-for="(char, index) in plateInputChars"
+              :key="index"
+              :class="['plate-char', { active: currentPlateIndex === index }]"
+              @click="onPlateCharClick(index)"
+            >
+              {{ char }}
+            </div>
+          </div>
+        </div>
+      </template>
+    </van-dialog>
+
+    <!-- 车牌键盘 - 放在弹框外面 -->
+    <van-popup
+      v-model:show="showPlateKeyboard"
+      position="bottom"
+      :style="{ height: '220px' }"
+      :overlay="false"
+      @open="onKeyboardOpen"
+    >
+      <div class="plate-keyboard">
+        <!-- 省份键盘 -->
+        <div v-if="currentPlateIndex === 0" class="keyboard-content">
+          <div class="keyboard-row" v-for="(row, rowIndex) in provinceRows" :key="rowIndex">
+            <span
+              v-for="item in row"
+              :key="item"
+              :class="['key-item', { disabled: !item }]"
+              @click="onKeyboardKeyClick(item)"
+            >
+              {{ item }}
+            </span>
+          </div>
+        </div>
+        <!-- 字母键盘 -->
+        <div v-else-if="currentPlateIndex === 1" class="keyboard-content">
+          <div class="keyboard-tabs">
+            <span
+              :class="['tab-item', { active: keyboardTab === 'letter' }]"
+              @click="keyboardTab = 'letter'"
+              >字母</span
+            >
+            <span
+              :class="['tab-item', { active: keyboardTab === 'province' }]"
+              @click="keyboardTab = 'province'"
+              >省份</span
+            >
+          </div>
+          <template v-if="keyboardTab === 'letter'">
+            <div class="keyboard-row" v-for="(row, rowIndex) in letterRows" :key="rowIndex">
+              <span
+                v-for="item in row"
+                :key="item"
+                :class="['key-item', { disabled: !item }]"
+                @click="onKeyboardKeyClick(item)"
+              >
+                {{ item }}
+              </span>
+            </div>
+          </template>
+          <template v-else>
+            <div class="keyboard-row" v-for="(row, rowIndex) in provinceRows" :key="rowIndex">
+              <span
+                v-for="item in row"
+                :key="item"
+                :class="['key-item', { disabled: !item }]"
+                @click="onKeyboardKeyClick(item)"
+              >
+                {{ item }}
+              </span>
+            </div>
+          </template>
+        </div>
+        <!-- 数字字母混合键盘 -->
+        <div v-else class="keyboard-content">
+          <div class="keyboard-row" v-for="(row, rowIndex) in numberLetterRows" :key="rowIndex">
+            <span
+              v-for="item in row"
+              :key="item"
+              :class="[
+                'key-item',
+                { disabled: !item, special: item === '删除' || item === '完成' },
+              ]"
+              @click="onKeyboardKeyClick(item)"
+            >
+              {{ item }}
+            </span>
+          </div>
+        </div>
+      </div>
+    </van-popup>
+    <!-- 换车弹框 -->
+    <ais-popup
+      :show="changeCarDialog"
+      position="bottom"
+      title="更换车辆"
+      @close="onChangeCarClose"
+      :style="{ background: '#f4f4f4', height: '80%' }"
+    >
+      <template #content>
+        <div class="change-car-content">
+          <!-- 搜索框 -->
+          <div class="search-box">
+            <div class="search-input-wrapper">
+              <van-search
+                v-model="carSearchValue"
+                class="search-input"
+                clearable
+                placeholder="请输入车牌号/VIN/车主姓名"
+                shape="round"
+                :autofocus="true"
+                @search="onCarSearch"
+              >
+                <template #left-icon>
+                  <van-icon name="search" size="16" color="#191A1B" />
+                </template>
+                <template #right-icon>
+                  <span class="search-btn" @click="onCarSearch(carSearchValue)">搜索</span>
+                </template>
+              </van-search>
+            </div>
+          </div>
+          <!-- 搜索结果列表 -->
+          <div v-if="!selectedCarInfo && carSearchResults.length > 0" class="search-results">
+            <div
+              v-for="(item, index) in carSearchResults"
+              :key="index"
+              class="result-item"
+              @click="onSelectCar(item)"
+            >
+              <span class="result-text">
+                <van-highlight
+                  :keywords="carSearchValue"
+                  :source-string="
+                    (item.vehiclePlateNo || '无车牌') +
+                    '/' +
+                    item.vin +
+                    '/' +
+                    (item.vehicleProfileOwnerResp?.customerName || '')
+                  "
+                />
+              </span>
+            </div>
+          </div>
+
+          <!-- 选中车辆信息卡片 -->
+          <div v-if="selectedCarInfo" class="car-info-card">
+            <div class="card-header">
+              <span class="plate-no">{{ selectedCarInfo.vehiclePlateNo || '无车牌' }}</span>
+            </div>
+            <div class="card-info-list">
+              <div class="info-row">
+                <span class="label">车型</span>
+                <span class="value">{{
+                  selectedCarInfo.vehicleModelName || selectedCarInfo.vehicleModel || ''
+                }}</span>
+              </div>
+              <div class="info-row">
+                <span class="label">VIN</span>
+                <span class="value">{{ selectedCarInfo.vin }}</span>
+              </div>
+              <div class="info-row">
+                <span class="label">保修日期</span>
+                <span class="value">{{ selectedCarInfo.warrantyDate }}</span>
+              </div>
+              <div class="info-row">
+                <span class="label">车主</span>
+                <span class="value"
+                  >{{ selectedCarInfo.vehicleProfileOwnerResp?.ownerName || '' }}
+                  {{ selectedCarInfo.vehicleProfileOwnerResp?.mobilephone || '' }}</span
+                >
+              </div>
+              <div class="info-row">
+                <span class="label">绑车人</span>
+                <span class="value"
+                  >{{ selectedCarInfo.vehicleProfileOwnerResp?.bindingUser || '' }}
+                  {{ selectedCarInfo.vehicleProfileOwnerResp?.bindingPhone || '' }}</span
+                >
+              </div>
+            </div>
+            <div class="card-footer">
+              <span class="change-car-btn" @click="onConfirmChangeCar">更换为该车辆</span>
+            </div>
+          </div>
+
+          <!-- 无结果提示 -->
+          <div
+            v-if="
+              !selectedCarInfo && carSearchValue && carSearchResults.length === 0 && hasSearched
+            "
+            class="no-result"
+          >
+            <img src="@/assets/image/noList.png" alt="" />
+          </div>
+        </div>
+      </template>
+    </ais-popup>
+    <!-- 预计交车时间选择器 -->
+    <ais-popup
+      :show="showDeliveryTimePicker"
+      position="bottom"
+      title="预计交车时间"
+      @close="onCloseDeliveryTimePicker"
+      :style="{ background: '#f4f4f4', height: '70%' }"
+    >
+      <template #content>
+        <div class="delivery-time-picker">
+          <!-- 日期列 -->
+          <div class="date-column">
+            <div
+              v-for="(item, index) in deliveryDateList"
+              :key="index"
+              :class="['picker-item', { active: selectedDeliveryDate === item.value }]"
+              @click="onSelectDeliveryDate(item)"
+            >
+              {{ item.label }}
+            </div>
+          </div>
+          <!-- 时间列 -->
+          <div class="time-column">
+            <div
+              v-for="(item, index) in deliveryTimeList"
+              :key="index"
+              :class="['picker-item', { active: selectedDeliveryTime === item.value }]"
+              @click="onSelectDeliveryTime(item)"
+            >
+              <span class="time-text">{{ item.label }}</span>
+              <van-icon
+                v-if="selectedDeliveryTime === item.value"
+                name="success"
+                size="16"
+                color="#009100"
+              />
+            </div>
+          </div>
+        </div>
+      </template>
+    </ais-popup>
+
+    <!-- 签字渠道选择器 -->
+    <ais-popup
+      :show="showSignatureChannelPicker"
+      position="bottom"
+      title="选择签字渠道"
+      @close="showSignatureChannelPicker = false"
+      :style="{ background: '#f4f4f4', height: '50%' }"
+    >
+      <template #content>
+        <div class="signature-channel-picker">
+          <div
+            v-for="(item, index) in signatureChannelList"
+            :key="index"
+            :class="['picker-item', { active: signatureData.signatureChannel === item.label }]"
+            @click="onSelectSignatureChannel(item)"
+          >
+            <div class="channel-content">
+              <span class="channel-text">{{ item.label }}</span>
+              <span v-if="item.value === 'app'" class="channel-hint"
+                >将生成待签字施工单且需要用户签字</span
+              >
+            </div>
+            <van-icon
+              v-if="signatureData.signatureChannel === item.label"
+              name="success"
+              size="16"
+              color="#009100"
+            />
+          </div>
+        </div>
+      </template>
+    </ais-popup>
+
+    <!-- 更多操作 -->
+    <van-action-sheet
+      v-model:show="showMoreActions"
+      :actions="moreActionsList"
+      cancel-text="取消"
+      close-on-click-action
+      @select="onSelectMoreAction"
+    >
+    </van-action-sheet>
+    <!-- 添加故障模块 -->
+    <ais-popup
+      :show="addFaultModuleShow"
+      position="bottom"
+      title="添加故障模块"
+      @close="onCloseFaultModulePopup"
+      :style="{ height: '80%', background: '#F4F4F4' }"
+    >
+      <template #content>
+        <div class="fault-module-content">
+          <!-- 搜索框 -->
+          <div class="search-box">
+            <div class="search-input-wrapper">
+              <van-search
+                v-model="faultSearchValue"
+                class="search-input"
+                clearable
+                placeholder="请输入CCC"
+                shape="round"
+                :autofocus="true"
+                @search="onFaultSearch"
+                @clear="onFaultSearchClear"
+              >
+                <template #left-icon>
+                  <van-icon name="search" size="16" color="#191A1B" />
+                </template>
+                <template #right-icon>
+                  <span class="search-btn" @click="onFaultSearch(faultSearchValue)">搜索</span>
+                </template>
+              </van-search>
+            </div>
+          </div>
+          <!-- 搜索结果列表 -->
+          <div class="fault-list">
+            <div
+              v-for="item in faultModuleList"
+              :key="item.vrtCode"
+              class="fault-item"
+              @click="onAddFaultModuleItem(item)"
+            >
+              <van-highlight
+                :keywords="faultSearchValue"
+                :source-string="item.vfgName + '-' + item.cccName"
+              />
+            </div>
+            <!-- 无结果 -->
+            <div v-if="faultModuleList.length === 0 && faultSearchValue" class="no-result">
+              <img src="@/assets/image/noList.png" alt="" />
+            </div>
+          </div>
+        </div>
+      </template>
+    </ais-popup>
+    <!-- 作废原因弹框 -->
+    <ais-popup
+      :show="showCancelReason"
+      position="bottom"
+      title="作废原因"
+      @close="showCancelReason = false"
+      :style="{ background: '#f4f4f4', height: '50%' }"
+    >
+      <template #content>
+        <div class="cancel-reason-content">
+          <van-field
+            v-model="cancelReason"
+            type="textarea"
+            placeholder="请输入作废原因"
+            rows="4"
+            autosize
+            show-word-limit
+            maxlength="200"
+            style="background: #f4f4f4; border-radius: 6px"
+          />
+        </div>
+      </template>
+      <template #footer>
+        <div class="confirm-btn" @click="onConfirmCancel">确定</div>
+      </template>
+    </ais-popup>
+
+    <!-- 是否存在故障确认弹框 -->
+    <van-action-sheet
+      v-model:show="showFaultConfirm"
+      :show-cancel="true"
+      cancel-text="取消"
+      @cancel="onCancelFaultConfirm"
+    >
+      <div class="fault-confirm-content">
+        <div class="confirm-text">
+          若本次进店无故障，会清空"故障模块、客户故障描述"。确定更改吗？
+        </div>
+        <div class="confirm-actions">
+          <!-- <div class="action-btn cancel" @click="onCancelFaultConfirm">取消</div> -->
+          <div class="action-btn confirm" @click="onConfirmFaultChange">确定</div>
+        </div>
+      </div>
+    </van-action-sheet>
+
+    <!-- 进店里程数编辑弹框 -->
+    <van-dialog
+      v-model:show="showMileageInput"
+      title="进店里程数"
+      show-cancel-button
+      confirmButtonText="保存"
+      cancelButtonText="取消"
+      confirmButtonColor="#009100"
+      cancelButtonColor="#191A1B"
+      @confirm="onConfirmMileage"
+      @opened="onMileageDialogOpened"
+    >
+      <div class="input-dialog-content">
+        <van-field
+          v-model="mileageInputValue"
+          type="number"
+          placeholder="请输入里程数"
+          :border="false"
+        >
+          <template #button>
+            <span class="input-unit">km</span>
+          </template>
+        </van-field>
+      </div>
+    </van-dialog>
+
+    <!-- 进店电量编辑弹框 -->
+    <van-dialog
+      v-model:show="showBatteryInput"
+      title="进店电量"
+      show-cancel-button
+      confirmButtonText="保存"
+      cancelButtonText="取消"
+      confirmButtonColor="#009100"
+      cancelButtonColor="#191A1B"
+      @confirm="onConfirmBattery"
+      @opened="onBatteryDialogOpened"
+    >
+      <div class="input-dialog-content">
+        <van-field
+          v-model="batteryInputValue"
+          type="number"
+          placeholder="请输入电量"
+          :border="false"
+        >
+          <template #button>
+            <span class="input-unit">%</span>
+          </template>
+        </van-field>
+      </div>
+    </van-dialog>
+
+    <!-- 二次确认提示框 -->
+    <van-dialog
+      v-model:show="showConfirmDialog2"
+      :show-confirm-button="false"
+      :show-cancel-button="false"
+      close-on-click-overlay
+      class="confirm-dialog"
+    >
+      <div class="confirm-dialog-content">
+        <div class="confirm-section">
+          <div class="confirm-title">服务活动</div>
+          <div class="confirm-message">
+            该车辆有服务活动未完成，您可通过"添加维修项目"功能查看使用服务活动。
+          </div>
+        </div>
+        <div class="confirm-section">
+          <div class="confirm-title">车辆标识</div>
+          <div class="confirm-message">
+            该车辆为「车辆标识名称一」「车辆标识名称二」，请注意接待。
+          </div>
+        </div>
+        <div class="confirm-btn" @click="onConfirmDialogClose">我知道了</div>
+      </div>
+    </van-dialog>
+
+    <!-- 三包预警提示框 -->
+    <van-dialog
+      v-model:show="showWarrantyAlertDialog"
+      :show-confirm-button="false"
+      :show-cancel-button="false"
+      close-on-click-overlay
+      class="warranty-alert-dialog"
+    >
+      <div class="warranty-alert-content">
+        <!-- 预授权提醒 -->
+        <div class="alert-section">
+          <div class="section-title">预授权提醒</div>
+          <div class="section-message">
+            该车辆为「车辆标识名称一」「车辆标识名称二」，请注意接待。
+          </div>
+          <div class="section-action-btn" @click="onGenerateAuthorization">生成预授权</div>
+        </div>
+
+        <!-- 三包预警 -->
+        <div class="alert-section">
+          <div class="section-title">三包预警</div>
+          <div class="warranty-alerts">
+            <!-- 红色预警 -->
+            <div class="warranty-alert-card red">
+              <div class="alert-header">
+                <span class="alert-tag red">红色预警</span>
+                <span class="alert-title">累计保修次数5项预警</span>
+              </div>
+              <div class="alert-partno">80522250-BE02/低音扬声器总成</div>
+              <div class="alert-details">
+                <div class="alert-detail-item">
+                  1、广州零跑中心科学城店，2023-08-15至2023-09-05，次数1
+                </div>
+              </div>
+            </div>
+            <!-- 绿色预警 -->
+            <div class="warranty-alert-card green">
+              <div class="alert-header">
+                <span class="alert-tag green">绿色预警</span>
+                <span class="alert-title">累计保修次数5项预警</span>
+              </div>
+              <div class="alert-partno">80522250-BE02/低音扬声器总成</div>
+              <div class="alert-details">
+                <div class="alert-detail-item">
+                  1、广州零跑中心科学城店，2023-08-15至2023-09-05，次数1
+                </div>
+              </div>
+            </div>
+            <!-- 黄色预警 -->
+            <div class="warranty-alert-card yellow">
+              <div class="alert-header">
+                <span class="alert-tag yellow">黄色预警</span>
+                <span class="alert-title">累计保修次数5项预警</span>
+              </div>
+              <div class="alert-partno">80522250-BE02/低音扬声器总成</div>
+              <div class="alert-details">
+                <div class="alert-detail-item">
+                  1、广州零跑中心科学城店，2023-08-15至2023-09-05，次数1
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="alert-confirm-btn" @click="onConfirmWarrantyAlert">我知道了</div>
+      </div>
+    </van-dialog>
+    <!-- 全屏Loading -->
+    <van-overlay :show="savingLoading">
+      <div class="loading-wrapper">
+        <van-loading size="24px" vertical color="#009100">请稍候...</van-loading>
+      </div>
+    </van-overlay>
+  </div>
+</template>
+
+<script setup>
+import { ref, reactive, onMounted, computed, onUnmounted, nextTick } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { showToast, showConfirmDialog, showImagePreview } from 'vant'
+import { useGlobalStore } from '@/stores/global'
+import AisPopup from '@/libs/components/AisPopup.vue'
+import PartsItemCard from '@/components/PartsItemCard.vue'
+import { uploadFileByUrl, deleteAttachmentConfig, getUploadConfig } from '@/libs/api/fileConfig'
+
+// 附件配置
+const uploadConfig = ref({})
+
+// 根据附件类型获取配置
+const getAttachConfig = (attachType) => {
+  const detailList = uploadConfig.value?.detailList || []
+  return detailList.find((item) => item.attachType === attachType) || {}
+}
+
+// 车内检查
+const interiorFileList = ref([])
+const interiorConfig = computed(() => getAttachConfig('车内检查'))
+
+// 车外检查
+const exteriorFileList = ref([])
+const exteriorConfig = computed(() => getAttachConfig('车外检查'))
+
+// 当前上传类型
+const currentUploadType = ref('')
+import { getAppImgLimit } from '@/libs/utils/nativeFn'
+import {
+  getVehicleInfo,
+  getVehicleMileage,
+  getFaultModule,
+  serviceAddOrUpdate,
+  servicePreCheck,
+} from '@/api/reception'
+import './create.scss'
+
+const route = useRoute()
+const router = useRouter()
+const globalStore = useGlobalStore()
+const addFaultModuleShow = ref(false)
+const changeCarDialog = ref(false)
+const changePlateDialog = ref(false)
+
+// 施工单状态
+const isSaved = ref(false) // 是否已保存
+const isPreCheckCompleted = ref(false) // 是否预检完成
+
+// 换车相关
+const carSearchValue = ref('')
+const carSearchResults = ref([])
+const selectedCarInfo = ref(null)
+const hasSearched = ref(false)
+
+// 故障模块搜索相关
+const faultSearchValue = ref('')
+
+// 是否存在故障确认弹框
+const showFaultConfirm = ref(false)
+const pendingFaultValue = ref('')
+
+// 进店里程数和进店电量编辑
+const showMileageInput = ref(false)
+const showBatteryInput = ref(false)
+const mileageInputValue = ref('')
+const batteryInputValue = ref('')
+
+// 二次确认提示框
+const showConfirmDialog2 = ref(false)
+
+const onConfirmDialogClose = () => {
+  showConfirmDialog2.value = false
+}
+
+// 三包预警提示框
+const showWarrantyAlertDialog = ref(false)
+
+const onGenerateAuthorization = () => {
+  // 生成预授权
+  showToast('生成预授权')
+}
+
+const onConfirmWarrantyAlert = () => {
+  showWarrantyAlertDialog.value = false
+}
+
+// 送修人类型选择
+const repairPersonType = ref('owner') // owner/bindingUser/other
+const repairPersonNameInput = ref('')
+const repairPersonPhoneInput = ref('')
+
+// 折叠面板状态
+const repairPersonCollapse = ref([])
+const businessTypeCollapse = ref([])
+
+// 车牌输入相关
+const plateInputChars = ref(['', '', '', '', '', '', '', ''])
+const currentPlateIndex = ref(0) // 当前选中的输入框索引
+const showPlateKeyboard = ref(false) // 键盘显示状态
+const keyboardTab = ref('province') // 键盘tab: province/letter
+
+// 省份列表
+const provinceList = '京津沪渝冀豫云辽黑湘皖鲁新苏浙赣鄂桂甘晋蒙陕吉闽贵粤青藏川宁琼使领'
+
+// 字母列表
+const letterList = 'ABCDEFGHJKLMNPQRSTUVWXYZ' // 不含I和O
+
+// 省份键盘布局（每行10个）
+const provinceRows = computed(() => {
+  const provinces = provinceList.split('')
+  const rows = []
+  for (let i = 0; i < provinces.length; i += 10) {
+    const row = provinces.slice(i, i + 10)
+    while (row.length < 10) {
+      row.push('')
+    }
+    rows.push(row)
+  }
+  return rows
+})
+
+// 字母键盘布局
+const letterRows = computed(() => {
+  const letters = letterList.split('')
+  const rows = []
+  // 第一行10个
+  rows.push(letters.slice(0, 10))
+  // 第二行10个
+  rows.push(letters.slice(10, 20))
+  // 第三行6个字母 + 4个空位
+  const lastRow = letters.slice(20, 26)
+  while (lastRow.length < 10) {
+    lastRow.push('')
+  }
+  rows.push(lastRow)
+  return rows
+})
+
+// 数字字母混合键盘布局
+const numberLetterRows = computed(() => {
+  return [
+    ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'],
+    ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'P', '港', '澳'],
+    ['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', '学'],
+    ['Z', 'X', 'C', 'V', 'B', 'N', 'M', '警', '领', ''],
+    ['删除', '', '', '', '', '', '', '', '', '完成'],
+  ]
+})
+
+// 弹框打开时初始化
+const onPlateDialogOpened = () => {
+  // 初始化车牌输入框，使用当前车牌号
+  const currentPlate = detail.plateNo.replace(/[·•]/g, '')
+  const chars = currentPlate.split('')
+  // 补齐8位
+  while (chars.length < 8) {
+    chars.push('')
+  }
+  plateInputChars.value = chars.slice(0, 8)
+  currentPlateIndex.value = 0
+  showPlateKeyboard.value = true
+}
+
+// 弹框关闭时
+const onPlateDialogClosed = () => {
+  showPlateKeyboard.value = false
+}
+
+// 键盘打开
+const onKeyboardOpen = () => {
+  // 键盘打开时的处理
+}
+
+// 点击车牌输入框
+const onPlateCharClick = (index) => {
+  currentPlateIndex.value = index
+  showPlateKeyboard.value = true
+}
+
+// 键盘按键点击
+const onKeyboardKeyClick = (key) => {
+  if (!key) return
+
+  if (key === '删除') {
+    // 删除操作
+    if (currentPlateIndex.value > 0) {
+      if (plateInputChars.value[currentPlateIndex.value]) {
+        plateInputChars.value[currentPlateIndex.value] = ''
+      } else {
+        currentPlateIndex.value--
+        plateInputChars.value[currentPlateIndex.value] = ''
+      }
+    } else {
+      plateInputChars.value[0] = ''
+    }
+  } else if (key === '完成') {
+    // 完成操作
+    showPlateKeyboard.value = false
+  } else {
+    // 输入字符
+    if (currentPlateIndex.value < 8) {
+      plateInputChars.value[currentPlateIndex.value] = key
+      if (currentPlateIndex.value < 7) {
+        currentPlateIndex.value++
+      }
+    }
+  }
+}
+
+// 确认更换车牌
+const onConfirmChangePlate = () => {
+  const newPlate = plateInputChars.value.join('')
+  if (newPlate.length < 7) {
+    showToast('请输入完整的车牌号')
+    return
+  }
+  detail.plateNo = newPlate
+  showToast('车牌修改成功')
+}
+
+const moreActionsList = [
+  { name: '权益查询', tag: '1', color: '#191a1b' },
+  { name: '维修履历', tag: '2', color: '#191a1b' },
+  { name: '实时故障', tag: '3', color: '#191a1b' },
+  { name: '作废', tag: '4', color: '#191a1b' },
+]
+const faultModuleList = ref([])
+
+// 获取故障模块列表
+const fetchFaultModuleList = async () => {
+  try {
+    const res = await getFaultModule(faultSearchValue.value.trim())
+    if (res.code === 200) {
+      faultModuleList.value = (res.data || []).map((item) => ({
+        ...item,
+      }))
+    }
+  } catch (error) {
+    console.error('获取故障模块失败:', error)
+    faultModuleList.value = []
+  }
+}
+
+// 作废原因弹框状态
+const showCancelReason = ref(false)
+// 作废原因
+const cancelReason = ref('')
+// 更多操作选择内容
+const onSelectMoreAction = (action) => {
+  console.log(action)
+  if (action.name === '作废') {
+    cancelReason.value = ''
+    showCancelReason.value = true
+  }
+  if (action.name === '维修履历') {
+    router.push({
+      path: '/reception/maintenance-history',
+      query: {
+        vin: detail.vin,
+        plateNo: detail.plateNo,
+        vehicleModel: detail.vehicleModel,
+      },
+    })
+  }
+  if (action.name === '权益查询') {
+    router.push({
+      path: '/reception/rights-query',
+      query: {
+        id: detail.id,
+      },
+    })
+  }
+}
+// 确认作废
+const onConfirmCancel = () => {
+  if (!cancelReason.value.trim()) {
+    showToast('请输入作废原因')
+    return
+  }
+  console.log('作废原因:', cancelReason.value)
+  showToast('作废成功')
+  showCancelReason.value = false
+  cancelReason.value = ''
+}
+
+// 是否存在故障变更
+const onHasFaultChange = (value) => {
+  // 如果选择"否"，弹出确认框
+  if (value === '2') {
+    // 如果已添加过故障模块或客户故障描述，弹出确认框
+    if (detail.faultModules.length > 0 || detail.customerFaultDesc) {
+      pendingFaultValue.value = value
+      showFaultConfirm.value = true
+    } else {
+      detail.hasFault = '2'
+    }
+  }
+}
+
+// 取消故障确认
+const onCancelFaultConfirm = () => {
+  showFaultConfirm.value = false
+  // 恢复为"是"
+  detail.hasFault = '1'
+}
+
+// 确认故障变更
+const onConfirmFaultChange = () => {
+  showFaultConfirm.value = false
+  // 清空故障模块和客户故障描述
+  detail.faultModules = []
+  detail.customerFaultDesc = ''
+  detail.hasFault = '2'
+  showToast('已更改')
+}
+
+const onTabScroll = (e) => {
+  if (e.isFixed) {
+    // 触发吸顶时设置标题
+    globalStore.setTitle(detail.plateNo)
+  } else {
+    globalStore.setTitle('新建施工单')
+  }
+}
+// Tab状态
+const activeTab = ref('inspection')
+// 故障模块展开状态
+const showAllModules = ref(false)
+// 计算属性：控制显示的模块列表
+const displayModules = computed(() => {
+  if (showAllModules.value) {
+    return detail.faultModules
+  }
+  return detail.faultModules.slice(0, 3)
+})
+// 选择器显示状态
+const showMoreActions = ref(false)
+
+// 业务类型列表
+const businessTypeList = ref([
+  { value: 10, label: '自然到店' },
+  { value: 20, label: '取送车到店' },
+  { value: 30, label: '上门服务' },
+  { value: 40, label: '外出驻点服务' },
+  { value: 50, label: '预约到店' },
+])
+
+// 详情数据
+const detail = reactive({
+  vehicleProfileServiceResp: {}, // 车辆档案
+  plateNo: '',
+  isAppointment: false,
+  vehicleModel: '',
+  vin: '',
+  warrantyDate: '',
+  owner: '',
+  ownerPhone: '',
+  bindingUser: '',
+  binderPhone: '',
+  repairPerson: '',
+  repairPersonPhone: '',
+  repairPersonTag: '车主',
+  businessType: 10,
+  mileage: '',
+  networkMileageTotal: '',
+  networkMileageAdd: '',
+  battery: '',
+  networkBattery: '',
+  interiorImages: [],
+  exteriorImages: [],
+  abnormalDesc: '',
+  hasFault: '1',
+  faultModules: [],
+  customerFaultDesc: '',
+})
+
+// 项目零件数据
+const partsData = reactive({
+  repairAmount: '17,676.00',
+  partsAmount: '20,525.56',
+  totalAmount: '38,201.56',
+  packages: [
+    {
+      name: '省心保养套餐-9AB102382372389238',
+      items: [
+        {
+          name: '前保险杠补漆',
+          code: 'C1031000035',
+          category: '一般维修-保险-无',
+          price: '621.50',
+          discount: '0.00',
+          subtotal: '700.00',
+          quantity: 1,
+        },
+        {
+          name: '前保险杠补漆',
+          code: 'C1031000035',
+          category: '一般维修-保险-无',
+          price: '621.50',
+          discount: '0.00',
+          subtotal: '700.00',
+          quantity: 1,
+        },
+      ],
+    },
+    {
+      name: '省心保养套餐-9AB102382372389238',
+      items: [
+        {
+          name: '前保险杠补漆',
+          code: 'C1031000035',
+          category: '一般维修-保险-无',
+          price: '621.50',
+          discount: '0.00',
+          subtotal: '700.00',
+          quantity: 1,
+        },
+        {
+          name: '前保险杠补漆',
+          code: 'C1031000035',
+          category: '一般维修-保险-无',
+          price: '621.50',
+          discount: '0.00',
+          subtotal: '700.00',
+          quantity: 1,
+        },
+      ],
+    },
+  ],
+})
+
+// 签字确认数据
+const signatureData = reactive({
+  totalAmount: '38,201.56',
+  repairTypes: '一般维修、钣金、美容装潢、三电维修、精品附件',
+  deliveryTime: '',
+  liveEnabled: false,
+  signatureChannel: '',
+  attachments: [],
+})
+
+// 选择器显示状态
+const showDeliveryTimePicker = ref(false)
+const showSignatureChannelPicker = ref(false)
+
+// 预计交车时间选择相关
+const selectedDeliveryDate = ref('')
+const selectedDeliveryTime = ref('')
+
+// 预计交车日期列表（生成未来7天）
+const deliveryDateList = ref([])
+const generateDeliveryDates = () => {
+  const dates = []
+  const today = new Date()
+  for (let i = 0; i < 7; i++) {
+    const date = new Date(today)
+    date.setDate(today.getDate() + i)
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+    dates.push({
+      value: `${year}-${month}-${day}`,
+      label: `${year}-${month}-${day}`,
+    })
+  }
+  deliveryDateList.value = dates
+}
+
+// 预计交车时间列表
+const deliveryTimeList = ref([
+  { value: '08:00', label: '08:00' },
+  { value: '08:15', label: '08:15' },
+  { value: '08:30', label: '08:30' },
+  { value: '08:45', label: '08:45' },
+  { value: '09:00', label: '09:00' },
+  { value: '09:15', label: '09:15' },
+  { value: '09:30', label: '09:30' },
+  { value: '09:45', label: '09:45' },
+  { value: '10:00', label: '10:00' },
+  { value: '10:15', label: '10:15' },
+  { value: '10:30', label: '10:30' },
+  { value: '10:45', label: '10:45' },
+])
+
+// 签字渠道列表
+const signatureChannelList = ref([
+  { value: 'paper', label: '纸质单据' },
+  { value: 'app', label: 'APP/短信/零小跑' },
+])
+
+// 获取详情
+const fetchDetail = async () => {
+  const id = route.query.id
+  const vehicleInfoStr = route.params.vehicleInfo || route.query.vehicleInfo
+
+  // 如果有车辆信息，则从车辆搜索页面跳转过来
+  if (vehicleInfoStr) {
+    try {
+      const item = JSON.parse(vehicleInfoStr)
+      // 直接拷贝 item 所有值到 detail
+      Object.assign(detail, item)
+      // 设置一些派生字段用于页面显示
+      detail.plateNo = item.vehiclePlateNo || ''
+      detail.vehicleModel = item.vehicleModelName || item.vehicleModel || ''
+      detail.owner = item.vehicleProfileOwnerResp?.ownerName || ''
+      detail.ownerPhone = item.vehicleProfileOwnerResp?.mobilephone || ''
+      detail.bindingUser = item.vehicleProfileOwnerResp?.bindingUser || ''
+      detail.binderPhone = item.vehicleProfileOwnerResp?.bindingPhone || ''
+      // 默认送修人为车主
+      detail.repairPerson = item.vehicleProfileOwnerResp?.ownerName || ''
+      detail.repairPersonPhone = item.vehicleProfileOwnerResp?.mobilephone || ''
+      detail.repairPersonTag = '车主'
+      repairPersonType.value = 'owner'
+      // 初始化输入框
+      repairPersonNameInput.value = item.vehicleProfileOwnerResp?.ownerName || ''
+      repairPersonPhoneInput.value = item.vehicleProfileOwnerResp?.mobilephone || ''
+      // 获取车联网里程数
+      if (detail.vin) {
+        fetchVehicleMileage(detail.vin)
+      }
+    } catch (e) {
+      console.error('解析车辆信息失败:', e)
+    }
+    return
+  }
+
+  if (!id) return
+  // TODO: 调用接口获取详情
+  console.log('获取详情:', id)
+}
+// 换车
+const onChangeCar = () => {
+  carSearchValue.value = ''
+  carSearchResults.value = []
+  selectedCarInfo.value = null
+  hasSearched.value = false
+  changeCarDialog.value = true
+}
+
+// 关闭换车弹框
+const onChangeCarClose = () => {
+  changeCarDialog.value = false
+  carSearchValue.value = ''
+  carSearchResults.value = []
+  selectedCarInfo.value = null
+  hasSearched.value = false
+}
+
+// 搜索车辆
+const onCarSearch = async (value) => {
+  console.log('搜索车辆:', value)
+  // 重置选中车辆信息，展示搜索结果列表
+  selectedCarInfo.value = null
+  if (!value || !value.trim()) {
+    carSearchResults.value = []
+    hasSearched.value = false
+    return
+  }
+
+  try {
+    const res = await getVehicleInfo({ searchVin: value.trim() })
+    if (res.code === 200) {
+      carSearchResults.value = res.data || []
+    } else {
+      carSearchResults.value = []
+    }
+  } catch (error) {
+    console.error('搜索车辆失败:', error)
+    carSearchResults.value = []
+  }
+  hasSearched.value = true
+}
+
+// 选择车辆
+const onSelectCar = (item) => {
+  selectedCarInfo.value = item
+}
+
+// 获取车联网里程数
+const fetchVehicleMileage = async (vin) => {
+  if (!vin) return
+  try {
+    const res = await getVehicleMileage(vin)
+    if (res.code === 200 && res.data) {
+      detail.networkMileageTotal = res.data.mileage || ''
+      detail.networkMileageAdd = res.data.oilMileage || ''
+      detail.networkBattery = res.data.electricity || ''
+      detail.electricalMileage = res.data.electricMileage || ''
+    }
+  } catch (error) {
+    console.error('获取车联网里程失败:', error)
+  }
+}
+
+// 确认更换车辆
+const onConfirmChangeCar = () => {
+  if (!selectedCarInfo.value) {
+    showToast('请选择车辆')
+    return
+  }
+
+  // 更新车辆信息
+  detail.plateNo = selectedCarInfo.value.vehiclePlateNo || ''
+  detail.vin = selectedCarInfo.value.vin || ''
+  detail.vehicleModel =
+    selectedCarInfo.value.vehicleModelName || selectedCarInfo.value.vehicleModel || ''
+  detail.warrantyDate = selectedCarInfo.value.warrantyDate || ''
+  detail.owner = selectedCarInfo.value.vehicleProfileOwnerResp?.ownerName || ''
+  detail.ownerPhone = selectedCarInfo.value.vehicleProfileOwnerResp?.mobilephone || ''
+  detail.bindingUser = selectedCarInfo.value.vehicleProfileOwnerResp?.bindingUser || ''
+  detail.binderPhone = selectedCarInfo.value.vehicleProfileOwnerResp?.bindingPhone || ''
+  detail.vehicleProfileServiceResp = selectedCarInfo.value.vehicleProfileServiceResp || {}
+
+  // 获取车联网里程数
+  if (detail.vin) {
+    fetchVehicleMileage(detail.vin)
+  }
+
+  showToast('更换车辆成功')
+  onChangeCarClose()
+}
+// 修改车牌
+const onEditPlate = () => {
+  changePlateDialog.value = true
+}
+
+// 通用上传方法
+const uploadGeneric = (type) => {
+  currentUploadType.value = type
+  // 获取配置中的最大文件大小，默认10M
+  const configMap = {
+    interior: interiorConfig,
+    exterior: exteriorConfig
+  }
+  const maxSize = configMap[type]?.value?.maxSize || 10
+  getAppImgLimit(maxSize)
+}
+
+// 预览图片
+const showImg = (url) => {
+  showImagePreview([url])
+}
+
+// 处理车内检查删除
+const handleInteriorDelete = async(file) => {
+  if (file.id) {
+    await deleteAttachmentConfig([file.id])
+  }
+  const index = interiorFileList.value.findIndex(item => item === file)
+  if (index > -1) {
+    interiorFileList.value.splice(index, 1)
+  }
+}
+
+// 处理车外检查删除
+const handleExteriorDelete = async(file) => {
+  if (file.id) {
+    await deleteAttachmentConfig([file.id])
+  }
+  const index = exteriorFileList.value.findIndex(item => item === file)
+  if (index > -1) {
+    exteriorFileList.value.splice(index, 1)
+  }
+}
+
+// 添加故障模块
+const onAddFaultModule = () => {
+  faultSearchValue.value = ''
+  addFaultModuleShow.value = true
+}
+
+// 关闭故障模块弹框
+const onCloseFaultModulePopup = () => {
+  addFaultModuleShow.value = false
+  faultSearchValue.value = ''
+}
+
+// 故障模块搜索
+const onFaultSearch = async (value) => {
+  faultSearchValue.value = value
+  await fetchFaultModuleList()
+}
+
+// 清空故障模块搜索
+const onFaultSearchClear = () => {
+  faultSearchValue.value = ''
+}
+
+// 添加故障模块项
+const onAddFaultModuleItem = (item) => {
+  // 检查是否已存在（根据cccCode匹配）
+  const exists = detail.faultModules.some((m) => m.cccCode === item.cccCode)
+  if (exists) {
+    showToast('该故障模块已添加')
+    return
+  }
+  detail.faultModules.push(item)
+  showToast('添加成功')
+  addFaultModuleShow.value = false
+  faultSearchValue.value = ''
+}
+
+// 删除故障模块
+const onDeleteFaultModule = (module) => {
+  const index = detail.faultModules.findIndex((m) => m.cccCode === module.cccCode)
+  if (index > -1) {
+    detail.faultModules.splice(index, 1)
+  }
+}
+
+// 查看全部故障模块
+const onViewAllModules = () => {
+  showAllModules.value = !showAllModules.value
+}
+
+// 送修人输入框是否禁用（车主/绑车人不可编辑，其他可编辑）
+const repairPersonInputDisabled = computed(() => repairPersonType.value !== 'other')
+
+// 选择送修人类型
+const onSelectRepairPersonType = (type) => {
+  repairPersonType.value = type
+  // 根据类型更新输入框的值
+  if (type === 'owner') {
+    repairPersonNameInput.value = detail.owner
+    repairPersonPhoneInput.value = detail.ownerPhone
+    detail.repairPersonTag = '车主'
+  } else if (type === 'bindingUser') {
+    repairPersonNameInput.value = detail.bindingUser
+    repairPersonPhoneInput.value = detail.binderPhone
+    detail.repairPersonTag = '绑车人'
+  } else {
+    repairPersonNameInput.value = ''
+    repairPersonPhoneInput.value = ''
+    detail.repairPersonTag = '其他'
+  }
+  // 同步更新送修人信息
+  detail.repairPerson = repairPersonNameInput.value
+  detail.repairPersonPhone = repairPersonPhoneInput.value
+}
+
+// 送修人姓名变化
+const onRepairPersonNameChange = () => {
+  detail.repairPerson = repairPersonNameInput.value
+}
+
+// 送修人手机变化
+const onRepairPersonPhoneChange = () => {
+  detail.repairPersonPhone = repairPersonPhoneInput.value
+}
+
+// 选择业务类型
+const onSelectBusinessType = (item) => {
+  detail.businessType = item.value
+  // 收起面板
+  businessTypeCollapse.value = []
+}
+
+// 更多操作
+const onMore = () => {
+  showMoreActions.value = !showMoreActions.value
+}
+
+// 保存
+const validateRepairPerson = () => {
+  if (repairPersonType.value === 'other') {
+    if (!repairPersonNameInput.value.trim()) {
+      showToast('请输入送修人姓名')
+      return false
+    }
+    if (!repairPersonPhoneInput.value.trim()) {
+      showToast('请输入送修人手机号')
+      return false
+    }
+    // 手机号格式校验
+    if (!/^1[3-9]\d{9}$/.test(repairPersonPhoneInput.value.trim())) {
+      showToast('请输入正确的手机号')
+      return false
+    }
+  }
+  return true
+}
+
+const savingLoading = ref(false)
+
+const onSave = async () => {
+  console.log('保存:', detail)
+  if (!validateRepairPerson()) return
+  // 如果选择"是"，客户故障描述必填
+  if (detail.hasFault === '1' && !detail.customerFaultDesc.trim()) {
+    showToast('请输入客户故障描述')
+    return
+  }
+  savingLoading.value = true
+  try {
+    const res = await serviceAddOrUpdate({
+      // id: '',
+      code: '',
+      dataSource: '',
+      orderStatus: '',
+      warrantyTypeCollect: '',
+      customerName: detail.owner,
+      customerPhone: detail.ownerPhone,
+      custType: '',
+      vehModelName: detail.vehicleModelName,
+      bindingPhone: detail.binderPhone,
+      bindingUser: detail.bindingUser,
+      bindingUserId: '',
+      carPlate: detail.plateNo,
+      dealerName: detail.salesDealerName,
+      dealerCode: detail.salesDealerCode,
+      appointmentNo: '',
+      mileage: detail.mileage,
+      lastMileage: null,
+      startWarrantyDate: detail.vehicleProfileServiceResp.warrantyStartdate || '',
+      exclusiveServiceDealerName: detail.vehicleProfileServiceResp.serviceDealerName || '',
+      exclusiveServiceDealerCode: detail.vehicleProfileServiceResp.serviceDealerCode || '',
+      expectFinishAt: signatureData.deliveryTime,
+      createStatementInfoDate: '',
+      remark: '',
+      status: '',
+      statusDesc: '',
+      pickStatus: '',
+      shuttleName: detail.repairPerson,
+      shuttlePhone: detail.repairPersonPhone,
+      payType: '',
+      warrantyCompany: '',
+      signChannel: '',
+      signCompletedOn: '',
+      signGeneratedOn: '',
+      signStatus: '',
+      signUrlExpiredOn: '',
+      appointmentType: '',
+      preAuthType: '',
+      isLockLive: '',
+      isCreateWarranty: '',
+      isOutboundOrder: '',
+      isVehRetentionRemind: '',
+      isCancelStorage: '',
+      discountId: '',
+      finalCheckAt: '',
+      finalCheckerId: '',
+      finalChecker: '',
+      ticketStep: '',
+      warrantyStatus: '',
+      claimItemAmount: '',
+      claimOtherAmount: '',
+      claimPartsAmount: '',
+      departureMileage: '',
+      inPower: detail.battery,
+      outPower: '',
+      netMileage: detail.networkMileageTotal,
+      departureNetMileage: '',
+      inNetPower: detail.networkBattery,
+      outNetPower: '',
+      departureNetMileageElectricity: '',
+      departureNetMileageExtend: '',
+      netMileageElectricity: detail.electricalMileage,
+      netMileageExtend: detail.networkMileageAdd,
+      vehProfileId: detail.id,
+      vehProfileVin: detail.vin,
+      maintenanceMileage: detail.vehicleProfileServiceResp.nextMaintainMileages,
+      maintenanceTime: detail.vehicleProfileServiceResp.nextMaintainDate,
+      saleDate: detail.vehicleProfileServiceResp.salesDate || '',
+      vehModelId: detail.vehicleModelId,
+      vehRegisteredModelId: detail.vehicleProfileServiceResp.carSaleSversionId,
+      vehRegisteredModelName: detail.vehicleProfileServiceResp.carSalesVersionName,
+      vehYearTypeId: detail.vehicleProfileServiceResp.vehicleYearId,
+      vehYearTypeName: detail.vehicleProfileServiceResp.vehicleYearName,
+      dedicatedServiceManager: detail.vehicleProfileServiceResp.serviceUserName,
+      motorModel: detail.motorModel,
+      motorSerialNumber: detail.motorSerialNumber,
+      batteryModel: detail.batteryModel,
+      batterySerialNumber: detail.batterySerialNumber,
+      engineNumber: detail.enginenNumber,
+      repairItemTypeDetailCollect: '',
+      businessType: detail.businessType,
+      alarmLevel: '',
+      isLive: '',
+      haveRework: 0,
+      isCarWash: 0,
+      isRetainOldParts: 0,
+      inCustomerContent: '',
+      customerComment: '',
+      testResult: detail.testResult,
+      currentFault: detail.hasFault === '1' ? 1 : 0,
+      customerContent: detail.customerFaultDesc,
+      invaildDesc: '',
+      anomalyDescription: detail.abnormalDesc,
+      previewingFinishAt: '',
+      confirmedOn: '',
+      expectStartAt: '',
+      startAt: '',
+      finishAt: '',
+      faultSolve: '',
+      currentSituation: detail.hasFault === '1' ? 20 : 10,
+      faultAlert: '',
+      faultPeriod: '',
+      earliestfaultServiceProxy: '',
+      recentlyfaultServiceProxy: '',
+      faultModule: detail.faultModules.map((m) => m.cccCode).join(','),
+      isCreateStatementInfo: 0,
+      isPreAuth: '',
+      isCreatePreAuth: '',
+      preAuthRuleId: '',
+      unresolvedReason: '',
+      faultDesc: '',
+      batteryUnitId: '',
+      batteryUnitName: '',
+      targetUnitCode: '',
+      beforeChangeCode: '',
+      afterChangeCode: '',
+      exteriorPhotos: exteriorFileList.value.map(f => f.url).join(','),
+      interiorPhotos: interiorFileList.value.map(f => f.url).join(','),
+      isStoreLive: '',
+      faultAlertRecordParams: detail.faultModules.map((m) => ({
+        cccId: m.cccCode || '',
+        cccName: m.cccName || '',
+        vfgId: m.vfgCode || '',
+        vfgName: m.vfgName || '',
+        vrtId: m.vrtCode || '',
+        vrtName: m.vrtName || '',
+      })),
+      latelyServiceProxy: '',
+      earlyServiceProxy: '',
+    })
+    if (res.code === 200) {
+      showToast('保存成功')
+      isSaved.value = true
+    } else {
+      showToast(res.msg || '保存失败')
+    }
+  } catch (error) {
+    console.error('保存失败:', error)
+    showToast('保存失败')
+  } finally {
+    savingLoading.value = false
+  }
+}
+
+const onComplete = async () => {
+  if (!validateRepairPerson()) return
+  // 如果选择"是"，客户故障描述必填
+  if (detail.hasFault === '1' && !detail.customerFaultDesc.trim()) {
+    showToast('请输入客户故障描述')
+    return
+  }
+  showConfirmDialog({
+    title: '提示',
+    message: '确定预检完成吗？',
+  })
+    .then(async () => {
+      try {
+        const res = await servicePreCheck({
+          id: route.query.id,
+        })
+        if (res.code === 200) {
+          showToast('预检完成')
+          isPreCheckCompleted.value = true
+        } else {
+          showToast(res.msg || '预检完成失败')
+        }
+      } catch (error) {
+        console.error('预检完成失败:', error)
+        showToast('预检完成失败')
+      }
+    })
+    .catch(() => {})
+}
+
+const onLocalSearch = (val) => {
+  console.log('onLocalSearch', val)
+}
+
+// 添加项目/零件
+const onAddParts = () => {
+  router.push({
+    path: '/reception/add-parts',
+    query: {
+      serviceProxyId: route.query.id,
+    },
+  })
+}
+
+// 添加套餐及其他
+const onAddPackage = () => {
+  router.push({
+    path: '/reception/select-package',
+    query: {
+      serviceProxyId: route.query.id,
+    },
+  })
+}
+
+// 删除附件
+const onDeleteAttachment = (index) => {
+  showConfirmDialog({
+    title: '提示',
+    message: '确定删除该附件吗？',
+  })
+    .then(() => {
+      signatureData.attachments.splice(index, 1)
+      showToast('删除成功')
+    })
+    .catch(() => {})
+}
+
+// 上传附件
+const onUploadAttachment = () => {
+  showToast('上传附件')
+}
+
+// 打开预计交车时间选择器
+const onOpenDeliveryTimePicker = () => {
+  // 如果已有值，回显
+  if (signatureData.deliveryTime) {
+    const [date, time] = signatureData.deliveryTime.split(' ')
+    selectedDeliveryDate.value = date
+    selectedDeliveryTime.value = time
+  } else {
+    // 没有值时，默认选中第一个日期和第一个时间
+    if (deliveryDateList.value.length > 0) {
+      selectedDeliveryDate.value = deliveryDateList.value[0].value
+    }
+    if (deliveryTimeList.value.length > 0) {
+      selectedDeliveryTime.value = deliveryTimeList.value[0].value
+    }
+  }
+  showDeliveryTimePicker.value = true
+}
+
+// 选择预计交车日期
+const onSelectDeliveryDate = (item) => {
+  selectedDeliveryDate.value = item.value
+}
+
+// 选择预计交车时间 - 选中后直接确认并关闭
+const onSelectDeliveryTime = (item) => {
+  selectedDeliveryTime.value = item.value
+  // 选中时间后直接确认
+  if (selectedDeliveryDate.value && selectedDeliveryTime.value) {
+    signatureData.deliveryTime = `${selectedDeliveryDate.value} ${selectedDeliveryTime.value}`
+    showDeliveryTimePicker.value = false
+  }
+}
+
+// 关闭预计交车时间选择器
+const onCloseDeliveryTimePicker = () => {
+  showDeliveryTimePicker.value = false
+}
+
+// 选择签字渠道
+const onSelectSignatureChannel = (item) => {
+  signatureData.signatureChannel = item.label
+  showSignatureChannelPicker.value = false
+}
+
+// 进店里程数弹框打开
+const onMileageDialogOpened = () => {
+  mileageInputValue.value = detail.mileage
+}
+
+// 确认进店里程数
+const onConfirmMileage = () => {
+  if (!mileageInputValue.value.trim()) {
+    showToast('请输入里程数')
+    return
+  }
+  detail.mileage = mileageInputValue.value
+  showToast('保存成功')
+}
+
+// 进店电量弹框打开
+const onBatteryDialogOpened = () => {
+  batteryInputValue.value = detail.battery
+}
+
+// 确认进店电量
+const onConfirmBattery = () => {
+  if (!batteryInputValue.value.trim()) {
+    showToast('请输入电量')
+    return
+  }
+  const value = parseInt(batteryInputValue.value)
+  if (value < 0 || value > 100) {
+    showToast('电量范围为0-100')
+    return
+  }
+  detail.battery = batteryInputValue.value
+  showToast('保存成功')
+}
+
+onMounted(() => {
+  fetchDetail()
+  // 初始化送修人输入框
+  repairPersonNameInput.value = detail.repairPerson
+  repairPersonPhoneInput.value = detail.repairPersonPhone
+  // 初始化预计交车日期列表
+  generateDeliveryDates()
+
+  // 获取上传配置
+  getUploadConfig({
+    configCode: 'mcs_subsidies'
+  }).then((res) => {
+    if (res.code === 200) {
+      uploadConfig.value = res.data
+    }
+  })
+
+  // 注册原生图片选择回调
+  window.getImage = async(url) => {
+    console.log('原生返回图片地址:', url)
+    if (!url) return
+
+    // attachType 映射
+    const attachTypeMap = {
+      interior: '车内检查',
+      exterior: '车外检查'
+    }
+
+    // 先添加临时预览
+    const fileObj = {
+      url: url,
+      status: 'uploading',
+      message: '上传中...',
+      id: null
+    }
+
+    // 根据当前上传类型添加到对应的文件列表
+    if (currentUploadType.value === 'interior') {
+      interiorFileList.value.push(fileObj)
+    } else if (currentUploadType.value === 'exterior') {
+      exteriorFileList.value.push(fileObj)
+    }
+
+    // 调用上传接口
+    try {
+      const params = {
+        fileUrl: url,
+        businessId: route.query.id,
+        configCode: 'mcs_subsidies',
+        attachType: attachTypeMap[currentUploadType.value]
+      }
+
+      const res = await uploadFileByUrl([params])
+
+      if (res.code === 200) {
+        const uploadData = res.data && res.data.length > 0 ? res.data[0] : {}
+
+        // 更新文件状态
+        const targetList = currentUploadType.value === 'interior' ? interiorFileList.value : exteriorFileList.value
+        if (targetList.length > 0) {
+          const lastIndex = targetList.length - 1
+          targetList[lastIndex] = {
+            ...targetList[lastIndex],
+            status: 'done',
+            message: '',
+            id: uploadData.id || null,
+            url: uploadData.authFileUrl || url
+          }
+        }
+
+        showToast('上传成功')
+      } else {
+        // 上传失败，移除临时文件
+        const targetList = currentUploadType.value === 'interior' ? interiorFileList.value : exteriorFileList.value
+        if (targetList.length > 0) {
+          targetList.pop()
+        }
+        showToast(res.msg || '上传失败')
+      }
+    } catch (e) {
+      console.error('上传出错:', e)
+      // 出错时移除临时文件
+      const targetList = currentUploadType.value === 'interior' ? interiorFileList.value : exteriorFileList.value
+      if (targetList.length > 0) {
+        targetList.pop()
+      }
+      showToast('上传出错')
+    }
+  }
+})
+</script>
+<style lang="scss" scoped>
+:deep(.van-action-sheet__cancel) {
+  color: #191a1b;
+}
+
+.dialog-title {
+  font-size: 16px;
+  font-weight: 500;
+  color: #191a1b;
+  text-align: center;
+}
+
+.dialog-subtitle {
+  font-size: 12px;
+  color: #545454;
+  text-align: center;
+  margin-top: 2px;
+}
+
+.plate-input-wrapper {
+  padding: 8px 10px 32px;
+  display: flex;
+  justify-content: center;
+}
+
+.plate-input-box {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+
+  .plate-char {
+    width: 30px;
+    height: 40px;
+    background: #ffffff;
+    border: 0.5px solid #cecfce;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 500;
+    color: #191a1b;
+    cursor: pointer;
+
+    &.active {
+      background: rgba(0, 145, 0, 0.1);
+      border-color: #009100;
+      color: #009100;
+    }
+  }
+}
+
+.keyboard-tabs {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  padding: 8px 0;
+
+  .tab-item {
+    font-size: 14px;
+    color: #545454;
+    cursor: pointer;
+
+    &.active {
+      color: #009100;
+      font-weight: 500;
+    }
+  }
+}
+
+.plate-keyboard {
+  background: #d1d5db;
+  padding: 8px 6px;
+  height: 100%;
+  box-sizing: border-box;
+
+  .keyboard-content {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-evenly;
+  }
+
+  .keyboard-row {
+    display: flex;
+    justify-content: center;
+    gap: 4px;
+    margin-bottom: 6px;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+
+  .key-item {
+    flex: 1;
+    max-width: 32px;
+    height: 36px;
+    background: #ffffff;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    color: #191a1b;
+    cursor: pointer;
+    user-select: none;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+
+    &:active {
+      background: #e5e7eb;
+    }
+
+    &.disabled {
+      background: transparent;
+      box-shadow: none;
+      cursor: default;
+    }
+
+    &.special {
+      max-width: 50px;
+      background: #a3a3a3;
+      color: #ffffff;
+
+      &:active {
+        background: #737373;
+      }
+    }
+  }
+}
+
+// 换车弹框样式
+.change-car-content {
+  .search-box {
+    margin-bottom: 12px;
+
+    .search-input-wrapper {
+      // display: flex;
+      // align-items: center;
+      // height: 30px;
+      // background: rgba(216, 216, 216, 0.3);
+      // border-radius: 15px;
+      // padding: 0 4px;
+
+      .search-input {
+        flex: 1;
+        height: 100%;
+        border: none;
+        background: transparent;
+        font-size: 12px;
+        color: #191a1b;
+        outline: none;
+        padding: 0;
+        &::placeholder {
+          color: #888888;
+        }
+      }
+
+      .search-btn {
+        background: #009100;
+        color: #ffffff;
+        font-size: 12px;
+        padding: 4px 14px;
+        border-radius: 13px;
+        flex-shrink: 0;
+
+        &:active {
+          background: #007a00;
+        }
+      }
+    }
+  }
+
+  .search-results {
+    border-radius: 8px;
+    overflow: hidden;
+
+    .result-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px 12px;
+      border-bottom: 0.5px solid #e6e6e5;
+
+      &:last-child {
+        border-bottom: none;
+      }
+
+      &:active {
+        background: #f7f7f7;
+      }
+
+      .result-text {
+        font-size: 14px;
+        color: #191a1b;
+      }
+    }
+  }
+
+  .car-info-card {
+    background: #ffffff;
+    border-radius: 6px;
+    overflow: hidden;
+
+    .card-header {
+      padding: 12px 12px 0;
+
+      .plate-no {
+        font-size: 16px;
+        font-weight: 600;
+        color: #191a1b;
+      }
+    }
+
+    .card-info-list {
+      padding: 8px 12px 12px;
+
+      .info-row {
+        display: flex;
+        align-items: center;
+        margin-bottom: 6px;
+
+        &:last-child {
+          margin-bottom: 0;
+        }
+
+        .label {
+          width: 56px;
+          font-size: 14px;
+          color: #545454;
+          flex-shrink: 0;
+        }
+
+        .value {
+          font-size: 14px;
+          color: #191a1b;
+          margin-left: 12px;
+        }
+      }
+    }
+
+    .card-footer {
+      padding: 0 12px 12px;
+      display: flex;
+      justify-content: flex-end;
+      .change-car-btn {
+        border: 1px solid #009100;
+        color: #009100;
+        font-size: 14px;
+        padding: 6px 16px;
+        border-radius: 38px;
+        background: #fff;
+      }
+      .confirm-btn {
+        border: 1px solid #009100;
+        color: #009100;
+        font-size: 14px;
+        padding: 6px 16px;
+        border-radius: 38px;
+
+        &:active {
+          background: rgba(0, 145, 0, 0.1);
+        }
+      }
+    }
+  }
+
+  .no-result {
+    text-align: center;
+    padding: 60px 0;
+
+    img {
+      max-width: 200px;
+    }
+  }
+}
+
+// 故障模块弹框样式
+.fault-module-content {
+  .search-box {
+    margin-bottom: 12px;
+
+    .search-input-wrapper {
+      .search-input {
+        flex: 1;
+        height: 100%;
+        border: none;
+        background: transparent;
+        font-size: 12px;
+        color: #191a1b;
+        outline: none;
+        padding: 0;
+
+        &::placeholder {
+          color: #888888;
+        }
+      }
+
+      .search-btn {
+        background: #009100;
+        color: #ffffff;
+        font-size: 12px;
+        padding: 4px 14px;
+        border-radius: 13px;
+        flex-shrink: 0;
+
+        &:active {
+          background: #007a00;
+        }
+      }
+    }
+  }
+
+  .fault-list {
+    height: 60vh;
+    overflow-y: auto;
+
+    .fault-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 7px 12px;
+      border-radius: 6px;
+      margin-bottom: 8px;
+
+      &:last-child {
+        margin-bottom: 0;
+      }
+
+      &:active {
+        background: #f7f7f7;
+      }
+    }
+  }
+
+  .no-result {
+    text-align: center;
+    padding: 60px 0;
+
+    img {
+      max-width: 200px;
+    }
+  }
+}
+
+// 故障确认弹框样式
+.fault-confirm-content {
+  padding: 24px 24px 10px 24px;
+
+  .confirm-text {
+    font-size: 14px;
+    color: #888888;
+    text-align: center;
+    line-height: 20px;
+    margin-bottom: 24px;
+  }
+
+  .confirm-actions {
+    display: flex;
+    gap: 12px;
+
+    .action-btn {
+      flex: 1;
+      height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      border-radius: 8px;
+      border-top: 1px solid #eeeeee;
+      &.confirm {
+        color: #191a1b;
+      }
+    }
+  }
+}
+.signature-channel-picker {
+  div:first-child {
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+  }
+  div:last-child {
+    border-bottom-left-radius: 8px;
+    border-bottom-right-radius: 8px;
+  }
+  .picker-item:last-child {
+    border-top: 1px solid #e6e6e5;
+  }
+}
+
+// 二次确认提示框样式
+:deep(.confirm-dialog) {
+  background: #ffffff;
+  border-radius: 8px;
+  width: 295px;
+
+  .van-dialog__content {
+    padding: 0;
+  }
+}
+
+.confirm-dialog-content {
+  padding: 32px 24px 16px;
+
+  .confirm-section {
+    margin-bottom: 24px;
+
+    &:last-of-type {
+      margin-bottom: 0;
+    }
+
+    &:last-of-type {
+      margin-bottom: 0;
+    }
+  }
+
+  .confirm-title {
+    font-size: 16px;
+    font-weight: 500;
+    color: #191a1b;
+    margin-bottom: 8px;
+  }
+
+  .confirm-message {
+    font-size: 14px;
+    color: #545454;
+    line-height: 22px;
+  }
+
+  .confirm-btn {
+    width: 100%;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    color: #009100;
+    border-top: 0.5px solid #e6e6e5;
+    margin-top: 24px;
+  }
+}
+
+// 三包预警提示框样式
+:deep(.warranty-alert-dialog) {
+  background: #ffffff;
+  border-radius: 8px;
+  width: 295px;
+  max-height: 80vh;
+  overflow-y: auto;
+
+  .van-dialog__content {
+    padding: 0;
+  }
+}
+
+.warranty-alert-content {
+  padding: 32px 24px 16px;
+
+  .alert-section {
+    margin-bottom: 24px;
+
+    &:last-of-type {
+      margin-bottom: 0;
+    }
+
+    .section-title {
+      font-size: 16px;
+      font-weight: 500;
+      color: #191a1b;
+      margin-bottom: 8px;
+    }
+
+    .section-message {
+      font-size: 14px;
+      color: #545454;
+      line-height: 22px;
+      margin-bottom: 12px;
+    }
+
+    .section-action-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 6px 16px;
+      font-size: 14px;
+      color: #009100;
+      border: 1px solid #009100;
+      border-radius: 38px;
+      width: 100%;
+    }
+  }
+
+  .warranty-alerts {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+
+    .warranty-alert-card {
+      background: #f8e8e8;
+      border-radius: 4px;
+      padding: 8px;
+
+      .alert-header {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        margin-bottom: 4px;
+
+        .alert-tag {
+          font-size: 12px;
+          padding: 1px 4px;
+          border-radius: 4px;
+          color: #ffffff;
+
+          &.red {
+            background: #b91919;
+          }
+
+          &.green {
+            background: #009100;
+          }
+
+          &.yellow {
+            background: #c8a12b;
+          }
+        }
+
+        .alert-title {
+          font-size: 14px;
+          font-weight: 500;
+          color: #b91919;
+        }
+      }
+
+      .alert-partno {
+        font-size: 14px;
+        font-weight: 500;
+        color: #b91919;
+        margin-bottom: 8px;
+      }
+
+      .alert-details {
+        .alert-detail-item {
+          font-size: 14px;
+          color: #3b3e3b;
+          line-height: 22px;
+        }
+      }
+
+      // 根据预警级别设置标题和零部件号颜色
+      &.red {
+        .alert-title,
+        .alert-partno {
+          color: #b91919;
+        }
+      }
+
+      &.green {
+        .alert-title,
+        .alert-partno {
+          color: #009100;
+        }
+      }
+
+      &.yellow {
+        .alert-title,
+        .alert-partno {
+          color: #c8a12b;
+        }
+      }
+    }
+  }
+
+  .alert-confirm-btn {
+    width: 100%;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    color: #009100;
+    border-top: 0.5px solid #e6e6e5;
+    margin-top: 24px;
+  }
+}
+
+.loading-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+}
+</style>

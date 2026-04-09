@@ -64,6 +64,98 @@ const router = createRouter({
             title: '维修作业搜索',
             hideHeader: true
           }
+        },
+        {
+          path: '/reception/work-order',
+          name: 'receptionWorkOrder',
+          component: () => import('../views/reception/WorkOrder.vue'),
+          meta: {
+            title: '接车施工单',
+            keepAlive: true
+          }
+        },
+        {
+          path: '/reception/work-order-search',
+          name: 'workOrderSearch',
+          component: () => import('../views/reception/workOrderSearch.vue'),
+          meta: {
+            title: '接车施工单搜索',
+            hideHeader: true,
+            keepAlive: false
+          }
+        },
+        {
+          path: '/reception/vehicle-search',
+          name: 'vehicleSearch',
+          component: () => import('../views/reception/VehicleSearch.vue'),
+          meta: {
+            title: '车辆搜索',
+            hideHeader: true,
+            keepAlive: false
+          }
+        },
+        {
+          path: '/reception/work-order/create/:vehicleInfo?',
+          name: 'workOrderCreate',
+          component: () => import('../views/reception/create/index.vue'),
+          meta: {
+            title: '新建施工单',
+            keepAlive: false
+          }
+        },
+        {
+          path: '/reception/work-order/detail',
+          name: 'workOrderDetail',
+          component: () => import('../views/reception/detail/index.vue'),
+          meta: {
+            title: '施工单详情',
+            keepAlive: false
+          }
+        },
+        {
+          path: '/reception/work-order/edit',
+          name: 'workOrderEdit',
+          component: () => import('../views/reception/edit/index.vue'),
+          meta: {
+            title: '施工单详情',
+            keepAlive: false
+          }
+        },
+        {
+          path: '/reception/maintenance-history',
+          name: 'maintenanceHistory',
+          component: () => import('../views/reception/MaintenanceHistory.vue'),
+          meta: {
+            title: '维修履历',
+            keepAlive: true
+          }
+        },
+        {
+          path: '/reception/rights-query',
+          name: 'rightsQuery',
+          component: () => import('../views/reception/RightsQuery.vue'),
+          meta: {
+            title: '权益查询',
+            keepAlive: true
+          }
+        },
+        {
+          path: '/reception/select-package',
+          name: 'selectPackage',
+          component: () => import('../views/reception/select-package/index.vue'),
+          meta: {
+            title: '选择维修项目',
+            keepAlive: false
+          }
+        },
+        {
+          path: '/reception/add-parts',
+          name: 'addParts',
+          component: () => import('../views/reception/add-parts/index.vue'),
+          meta: {
+            title: '选择维修项目',
+            keepAlive: false
+          }
         }
       ]
     }
