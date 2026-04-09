@@ -56,7 +56,7 @@
         <van-stepper
           v-if="!stepperDisabled"
           :model-value="item.quantity"
-          min="1"
+          min="0"
           class="card-stepper"
           input-width="32px"
           button-size="32px"
@@ -328,7 +328,6 @@ const saveName = () => {
 
           .discount-input {
             width: 50px;
-            height: 20px;
             text-align: right;
             border: 1px solid var(--leap-color-default);
             border-radius: 2px;

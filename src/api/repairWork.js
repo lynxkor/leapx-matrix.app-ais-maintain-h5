@@ -234,3 +234,10 @@ export function getRepairItemTypeMap() {
   return post(`maintain/app/sp/serviceProxy/type/list`, { 'categorys': [20] })
 }
 
+/**
+ * 查询用户功能权限
+ * @param data
+ */
+export function getDealerPermission(data) {
+  return post('maintain/web/basic/dealerPermission/list', data)
+}

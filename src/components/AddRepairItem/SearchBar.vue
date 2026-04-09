@@ -117,7 +117,6 @@ const highlight = (text) => {
 
 // 点击搜索结果 → 传完整数据给父组件处理
 const onItemClick = (item) => {
-  delete item.id
   emit('add-item-with-parts', item)
 }
 
