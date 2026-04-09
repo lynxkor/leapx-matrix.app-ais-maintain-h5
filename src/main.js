@@ -1,8 +1,10 @@
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import {
-  List, Cell, Search, NavBar, PullRefresh, Image as VanImage, Lazyload, Swipe, SwipeItem, ActionSheet, ActionBar, ActionBarButton, Button, Form, Field, CellGroup, Icon, Dialog, Popup, DatePicker, TimePicker, Tab, Tabs, RadioGroup, Radio, Highlight,
-  Stepper, Switch, NumberKeyboard, Collapse, CollapseItem, Loading, Overlay, Sticky
+  List, Cell, Search, NavBar, PullRefresh, Image as VanImage, Lazyload, Swipe, SwipeItem, ActionSheet,
+  ActionBar, ActionBarButton, Button, Form, Field, CellGroup, Icon, Dialog, Popup, DatePicker, TimePicker, Tab, Tabs, RadioGroup, Radio, Highlight,
+  Stepper, Switch, NumberKeyboard, Collapse, CollapseItem, Loading, Overlay, Sticky,
+  Cascader
 } from 'vant'
 import * as Sentry from '@sentry/vue'
 
@@ -82,6 +84,8 @@ app.use(Overlay)
 app.use(Tabs)
 app.use(Tab)
 app.use(Sticky)
+app.use(Stepper)
+app.use(Cascader)
 
 // 注册时可以配置额外的选项
 app.use(Lazyload, {
