@@ -71,3 +71,7 @@ export function preAuthGetConstructionList(data) {
 export function preAuthGetQualityFeedbackList(data) {
   return post('maintain/app/sp/qualityOrderReport/page', data)
 }
+// 错误代码设置表列表查询
+export function preAuthGetErrorCodeList(data) {
+  return post('maintain/app/sp/preAuth/code/list', data)
+}

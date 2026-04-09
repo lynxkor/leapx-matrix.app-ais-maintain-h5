@@ -13,12 +13,12 @@
         <div class="status-bar-content">
           <div class="status-info">
             <span class="status-label">编号：</span>
-            <span class="status-value">{{ detail.orderNo || '--' }}</span>
+            <span class="status-value">{{ detail.code || '--' }}</span>
           </div>
-          <span class="status-tag" :class="detail.statusClass">{{ detail.statusText }}</span>
+          <span class="status-tag" :class="detail.statusClass">{{ detail.approvalStatusLabel }}</span>
         </div>
         <!-- 驳回原因 -->
-        <div v-if="detail.status === 4" class="reject-reason">
+        <div v-if="detail.status === 40" class="reject-reason">
           {{ detail.rejectReason || '--' }}
         </div>
       </div>
@@ -62,7 +62,7 @@
           </div>
           <div class="info-row">
             <span class="info-label">进店里程</span>
-            <span class="info-value">{{ detail.mileage || '--' }}</span>
+            <span class="info-value">{{ detail.mileage ? `${detail.mileage}km` : '--' }}</span>
           </div>
           <div class="info-row">
             <span class="info-label">车辆用途</span>
@@ -234,7 +234,7 @@
       </div>
     </div>
     <!-- 审核信息 Tab (仅驳回状态显示) -->
-    <div v-if="detail.status === 4" id="tab-audit" class="tab-content-section">
+    <div v-if="detail.status === 40" id="tab-audit" class="tab-content-section">
       <!-- 审核信息卡片 -->
       <div class="info-card">
         <div class="card-header">
@@ -247,15 +247,15 @@
           </div>
           <div class="info-row">
             <span class="info-label">同意工时索赔小计</span>
-            <span class="info-value">{{ detail.auditInfo?.laborSubtotal || '--' }}</span>
+            <span class="info-value">{{ detail.auditInfo?.laborSubtotal ? `¥${detail.auditInfo.laborSubtotal}` : '--' }}</span>
           </div>
           <div class="info-row">
             <span class="info-label">同意零件索赔小计</span>
-            <span class="info-value">{{ detail.auditInfo?.partsSubtotal || '--' }}</span>
+            <span class="info-value">{{ detail.auditInfo?.partsSubtotal ? `¥${detail.auditInfo.partsSubtotal}` : '--' }}</span>
           </div>
           <div class="info-row">
             <span class="info-label">同意其他索赔小计</span>
-            <span class="info-value">{{ detail.auditInfo?.otherSubtotal || '--' }}</span>
+            <span class="info-value">{{ detail.auditInfo?.otherSubtotal ? `¥${detail.auditInfo.otherSubtotal}` : '--' }}</span>
           </div>
 
           <!-- 分隔线 -->
@@ -283,8 +283,8 @@
       </div>
     </div>
     <div style="height: 50vh;"></div>
-    <!-- 底部审核按钮 (仅待审核状态显示) -->
-    <div v-if="detail.status === 2" class="bottom-actions">
+    <!-- 底部审核按钮 (仅审批中状态显示) -->
+    <div v-if="detail.status === 20" class="bottom-actions">
       <div class="action-btn audit" @click="handleAudit">审核</div>
     </div>
 
@@ -306,10 +306,10 @@
               </div>
             </div>
           </div>
-          <!-- 错误内容（审核驳回/拒绝申请时显示） -->
-          <div v-if="needErrorCode" class="audit-error-code-section">
-            <div class="audit-error-code-header" @click="showErrorCodePopup = true">
-              <span class="audit-error-code-title">错误内容</span>
+          <!-- 错误内容（审批驳回时显示） -->
+          <div v-if="isReject" class="audit-error-code-section">
+            <div class="audit-error-code-header" @click="openErrorCodePopup">
+              <span class="audit-error-code-title">错误内容<span class="required">*</span></span>
               <div class="audit-error-code-selector">
                 <span :class="['audit-error-code-text', { placeholder: !selectedErrorCode }]">
                   {{ selectedErrorCode || '请选择' }}
@@ -318,26 +318,34 @@
               </div>
             </div>
           </div>
-          <!-- 审核意见 -->
+          <!-- 审批意见 -->
           <div class="audit-remark-section">
-            <div class="audit-section-title">审核意见</div>
+            <div class="audit-section-title">审批意见</div>
             <div class="audit-remark-input-wrapper">
               <textarea
                 v-model="auditRemark"
                 class="audit-remark-input"
-                placeholder="请输入"
+                placeholder="请输入（最多500字）"
                 rows="4"
+                maxlength="500"
               ></textarea>
+              <div class="audit-remark-count">{{ auditRemark.length }}/500</div>
             </div>
           </div>
-          <!-- 附件信息（审核驳回/拒绝申请时显示） -->
-          <div v-if="needErrorCode" class="audit-attachment-section">
+          <!-- 附件信息（审批驳回时显示） -->
+          <div v-if="isReject" class="audit-attachment-section">
             <div class="audit-section-title">附件信息</div>
-            <div class="audit-attachment-upload" @click="handleUploadAttachment">
-              <div class="audit-attachment-icon">
-                <van-icon name="photograph" />
+            <div class="audit-attachment-list">
+              <div v-for="(img, index) in attachmentList" :key="index" class="audit-attachment-item">
+                <img :src="img" class="attachment-img" />
+                <van-icon name="close" class="attachment-delete" @click="removeAttachment(index)" />
               </div>
-              <span class="audit-attachment-text">上传</span>
+              <div v-if="attachmentList.length < 5" class="audit-attachment-upload" @click="handleUploadAttachment">
+                <div class="audit-attachment-icon">
+                  <van-icon name="photograph" />
+                </div>
+                <span class="audit-attachment-text">上传</span>
+              </div>
             </div>
           </div>
         </div>
@@ -350,18 +358,25 @@
     </ais-popup>
 
     <!-- 错误代码选择弹窗 -->
-    <ais-popup v-model:show="showErrorCodePopup" title="错误代码">
+    <ais-popup v-model:show="showErrorCodePopup" title="选择错误内容">
       <template #content>
-        <div class="error-code-list">
-          <div
-            v-for="option in errorCodeOptions"
-            :key="option.value"
-            :class="['error-code-item', { active: selectedErrorCode === option.label }]"
-            @click="selectErrorCode(option)"
+        <div class="error-code-list-wrapper">
+          <van-list
+            v-model:loading="errorCodeLoading"
+            :finished="errorCodeFinished"
+            finished-text="没有更多了"
+            @load="onErrorCodeLoad"
           >
-            <span class="error-code-label">{{ option.label }}</span>
-            <van-icon v-if="selectedErrorCode === option.label" name="success" class="error-code-check" />
-          </div>
+            <div
+              v-for="option in errorCodeOptions"
+              :key="option.value"
+              :class="['error-code-item', { active: selectedErrorCode === option.label }]"
+              @click="selectErrorCode(option)"
+            >
+              <span class="error-code-label">{{ option.label }}</span>
+              <van-icon v-if="selectedErrorCode === option.label" name="success" class="error-code-check" />
+            </div>
+          </van-list>
         </div>
       </template>
     </ais-popup>
@@ -371,9 +386,9 @@
 <script setup>
 import { ref, onMounted, onUnmounted, nextTick, computed } from 'vue'
 import { useRoute } from 'vue-router'
-import { showToast, showLoadingToast, closeToast } from 'vant'
+import { showToast } from 'vant'
 import AisPopup from '@/components/AisPopup.vue'
-import { preAuthGet } from '@/api/authorization'
+import { preAuthGet, preAuthAudit, preAuthGetErrorCodeList } from '@/api/authorization'
 
 const route = useRoute()
 
@@ -385,38 +400,47 @@ const reasonNeedExpand = ref(true)
 const isClickScrolling = ref(false) // 标记是否点击触发的滚动
 const showAuditPopup = ref(false) // 审核弹窗显示状态
 const showErrorCodePopup = ref(false) // 错误代码选择弹窗显示状态
-const auditResult = ref('') // 审核结果
-const auditRemark = ref('') // 审核意见
+const auditResult = ref('') // 审批结果
+const auditRemark = ref('') // 审批意见
 const selectedErrorCode = ref('') // 选中的错误代码
+const selectedErrorCodeValue = ref('') // 选中的错误代码值
+const attachmentList = ref([]) // 附件列表
 const detailLoading = ref(false) // 详情加载状态
+const errorCodeOptions = ref([]) // 错误代码选项列表
+const errorCodeLoading = ref(false) // 错误代码加载状态
+const errorCodeFinished = ref(false) // 错误代码是否加载完成
+const errorCodePageNum = ref(1) // 错误代码当前页码
+const errorCodePageSize = 10 // 错误代码每页条数
 const auditOptions = [
-  { label: '审核通过', value: 'approve' },
-  { label: '审核驳回', value: 'reject' },
+  { label: '审批通过', value: 'approve' },
+  { label: '审批驳回', value: 'reject' },
   { label: '拒绝申请', value: 'refuse' }
 ]
 
-// 错误代码选项
-const errorCodeOptions = [
-  { label: '超过保修期【C02】', value: 'C02' },
-  { label: '故障描述不充分或描述不合理【C03】', value: 'C03' },
-  { label: '未按最小单元更换零件【C05】', value: 'C05' },
-  { label: '其他费用的说明不充分或申请不合理【C08】', value: 'C08' },
-  { label: '附件资料不充分或不合理【C09】', value: 'C09' },
-  { label: '非保修范围内的费用【C15】', value: 'C15' },
-  { label: '其他，其他不能用原因代码说明的退回或拒绝的申请。【C14】', value: 'C14' }
-]
-
-// 是否需要显示错误内容选择（审核驳回或拒绝申请时需要）
-const needErrorCode = computed(() => {
-  return auditResult.value === 'reject' || auditResult.value === 'refuse'
+// 是否为审批驳回
+const isReject = computed(() => {
+  return auditResult.value === 'reject'
 })
 
 // 是否可以提交
 const canSubmit = computed(() => {
+  // 必须选择审批结果
+  if (!auditResult.value) {
+    return false
+  }
+  // 审批通过：无需其他必填项
   if (auditResult.value === 'approve') {
     return true
   }
-  return auditResult.value && auditRemark.value.trim()
+  // 审批驳回：错误代码必填，审批意见最大500字
+  if (auditResult.value === 'reject') {
+    return selectedErrorCode.value && auditRemark.value.trim().length <= 500
+  }
+  // 拒绝申请：审批意见最大500字
+  if (auditResult.value === 'refuse') {
+    return auditRemark.value.trim().length <= 500
+  }
+  return false
 })
 
 // Tab 配置
@@ -427,7 +451,6 @@ const tabs = ref([
 ])
 
 // IntersectionObserver 实例
-const headerObserver = null
 let scrollContainer = null
 
 /**
@@ -469,9 +492,9 @@ const scrollToPosition = (targetScrollTop, behavior = 'smooth') => {
 // 根据状态动态添加审核信息tab
 const updateTabsByStatus = () => {
   const hasAuditTab = tabs.value.some(tab => tab.name === 'audit')
-  if (detail.value.status === 4 && !hasAuditTab) {
+  if (detail.value.status === 40 && !hasAuditTab) {
     tabs.value.push({ name: 'audit', title: '审核信息' })
-  } else if (detail.value.status !== 4 && hasAuditTab) {
+  } else if (detail.value.status !== 40 && hasAuditTab) {
     tabs.value = tabs.value.filter(tab => tab.name !== 'audit')
   }
 }
@@ -542,9 +565,9 @@ const syncTabByScroll = () => {
 
 // 详情数据
 const detail = ref({
-  orderNo: '',
+  code: '',
   status: 0,
-  statusText: '',
+  approvalStatusLabel: '',
   statusClass: '',
   rejectReason: '',
   constructionNo: '',
@@ -625,30 +648,148 @@ const handleAudit = () => {
   // 重置审核状态
   auditResult.value = ''
   auditRemark.value = ''
+  selectedErrorCode.value = ''
+  selectedErrorCodeValue.value = ''
+  attachmentList.value = []
 }
 
-const handleAuditSubmit = () => {
+// 审核状态映射
+const auditStatusMap = {
+  approve: 30, // 审批通过
+  reject: 40, // 审批驳回
+  refuse: 70 // 拒绝申请
+}
+
+const handleAuditSubmit = async() => {
   if (!canSubmit.value) return
 
-  if (auditResult.value === 'approve') {
-    showToast('审核通过')
-  } else if (auditResult.value === 'reject') {
-    showToast('审核驳回')
-  } else if (auditResult.value === 'refuse') {
-    showToast('拒绝申请')
+  const id = route.params.id
+  if (!id) {
+    showToast('缺少预授权ID')
+    return
   }
-  showAuditPopup.value = false
+
+  // 构建请求参数
+  const params = {
+    id: id,
+    auditStaus: auditStatusMap[auditResult.value],
+    auditContent: auditRemark.value.trim()
+  }
+
+  // 审批驳回时需要错误代码
+  if (auditResult.value === 'reject') {
+    params.preAuthRuleCodeId = selectedErrorCodeValue.value
+    // 附件（审批驳回时必传，空数组或有数据都可以）
+    params.attachments = attachmentList.value.map(item => ({
+      fileId: item.fileId,
+      businessId: item.businessId,
+      fileName: item.fileName,
+      fileUrl: item.fileUrl,
+      fileSize: item.fileSize,
+      fileType: item.fileType,
+      attachType: item.attachType,
+      configId: item.configId,
+      configCode: item.configCode
+    }))
+  }
+
+  try {
+    const res = await preAuthAudit(params)
+    if (res.code === 200) {
+      showToast(auditResult.value === 'approve' ? '审批通过' : auditResult.value === 'reject' ? '审批驳回' : '拒绝申请')
+      showAuditPopup.value = false
+      // 刷新详情
+      fetchDetail()
+    } else {
+      showToast(res.msg || '操作失败')
+    }
+  } catch (error) {
+    console.error('审核提交失败:', error)
+    showToast('操作失败')
+  }
 }
 
 // 选择错误代码
 const selectErrorCode = (option) => {
   selectedErrorCode.value = option.label
+  selectedErrorCodeValue.value = option.value
   showErrorCodePopup.value = false
+}
+
+// 打开错误代码弹窗
+const openErrorCodePopup = () => {
+  showErrorCodePopup.value = true
+  // 弹窗打开后重置并加载数据
+  nextTick(() => {
+    resetErrorCodeList()
+    fetchErrorCodeList()
+  })
 }
 
 // 上传附件
 const handleUploadAttachment = () => {
+  // TODO: 调用图片上传接口
+  // 限制：最大30M，最多5个
+  if (attachmentList.value.length >= 5) {
+    showToast('最多上传5个附件')
+    return
+  }
   showToast('上传附件')
+}
+
+// 删除附件
+const removeAttachment = (index) => {
+  attachmentList.value.splice(index, 1)
+}
+
+// 获取错误代码列表
+const fetchErrorCodeList = async() => {
+  if (errorCodeFinished.value) return
+
+  errorCodeLoading.value = true
+  try {
+    const res = await preAuthGetErrorCodeList({
+      pageNum: errorCodePageNum.value,
+      pageSize: errorCodePageSize
+    })
+    console.log('错误代码列表返回:', res)
+    if (res.code === 200 && res.data) {
+      const list = res.data?.map(item => ({
+        label: item.content,
+        value: item.id
+      })) || []
+
+      errorCodeOptions.value = [...errorCodeOptions.value, ...list]
+      console.log('当前错误代码列表:', errorCodeOptions.value)
+
+      // 判断是否还有更多数据
+      if (list.length === 0 || list.length < errorCodePageSize) {
+        errorCodeFinished.value = true
+      } else {
+        errorCodePageNum.value++
+      }
+    } else {
+      errorCodeFinished.value = true
+    }
+  } catch (error) {
+    console.error('获取错误代码列表失败:', error)
+    errorCodeFinished.value = true
+  } finally {
+    errorCodeLoading.value = false
+  }
+}
+
+// 错误代码滚动加载
+const onErrorCodeLoad = () => {
+  fetchErrorCodeList()
+}
+
+// 重置错误代码列表
+const resetErrorCodeList = () => {
+  errorCodeOptions.value = []
+  errorCodePageNum.value = 1
+  errorCodeFinished.value = false
+  errorCodeLoading.value = true // 设为 true 阻止 van-list 自动触发
 }
 
 // 获取详情数据
@@ -663,7 +804,7 @@ const fetchDetail = async() => {
   try {
     const res = await preAuthGet(id)
     if (res.code === 200 && res.data) {
-      Object.assign(detail.value, formatDetailData(res.data.serviceProxyResp, res.data))
+      Object.assign(detail.value, formatDetailData(res.data))
       updateTabsByStatus()
     } else {
       showToast(res.msg || '获取详情失败')
@@ -676,61 +817,71 @@ const fetchDetail = async() => {
 }
 
 // 格式化详情数据
-const formatDetailData = (data, allData) => {
-  // 从 allData 中获取预授权主数据
-  const preAuthData = allData || data
+const formatDetailData = (data) => {
+  // 从 data 中获取预授权主数据
+  const preAuthData = data || {}
   // 从 serviceProxyResp 中获取施工单数据
   const serviceProxy = data.serviceProxyResp || {}
 
   return {
-    // 基础信息
-    orderNo: preAuthData.code || '',
-    status: preAuthData.status,
-    statusText: getStatusText(preAuthData.status),
-    statusClass: getStatusClass(preAuthData.status),
+    // 基础信息 - 来自预授权主数据
+    code: preAuthData.code || '',
+    status: preAuthData.approvalStatus,
+    approvalStatusLabel: preAuthData.approvalStatusLabel || '',
+    statusClass: getStatusClass(preAuthData.approvalStatus),
     rejectReason: preAuthData.rejectReason || '',
+    // 施工单信息 - 来自施工单数据
     constructionNo: serviceProxy.code || '',
-    authType: preAuthData.preAuthType === 1 ? '技术预授权' : preAuthData.preAuthType === 2 ? '保修预授权' : '',
-    vin: serviceProxy.vehProfileVin || '',
-    warrantyTime: serviceProxy.startWarrantyDate && serviceProxy.warrantyEndDate
-      ? `${serviceProxy.startWarrantyDate} 至 ${serviceProxy.warrantyEndDate}`
-      : '',
-    mileage: serviceProxy.mileage ? `${serviceProxy.mileage}km` : '',
-    vehicleUse: serviceProxy.carProperty === 1 ? '非营运' : serviceProxy.carProperty === 2 ? '营运' : '',
-    lifetimeWarranty: preAuthData.warrantyLife === 1 ? '终身质保' : '',
-    serviceStore: serviceProxy.dealerName || '',
-    storeArea: preAuthData.orgName || preAuthData.dealerUnitName || '',
-    warningInfo: preAuthData.alarmInfo || serviceProxy.alarmInfo || '',
+    // 预授权类型 - 来自预授权主数据
+    authType: preAuthData.preAuthTypeLabel || '',
+    // VIN - 来自预授权主数据
+    vin: preAuthData.vehProfileVin || '',
+    // 保修时间 - 来自施工单数据
+    warrantyTime: serviceProxy.startWarrantyDate || '',
+    // 进店里程 - 来自施工单数据
+    mileage: serviceProxy.mileage || '',
+    // 车辆用途 - 来自预授权主数据
+    vehicleUse: preAuthData.carPropertyLabel || '',
+    // 终身质保 - 来自预授权主数据
+    lifetimeWarranty: preAuthData.isLifetimeLabel || '',
+    // 服务门店 - 来自预授权主数据
+    serviceStore: preAuthData.dealerName || '',
+    // 门店所属区域 - 来自预授权主数据
+    storeArea: preAuthData.dealerUnitName || '',
+    // 预警信息 - 来自预授权主数据
+    warningInfo: preAuthData.alarmInfo || '',
+    // 申请原因 - 来自预授权主数据
     applyReason: preAuthData.reason || '',
+    // 预交时间 - 来自施工单数据
     estimateDeliverTime: serviceProxy.expectFinishAt || '',
 
-    // 质量反馈报告
-    qualityReport: allData?.qualityOrderReportResp ? {
-      reportNo: allData.qualityOrderReportResp.code || '',
-      faultDesc: allData.qualityOrderReportResp.customerContent || '',
-      faultProcess: allData.qualityOrderReportResp.troubleshootingProcess || ''
+    // 质量反馈报告 - 来自预授权主数据
+    qualityReport: preAuthData.qualityOrderReportResp ? {
+      reportNo: preAuthData.qualityOrderReportResp.code || '',
+      faultDesc: preAuthData.qualityOrderReportResp.customerContent || '',
+      faultProcess: preAuthData.qualityOrderReportResp.troubleshootingProcess || ''
     } : null,
 
-    // 审核信息
+    // 审核信息 - 来自预授权主数据
     auditInfo: {
       auditor: preAuthData.approver || '',
       auditTime: preAuthData.approvalOn || '',
-      laborSubtotal: preAuthData.approvedLaborClaimTotal ? `¥${preAuthData.approvedLaborClaimTotal}` : '--',
-      partsSubtotal: preAuthData.approvedPartsClaimTotal ? `¥${preAuthData.approvedPartsClaimTotal}` : '--',
-      otherSubtotal: preAuthData.approvedOtherClaimTotal ? `¥${preAuthData.approvedOtherClaimTotal}` : '--'
+      laborSubtotal: preAuthData.approvedLaborClaimTotal || '',
+      partsSubtotal: preAuthData.approvedPartsClaimTotal || '',
+      otherSubtotal: preAuthData.approvedOtherClaimTotal || ''
     },
 
-    // 审核记录
-    auditRecords: (allData?.supportApprovalResps || []).map(item => ({
+    // 审核记录 - 来自预授权主数据
+    auditRecords: (preAuthData.supportApprovalResps || []).map(item => ({
       time: item.approvalOn || '',
       status: item.approvalResult,
-      statusText: getApprovalResultText(item.approvalResult),
+      statusText: item.approvalResultLabel || '',
       comment: item.content || '',
       images: []
     })),
 
-    // 维修项目
-    repairItems: (allData?.spRepairItemResps || []).map(item => ({
+    // 维修项目 - 来自预授权主数据
+    repairItems: (preAuthData.spRepairItemResps || []).map(item => ({
       name: item.repairItemName || '',
       partNo: item.repairItemCode || '',
       type: item.repairItemTypeName || '',
@@ -740,12 +891,12 @@ const formatDetailData = (data, allData) => {
       quantity: item.workHour || '0'
     })),
 
-    // 维修配件
-    partsItems: (allData?.spSparePartResps || []).map(item => ({
+    // 维修配件 - 来自预授权主数据
+    partsItems: (preAuthData.spSparePartResps || []).map(item => ({
       name: item.partsName || '',
       partNo: item.partsCode || '',
       type: item.repairItemTypeName || '',
-      tag: item.isOemPart === 1 ? '原厂件' : '',
+      tag: item.isOemPartLabel || '',
       price: item.price || '0',
       discount: item.discountAmount || '0',
       subtotal: item.partsAmount || '0',
@@ -760,38 +911,14 @@ const formatDetailData = (data, allData) => {
   }
 }
 
-// 获取审批结果文本
-const getApprovalResultText = (result) => {
-  switch (result) {
-    case 1: return '通过'
-    case 2: return '驳回'
-    case 3: return '拒绝'
-    default: return ''
-  }
-}
-
-// 获取状态文本
-const getStatusText = (status) => {
-  switch (status) {
-    case 0: return '未提交'
-    case 1: return '已提交'
-    case 2: return '待审核'
-    case 3: return '已通过'
-    case 4: return '已驳回'
-    case 5: return '已作废'
-    default: return '未知'
-  }
-}
-
-// 获取状态样式类
+// 获取状态样式类 (approvalStatus: 10-未提交, 20-审批中, 30-已通过, 40-已驳回, 50-已作废)
 const getStatusClass = (status) => {
   switch (status) {
-    case 0: return 'status-pending'
-    case 1: return 'status-approved'
-    case 2: return 'status-audit'
-    case 3: return 'status-approved'
-    case 4: return 'status-rejected'
-    case 5: return 'status-rejected'
+    case 10: return 'status-pending'
+    case 20: return 'status-audit'
+    case 30: return 'status-approved'
+    case 40: return 'status-rejected'
+    case 50: return 'status-rejected'
     default: return ''
   }
 }
@@ -1476,7 +1603,7 @@ onUnmounted(() => {
 .audit-popup-content {
 
   .audit-result-section {
-    margin-bottom: 16px;
+    margin-bottom: 12px;
     background: #ffffff;
     border-radius: 6px;
     padding: 12px;
@@ -1500,6 +1627,7 @@ onUnmounted(() => {
       display: flex;
       align-items: center;
       justify-content: center;
+      padding: 0 16px;
       background: #f8f7f7;
       border-radius: 4px;
       font-family: 'PingFang SC';
@@ -1509,8 +1637,8 @@ onUnmounted(() => {
       transition: all 0.2s;
 
       &.active {
-        background: #009100;
-        color: #ffffff;
+        background: rgba(0, 145, 0, 0.1);
+        color: #009100;
       }
     }
   }
@@ -1519,12 +1647,13 @@ onUnmounted(() => {
     background: #ffffff;
     border-radius: 6px;
     padding: 12px;
-    margin-bottom: 16px;
+    margin-bottom: 12px;
 
     .audit-remark-input-wrapper {
       background: #f8f7f7;
       border-radius: 6px;
       padding: 12px;
+      position: relative;
 
       .audit-remark-input {
         width: 100%;
@@ -1540,6 +1669,15 @@ onUnmounted(() => {
         &::placeholder {
           color: #888888;
         }
+      }
+
+      .audit-remark-count {
+        position: absolute;
+        right: 12px;
+        bottom: 8px;
+        font-family: 'PingFang SC';
+        font-size: 12px;
+        color: #888888;
       }
     }
   }
@@ -1565,9 +1703,15 @@ onUnmounted(() => {
   }
 }
 
+// 必填标识
+.required {
+  color: #ee0a24;
+  margin-left: 2px;
+}
+
 // 错误内容选择
 .audit-error-code-section {
-  margin-bottom: 16px;
+  margin-bottom: 12px;
   background: #ffffff;
   border-radius: 6px;
   padding: 12px;
@@ -1583,17 +1727,24 @@ onUnmounted(() => {
       font-size: 14px;
       font-weight: 500;
       color: #191a1b;
+      flex-shrink: 0;
     }
 
     .audit-error-code-selector {
       display: flex;
       align-items: center;
       gap: 4px;
+      flex: 1;
+      justify-content: flex-end;
 
       .audit-error-code-text {
         font-family: 'PingFang SC';
         font-size: 14px;
         color: #191a1b;
+        max-width: 200px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
 
         &.placeholder {
           color: #888888;
@@ -1601,21 +1752,27 @@ onUnmounted(() => {
       }
 
       .audit-error-code-arrow {
-        font-size: 16px;
+        font-size: 12px;
         color: #888888;
+        flex-shrink: 0;
       }
     }
   }
 }
 
-// 错误代码列表
-.error-code-list {
-  padding: 0 16px;
+// 错误代码列表容器
+.error-code-list-wrapper {
+  max-height: 549px;
+  overflow-y: auto;
+  background: #fff;
+  border-radius: 8px;
+  padding: 0 12px;
 
   .error-code-item {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    min-height: 50px;
     padding: 15px 0;
     border-bottom: 0.5px solid #e6e6e5;
     cursor: pointer;
@@ -1635,23 +1792,60 @@ onUnmounted(() => {
       font-size: 14px;
       color: #191a1b;
       flex: 1;
-      line-height: 1.4;
+      line-height: 20px;
+      padding-right: 8px;
     }
 
     .error-code-check {
       font-size: 16px;
       color: #009100;
-      margin-left: 8px;
+      flex-shrink: 0;
     }
   }
 }
 
 // 附件上传
 .audit-attachment-section {
-  margin-bottom: 16px;
+  margin-bottom: 12px;
   background: #ffffff;
   border-radius: 6px;
   padding: 12px;
+
+  .audit-attachment-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .audit-attachment-item {
+    width: 80px;
+    height: 80px;
+    border-radius: 6px;
+    overflow: hidden;
+    position: relative;
+
+    .attachment-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .attachment-delete {
+      position: absolute;
+      top: 4px;
+      right: 4px;
+      width: 18px;
+      height: 18px;
+      background: rgba(0, 0, 0, 0.5);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #ffffff;
+      font-size: 12px;
+      cursor: pointer;
+    }
+  }
 
   .audit-attachment-upload {
     width: 80px;
@@ -1675,6 +1869,13 @@ onUnmounted(() => {
       font-size: 12px;
       color: #888888;
     }
+  }
+
+  .audit-attachment-tip {
+    margin-top: 8px;
+    font-family: 'PingFang SC';
+    font-size: 12px;
+    color: #888888;
   }
 }
 </style>

@@ -85,9 +85,11 @@ const getStyle = () => {
   if (size === 'medium') {
     style.fontSize = '12px'
     style.height = '28px'
+    style.padding = '0 18px'
   } else if (size === 'large') {
     style.fontSize = '14px'
     style.height = '32px'
+    style.padding = '0 16px'
   }
   return style
 }
@@ -118,7 +120,6 @@ const renderText = () => {
 
 <style lang="scss" scoped>
 .btn-item {
-  padding: 0 18px;
   font-family: "PingFang SC";
   font-size: 12px;
   min-width: 60px;
