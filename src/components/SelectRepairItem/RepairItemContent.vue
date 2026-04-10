@@ -1,3 +1,13 @@
+<!-- 当成组件使用模式
+  <RepairItemContent
+    ref="contentRef"
+    :service-proxy-id="route.query.id"
+    isComponent
+  />
+  初始化数据：contentRef.value?.loadInitialData()
+  保存方法： contentRef.value?.save()
+  数据： contentRef.value?.selectedItems、contentRef.value?.selectedParts
+-->
 <template>
   <div class="popup-container">
     <!-- 标题栏（弹窗模式） -->
@@ -10,13 +20,14 @@
     </div>
 
     <!-- Tab栏 -->
-    <van-tabs v-model:active="activeTab" class="add-tabs" sticky>
+    <van-tabs v-model:active="activeTab" class="add-tabs" sticky v-if="!isComponent">
       <van-tab title="添加维修项目" name="item" />
       <van-tab title="添加维修零件" name="part" />
     </van-tabs>
 
     <!-- 搜索栏 -->
     <SearchBar
+      v-if="!isComponent"
       ref="searchBarRef"
       :placeholder="
         activeTab === 'item'
@@ -103,7 +114,7 @@
     />
 
     <!-- 底部保存按钮 -->
-    <div class="popup-footer">
+    <div class="popup-footer" v-if="!isComponent">
       <div
         class="save-btn"
         :class="{ disabled: !hasAnySelectedItems }"
@@ -129,6 +140,10 @@ const props = defineProps({
     default: ''
   },
   showHeader: {
+    type: Boolean,
+    default: false
+  },
+  isComponent: {
     type: Boolean,
     default: false
   }
@@ -242,7 +257,10 @@ watch(activeTab, () => {
 defineExpose({
   loadInitialData,
   resetData,
-  searchBarRef
+  searchBarRef,
+  selectedItems,
+  selectedParts,
+  onSave
 })
 </script>
 
