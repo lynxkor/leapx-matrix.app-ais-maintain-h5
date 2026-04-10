@@ -31,7 +31,7 @@ export const isWorkHourEditable = (item) => {
  * @returns {boolean}
  */
 export const isQuantityEditable = (item) => {
-  return !item.isOutstock
+  return !item.isOutstock && !item.packageId
 }
 
 /**
