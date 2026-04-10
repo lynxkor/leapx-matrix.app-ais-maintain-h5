@@ -59,6 +59,7 @@
 
       <RefreshList
         v-else
+        ref="refreshListRef"
         :requestData="requestData"
         :has-no-data="dataList.length === 0"
         @setData="setData"
@@ -72,9 +73,9 @@
         >
           <template #header>
             <div class="item-header">
-              <span class="order-no">{{ item.workOrderNo }}</span>
-              <span class="status-tag" :class="getStatusClass(item.status)">
-                {{ getStatusText(item.status) }}
+              <span class="order-no">{{ item.code }}</span>
+              <span class="status-tag" :class="getStatusClass(item.orderStatus)">
+                {{ item.orderStatusLabel }}
               </span>
             </div>
           </template>
@@ -83,31 +84,25 @@
             <div class="card-body">
               <!-- 车牌行 -->
               <div class="plate-row">
-                <span class="plate-number">{{ item.plateNumber }}</span>
-                <!-- 车辆图标 - 黄色=工单号, 绿色=车牌, 红色=VIN -->
-                <!-- 复制工单号 - 黄色车辆图标 -->
-                <svg class="vehicle-icon" width="16" height="16" viewBox="0 0 15.35 13.88" fill="none" @click.stop="copyText(item.workOrderNo)">
-                  <path fill="#C8A12B" d="M7.3351851 0C7.9718513 0 8.5651855 0.31133342 8.9285183 0.83133328L8.998518 0.93799996L14.407852 9.9700003C15.123848 11.210074 14.297827 12.772247 12.869853 12.878666L12.739853 12.883999L1.9231861 12.883999C0.49417353 12.867918 -0.42892668 11.36636 0.20185265 10.083999L0.26785263 9.9606657L5.6745195 0.93533206C6.0265875 0.35477138 6.6562138 0.00014813742 7.3351851 0ZM7.3418517 8.8866673L7.257185 8.8913336C6.9218178 8.9312248 6.6692615 9.2156019 6.6692615 9.5533333C6.6692615 9.8910656 6.9218178 10.175444 7.257185 10.215334L7.3351851 10.22L7.4198513 10.215334C7.7552185 10.175442 8.0077753 9.8910656 8.0077753 9.5533333C8.0077753 9.2156019 7.7552185 8.9312248 7.4198513 8.8913336L7.3418517 8.8866673ZM7.3351851 4.2200003C6.9972014 4.2200446 6.7127285 4.4730048 6.6731849 4.8086672L6.6685181 4.8866668L6.6685181 7.5533333L6.6731849 7.6313334C6.7130756 7.9667006 6.9974532 8.2192574 7.3351851 8.2192574C7.6729164 8.2192574 7.957294 7.9667006 7.9971848 7.6313334L8.001852 7.5533333L8.001852 4.8866668L7.9971848 4.8086672C7.9576411 4.4730048 7.6731682 4.2200446 7.3351851 4.2200003Z"/>
+                <span class="plate-number">{{ item.carPlate }}</span>
+                <!-- 预警图标 - 根据 alarmLevel 显示不同颜色: 10=绿色, 20=橙色, 30=红色 -->
+                <svg
+                  v-if="item.alarmLevel"
+                  class="vehicle-icon"
+                  width="16"
+                  height="16"
+                  viewBox="0 0 15.35 13.88"
+                  fill="none"
+                >
+                  <path :fill="getAlarmColor(item.alarmLevel)" d="M7.3351851 0C7.9718513 0 8.5651855 0.31133342 8.9285183 0.83133328L8.998518 0.93799996L14.407852 9.9700003C15.123848 11.210074 14.297827 12.772247 12.869853 12.878666L12.739853 12.883999L1.9231861 12.883999C0.49417353 12.867918 -0.42892668 11.36636 0.20185265 10.083999L0.26785263 9.9606657L5.6745195 0.93533206C6.0265875 0.35477138 6.6562138 0.00014813742 7.3351851 0ZM7.3418517 8.8866673L7.257185 8.8913336C6.9218178 8.9312248 6.6692615 9.2156019 6.6692615 9.5533333C6.6692615 9.8910656 6.9218178 10.175444 7.257185 10.215334L7.3351851 10.22L7.4198513 10.215334C7.7552185 10.175442 8.0077753 9.8910656 8.0077753 9.5533333C8.0077753 9.2156019 7.7552185 8.9312248 7.4198513 8.8913336L7.3418517 8.8866673ZM7.3351851 4.2200003C6.9972014 4.2200446 6.7127285 4.4730048 6.6731849 4.8086672L6.6685181 4.8866668L6.6685181 7.5533333L6.6731849 7.6313334C6.7130756 7.9667006 6.9974532 8.2192574 7.3351851 8.2192574C7.6729164 8.2192574 7.957294 7.9667006 7.9971848 7.6313334L8.001852 7.5533333L8.001852 4.8866668L7.9971848 4.8086672C7.9576411 4.4730048 7.6731682 4.2200446 7.3351851 4.2200003Z"/>
                 </svg>
-                <!-- 复制车牌 - 绿色车辆图标 -->
-                <svg class="vehicle-icon" width="16" height="16" viewBox="0 0 15.35 13.88" fill="none" @click.stop="copyText(item.plateNumber)">
-                  <path fill="#009100" d="M7.3351851 0C7.9718513 0 8.5651855 0.31133342 8.9285183 0.83133328L8.998518 0.93799996L14.407852 9.9700003C15.123848 11.210074 14.297827 12.772247 12.869853 12.878666L12.739853 12.883999L1.9231861 12.883999C0.49417353 12.867918 -0.42892668 11.36636 0.20185265 10.083999L0.26785263 9.9606657L5.6745195 0.93533206C6.0265875 0.35477138 6.6562138 0.00014813742 7.3351851 0ZM7.3418517 8.8866673L7.257185 8.8913336C6.9218178 8.9312248 6.6692615 9.2156019 6.6692615 9.5533333C6.6692615 9.8910656 6.9218178 10.175444 7.257185 10.215334L7.3351851 10.22L7.4198513 10.215334C7.7552185 10.175442 8.0077753 9.8910656 8.0077753 9.5533333C8.0077753 9.2156019 7.7552185 8.9312248 7.4198513 8.8913336L7.3418517 8.8866673ZM7.3351851 4.2200003C6.9972014 4.2200446 6.7127285 4.4730048 6.6731849 4.8086672L6.6685181 4.8866668L6.6685181 7.5533333L6.6731849 7.6313334C6.7130756 7.9667006 6.9974532 8.2192574 7.3351851 8.2192574C7.6729164 8.2192574 7.957294 7.9667006 7.9971848 7.6313334L8.001852 7.5533333L8.001852 4.8866668L7.9971848 4.8086672C7.9576411 4.4730048 7.6731682 4.2200446 7.3351851 4.2200003Z"/>
-                </svg>
-                <!-- 复制VIN - 红色车辆图标 -->
-                <svg class="vehicle-icon" width="16" height="16" viewBox="0 0 15.35 13.88" fill="none" @click.stop="copyText(item.vin)">
-                  <path fill="#B91919" d="M7.3351851 0C7.9718513 0 8.5651855 0.31133342 8.9285183 0.83133328L8.998518 0.93799996L14.407852 9.9700003C15.123848 11.210074 14.297827 12.772247 12.869853 12.878666L12.739853 12.883999L1.9231861 12.883999C0.49417353 12.867918 -0.42892668 11.36636 0.20185265 10.083999L0.26785263 9.9606657L5.6745195 0.93533206C6.0265875 0.35477138 6.6562138 0.00014813742 7.3351851 0ZM7.3418517 8.8866673L7.257185 8.8913336C6.9218178 8.9312248 6.6692615 9.2156019 6.6692615 9.5533333C6.6692615 9.8910656 6.9218178 10.175444 7.257185 10.215334L7.3351851 10.22L7.4198513 10.215334C7.7552185 10.175442 8.0077753 9.8910656 8.0077753 9.5533333C8.0077753 9.2156019 7.7552185 8.9312248 7.4198513 8.8913336L7.3418517 8.8866673ZM7.3351851 4.2200003C6.9972014 4.2200446 6.7127285 4.4730048 6.6731849 4.8086672L6.6685181 4.8866668L6.6685181 7.5533333L6.6731849 7.6313334C6.7130756 7.9667006 6.9974532 8.2192574 7.3351851 8.2192574C7.6729164 8.2192574 7.957294 7.9667006 7.9971848 7.6313334L8.001852 7.5533333L8.001852 4.8866668L7.9971848 4.8086672C7.9576411 4.4730048 7.6731682 4.2200446 7.3351851 4.2200003Z"/>
-                </svg>
-                <!-- 业务类型标签（同行李牌行内，图标后有间距） -->
-                <div class="service-tags-inline">
-                  <span v-for="(svc, idx) in item.serviceTypes" :key="idx" class="svc-tag">
-                    {{ svc }}
-                  </span>
-                </div>
+                <!-- 业务类型标签 -->
+                <span v-if="item.warrantyTypeCollect" class="svc-tag">{{ item.warrantyTypeCollect }}</span>
               </div>
 
-              <!-- 车型 · VIN -->
+              <!-- VIN -->
               <div class="vehicle-line">
-                {{ item.vehicleModel }} · {{ item.vin }}
+                {{ item.vehProfileVin }}
               </div>
 
               <!-- 信息行 -->
@@ -115,13 +110,12 @@
                 <div class="info-row">
                   <span class="info-label">车主</span>
                   <div class="info-value-wrap">
-                    <span class="info-value">{{ item.ownerName }}</span>
-                    <span v-if="item.ownerTag" class="owner-tag">{{ item.ownerTag }}</span>
+                    <span class="info-value">{{ item.customerName }}</span>
                   </div>
                 </div>
                 <div class="info-row">
                   <span class="info-label">客户经理</span>
-                  <span class="info-value">{{ item.managerName }}</span>
+                  <span class="info-value">{{ item.serviceOwnerName }}</span>
                 </div>
                 <div class="info-row">
                   <span class="info-label">开单时间</span>
@@ -247,14 +241,18 @@
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, reactive, computed, onMounted, watch } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { showToast } from 'vant'
+import dayjs from 'dayjs'
 import RefreshList from '@/libs/components/RefreshList.vue'
 import ListItem from '@/components/ListItem.vue'
 import AisPopup from '@/libs/components/AisPopup.vue'
+import { getSettlementStatementPage } from '@/api/settlementStatement'
+import { callPhone } from '@/libs/utils/nativeFn'
 
 const router = useRouter()
+const route = useRoute()
 
 const activeTab = ref('pending')
 const searchValue = ref('')
@@ -266,6 +264,49 @@ const showUploadDialog = ref(false)
 const settleOption = ref('resolved')
 const selectedReasons = ref([])
 const currentItem = ref(null)
+const refreshListRef = ref(null)
+
+// 状态映射：tab -> 接口状态值
+const statusMap = {
+  pending: '160', // 待交车
+  completed: '180' // 已交车
+}
+
+// 计算日期范围
+const getDateRange = (tag) => {
+  const today = dayjs()
+  let createTimeStart = ''
+  let createTimeEnd = ''
+
+  if (tag === 'today') {
+    // 今天：从0点开始到23:59:59
+    createTimeStart = today.startOf('day').format('YYYY-MM-DD HH:mm:ss')
+    createTimeEnd = today.endOf('day').format('YYYY-MM-DD HH:mm:ss')
+  } else if (tag === 'week') {
+    // 7天内：从今天往前推7天
+    createTimeStart = today.subtract(6, 'day').startOf('day').format('YYYY-MM-DD HH:mm:ss')
+    createTimeEnd = today.endOf('day').format('YYYY-MM-DD HH:mm:ss')
+  }
+  // 'all' 传空字符串
+
+  return { createTimeStart, createTimeEnd }
+}
+
+// 请求数据
+const requestData = reactive({
+  data: computed(() => {
+    const { createTimeStart, createTimeEnd } = getDateRange(selectedDateTag.value)
+    return {
+      pageNum: 1,
+      pageSize: 10,
+      orderStatus: statusMap[activeTab.value],
+      appSearchKeyWord: searchValue.value,
+      createTimeStart,
+      createTimeEnd
+    }
+  }),
+  api: getSettlementStatementPage
+})
 
 const reasonOptions = [
   '厂家无备件库存',
@@ -295,7 +336,7 @@ const dateTags = [
 // 切换日期标签
 const selectDateTag = (value) => {
   selectedDateTag.value = value
-  refreshList()
+  // RefreshList 组件会自动监听 requestData.data 变化并触发请求
 }
 
 // 切换标签页
@@ -303,7 +344,7 @@ const switchTab = (tab) => {
   activeTab.value = tab
   // 切换到已交车时默认显示全部日期，避免因日期过滤导致无数据
   selectedDateTag.value = tab === 'completed' ? 'all' : 'today'
-  refreshList()
+  // RefreshList 组件会自动监听 requestData.data 变化并触发请求
 }
 
 // 跳转搜索页
@@ -317,29 +358,9 @@ const goToSearch = () => {
 
 // 刷新列表
 const refreshList = () => {
-  const filtered = mockData.filter((item) => {
-    // 标签页过滤
-    if (activeTab.value === 'pending' && item.status !== 'pending') return false
-    if (activeTab.value === 'completed' && item.status !== 'completed') return false
-
-    // 日期过滤
-    if (selectedDateTag.value === 'today') {
-      const today = new Date().toDateString()
-      const itemDate = new Date(item.createTime).toDateString()
-      if (today !== itemDate) return false
-    } else if (selectedDateTag.value === 'week') {
-      const now = new Date()
-      const itemDate = new Date(item.createTime)
-      const diffDays = (now - itemDate) / (1000 * 60 * 60 * 24)
-      if (diffDays > 7) return false
-    }
-    // 'all' 不过滤
-
-    return true
-  })
-
-  dataList.value = [...filtered]
-  showEmpty.value = filtered.length === 0
+  if (refreshListRef.value) {
+    refreshListRef.value.reset()
+  }
 }
 
 // 复制文本
@@ -364,153 +385,7 @@ const copyText = async(text) => {
   }
 }
 
-// 模拟数据
-const mockData = [
-  // 待交车
-  {
-    id: 1,
-    workOrderNo: '3318938923892839283',
-    status: 'pending',
-    plateNumber: '浙AA12345',
-    vehicleModel: 'B10-510激光雷达版',
-    vin: 'LFV3H6686RKYM3393',
-    ownerName: '王小虎',
-    ownerTag: '预约客户',
-    managerName: '王小丫',
-    createTime: '2026-03-20 17:30',
-    serviceTypes: ['一般维修', '钣金', '喷漆'],
-    serviceTypeValues: ['repair', 'sheetMetal', 'paint']
-  },
-  {
-    id: 2,
-    workOrderNo: '3318938923892839284',
-    status: 'pending',
-    plateNumber: '浙BB67890',
-    vehicleModel: 'C11-200增程版',
-    vin: 'LFV3H6686RKYM3394',
-    ownerName: '李小明',
-    ownerTag: '',
-    managerName: '张伟',
-    createTime: '2026-03-20 15:20',
-    serviceTypes: ['一般维修', '喷漆'],
-    serviceTypeValues: ['repair', 'paint']
-  },
-  {
-    id: 4,
-    workOrderNo: '3318938923892839286',
-    status: 'pending',
-    plateNumber: '浙DD88888',
-    vehicleModel: 'C10-525舒享版',
-    vin: 'LFV3H6686RKYM3396',
-    ownerName: '陈杰',
-    ownerTag: '预约客户',
-    managerName: '李娜',
-    createTime: '2026-03-20 14:10',
-    serviceTypes: ['钣金'],
-    serviceTypeValues: ['sheetMetal']
-  },
-  {
-    id: 5,
-    workOrderNo: '3318938923892839287',
-    status: 'pending',
-    plateNumber: '浙EE99999',
-    vehicleModel: 'T03-400轻享版',
-    vin: 'LFV3H6686RKYM3397',
-    ownerName: '刘洋',
-    ownerTag: '',
-    managerName: '张婷',
-    createTime: '2026-03-20 11:30',
-    serviceTypes: ['一般维修'],
-    serviceTypeValues: ['repair']
-  },
-  // 已交车
-  {
-    id: 3,
-    workOrderNo: '3318938923892839285',
-    status: 'completed',
-    plateNumber: '浙CC11111',
-    vehicleModel: 'T03-400轻享版',
-    vin: 'LFV3H6686RKYM3395',
-    ownerName: '赵六',
-    ownerTag: '预约客户',
-    managerName: '刘洋',
-    createTime: '2026-03-19 10:00',
-    serviceTypes: ['钣金'],
-    serviceTypeValues: ['sheetMetal']
-  },
-  {
-    id: 6,
-    workOrderNo: '3318938923892839288',
-    status: 'completed',
-    plateNumber: '浙FF22222',
-    vehicleModel: 'C11-605纯电版',
-    vin: 'LFV3H6686RKYM3398',
-    ownerName: '周琳',
-    ownerTag: '',
-    managerName: '孙浩',
-    createTime: '2026-03-19 09:15',
-    serviceTypes: ['一般维修', '喷漆'],
-    serviceTypeValues: ['repair', 'paint']
-  },
-  {
-    id: 7,
-    workOrderNo: '3318938923892839289',
-    status: 'completed',
-    plateNumber: '浙GG33333',
-    vehicleModel: 'B10-510激光雷达版',
-    vin: 'LFV3H6686RKYM3399',
-    ownerName: '吴昊',
-    ownerTag: '预约客户',
-    managerName: '赵敏',
-    createTime: '2026-03-18 16:45',
-    serviceTypes: ['一般维修', '钣金', '喷漆'],
-    serviceTypeValues: ['repair', 'sheetMetal', 'paint']
-  },
-  {
-    id: 8,
-    workOrderNo: '3318938923892839290',
-    status: 'completed',
-    plateNumber: '浙HH55555',
-    vehicleModel: 'C10-510激光雷达版',
-    vin: 'LFV3H6686RKYM3400',
-    ownerName: '郑伟',
-    ownerTag: '',
-    managerName: '钱婷',
-    createTime: '2026-03-18 14:20',
-    serviceTypes: ['喷漆'],
-    serviceTypeValues: ['paint']
-  },
-  {
-    id: 9,
-    workOrderNo: '3318938923892839291',
-    status: 'completed',
-    plateNumber: '浙JJ66666',
-    vehicleModel: 'C11-200增程版',
-    vin: 'LFV3H6686RKYM3401',
-    ownerName: '孙丽',
-    ownerTag: '预约客户',
-    managerName: '王鹏',
-    createTime: '2026-03-17 17:00',
-    serviceTypes: ['一般维修', '钣金'],
-    serviceTypeValues: ['repair', 'sheetMetal']
-  }
-]
-
-const dataList = ref([...mockData.filter((i) => i.status === 'pending')])
-
-const requestData = reactive({
-  data: {
-    keyWord: '',
-    pageNum: 1,
-    pageSize: 10,
-    status: 'pending'
-  },
-  api: () =>
-    Promise.resolve({
-      code: 200,
-      data: dataList.value
-    })
-})
+const dataList = ref([])
 
 const setData = (res) => {
   const list = Array.isArray(res.list) ? res.list : []
@@ -519,6 +394,7 @@ const setData = (res) => {
   } else {
     dataList.value.push(...list)
   }
+  showEmpty.value = dataList.value.length === 0
 }
 
 const resetAll = () => {
@@ -527,21 +403,28 @@ const resetAll = () => {
   refreshList()
 }
 
-const getStatusText = (status) => {
-  const map = {
-    pending: '待交车',
-    completed: '已交车'
-  }
-  return map[status] || '未知'
+const getStatusClass = (status) => {
+  // 根据orderStatus返回对应样式
+  // 待交车(待结算): #c8a12b 橙色
+  // 已交车(已收款): #009100 绿色
+  if (status === 160) return 'status-orange'
+  if (status === 180) return 'status-green'
+  return 'status-gray'
 }
 
-const getStatusClass = (status) => {
-  return status === 'pending' ? 'status-orange' : 'status-green'
+// 根据预警等级返回对应颜色
+const getAlarmColor = (alarmLevel) => {
+  const colorMap = {
+    '10': '#009100', // 绿色
+    '20': '#C8A12B', // 橙色
+    '30': '#B91919' // 红色
+  }
+  return colorMap[alarmLevel] || '#009100'
 }
 
 const goToDetail = (item) => {
-  // 已交车状态才能点击跳转
-  if (item.status === 'completed') {
+  // 已收款状态才能点击跳转
+  if (item.orderStatus === '40') {
     router.push('/settlement-statement/after-sales')
   }
 }
@@ -551,7 +434,12 @@ const handleCancel = (item) => {
 }
 
 const handleContact = (item) => {
-  showToast(`联系车主: ${item.ownerName}`)
+  const phone = item.customerPhone
+  if (phone) {
+    callPhone(phone)
+  } else {
+    showToast('暂无联系电话')
+  }
 }
 
 const handleSettle = (item) => {
@@ -757,6 +645,10 @@ const goToUpload = () => {
         &.status-green {
           color: #009100;
         }
+
+        &.status-gray {
+          color: #999999;
+        }
       }
     }
 
@@ -786,23 +678,17 @@ const goToUpload = () => {
           flex-shrink: 0;
         }
 
-        .service-tags-inline {
-          display: flex;
-          align-items: center;
-          gap: 4px;
+        .svc-tag {
+          padding: 1px 4px;
+          font-family: 'PingFang SC';
+          font-size: 12px;
+          color: #191a1b;
+          background: #ffffff;
+          border: 0.5px solid #191a1b;
+          border-radius: 4px;
+          flex-shrink: 0;
+          white-space: nowrap;
           margin-left: 12px;
-
-          .svc-tag {
-            padding: 1px 4px;
-            font-family: 'PingFang SC';
-            font-size: 12px;
-            color: #191a1b;
-            background: #ffffff;
-            border: 0.5px solid #191a1b;
-            border-radius: 4px;
-            flex-shrink: 0;
-            white-space: nowrap;
-          }
         }
       }
 
@@ -839,14 +725,6 @@ const goToUpload = () => {
 
           .info-value {
             color: #191a1b;
-          }
-
-          .owner-tag {
-            padding: 1px 4px;
-            font-size: 12px;
-            color: #191a1b;
-            background: rgba(25, 26, 27, 0.06);
-            border-radius: 4px;
           }
         }
       }

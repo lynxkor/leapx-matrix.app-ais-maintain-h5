@@ -1,4 +1,7 @@
 {
+  "env": {
+    "YAPI_TOKEN": "10e112eafdb3a739133cc1ce7421205b25fb0d3f8c24666f3aecc8514690f8ac"
+  },
   "permissions": {
     "allow": [
       "mcp___master_mastergo-magic-mcp__mcp__getDsl",
@@ -54,13 +57,18 @@
       "Bash(~/AppData/Roaming/npm/claude-statusline.cmd:*)",
       "Bash(claude-statusline)",
       "Bash(bash:*)",
-      "Bash(python3:*)"
+      "Bash(python3:*)",
+      "Bash(jq '.[0].text' -r)",
+      "Bash(curl -s \"https://itdev-yapi.leapmotor.com/api/interface/get?id=28309&token=\")",
+      "Bash(curl:*)"
     ]
   },
   "statusLine": {
     "type": "command",
     "command": "bash",
-    "args": ["-c", "CTX_EST=0; if [ -d .claude ]; then CLAUDE_SIZE=$(du -sb .claude 2>/dev/null | awk '{print $1}') || CLAUDE_SIZE=0; CTX_EST=$((CLAUDE_SIZE / 1024 / 1024 * 5)); fi; COMMITS=$(git log --oneline -20 2>/dev/null | wc -l); CTX_EST=$((CTX_EST + COMMITS / 2)); if [ $CTX_EST -gt 100 ]; then CTX_EST=100; elif [ $CTX_EST -eq 0 ]; then CTX_EST='?'; fi; echo \"$(date '+%H:%M') 👤 $(whoami) 📁 $(basename $(pwd)) 🌿 $(git branch --show-current 2>/dev/null || echo 'N/A') 📊 ${CTX_EST}%\""],
     "padding": 1
+  },
+  "enabledPlugins": {
+    "claude-hud@claude-hud": true
   }
 }

@@ -32,6 +32,7 @@
   "dependencies": {
     "@leapmotor/design-v3-h5": "0.0.1",
     "axios": "^1.11.0",
+    "dayjs": "^1.11.20",
     "pinia": "^3.0.3",
     "vant": "^4.9.21",
     "vue": "^3.5.18",

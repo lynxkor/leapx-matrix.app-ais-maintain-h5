@@ -1,4 +1,26 @@
-import { get, post } from '@/libs/utils/request'
+import { get, post, postJson } from './request'
+
+// ==================== 结算单列表相关 ====================
+
+/**
+ * 获取结算单列表（分页）
+ * @param {Object} data - 查询参数
+ * @param {number} data.pageNum - 页码
+ * @param {number} data.pageSize - 每页条数
+ * @param {string} [data.appSearchKeyWord] - 搜索关键词（支持工单号、VIN、车牌号、车主姓名模糊搜索）
+ * @param {string} [data.vehProfileVin] - VIN码
+ * @param {string} [data.carPlate] - 车牌号
+ * @param {string} [data.customerName] - 车主姓名
+ * @param {string} [data.serviceProxyCode] - 施工单号
+ * @param {string} [data.code] - 结算单号
+ * @param {string} [data.statementStatus] - 结算状态：10-待结算，30-待收款，40-已收款，50-反结算，60-取消结算
+ * @param {string} [data.createTimeStart] - 创建开始时间（格式：YYYY-MM-DD HH:mm:ss）
+ * @param {string} [data.createTimeEnd] - 创建结束时间（格式：YYYY-MM-DD HH:mm:ss）
+ * @returns {Promise}
+ */
+export function getSettlementStatementPage(data) {
+  return post('maintain/app/sp/serviceProxy/page', data)
+}
 
 /**
  * 获取结算报表列表
