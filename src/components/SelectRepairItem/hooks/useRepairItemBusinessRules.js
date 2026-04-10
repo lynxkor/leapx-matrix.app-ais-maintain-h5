@@ -52,10 +52,13 @@ export default function useRepairItemBusinessRules({
     const hasPerm = isPart ? perm.partHasPermission : perm.repairItemHasPermission
     const permCheckoutTypeIds = hasPerm ? (isPart ? perm.part.checkoutTypeIds : perm.repairItem.checkoutTypeIds) : null
     const permWarrantyTypeIds = hasPerm ? (isPart ? perm.part.warrantyTypeIds : perm.repairItem.warrantyTypeIds) : null
+    // 随维修项目导入的零件维修类型不可修改，已保存过的维修项目维修类型不可修改
+    const repairItemDisabled = isPart ? !!item.repairItemId : !!item.id
 
     return maintenanceTypes.map(mt => ({
       text: mt.message,
       value: mt.code,
+      disabled: repairItemDisabled,
       children: checkoutTypes
         // 权限过滤：不显示不被允许的结算类型
         .filter(ct => !hasPerm || !permCheckoutTypeIds.length || permCheckoutTypeIds.includes(ct.code))
