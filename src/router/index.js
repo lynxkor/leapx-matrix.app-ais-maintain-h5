@@ -151,7 +151,7 @@ const router = createRouter({
         {
           path: '/reception/add-parts',
           name: 'addParts',
-          component: () => import('../views/reception/add-parts/index.vue'),
+          component: () => import('../components/SelectRepairItem/index.vue'),
           meta: {
             title: '选择维修项目',
             keepAlive: false
