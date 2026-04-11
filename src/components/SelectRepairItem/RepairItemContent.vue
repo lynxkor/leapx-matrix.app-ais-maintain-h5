@@ -45,8 +45,14 @@
     <div class="content-area">
       <div class="content-area-section" v-if="selectedItems.length > 0">
         <div class="section-title">维修项目</div>
-         <div v-for="group in packageItemGroups" :key="'pkg-item-' + group.key" class="package-group">
-          <div class="package-group-title"  @click="handleShowActivity">{{ group.title }}<van-icon name="arrow" /></div>
+        <div
+          v-for="group in packageItemGroups"
+          :key="'pkg-item-' + group.key"
+          class="package-group"
+        >
+          <div class="package-group-title" @click="openPackageDetail(group)">
+            {{ group.title }}<van-icon name="arrow" />
+          </div>
           <RepairItemCard
             v-for="item in group.items"
             :key="item.id || item.repairItemId"
@@ -74,8 +80,14 @@
 
       <div class="content-area-section" v-if="selectedParts.length > 0">
         <div class="section-title">维修配件</div>
-        <div v-for="group in packagePartGroups" :key="'pkg-part-' + group.key" class="package-group">
-          <div class="package-group-title" @click="handleShowActivity">{{ group.title }}<van-icon name="arrow" /></div>
+        <div
+          v-for="group in packagePartGroups"
+          :key="'pkg-part-' + group.key"
+          class="package-group"
+        >
+          <div class="package-group-title" @click="openPackageDetail(group)">
+            {{ group.title }}<van-icon name="arrow" />
+          </div>
           <RepairItemCard
             v-for="item in group.items"
             :key="item.id || item.partsId"
@@ -101,7 +113,10 @@
         />
       </div>
 
-      <Empty v-if="selectedItems.length === 0 && selectedParts.length === 0" text="还没有添加维修项目零件" />
+      <Empty
+        v-if="selectedItems.length === 0 && selectedParts.length === 0"
+        text="还没有添加维修项目零件"
+      />
     </div>
 
     <!-- 结算类型选择弹窗 -->
@@ -115,14 +130,16 @@
 
     <!-- 底部保存按钮 -->
     <div class="popup-footer" v-if="!isComponent">
-      <div
-        class="save-btn"
-        :class="{ disabled: !hasAnySelectedItems }"
-        @click="onSave"
-      >
-        保存
-      </div>
+      <div class="save-btn" :class="{ disabled: !hasAnySelectedItems }" @click="onSave">保存</div>
     </div>
+
+    <!-- 套餐详情弹窗 -->
+    <PackageDetailPopup
+      :show="showPackageDetail"
+      :package-data="selectedPackageDetail"
+      :show-cancel="false"
+      @close="showPackageDetail = false"
+    />
   </div>
 </template>
 
@@ -132,21 +149,27 @@ import Empty from '@/views/repairWork/components/Empty.vue'
 import SearchBar from './SearchBar.vue'
 import RepairItemCard from './RepairItemCard.vue'
 import AisCascader from '@/components/AisCascader/index.vue'
-import { useRepairItemData, useRepairItemBusinessRules, useRepairItemOperations, useRepairItemList } from './hooks'
+import PackageDetailPopup from '@/components/PackageDetailPopup.vue'
+import {
+  useRepairItemData,
+  useRepairItemBusinessRules,
+  useRepairItemOperations,
+  useRepairItemList,
+} from './hooks'
 
 const props = defineProps({
   serviceProxyId: {
     type: String,
-    default: ''
+    default: '',
   },
   showHeader: {
     type: Boolean,
-    default: false
+    default: false,
   },
   isComponent: {
     type: Boolean,
-    default: false
-  }
+    default: false,
+  },
 })
 
 const emit = defineEmits(['close', 'confirm'])
@@ -167,7 +190,7 @@ const {
   normalizePart,
   getPermFilteredDefaults,
   loadInitialData,
-  resetData
+  resetData,
 } = useRepairItemData({ serviceProxyId: props.serviceProxyId })
 
 // 业务规则 Hook
@@ -182,42 +205,32 @@ const {
   editingItem,
   showCheckoutPicker,
   openCheckoutPicker,
-  onCheckoutConfirm
+  onCheckoutConfirm,
 } = useRepairItemBusinessRules({
   dealerPermission,
   rawMaintenanceTypes,
   rawCheckoutTypes,
   rawRepairItemTypes,
   selectedItems,
-  selectedParts
+  selectedParts,
 })
 
 // 操作 Hook
-const {
-  performSearch,
-  handleAddItemWithParts,
-  handleItemUpdate,
-  removeItem,
-  handleSave
-} = useRepairItemOperations({
-  serviceProxyId: props.serviceProxyId,
-  selectedItems,
-  selectedParts,
-  normalizeItem,
-  normalizePart,
-  getPermFilteredDefaults,
-  activeTab,
-  searchBarRef
-})
+const { performSearch, handleAddItemWithParts, handleItemUpdate, removeItem, handleSave } =
+  useRepairItemOperations({
+    serviceProxyId: props.serviceProxyId,
+    selectedItems,
+    selectedParts,
+    normalizeItem,
+    normalizePart,
+    getPermFilteredDefaults,
+    activeTab,
+    searchBarRef,
+  })
 
 // 列表分组 Hook
-const {
-  hasAnySelectedItems,
-  regularItems,
-  packageItemGroups,
-  regularParts,
-  packagePartGroups
-} = useRepairItemList({ selectedItems, selectedParts })
+const { hasAnySelectedItems, regularItems, packageItemGroups, regularParts, packagePartGroups } =
+  useRepairItemList({ selectedItems, selectedParts })
 
 // 事件处理
 const handleItemUpdateWrapper = (item, updates) => {
@@ -236,7 +249,7 @@ const onSaveSuccess = (data) => {
   emit('confirm', data)
 }
 
-const onSave = async() => {
+const onSave = async () => {
   const success = await handleSave(onSaveSuccess)
   if (success) {
     searchBarRef.value?.reset()
@@ -244,8 +257,23 @@ const onSave = async() => {
   }
 }
 
-const handleShowActivity = () => {
-  console.log('handleShowActivity')
+// 套餐详情弹窗
+const showPackageDetail = ref(false)
+const selectedPackageDetail = ref({
+  name: '',
+  code: '',
+  itemRespList: [],
+})
+const currentPackageGroup = ref(null)
+
+const openPackageDetail = (group) => {
+  currentPackageGroup.value = group
+  selectedPackageDetail.value = {
+    name: group.title || '',
+    code: group.key || '',
+    itemRespList: group.items || [],
+  }
+  showPackageDetail.value = true
 }
 
 // 监听器
@@ -260,7 +288,7 @@ defineExpose({
   searchBarRef,
   selectedItems,
   selectedParts,
-  onSave
+  onSave,
 })
 </script>
 
@@ -355,7 +383,7 @@ defineExpose({
       background-color: var(--leap-color-default-light-5);
       border-width: 0.5px 0px 0.5px 0px;
       border-style: solid;
-      border-color: #B3DEB3;
+      border-color: #b3deb3;
       border-radius: 12px;
       ::v-deep .repair-item-card {
         margin: 0 8px 8px 8px;

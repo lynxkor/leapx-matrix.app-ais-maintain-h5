@@ -2,12 +2,12 @@
   <div class="repair-item-card">
     <div v-if="deletable" class="card-delete" @click="$emit('delete')">
       <div class="delete-circle">
-        <img :src="icon_delete">
+        <img :src="icon_delete" />
       </div>
     </div>
     <div v-else class="card-delete">
       <div class="delete-circle disabled">
-        <img :src="icon_delete">
+        <img :src="icon_delete" />
       </div>
     </div>
     <div class="card-body">
@@ -17,19 +17,33 @@
         <div class="info-left">
           <div class="name-row">
             <span class="card-name">{{ item.name }}</span>
-            <img v-if="nameEditable" :src="icon_edit"  class="edit-icon" alt="" @click="openNameEditPopup">
+            <img
+              v-if="nameEditable"
+              :src="icon_edit"
+              class="edit-icon"
+              alt=""
+              @click="openNameEditPopup"
+            />
           </div>
           <div class="code-row">
             <span class="card-code">{{ item.code }}</span>
           </div>
           <div class="checkout-row" @click="openCascaderPopup">
             <span class="checkout-label">{{ checkoutLabel }}</span>
-            <van-icon v-if="!item.packageId" name="arrow-down" size="12" color="#545454" class="checkout-arrow" />
+            <van-icon
+              v-if="!item.packageId"
+              name="arrow"
+              size="12"
+              color="#545454"
+              class="checkout-arrow"
+            />
           </div>
         </div>
         <!-- 右列 -->
         <div class="info-right">
-          <div class="main-price">¥{{ (item.price * item.quantity - item.discountAmount).toFixed(2) || '0.00' }}</div>
+          <div class="main-price">
+            ¥{{ (item.price * item.quantity - item.discountAmount).toFixed(2) || '0.00' }}
+          </div>
           <div
             class="discount-wrapper"
             :class="{ 'discount-disabled': discountDisabled }"
@@ -71,7 +85,12 @@
       <div class="name-edit-popup">
         <div class="popup-title">维修项目名称</div>
         <div class="input-container">
-          <van-field ref="nameInputRef" v-model="tempName" placeholder="请输入维修项目名称" clearable/>
+          <van-field
+            ref="nameInputRef"
+            v-model="tempName"
+            placeholder="请输入维修项目名称"
+            clearable
+          />
         </div>
         <div class="popup-actions">
           <div class="action-btn cancel-btn" @click="cancelNameEdit">取消</div>
@@ -91,24 +110,24 @@ import icon_edit from '@/assets/images/icon_edit.svg'
 const props = defineProps({
   item: {
     type: Object,
-    required: true
+    required: true,
   },
   stepperDisabled: {
     type: Boolean,
-    default: false
+    default: false,
   },
   discountDisabled: {
     type: Boolean,
-    default: false
+    default: false,
   },
   nameEditable: {
     type: Boolean,
-    default: false
+    default: false,
   },
   deletable: {
     type: Boolean,
-    default: true
-  }
+    default: true,
+  },
 })
 
 const emit = defineEmits(['delete', 'update-item'])
@@ -135,7 +154,11 @@ const openNameEditPopup = () => {
 
 const checkoutLabel = computed(() => {
   const { item } = props
-  return [item.repairItemTypeName, item.checkoutTypeName, item.warrantyTypeName].filter(item => item).join('-') || '请选择'
+  return (
+    [item.repairItemTypeName, item.checkoutTypeName, item.warrantyTypeName]
+      .filter((item) => item)
+      .join('-') || '请选择'
+  )
 })
 
 // 开始编辑优惠金额
@@ -384,12 +407,14 @@ const openCascaderPopup = () => {
         border: 1px solid var(--leap-color-default);
         color: var(--leap-color-default);
         border-radius: 4px;
-        ::v-deep .van-stepper__minus, ::v-deep .van-stepper__plus {
+        ::v-deep .van-stepper__minus,
+        ::v-deep .van-stepper__plus {
           background: #fff;
           color: var(--leap-color-default);
           font-weight: 500;
         }
-        ::v-deep .van-stepper__minus--disabled, ::v-deep.van-stepper__plus--disabled {
+        ::v-deep .van-stepper__minus--disabled,
+        ::v-deep.van-stepper__plus--disabled {
           color: var(--leap-color-default-light-3);
         }
         ::v-deep .van-stepper__input {
@@ -421,7 +446,7 @@ const openCascaderPopup = () => {
     position: relative;
     margin: 0 12px;
     margin-bottom: 32px;
-    ::v-deep .van-field{
+    ::v-deep .van-field {
       background: rgba(0, 0, 0, 0.04);
       border-radius: 7px;
     }

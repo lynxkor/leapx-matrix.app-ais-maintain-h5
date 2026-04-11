@@ -99,9 +99,9 @@ const filterList = ref([
       { label: '待交车', value: 160 },
       { label: '已交车', value: 180 },
       { label: '反结算', value: 200 },
-      { label: '已作废', value: 210 }
-    ]
-  }
+      { label: '已作废', value: 210 },
+    ],
+  },
   // {
   //   title: '维修类型',
   //   key: 'repairItemTypeDetailCollect',
@@ -138,7 +138,7 @@ const requestData = computed(() => {
   const data = {
     pageNum: 1,
     pageSize: 10,
-    ...searchParams.value
+    ...searchParams.value,
   }
   console.log('data', data, activeTab.value)
   if (activeTab.value === 'today') {
@@ -154,7 +154,7 @@ const requestData = computed(() => {
   }
   return {
     api: getList,
-    data
+    data,
   }
 })
 
@@ -168,7 +168,7 @@ const onFilterSearch = (params) => {
 const onSearch = (e) => {
   searchParams.value = {
     ...searchParams.value,
-    appSearchKeyWord: e.searchValue
+    appSearchKeyWord: e.searchValue,
   }
   loading.value = true
   isExplicitRefresh.value = true
@@ -206,12 +206,12 @@ const onListError = (msg) => {
 const onCardClick = (item) => {
   // 已交车(180)或已作废(210), 已生成结算单(1)跳转到详情页，其他跳转到编辑页
   const path =
-    item.status === 180 || item.status === 210 || item.isCreateStatementInfo == 1
+    item.orderStatus === 180 || item.orderStatus === 210 || item.isCreateStatementInfo == 1
       ? '/reception/work-order/detail'
       : '/reception/work-order/edit'
   router.push({
     path,
-    query: { id: item.id }
+    query: { id: item.id },
   })
 }
 

@@ -9,7 +9,11 @@
           <span><img src="@/assets/image/car.png" alt="" /></span>
           <span>换车</span>
         </span>
-        <span class="edit-plate" @click="onEditPlate">
+        <span
+          v-if="detail.orderStatus != 180 && detail.orderStatus != 210"
+          class="edit-plate"
+          @click="onEditPlate"
+        >
           <span><img src="@/assets/image/edit.png" alt="" /></span>
           <span>修改车牌</span>
         </span>
@@ -343,9 +347,12 @@
             <template v-for="(group, gIndex) in groupedRepairItems" :key="'repair-' + gIndex">
               <!-- 套餐分组：需要加标题并用div包裹 -->
               <div v-if="group.isPackage" class="package-group">
-                <div class="package-group-header">
-                  <span class="package-label">{{ group.packageTypeLabel }}-</span>
-                  <span class="package-code">{{ group.packageCode }}</span>
+                <div class="package-group-header" @click="onPackageGroupClick(group)">
+                  <span class="package-group-title">
+                    <span class="package-label">{{ group.packageTypeLabel }}-</span>
+                    <span class="package-code">{{ group.packageCode }}</span>
+                  </span>
+                  <van-icon name="arrow" size="12" color="#545454" />
                 </div>
                 <div
                   v-for="(item, index) in group.items"
@@ -368,7 +375,13 @@
                               item.checkoutTypeName || ''
                             }}-{{ item.warrantyTypeName || '' }}
                           </span>
-                          <van-icon name="arrow" size="12" color="#545454" />
+                          <van-icon
+                            v-if="!item.packageType"
+                            name="arrow"
+                            size="12"
+                            color="#545454"
+                            style="height: 17px; line-height: 19px"
+                          />
                         </div>
                       </div>
                       <div class="card-price">
@@ -413,7 +426,13 @@
                               item.checkoutTypeName || ''
                             }}-{{ item.warrantyTypeName || '' }}
                           </span>
-                          <van-icon name="arrow" size="12" color="#545454" />
+                          <van-icon
+                            v-if="!item.packageType"
+                            name="arrow"
+                            size="12"
+                            color="#545454"
+                            style="height: 17px; line-height: 19px"
+                          />
                         </div>
                       </div>
                       <div class="card-price">
@@ -444,9 +463,12 @@
             <template v-for="(group, gIndex) in groupedSpareParts" :key="'spare-' + gIndex">
               <!-- 套餐分组：需要加标题并用div包裹 -->
               <div v-if="group.isPackage" class="package-group">
-                <div class="package-group-header">
-                  <span class="package-label">{{ group.packageTypeLabel }}-</span>
-                  <span class="package-code">{{ group.packageCode }}</span>
+                <div class="package-group-header" @click="onPackageGroupClick(group)">
+                  <span class="package-group-title">
+                    <span class="package-label">{{ group.packageTypeLabel }}-</span>
+                    <span class="package-code">{{ group.packageCode }}</span>
+                  </span>
+                  <van-icon name="arrow" size="12" color="#545454" />
                 </div>
                 <div
                   v-for="(item, index) in group.items"
@@ -469,7 +491,13 @@
                               item.checkoutTypeName || ''
                             }}-{{ item.warrantyTypeName || '' }}
                           </span>
-                          <van-icon name="arrow" size="12" color="#545454" />
+                          <van-icon
+                            v-if="!item.packageType"
+                            name="arrow"
+                            size="12"
+                            color="#545454"
+                            style="height: 17px; line-height: 19px"
+                          />
                         </div>
                       </div>
                       <div class="card-price">
@@ -507,14 +535,20 @@
                   <div class="card-content">
                     <div class="card-top">
                       <div class="card-info">
-                        <div class="item-name">{{ item.packageName }}</div>
+                        <div class="item-name">{{ item.partsName }}</div>
                         <div class="item-category" @click="onCategoryClick(item)">
                           <span class="category-text">
                             {{ item.repairItemTypeName || '请选择' }}-{{
                               item.checkoutTypeName || ''
                             }}-{{ item.warrantyTypeName || '' }}
                           </span>
-                          <van-icon name="arrow" size="12" color="#545454" />
+                          <van-icon
+                            v-if="!item.packageType"
+                            name="arrow"
+                            size="12"
+                            color="#545454"
+                            style="height: 17px; line-height: 19px"
+                          />
                         </div>
                       </div>
                       <div class="card-price">
@@ -638,15 +672,17 @@
     <div class="bottom-bar">
       <span v-if="activeTab === 'inspection'" class="more-btn" @click="onMore">更多</span>
       <template v-if="activeTab === 'inspection'">
-        <span class="save-btn" @click="onSave">保存</span>
+        <span class="save-btn" @click="onInspectionSave">保存</span>
         <span v-if="!isPreCheckCompleted" class="complete-btn" @click="onComplete">预检完成</span>
       </template>
       <template v-else-if="activeTab === 'parts'">
-        <span class="save-btn" @click="onSave">保存</span>
+        <span class="save-btn" @click="onPartsSave">保存</span>
       </template>
       <template v-else-if="activeTab === 'signature'">
-        <span class="save-btn" @click="onSave">保存</span>
-        <span class="complete-btn" @click="onConfirmAndSign">制单确认并签字</span>
+        <span class="save-btn" @click="onSignatureSave">保存</span>
+        <span v-if="detail.orderStatus == 110" class="complete-btn" @click="onConfirmAndSign"
+          >制单确认并签字</span
+        >
       </template>
     </div>
     <!-- 更换车牌 -->
@@ -1210,109 +1246,21 @@
     </van-dialog>
 
     <!-- 维修类型选择弹窗 -->
-    <ais-popup
-      :show="showCategoryPopup"
-      position="bottom"
-      :show-header="false"
+    <AisCascader
+      v-model:show="showCheckoutPicker"
       title="请选择"
-      @close="showCategoryPopup = false"
-      style="height: 75vh"
-    >
-      <template #content>
-        <div class="category-popup">
-          <!-- Tab区域 -->
-          <div class="category-tabs">
-            <div
-              :class="['category-tab', { active: currentCategoryTab === 0 }]"
-              @click="currentCategoryTab = 0"
-            >
-              {{ selectedCategory.repairItemTypeName || '维修类型' }}
-            </div>
-            <div class="category-tab" style="margin: 0 5px">/</div>
-            <div
-              :class="['category-tab', { active: currentCategoryTab === 1 }]"
-              @click="currentCategoryTab = 1"
-            >
-              {{ selectedCategory.checkoutTypeName || '结算方式' }}
-            </div>
-            <div class="category-tab" style="margin: 0 5px">/</div>
-            <div
-              :class="['category-tab', { active: currentCategoryTab === 2 }]"
-              @click="currentCategoryTab = 2"
-            >
-              {{ selectedCategory.warrantyTypeName || '保修类型' }}
-            </div>
-          </div>
-          <!-- 列表内容 -->
-          <div class="category-content">
-            <!-- 维修类型 -->
-            <div v-show="currentCategoryTab === 0" class="category-list">
-              <div
-                v-for="item in globalStore.itemOptions.repairItemTypeName"
-                :key="item.repairItemTypeId"
-                :class="[
-                  'category-item',
-                  { active: selectedCategory.repairItemTypeId === item.repairItemTypeId },
-                ]"
-                @click="onSelectCategory('repairItemTypeId', item)"
-              >
-                <span class="item-text">{{ item.repairItemTypeName }}</span>
-                <van-icon
-                  v-if="selectedCategory.repairItemTypeId === item.repairItemTypeId"
-                  name="success"
-                  size="16"
-                  color="#009100"
-                />
-              </div>
-            </div>
-            <!-- 结算方式 -->
-            <div v-show="currentCategoryTab === 1" class="category-list">
-              <div
-                v-for="item in globalStore.itemOptions.checkoutTypeName"
-                :key="item.checkoutTypeId"
-                :class="[
-                  'category-item',
-                  { active: selectedCategory.checkoutTypeId === item.checkoutTypeId },
-                ]"
-                @click="onSelectCategory('checkoutTypeId', item)"
-              >
-                <span class="item-text">{{ item.checkoutTypeName }}</span>
-                <van-icon
-                  v-if="selectedCategory.checkoutTypeId === item.checkoutTypeId"
-                  name="success"
-                  size="16"
-                  color="#009100"
-                />
-              </div>
-            </div>
-            <!-- 保修类型 -->
-            <div v-show="currentCategoryTab === 2" class="category-list">
-              <div
-                v-for="item in globalStore.itemOptions.warrantyTypeName"
-                :key="item.warrantyTypeId"
-                :class="[
-                  'category-item',
-                  { active: selectedCategory.warrantyTypeId === item.warrantyTypeId },
-                ]"
-                @click="onSelectCategory('warrantyTypeId', item)"
-              >
-                <span class="item-text">{{ item.warrantyTypeName }}</span>
-                <van-icon
-                  v-if="selectedCategory.warrantyTypeId === item.warrantyTypeId"
-                  name="success"
-                  size="16"
-                  color="#009100"
-                />
-              </div>
-            </div>
-          </div>
-          <!-- 底部按钮 -->
-          <div class="category-footer">
-            <div class="confirm-btn" @click="onConfirmCategory">确定</div>
-          </div>
-        </div>
-      </template>
-    </ais-popup>
+      :options="categoryCascaderOptions"
+      :model-value="currentEditItem?.warrantyTypeId || ''"
+      @confirm="onCheckoutConfirm"
+    />
+
+    <!-- 套餐详情弹窗 -->
+    <PackageDetailPopup
+      :show="showPackageDetail"
+      :package-data="selectedPackageDetail"
+      :show-cancel="false"
+      @close="showPackageDetail = false"
+    />
 
     <!-- 全屏Loading -->
     <van-overlay :show="savingLoading">
@@ -1338,6 +1286,9 @@ import { useRoute, useRouter } from 'vue-router'
 import { showToast, showConfirmDialog, showImagePreview } from 'vant'
 import { useGlobalStore } from '@/stores/global'
 import AisPopup from '@/libs/components/AisPopup.vue'
+import AisCascader from '@/components/AisCascader/index.vue'
+import PackageDetailPopup from '@/components/PackageDetailPopup.vue'
+import { useRepairItemBusinessRules, useRepairItemData } from '@/components/SelectRepairItem/hooks'
 import { uploadFileByUrl, getUploadConfig, getFileList } from '@/libs/api/fileConfig'
 import { getAppImgLimit } from '@/libs/utils/nativeFn'
 import {
@@ -1348,6 +1299,7 @@ import {
   serviceAddOrUpdate,
   servicePreCheck,
   getRemindInfo,
+  saveSpRepairItem,
 } from '@/api/reception'
 import '../create/create.scss'
 
@@ -1415,46 +1367,47 @@ const onConfirmWarrantyAlert = () => {
 
 // 点击类别区域，打开弹窗
 const onCategoryClick = (item) => {
-  currentEditItem = item
-  // 初始化选中状态
-  selectedCategory.repairItemTypeId = item.repairItemTypeId || ''
-  selectedCategory.repairItemTypeName = item.repairItemTypeName || ''
-  selectedCategory.checkoutTypeId = item.checkoutTypeId || ''
-  selectedCategory.checkoutTypeName = item.checkoutTypeName || ''
-  selectedCategory.warrantyTypeId = item.warrantyTypeId || ''
-  selectedCategory.warrantyTypeName = item.warrantyTypeName || ''
-  showCategoryPopup.value = true
+  // 套餐内的项目不可编辑类型
+  if (item.packageType) {
+    return
+  }
+  openCheckoutPicker(item)
 }
 
-// 选择类别
-const onSelectCategory = (field, item) => {
-  if (field === 'repairItemTypeId') {
-    selectedCategory.repairItemTypeId = item.repairItemTypeId
-    selectedCategory.repairItemTypeName = item.repairItemTypeName
-    currentCategoryTab.value = 1 // 跳转到结算方式
-  } else if (field === 'checkoutTypeId') {
-    selectedCategory.checkoutTypeId = item.checkoutTypeId
-    selectedCategory.checkoutTypeName = item.checkoutTypeName
-    currentCategoryTab.value = 2 // 跳转到保修类型
-  } else if (field === 'warrantyTypeId') {
-    selectedCategory.warrantyTypeId = item.warrantyTypeId
-    selectedCategory.warrantyTypeName = item.warrantyTypeName
-    // 第三个不跳转
-  }
-}
+// 维修类型级联选择器 Hook
+const emptySelectedItems = ref([])
+// 维修项目数据 Hook
+const {
+  rawCheckoutTypes,
+  rawRepairItemTypes,
+  rawMaintenanceTypes,
+  selectedItems,
+  selectedParts,
+  dealerPermission,
+  loadInitialData,
+} = useRepairItemData({ serviceProxyId: route.query.id })
 
-// 确认类别选择
-const onConfirmCategory = () => {
-  if (currentEditItem) {
-    currentEditItem.repairItemTypeId = selectedCategory.repairItemTypeId
-    currentEditItem.repairItemTypeName = selectedCategory.repairItemTypeName
-    currentEditItem.checkoutTypeId = selectedCategory.checkoutTypeId
-    currentEditItem.checkoutTypeName = selectedCategory.checkoutTypeName
-    currentEditItem.warrantyTypeId = selectedCategory.warrantyTypeId
-    currentEditItem.warrantyTypeName = selectedCategory.warrantyTypeName
-  }
-  showCategoryPopup.value = false
-}
+// 业务规则 Hook
+const {
+  cascaderOptions: categoryCascaderOptions,
+  showCheckoutPicker,
+  editingItem,
+  openCheckoutPicker,
+  onCheckoutConfirm,
+  closeCheckoutPicker,
+} = useRepairItemBusinessRules({
+  dealerPermission,
+  rawMaintenanceTypes,
+  rawCheckoutTypes,
+  rawRepairItemTypes,
+  selectedItems,
+  selectedParts,
+})
+
+// 初始化数据
+onMounted(() => {
+  loadInitialData()
+})
 
 // 送修人类型选择
 const repairPersonType = ref('owner') // owner/bindingUser/other
@@ -1708,18 +1661,6 @@ const displayModules = computed(() => {
 // 选择器显示状态
 const showMoreActions = ref(false)
 
-// 维修类型弹窗相关
-const showCategoryPopup = ref(false)
-const currentCategoryTab = ref(0)
-const selectedCategory = reactive({
-  repairItemTypeId: '',
-  repairItemTypeName: '',
-  checkoutTypeId: '',
-  checkoutTypeName: '',
-  warrantyTypeId: '',
-  warrantyTypeName: '',
-})
-
 let currentEditItem = null // 当前编辑的项目
 
 // 业务类型列表
@@ -1780,6 +1721,34 @@ const partsData = reactive({
 const hasPackages = computed(() => {
   return partsData.packageRespList && partsData.packageRespList.length > 0
 })
+
+// 套餐详情弹窗
+const showPackageDetail = ref(false)
+const selectedPackageDetail = ref({
+  name: '',
+  code: '',
+  itemRespList: [],
+})
+
+// 点击套餐分组查看详情
+const onPackageGroupClick = (group) => {
+  // 查找对应的套餐信息
+  const pkg = partsData.packageRespList.find((p) => p.packageType === group.packageType)
+  if (pkg) {
+    selectedPackageDetail.value = {
+      name: pkg.packageTypeLabel || '',
+      code: pkg.packageCode || group.packageCode || '',
+      itemRespList: group.items || [],
+    }
+  } else {
+    selectedPackageDetail.value = {
+      name: group.packageTypeLabel || '',
+      code: group.packageCode || '',
+      itemRespList: group.items || [],
+    }
+  }
+  showPackageDetail.value = true
+}
 
 // 按套餐分组的维修项目
 const groupedRepairItems = computed(() => {
@@ -2150,6 +2119,14 @@ const onConfirmChangeCar = () => {
   detail.binderPhone = selectedCarInfo.value.vehicleProfileOwnerResp?.bindingPhone || ''
   detail.vehicleProfileServiceResp = selectedCarInfo.value.vehicleProfileServiceResp || {}
 
+  // 更新送修人信息为当前车主
+  detail.repairPerson = detail.owner
+  detail.repairPersonPhone = detail.ownerPhone
+  detail.repairPersonTag = '车主'
+  repairPersonType.value = 'owner'
+  repairPersonNameInput.value = detail.owner
+  repairPersonPhoneInput.value = detail.ownerPhone
+
   // 获取车联网里程数
   if (detail.vin) {
     fetchVehicleMileage(detail.vin)
@@ -2433,152 +2410,199 @@ const validateRepairPerson = () => {
 
 const savingLoading = ref(false)
 
-const onSave = async () => {
-  console.log('保存:', detail)
+// 环检信息保存（新增或编辑）
+const onInspectionSave = async () => {
   if (!validateRepairPerson()) return
-  // 如果选择"是"，客户故障描述必填
   if (detail.hasFault === '1' && !detail.customerFaultDesc.trim()) {
     showToast('请输入客户故障描述')
     return
   }
+  const res = await serviceAddOrUpdate({
+    id: detail.id,
+    code: '',
+    dataSource: '',
+    orderStatus: '',
+    warrantyTypeCollect: '',
+    customerName: detail.owner,
+    customerPhone: detail.ownerPhone,
+    custType: '',
+    vehModelName: detail.vehicleModelName,
+    bindingPhone: detail.binderPhone,
+    bindingUser: detail.bindingUser,
+    bindingUserId: '',
+    carPlate: detail.plateNo,
+    dealerName: detail.salesDealerName,
+    dealerCode: detail.salesDealerCode,
+    appointmentNo: '',
+    mileage: detail.mileage,
+    lastMileage: null,
+    startWarrantyDate: detail.vehicleProfileServiceResp.warrantyStartdate || '',
+    exclusiveServiceDealerName: detail.vehicleProfileServiceResp.serviceDealerName || '',
+    exclusiveServiceDealerCode: detail.vehicleProfileServiceResp.serviceDealerCode || '',
+    expectFinishAt: signatureData.deliveryTime,
+    createStatementInfoDate: '',
+    remark: '',
+    status: '',
+    statusDesc: '',
+    pickStatus: '',
+    shuttleName: detail.repairPerson,
+    shuttlePhone: detail.repairPersonPhone,
+    payType: '',
+    warrantyCompany: '',
+    signChannel: '',
+    signCompletedOn: '',
+    signGeneratedOn: '',
+    signStatus: '',
+    signUrlExpiredOn: '',
+    appointmentType: '',
+    preAuthType: '',
+    isLockLive: '',
+    isCreateWarranty: '',
+    isOutboundOrder: '',
+    isVehRetentionRemind: '',
+    isCancelStorage: '',
+    discountId: '',
+    finalCheckAt: '',
+    finalCheckerId: '',
+    finalChecker: '',
+    ticketStep: '',
+    warrantyStatus: '',
+    claimItemAmount: '',
+    claimOtherAmount: '',
+    claimPartsAmount: '',
+    departureMileage: '',
+    inPower: detail.battery,
+    outPower: '',
+    netMileage: detail.networkMileageTotal,
+    departureNetMileage: '',
+    inNetPower: detail.networkBattery,
+    outNetPower: '',
+    departureNetMileageElectricity: '',
+    departureNetMileageExtend: '',
+    netMileageElectricity: detail.electricalMileage,
+    netMileageExtend: detail.networkMileageAdd,
+    vehProfileId: detail.id,
+    vehProfileVin: detail.vin,
+    maintenanceMileage: detail.vehicleProfileServiceResp.nextMaintainMileages,
+    maintenanceTime: detail.vehicleProfileServiceResp.nextMaintainDate,
+    saleDate: detail.vehicleProfileServiceResp.salesDate || '',
+    vehModelId: detail.vehicleModelId,
+    vehRegisteredModelId: detail.vehicleProfileServiceResp.carSaleSversionId,
+    vehRegisteredModelName: detail.vehicleProfileServiceResp.carSalesVersionName,
+    vehYearTypeId: detail.vehicleProfileServiceResp.vehicleYearId,
+    vehYearTypeName: detail.vehicleProfileServiceResp.vehicleYearName,
+    dedicatedServiceManager: detail.vehicleProfileServiceResp.serviceUserName,
+    motorModel: detail.motorModel,
+    motorSerialNumber: detail.motorSerialNumber,
+    batteryModel: detail.batteryModel,
+    batterySerialNumber: detail.batterySerialNumber,
+    engineNumber: detail.enginenNumber,
+    repairItemTypeDetailCollect: '',
+    businessType: detail.businessType,
+    alarmLevel: '',
+    isLive: '',
+    haveRework: 0,
+    isCarWash: 0,
+    isRetainOldParts: 0,
+    inCustomerContent: '',
+    customerComment: '',
+    testResult: detail.testResult,
+    currentFault: detail.hasFault === '1' ? 1 : 0,
+    customerContent: detail.customerFaultDesc,
+    invaildDesc: '',
+    anomalyDescription: detail.abnormalDesc,
+    previewingFinishAt: '',
+    confirmedOn: '',
+    expectStartAt: '',
+    startAt: '',
+    finishAt: '',
+    faultSolve: '',
+    currentSituation: detail.hasFault === '1' ? 20 : 10,
+    faultAlert: '',
+    faultPeriod: '',
+    earliestfaultServiceProxy: '',
+    recentlyfaultServiceProxy: '',
+    faultModule: detail.faultModules.map((m) => m.cccCode).join(','),
+    isCreateStatementInfo: 0,
+    isPreAuth: '',
+    isCreatePreAuth: '',
+    preAuthRuleId: '',
+    unresolvedReason: '',
+    faultDesc: '',
+    batteryUnitId: '',
+    batteryUnitName: '',
+    targetUnitCode: '',
+    beforeChangeCode: '',
+    afterChangeCode: '',
+    exteriorPhotos: detail.exteriorImages.join(','),
+    interiorPhotos: detail.interiorImages.join(','),
+    isStoreLive: '',
+    faultAlertRecordParams: detail.faultModules.map((m) => ({
+      cccId: m.cccCode || '',
+      cccName: m.cccName || '',
+      vfgId: m.vfgCode || '',
+      vfgName: m.vfgName || '',
+      vrtId: m.vrtCode || '',
+      vrtName: m.vrtName || '',
+    })),
+    latelyServiceProxy: '',
+    earlyServiceProxy: '',
+  })
+  if (res.code !== 200) {
+    showToast(res.msg || '保存失败')
+  }
+  return res
+}
+
+// 项目零件保存
+const onPartsSave = async () => {
   savingLoading.value = true
   try {
-    const res = await serviceAddOrUpdate({
-      id: detail.id,
-      code: '',
-      dataSource: '',
-      orderStatus: '',
-      warrantyTypeCollect: '',
-      customerName: detail.owner,
-      customerPhone: detail.ownerPhone,
-      custType: '',
-      vehModelName: detail.vehicleModelName,
-      bindingPhone: detail.binderPhone,
-      bindingUser: detail.bindingUser,
-      bindingUserId: '',
-      carPlate: detail.plateNo,
-      dealerName: detail.salesDealerName,
-      dealerCode: detail.salesDealerCode,
-      appointmentNo: '',
-      mileage: detail.mileage,
-      lastMileage: null,
-      startWarrantyDate: detail.vehicleProfileServiceResp.warrantyStartdate || '',
-      exclusiveServiceDealerName: detail.vehicleProfileServiceResp.serviceDealerName || '',
-      exclusiveServiceDealerCode: detail.vehicleProfileServiceResp.serviceDealerCode || '',
-      expectFinishAt: signatureData.deliveryTime,
-      createStatementInfoDate: '',
-      remark: '',
-      status: '',
-      statusDesc: '',
-      pickStatus: '',
-      shuttleName: detail.repairPerson,
-      shuttlePhone: detail.repairPersonPhone,
-      payType: '',
-      warrantyCompany: '',
-      signChannel: '',
-      signCompletedOn: '',
-      signGeneratedOn: '',
-      signStatus: '',
-      signUrlExpiredOn: '',
-      appointmentType: '',
-      preAuthType: '',
-      isLockLive: '',
-      isCreateWarranty: '',
-      isOutboundOrder: '',
-      isVehRetentionRemind: '',
-      isCancelStorage: '',
+    // 保存项目零件
+    const res = await saveSpRepairItem({
+      serviceProxyId: route.query.id,
       discountId: '',
-      finalCheckAt: '',
-      finalCheckerId: '',
-      finalChecker: '',
-      ticketStep: '',
-      warrantyStatus: '',
-      claimItemAmount: '',
-      claimOtherAmount: '',
-      claimPartsAmount: '',
-      departureMileage: '',
-      inPower: detail.battery,
-      outPower: '',
-      netMileage: detail.networkMileageTotal,
-      departureNetMileage: '',
-      inNetPower: detail.networkBattery,
-      outNetPower: '',
-      departureNetMileageElectricity: '',
-      departureNetMileageExtend: '',
-      netMileageElectricity: detail.electricalMileage,
-      netMileageExtend: detail.networkMileageAdd,
-      vehProfileId: detail.id,
-      vehProfileVin: detail.vin,
-      maintenanceMileage: detail.vehicleProfileServiceResp.nextMaintainMileages,
-      maintenanceTime: detail.vehicleProfileServiceResp.nextMaintainDate,
-      saleDate: detail.vehicleProfileServiceResp.salesDate || '',
-      vehModelId: detail.vehicleModelId,
-      vehRegisteredModelId: detail.vehicleProfileServiceResp.carSaleSversionId,
-      vehRegisteredModelName: detail.vehicleProfileServiceResp.carSalesVersionName,
-      vehYearTypeId: detail.vehicleProfileServiceResp.vehicleYearId,
-      vehYearTypeName: detail.vehicleProfileServiceResp.vehicleYearName,
-      dedicatedServiceManager: detail.vehicleProfileServiceResp.serviceUserName,
-      motorModel: detail.motorModel,
-      motorSerialNumber: detail.motorSerialNumber,
-      batteryModel: detail.batteryModel,
-      batterySerialNumber: detail.batterySerialNumber,
-      engineNumber: detail.enginenNumber,
-      repairItemTypeDetailCollect: '',
-      businessType: detail.businessType,
-      alarmLevel: '',
-      isLive: '',
-      haveRework: 0,
-      isCarWash: 0,
-      isRetainOldParts: 0,
-      inCustomerContent: '',
-      customerComment: '',
-      testResult: detail.testResult,
-      currentFault: detail.hasFault === '1' ? 1 : 0,
-      customerContent: detail.customerFaultDesc,
-      invaildDesc: '',
-      anomalyDescription: detail.abnormalDesc,
-      previewingFinishAt: '',
-      confirmedOn: '',
-      expectStartAt: '',
-      startAt: '',
-      finishAt: '',
-      faultSolve: '',
-      currentSituation: detail.hasFault === '1' ? 20 : 10,
-      faultAlert: '',
-      faultPeriod: '',
-      earliestfaultServiceProxy: '',
-      recentlyfaultServiceProxy: '',
-      faultModule: detail.faultModules.map((m) => m.cccCode).join(','),
-      isCreateStatementInfo: 0,
-      isPreAuth: '',
-      isCreatePreAuth: '',
-      preAuthRuleId: '',
-      unresolvedReason: '',
-      faultDesc: '',
-      batteryUnitId: '',
-      batteryUnitName: '',
-      targetUnitCode: '',
-      beforeChangeCode: '',
-      afterChangeCode: '',
-      exteriorPhotos: detail.exteriorImages.join(','),
-      interiorPhotos: detail.interiorImages.join(','),
-      isStoreLive: '',
-      faultAlertRecordParams: detail.faultModules.map((m) => ({
-        cccId: m.cccCode || '',
-        cccName: m.cccName || '',
-        vfgId: m.vfgCode || '',
-        vfgName: m.vfgName || '',
-        vrtId: m.vrtCode || '',
-        vrtName: m.vrtName || '',
-      })),
-      latelyServiceProxy: '',
-      earlyServiceProxy: '',
+      itemList: partsData.repairItemRespList,
+      partsList: partsData.sparePartRespList,
     })
-    if (res.code === 200) {
-      showToast('保存成功')
-      isSaved.value = true
-    } else {
+    if (res.code !== 200) {
       showToast(res.msg || '保存失败')
+      return
+    }
+    showToast('保存成功')
+    // 执行inspection保存（带id编辑）
+    const inspectionRes = await onInspectionSave()
+    if (inspectionRes.code === 200) {
+      isSaved.value = true
+    }
+  } catch (error) {
+    console.error('保存失败:', error)
+    showToast('保存失败')
+  } finally {
+    savingLoading.value = false
+  }
+}
+
+// 签字确认保存
+const onSignatureSave = async () => {
+  savingLoading.value = true
+  try {
+    // 保存项目零件
+    const res = await saveSpRepairItem({
+      serviceProxyId: route.query.id,
+      discountId: '',
+      itemList: partsData.repairItemRespList,
+      partsList: partsData.sparePartRespList,
+    })
+    if (res.code !== 200) {
+      showToast(res.msg || '保存失败')
+      return
+    }
+    showToast('保存成功')
+    // 执行inspection保存（带id编辑）
+    const inspectionRes = await onInspectionSave()
+    if (inspectionRes.code === 200) {
+      isSaved.value = true
     }
   } catch (error) {
     console.error('保存失败:', error)
@@ -2601,9 +2625,7 @@ const onComplete = async () => {
   })
     .then(async () => {
       try {
-        const res = await servicePreCheck({
-          id: route.query.id,
-        })
+        const res = await servicePreCheck(route.query.id)
         if (res.code === 200) {
           showToast('预检完成')
           isPreCheckCompleted.value = true
@@ -2616,10 +2638,6 @@ const onComplete = async () => {
       }
     })
     .catch(() => {})
-}
-
-const onLocalSearch = (val) => {
-  console.log('onLocalSearch', val)
 }
 
 // 添加项目/零件
@@ -3382,7 +3400,13 @@ onMounted(() => {
     .package-group-header {
       display: flex;
       align-items: center;
+      justify-content: space-between;
       padding: 8px 12px;
+
+      .package-group-title {
+        display: flex;
+        align-items: center;
+      }
 
       .package-label {
         font-size: 14px;
