@@ -676,7 +676,7 @@ import {
   specialGoodsUse,
   specialActivityUse,
   specialFreeUse,
-  specialPackageUse
+  specialPackageUse,
 } from '@/api/reception'
 import './select-package.scss'
 
@@ -735,7 +735,7 @@ const selectedPackage = reactive({
   name: '',
   code: '',
   totalPrice: '0.00',
-  itemRespList: []
+  itemRespList: [],
 })
 
 // 选中的服务活动
@@ -743,13 +743,13 @@ const selectedService = reactive({
   id: '',
   activityResponse: {},
   itemResponseList: [],
-  partResponseList: []
+  partResponseList: [],
 })
 
 // 选中的免保项目
 const selectedFree = reactive({
   data: {},
-  partDetailList: []
+  partDetailList: [],
 })
 
 // 选中的商城订单
@@ -759,7 +759,7 @@ const selectedMall = ref({})
 const selectedEquity = reactive({
   data: {},
   repairItemList: [],
-  repairPartList: []
+  repairPartList: [],
 })
 
 // 当前权益是否已选
@@ -795,7 +795,7 @@ onMounted(() => {
         if (res.code === 200 && res.data) {
           packageList.value = res.data.map((item) => ({
             ...item,
-            selected: false
+            selected: false,
           }))
         } else {
           showToast(res.message || '请求失败')
@@ -918,7 +918,7 @@ const onEquityClick = (item) => {
 const onMallClick = (item) => {
   getSpecialGoodsDetail({
     id: serviceProxyId.value,
-    packageId: item.id
+    packageId: item.id,
   }).then((res) => {
     if (res.code === 200) {
       const data = res.data
@@ -933,7 +933,7 @@ const onMallClick = (item) => {
 const onFreeClick = (item) => {
   getSpecialFreeDetail({
     id: serviceProxyId.value,
-    packageId: item.id
+    packageId: item.id,
   }).then((res) => {
     if (res.code === 200) {
       const data = res.data
@@ -950,7 +950,7 @@ const onServiceClick = (item) => {
   getSpecialActivityDetail({
     activityId: item.activityId,
     id: serviceProxyId.value,
-    packageId: item.id
+    packageId: item.id,
   }).then((res) => {
     if (res.code === 200) {
       const data = res.data
@@ -959,11 +959,11 @@ const onServiceClick = (item) => {
       // 为每个项目和配件添加selected字段，默认false
       selectedService.itemResponseList = (data.itemResponseList || []).map((item) => ({
         ...item,
-        selected: false
+        selected: false,
       }))
       selectedService.partResponseList = (data.partResponseList || []).map((part) => ({
         ...part,
-        selected: part.allowDelete == 0 // allowDelete == 0 时默认选中
+        selected: part.allowDelete == 0, // allowDelete == 0 时默认选中
       }))
       isServiceSelected.value = data.activityUsed
       showServiceDetail.value = true
@@ -976,7 +976,7 @@ const onConfirmPackage = () => {
   packageSubmitting.value = true
   specialPackageUse({
     id: serviceProxyId.value,
-    packageId: selectedPackage.id
+    packageId: selectedPackage.id,
   })
     .then((res) => {
       if (res.code === 200) {
@@ -1021,7 +1021,7 @@ const onConfirmService = () => {
     ...item,
     checkoutTypeId: activityResp.checkoutTypeId || '',
     checkoutTypeName: activityResp.checkoutTypeName || '',
-    workHour: item.workHour || 1
+    workHour: item.workHour || 1,
   }))
 
   // 补充 partsList 缺少的字段
@@ -1032,7 +1032,7 @@ const onConfirmService = () => {
     partsId: part.partId || part.oldPartId || '', // 零件代码id
     checkoutTypeId: activityResp.checkoutTypeId || '',
     checkoutTypeName: activityResp.checkoutTypeName || '',
-    partsCode: part.partCode || part.oldPartCode || '' // 零件代码
+    partsCode: part.partCode || part.oldPartCode || '', // 零件代码
   }))
 
   serviceSubmitting.value = true
@@ -1041,7 +1041,7 @@ const onConfirmService = () => {
     packageId: selectedService.id,
     activityId: activityResp.id,
     itemList: enrichedItems,
-    partsList: enrichedParts
+    partsList: enrichedParts,
   })
     .then((res) => {
       if (res.code === 200) {
@@ -1065,7 +1065,7 @@ const onConfirmFree = () => {
   freeSubmitting.value = true
   specialFreeUse({
     id: serviceProxyId.value,
-    packageId: selectedFree.data.id
+    packageId: selectedFree.data.id,
   })
     .then((res) => {
       if (res.code === 200) {
@@ -1089,7 +1089,7 @@ const onConfirmMall = () => {
   mallSubmitting.value = true
   specialGoodsUse({
     id: serviceProxyId.value,
-    packageId: selectedMall.value.id
+    packageId: selectedMall.value.id,
   })
     .then((res) => {
       if (res.code === 200) {
@@ -1116,12 +1116,12 @@ const onConfirmEquity = () => {
     equityName: selectedEquity.data.rightsName,
     equityCode: selectedEquity.data.rightsCode,
     repairItemList: selectedEquity.data.repairItemList,
-    repairPartList: selectedEquity.data.repairPartList
+    repairPartList: selectedEquity.data.repairPartList,
   }
   specialEquityUse(params)
     .then((res) => {
       if (res.code === 200) {
-        showToast('已添加: ' + selectedEquity.data.equityName)
+        showToast('已添加: ' + selectedEquity.data.rightsName)
         showEquityDetail.value = false
         // router.back()
       } else {
