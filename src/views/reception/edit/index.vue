@@ -1707,6 +1707,29 @@ const detail = reactive({
   customerFaultDesc: '',
 })
 
+// 初始环检数据快照
+const initialInspectionData = ref(null)
+
+// 检查环检数据是否有改动
+const hasInspectionDataChanged = () => {
+  if (!initialInspectionData.value) return false
+  const initial = initialInspectionData.value
+  const current = detail
+  return (
+    initial.mileage !== current.mileage ||
+    initial.battery !== current.battery ||
+    JSON.stringify(initial.interiorImages) !== JSON.stringify(current.interiorImages) ||
+    JSON.stringify(initial.exteriorImages) !== JSON.stringify(current.exteriorImages) ||
+    initial.abnormalDesc !== current.abnormalDesc ||
+    initial.hasFault !== current.hasFault ||
+    initial.customerFaultDesc !== current.customerFaultDesc ||
+    initial.businessType !== current.businessType ||
+    initial.repairPerson !== current.repairPerson ||
+    initial.repairPersonPhone !== current.repairPersonPhone ||
+    JSON.stringify(initial.faultModules) !== JSON.stringify(current.faultModules)
+  )
+}
+
 // 项目零件数据
 const partsData = reactive({
   workCostCount: '',
@@ -2026,6 +2049,21 @@ const fetchDetail = async () => {
         }
         repairPersonNameInput.value = detail.repairPerson
         repairPersonPhoneInput.value = detail.repairPersonPhone
+
+        // 保存环检数据快照
+        initialInspectionData.value = {
+          mileage: detail.mileage,
+          battery: detail.battery,
+          interiorImages: [...detail.interiorImages],
+          exteriorImages: [...detail.exteriorImages],
+          abnormalDesc: detail.abnormalDesc,
+          hasFault: detail.hasFault,
+          customerFaultDesc: detail.customerFaultDesc,
+          businessType: detail.businessType,
+          repairPerson: detail.repairPerson,
+          repairPersonPhone: detail.repairPersonPhone,
+          faultModules: [...detail.faultModules],
+        }
 
         // 判断状态
         isSaved.value = true
@@ -2411,11 +2449,36 @@ const validateRepairPerson = () => {
 const savingLoading = ref(false)
 
 // 环检信息保存（新增或编辑）
-const onInspectionSave = async () => {
-  if (!validateRepairPerson()) return
+const onInspectionSave = async (type) => {
+  // 如果是项目零件或签字确认页，且数据没改动，则跳过校验直接返回
+  if (type === 1 && !hasInspectionDataChanged()) {
+    return { code: 200 }
+  }
+
+  // 环检信息页需要校验
+  if (!validateRepairPerson()) return { code: -1 }
   if (detail.hasFault === '1' && !detail.customerFaultDesc.trim()) {
     showToast('请输入客户故障描述')
-    return
+    return { code: -1 }
+  }
+
+  // 检查数据是否有改动
+  if (!hasInspectionDataChanged()) {
+    // 数据没有变化，更新快照并返回
+    initialInspectionData.value = {
+      mileage: detail.mileage,
+      battery: detail.battery,
+      interiorImages: [...detail.interiorImages],
+      exteriorImages: [...detail.exteriorImages],
+      abnormalDesc: detail.abnormalDesc,
+      hasFault: detail.hasFault,
+      customerFaultDesc: detail.customerFaultDesc,
+      businessType: detail.businessType,
+      repairPerson: detail.repairPerson,
+      repairPersonPhone: detail.repairPersonPhone,
+      faultModules: [...detail.faultModules],
+    }
+    return { code: 200 }
   }
   const res = await serviceAddOrUpdate({
     id: detail.id,
@@ -2548,7 +2611,9 @@ const onInspectionSave = async () => {
     latelyServiceProxy: '',
     earlyServiceProxy: '',
   })
-  if (res.code !== 200) {
+  if (res.code === 200) {
+    showToast('保存成功')
+  } else {
     showToast(res.msg || '保存失败')
   }
   return res
@@ -2571,8 +2636,8 @@ const onPartsSave = async () => {
     }
     showToast('保存成功')
     // 执行inspection保存（带id编辑）
-    const inspectionRes = await onInspectionSave()
-    if (inspectionRes.code === 200) {
+    const inspectionRes = await onInspectionSave(1)
+    if (inspectionRes?.code === 200) {
       isSaved.value = true
     }
   } catch (error) {
@@ -2600,8 +2665,8 @@ const onSignatureSave = async () => {
     }
     showToast('保存成功')
     // 执行inspection保存（带id编辑）
-    const inspectionRes = await onInspectionSave()
-    if (inspectionRes.code === 200) {
+    const inspectionRes = await onInspectionSave(1)
+    if (inspectionRes?.code === 200) {
       isSaved.value = true
     }
   } catch (error) {
