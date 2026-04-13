@@ -159,14 +159,14 @@
           <div class="option-row">
             <div
               class="option-btn"
-              :class="{ active: settleOption === 'resolved' }"
+              :class="settleOption === 'resolved' ? 'active resolved-active' : ''"
               @click="settleOption = 'resolved'"
             >
               已解决
             </div>
             <div
               class="option-btn"
-              :class="{ active: settleOption === 'unresolved' }"
+              :class="settleOption === 'unresolved' ? 'active unresolved-active' : ''"
               @click="settleOption = 'unresolved'"
             >
               未解决
@@ -174,18 +174,18 @@
           </div>
         </div>
 
-        <!-- 未解决原因多选标签 -->
+        <!-- 未解决原因单选标签 -->
         <div v-if="settleOption === 'unresolved'" class="reason-card">
           <div class="reason-text">未解决原因</div>
           <div class="reason-tags">
             <div
               v-for="reason in reasonOptions"
-              :key="reason"
+              :key="reason.value"
               class="reason-tag"
-              :class="{ active: selectedReasons.includes(reason) }"
-              @click="toggleReason(reason)"
+              :class="{ active: selectedReason === reason.value }"
+              @click="selectedReason = reason.value"
             >
-              {{ reason }}
+              {{ reason.label }}
             </div>
           </div>
         </div>
@@ -237,18 +237,61 @@
         </div>
       </div>
     </van-dialog>
+
+    <!-- 作废弹窗 -->
+    <AisPopup v-model:show="showCancelPopup" title="作废" position="bottom" round>
+      <template #content>
+        <div class="cancel-card">
+          <div class="cancel-text">作废原因</div>
+          <van-field
+            v-model="cancelReason"
+            rows="4"
+            autosize
+            type="textarea"
+            maxlength="500"
+            placeholder="请输入作废原因"
+            show-word-limit
+            class="cancel-textarea"
+          />
+        </div>
+      </template>
+      <template #footer>
+        <div class="cancel-footer">
+          <div class="submit-btn" @click="confirmCancel">确认作废</div>
+        </div>
+      </template>
+    </AisPopup>
+
+    <!-- 作废确认弹窗 -->
+    <van-dialog
+      v-model:show="showCancelConfirmPopup"
+      title=" "
+      :show-confirm-button="false"
+      :show-cancel-button="false"
+      class="confirm-dialog-vant"
+      close-on-click-overlay
+    >
+      <div class="confirm-dialog">
+        <div class="confirm-text">确定要作废该工单吗？</div>
+        <div class="confirm-actions">
+          <div class="confirm-btn cancel" @click="showCancelConfirmPopup = false">取消</div>
+          <div class="confirm-divider"></div>
+          <div class="confirm-btn confirm" @click="executeCancel">确定作废</div>
+        </div>
+      </div>
+    </van-dialog>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, watch } from 'vue'
+import { ref, reactive, onMounted, watch, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { showToast } from 'vant'
 import dayjs from 'dayjs'
 import RefreshList from '@/libs/components/RefreshList.vue'
 import ListItem from '@/components/ListItem.vue'
 import AisPopup from '@/libs/components/AisPopup.vue'
-import { getSettlementStatementPage } from '@/api/settlementStatement'
+import { getSettlementStatementPage, cancelServiceProxy, addServiceProxyStatement } from '@/api/settlementStatement'
 import { callPhone } from '@/libs/utils/nativeFn'
 
 const router = useRouter()
@@ -262,9 +305,15 @@ const showSettlePopup = ref(false)
 const showConfirmPopup = ref(false)
 const showUploadDialog = ref(false)
 const settleOption = ref('resolved')
-const selectedReasons = ref([])
+const selectedReason = ref('')
 const currentItem = ref(null)
 const refreshListRef = ref(null)
+
+// 作废相关
+const showCancelPopup = ref(false)
+const showCancelConfirmPopup = ref(false)
+const cancelReason = ref('')
+const cancelItem = ref(null)
 
 // 状态映射：tab -> 接口状态值
 const statusMap = {
@@ -294,37 +343,45 @@ const getDateRange = (tag) => {
 
 // 请求数据
 const requestData = reactive({
-  data: computed(() => {
-    const { createTimeStart, createTimeEnd } = getDateRange(selectedDateTag.value)
-    return {
-      pageNum: 1,
-      pageSize: 10,
-      orderStatus: statusMap[activeTab.value],
-      appSearchKeyWord: searchValue.value,
-      createTimeStart,
-      createTimeEnd
-    }
-  }),
+  data: {
+    pageNum: 1,
+    pageSize: 10,
+    orderStatus: statusMap['pending'],
+    appSearchKeyWord: '',
+    createTimeStart: '',
+    createTimeEnd: ''
+  },
   api: getSettlementStatementPage
 })
 
-const reasonOptions = [
-  '厂家无备件库存',
-  '备件缺货',
-  '故障未复现',
-  '无解决方案',
-  '约定下次进店检查',
-  '车辆超保',
-  '用户自费不修车'
-]
-
-const toggleReason = (reason) => {
-  if (selectedReasons.value.includes(reason)) {
-    selectedReasons.value = selectedReasons.value.filter((r) => r !== reason)
-  } else {
-    selectedReasons.value.push(reason)
-  }
+// 更新请求参数
+const updateRequestData = () => {
+  const { createTimeStart, createTimeEnd } = getDateRange(selectedDateTag.value)
+  Object.assign(requestData.data, {
+    pageNum: 1,
+    orderStatus: statusMap[activeTab.value],
+    appSearchKeyWord: searchValue.value,
+    createTimeStart,
+    createTimeEnd
+  })
 }
+
+// 初始化请求参数
+updateRequestData()
+
+// 未解决原因选项
+const reasonOptions = [
+  { label: '需求不明确', value: '10' },
+  { label: '技术方案待确认', value: '20' },
+  { label: '依赖第三方接口未联调', value: '30' },
+  { label: '测试环境异常', value: '40' },
+  { label: '数据缺失或错误', value: '50' },
+  { label: '优先级较低暂未处理', value: '60' },
+  { label: '涉及多部门协作未对齐', value: '70' },
+  { label: '代码修复后未验证', value: '80' },
+  { label: '硬件资源不足', value: '90' },
+  { label: '其他原因', value: '99' }
+]
 
 // 日期筛选标签
 const dateTags = [
@@ -336,15 +393,19 @@ const dateTags = [
 // 切换日期标签
 const selectDateTag = (value) => {
   selectedDateTag.value = value
-  // RefreshList 组件会自动监听 requestData.data 变化并触发请求
+  // 切换日期筛选时重新加载数据
+  updateRequestData()
+  refreshList()
 }
 
 // 切换标签页
 const switchTab = (tab) => {
   activeTab.value = tab
-  // 切换到已交车时默认显示全部日期，避免因日期过滤导致无数据
-  selectedDateTag.value = tab === 'completed' ? 'all' : 'today'
-  // RefreshList 组件会自动监听 requestData.data 变化并触发请求
+  // 切换tab时重置日期筛选到今天
+  selectedDateTag.value = 'today'
+  // 切换tab时重新加载数据
+  updateRequestData()
+  refreshList()
 }
 
 // 跳转搜索页
@@ -358,9 +419,16 @@ const goToSearch = () => {
 
 // 刷新列表
 const refreshList = () => {
-  if (refreshListRef.value) {
-    refreshListRef.value.reset()
-  }
+  // 先清空数据状态
+  dataList.value = []
+  showEmpty.value = false
+  // 使用 nextTick 等待组件渲染后再调用 search
+  nextTick(() => {
+    if (refreshListRef.value) {
+      // 使用 search 方法直接传入最新参数
+      refreshListRef.value.search(requestData.data)
+    }
+  })
 }
 
 // 复制文本
@@ -400,13 +468,13 @@ const setData = (res) => {
 const resetAll = () => {
   searchValue.value = ''
   selectedDateTag.value = 'today'
+  // 更新请求参数并刷新列表
+  updateRequestData()
   refreshList()
 }
 
 const getStatusClass = (status) => {
   // 根据orderStatus返回对应样式
-  // 待交车(待结算): #c8a12b 橙色
-  // 已交车(已收款): #009100 绿色
   if (status === 160) return 'status-orange'
   if (status === 180) return 'status-green'
   return 'status-gray'
@@ -423,14 +491,49 @@ const getAlarmColor = (alarmLevel) => {
 }
 
 const goToDetail = (item) => {
-  // 已收款状态才能点击跳转
-  if (item.orderStatus === '40') {
-    router.push('/settlement-statement/after-sales')
-  }
+  // 待交车和已交车都跳转到售后结算单详情页，传递状态区分显示不同按钮
+  router.push({
+    path: '/settlement-statement/after-sales',
+    query: {
+      id: item.id,
+      status: activeTab.value
+    }
+  })
 }
 
 const handleCancel = (item) => {
-  showToast(`作废工单: ${item.workOrderNo}`)
+  cancelItem.value = item
+  cancelReason.value = ''
+  showCancelPopup.value = true
+}
+
+// 确认作废 - 显示二次确认弹窗
+const confirmCancel = () => {
+  if (!cancelReason.value.trim()) {
+    showToast('请输入作废原因')
+    return
+  }
+  showCancelPopup.value = false
+  showCancelConfirmPopup.value = true
+}
+
+// 执行作废
+const executeCancel = async() => {
+  showCancelConfirmPopup.value = false
+  try {
+    const res = await cancelServiceProxy({
+      id: cancelItem.value.id,
+      invaildDesc: cancelReason.value.trim()
+    })
+    if (res.success) {
+      showToast('作废成功')
+      refreshList()
+    } else {
+      showToast(res.msg || '作废失败')
+    }
+  } catch (error) {
+    showToast('作废失败')
+  }
 }
 
 const handleContact = (item) => {
@@ -445,25 +548,43 @@ const handleContact = (item) => {
 const handleSettle = (item) => {
   currentItem.value = item
   settleOption.value = 'resolved'
-  selectedReasons.value = []
+  selectedReason.value = ''
   showSettlePopup.value = true
 }
 
 const confirmSettle = () => {
   // 如果是未解决且没有选择原因，提示并阻止
-  if (settleOption.value === 'unresolved' && selectedReasons.value.length === 0) {
+  if (settleOption.value === 'unresolved' && !selectedReason.value) {
     showToast('请选择未解决原因')
     return
   }
   showSettlePopup.value = false
   showConfirmPopup.value = true
-  // 跳转到售后结算单页面
-  router.push('/settlement-statement/after-sales')
 }
 
-const executeSettle = () => {
+// 执行结算
+const executeSettle = async() => {
   showConfirmPopup.value = false
-  showToast(settleOption.value === 'resolved' ? '故障已解决，结算成功' : '故障未解决，无法结算')
+  try {
+    // 基于列表项数据，添加/修改结算相关字段
+    const res = await addServiceProxyStatement({
+      ...currentItem.value,
+      serviceProxyId: currentItem.value.id,
+      faultSolve: settleOption.value === 'resolved' ? 1 : 0,
+      faultSolveLabel: settleOption.value === 'resolved' ? '已解决' : '未解决',
+      reason: settleOption.value === 'unresolved' ? selectedReason.value : ''
+    })
+    if (res.success) {
+      showToast('结算成功')
+      refreshList()
+      // 跳转到售后结算单页面
+      router.push('/settlement-statement/after-sales')
+    } else {
+      showToast(res.msg || '结算失败')
+    }
+  } catch (error) {
+    showToast('结算失败')
+  }
 }
 
 const goToUpload = () => {
@@ -794,28 +915,33 @@ const goToUpload = () => {
       justify-content: center;
       cursor: pointer;
 
-      &:nth-child(1) {
-        color: #009100;
-        background: #ffffff;
-        border: 1px solid #009100;
-      }
-
-      &:nth-child(2) {
+      // 已解决按钮默认样式
+      &:first-child {
         color: #191a1b;
         background: #f8f7f7;
         border: 1px solid transparent;
       }
 
-      &.active:nth-child(1) {
-        background: rgba(0, 145, 0, 0.08);
-        border-color: #009100;
-      }
-
-      &.active:nth-child(2) {
+      // 未解决按钮默认样式
+      &:last-child {
+        color: #191a1b;
         background: #f8f7f7;
-        border-color: #009100;
-        color: #009100;
+        border: 1px solid transparent;
       }
+    }
+
+    // 已解决选中状态
+    .resolved-active {
+      color: #009100 !important;
+      border-color: #009100 !important;
+      background: rgba(0, 145, 0, 0.08) !important;
+    }
+
+    // 未解决选中状态
+    .unresolved-active {
+      color: #009100 !important;
+      border-color: #009100 !important;
+      background: rgba(0, 145, 0, 0.08) !important;
     }
   }
 }
@@ -868,6 +994,11 @@ const goToUpload = () => {
   height: 602px !important;
 }
 
+// 作废弹窗高度
+:deep(.popup.cancel-popup) {
+  height: 280px !important;
+}
+
 .settle-footer {
   display: flex;
   flex-direction: column;
@@ -878,6 +1009,52 @@ const goToUpload = () => {
     width: 100%;
     height: 40px;
     background: #009100;
+    border-radius: 8px;
+    font-family: 'PingFang SC';
+    font-size: 14px;
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+  }
+}
+
+// 作废弹窗样式
+.cancel-card {
+  background: #ffffff;
+  border-radius: 6px;
+  padding: 12px;
+
+  .cancel-text {
+    font-family: 'PingFang SC';
+    font-size: 14px;
+    font-weight: 500;
+    color: #191a1b;
+    margin-bottom: 12px;
+  }
+
+  .cancel-textarea {
+    background: #f8f7f7;
+    border-radius: 6px;
+    padding: 12px;
+
+    :deep(.van-field__control) {
+      background: transparent;
+    }
+  }
+}
+
+.cancel-footer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+
+  .submit-btn {
+    width: 100%;
+    height: 40px;
+    background: #b91919;
     border-radius: 8px;
     font-family: 'PingFang SC';
     font-size: 14px;

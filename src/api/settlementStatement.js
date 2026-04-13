@@ -1,5 +1,8 @@
 import { get, post, postJson } from './request'
 
+const SERVICE_PROXY_BASE = 'maintain/app/sp/serviceProxy'
+const SERVICE_STATEMENT_BASE = 'maintain/app/sp/serviceStatement'
+
 // ==================== 结算单列表相关 ====================
 
 /**
@@ -7,217 +10,65 @@ import { get, post, postJson } from './request'
  * @param {Object} data - 查询参数
  * @param {number} data.pageNum - 页码
  * @param {number} data.pageSize - 每页条数
+ * @param {string} [data.orderStatus] - 工单状态：160-待交车，180-已交车
  * @param {string} [data.appSearchKeyWord] - 搜索关键词（支持工单号、VIN、车牌号、车主姓名模糊搜索）
- * @param {string} [data.vehProfileVin] - VIN码
+ * @param {string} [data.vehProfileVin] - VIN 码
  * @param {string} [data.carPlate] - 车牌号
  * @param {string} [data.customerName] - 车主姓名
  * @param {string} [data.serviceProxyCode] - 施工单号
- * @param {string} [data.code] - 结算单号
- * @param {string} [data.statementStatus] - 结算状态：10-待结算，30-待收款，40-已收款，50-反结算，60-取消结算
- * @param {string} [data.createTimeStart] - 创建开始时间（格式：YYYY-MM-DD HH:mm:ss）
- * @param {string} [data.createTimeEnd] - 创建结束时间（格式：YYYY-MM-DD HH:mm:ss）
+ * @param {string} [data.createTimeStart] - 创建开始时间（YYYY-MM-DD HH:mm:ss）
+ * @param {string} [data.createTimeEnd] - 创建结束时间（YYYY-MM-DD HH:mm:ss）
  * @returns {Promise}
  */
 export function getSettlementStatementPage(data) {
-  return post('maintain/app/sp/serviceProxy/page', data)
+  return post(`${SERVICE_PROXY_BASE}/page`, data)
 }
 
 /**
- * 获取结算报表列表
- * @param {Object} data - 查询参数
+ * 获取接车施工单详情
+ * @param {string} id - 施工单 ID
  * @returns {Promise}
  */
-export function getSettlementList(data) {
-  return post('/settlement/statement/page', data)
+export function getServiceProxyDetail(id) {
+  return get(`${SERVICE_PROXY_BASE}/get/${id}`)
 }
 
 /**
- * 获取结算详情
- * @param {string} id - 结算单ID
+ * 获取结算单详情信息
+ * 兼容两种调用方式：
+ * 1. getServiceStatementDetail('statementId')
+ * 2. getServiceStatementDetail({ id: 'statementId' })
+ * @param {string|Object} payload - 结算单 ID 或查询参数
  * @returns {Promise}
  */
-export function getSettlementDetail(id) {
-  return get(`/settlement/statement/detail/${id}`)
+export function getServiceStatementDetail(payload) {
+  const data = typeof payload === 'string' ? { id: payload } : payload
+  return postJson(`${SERVICE_STATEMENT_BASE}/get`, data)
 }
 
+// ==================== 作废相关 ====================
+
 /**
- * 结算审核通过
- * @param {string} id - 结算单ID
+ * 作废接车施工单
+ * @param {Object} data - 作废参数
+ * @param {string} data.id - 施工单主键 ID
+ * @param {string} data.invaildDesc - 作废描述
  * @returns {Promise}
  */
-export function approveSettlement(id) {
-  return post(`/settlement/statement/approve/${id}`)
+export function cancelServiceProxy(data) {
+  return postJson(`${SERVICE_PROXY_BASE}/cancel`, data)
 }
 
-/**
- * 结算审核驳回
- * @param {string} id - 结算单ID
- * @param {Object} data - 驳回原因等
- * @returns {Promise}
- */
-export function rejectSettlement(id, data) {
-  return post(`/settlement/statement/reject/${id}`, data)
-}
+// ==================== 结算相关 ====================
 
 /**
- * 重新提交结算单
- * @param {string} id - 结算单ID
+ * 接车施工单结算
+ * @param {Object} data - 结算参数
+ * @param {string} data.serviceProxyId - 接车施工单 ID
+ * @param {number} data.faultSolve - 客户反馈问题是否全部解决：1-已解决，0-未解决
+ * @param {string} [data.reason] - 未解决原因
  * @returns {Promise}
  */
-export function resubmitSettlement(id) {
-  return post(`/settlement/statement/resubmit/${id}`)
-}
-
-/**
- * 获取结算统计数据
- * @param {Object} params - 查询参数
- * @returns {Promise}
- */
-export function getSettlementStatistics(params) {
-  return get('/settlement/statement/statistics', params)
-}
-
-/**
- * 导出结算报表
- * @param {Object} data - 导出参数
- * @returns {Promise}
- */
-export function exportSettlement(data) {
-  return post('/settlement/statement/export', data, {
-    responseType: 'blob'
-  })
-}
-
-// ==================== 结算单编辑相关 ====================
-
-/**
- * 更新结算单
- * @param {string} id - 结算单ID
- * @param {Object} data - 更新的数据
- * @returns {Promise}
- */
-export function updateSettlement(id, data) {
-  return post(`/settlement/statement/update/${id}`, data)
-}
-
-/**
- * 保存结算单草稿
- * @param {Object} data - 草稿数据
- * @returns {Promise}
- */
-export function saveSettlementDraft(data) {
-  return post('/settlement/statement/draft/save', data)
-}
-
-/**
- * 获取结算单草稿
- * @param {string} workOrderId - 工单ID
- * @returns {Promise}
- */
-export function getSettlementDraft(workOrderId) {
-  return get(`/settlement/statement/draft/${workOrderId}`)
-}
-
-// ==================== 维修作业相关 ====================
-
-/**
- * 获取维修作业详情
- * @param {string} id - 工单ID
- * @returns {Promise}
- */
-export function getWorkOrderDetail(id) {
-  return get(`/settlement/work-order/detail/${id}`)
-}
-
-/**
- * 创建结算单
- * @param {Object} data - 结算单数据
- * @returns {Promise}
- */
-export function createSettlement(data) {
-  return post('/settlement/statement/create', data)
-}
-
-// ==================== 售后结算单相关 ====================
-
-/**
- * 获取售后结算单列表
- * @param {Object} data - 查询参数
- * @returns {Promise}
- */
-export function getAfterSalesSettlementList(data) {
-  return post('/settlement/after-sales/page', data)
-}
-
-/**
- * 获取售后结算单详情
- * @param {string} id - 结算单ID
- * @returns {Promise}
- */
-export function getAfterSalesSettlementDetail(id) {
-  return get(`/settlement/after-sales/detail/${id}`)
-}
-
-// ==================== 签字相关 ====================
-
-/**
- * 获取签字信息
- * @param {string} id - 结算单ID
- * @returns {Promise}
- */
-export function getSignInfo(id) {
-  return get(`/settlement/sign/info/${id}`)
-}
-
-/**
- * 提交签字
- * @param {string} id - 结算单ID
- * @param {Object} data - 签字数据
- * @returns {Promise}
- */
-export function submitSignature(id, data) {
-  return post(`/settlement/sign/submit/${id}`, data)
-}
-
-/**
- * 发送签字邀请
- * @param {string} id - 结算单ID
- * @param {Object} data - 邀请方式数据
- * @returns {Promise}
- */
-export function sendSignInvite(id, data) {
-  return post(`/settlement/sign/invite/${id}`, data)
-}
-
-// ==================== 收款记录相关 ====================
-
-/**
- * 创建收款记录
- * @param {Object} data - 收款数据
- * @returns {Promise}
- */
-export function createPaymentRecord(data) {
-  return post('/settlement/payment/create', data)
-}
-
-/**
- * 获取收款记录列表
- * @param {string} settlementId - 结算单ID
- * @returns {Promise}
- */
-export function getPaymentRecords(settlementId) {
-  return get(`/settlement/payment/list/${settlementId}`)
-}
-
-/**
- * 上传收款凭证
- * @param {FormData} data - 凭证文件
- * @returns {Promise}
- */
-export function uploadPaymentVoucher(data) {
-  return post('/settlement/payment/upload', data, {
-    headers: {
-      'Content-Type': 'multipart/form-data'
-    }
-  })
+export function addServiceProxyStatement(data) {
+  return postJson(`${SERVICE_PROXY_BASE}/statement/add`, data)
 }

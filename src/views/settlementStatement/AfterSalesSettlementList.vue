@@ -1,253 +1,173 @@
 <template>
   <div class="after-sales-settlement-list">
-    <!-- 头部信息 + Tab 切换栏 -->
-    <div class="sticky-header">
-      <!-- 头部信息 -->
-      <div class="header-info">
-        <div class="info-row">
-          <span class="info-label">施工单：</span>
-          <span class="info-value">YS-2603132716114</span>
-        </div>
-        <div class="info-row">
-          <span class="info-label">车辆VIN：</span>
-          <span class="info-value">LFV3735241411448</span>
-        </div>
-      </div>
+    <!-- 加载中 -->
+    <van-loading v-if="isLoading" color="#00AA00" class="page-loading" />
 
-      <!-- Tab 切换栏（多个结算单时显示） -->
-      <div v-if="tabs.length > 1" class="tab-bar">
-        <div
-          v-for="(tab, index) in tabs"
-          :key="index"
-          class="tab-item"
-          :class="{ active: activeTab === index }"
-          @click="switchTab(index)"
-        >
-          {{ tab }}
-        </div>
-      </div>
-    </div>
-
-    <!-- 内容区域 -->
-    <div class="content" :class="{ 'has-tab': tabs.length > 1 }">
-      <!-- 客户签字模块 -->
-      <!-- a. 有待提交的结算单则不显示 -->
-      <div v-if="!hasPendingSettlement" class="sign-section" @click="handleSignClick">
-        <div class="sign-header">
-          <span class="sign-title">客户签字</span>
-          <div class="sign-status">
-            <span :class="signStatusClass">{{ signStatusText }}</span>
-            <svg class="chevron-icon" width="16" height="16" viewBox="0 0 16 16" fill="none">
-              <path
-                d="M6 4L10 8L6 12"
-                :stroke="signStatusClass === 'status-green' ? '#009100' : '#888888'"
-                stroke-width="1.5"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-          </div>
-        </div>
-        <div class="sign-desc">为保障双方合理权益，请完成客户签字确认</div>
-      </div>
-
-      <!-- 结算信息卡片 -->
-      <div class="settle-info-card">
-        <div class="info-title">结算信息</div>
-        <div class="info-rows">
+    <template v-else>
+      <!-- 头部信息 + Tab 切换栏 -->
+      <div class="sticky-header">
+        <!-- 头部信息 -->
+        <div class="header-info">
           <div class="info-row">
-            <span class="row-label">总金额</span>
-            <span class="row-value">¥{{ formatPrice(totalAmount) }}</span>
+            <span class="info-label">施工单：</span>
+            <span class="info-value">{{ detailData.serviceProxyCode || '-' }}</span>
           </div>
           <div class="info-row">
-            <span class="row-label">已收金额</span>
-            <span class="row-value green">¥{{ formatPrice(paidAmount) }}</span>
+            <span class="info-label">车辆VIN：</span>
+            <span class="info-value">{{ detailData.vehProfileVin || '-' }}</span>
           </div>
-          <div class="info-row">
-            <span class="row-label">优惠金额</span>
-            <span class="row-value">¥{{ formatPrice(discountAmount) }}</span>
-          </div>
-          <div class="info-row">
-            <span class="row-label">去零金额</span>
-            <span class="row-value">¥{{ formatPrice(zeroAmount) }}</span>
-          </div>
-          <div class="info-divider"></div>
-          <div class="info-row">
-            <span class="row-label">实际应付金额</span>
-            <span class="row-value">¥{{ formatPrice(actualAmount) }}</span>
-          </div>
-          <div class="info-row">
-            <span class="row-label">剩余应付金额</span>
-            <span class="row-value red">¥{{ formatPrice(remainingAmount) }}</span>
+        </div>
+
+        <!-- Tab 切换栏（多个结算单时显示） -->
+        <div v-if="tabs.length > 1" class="tab-bar">
+          <div
+            v-for="(tab, index) in tabs"
+            :key="index"
+            class="tab-item"
+            :class="{ active: activeTab === index }"
+            @click="switchTab(index)"
+          >
+            {{ tab }}
           </div>
         </div>
       </div>
 
-      <!-- 收款记录列表 -->
-      <div v-if="paymentRecords.length > 0" class="payment-records-section">
-        <div class="section-title">收款记录</div>
-        <div v-for="(record, index) in paymentRecords" :key="index" class="payment-record-item">
-          <div class="record-left">
-            <div class="record-method">{{ record.paymentMethodText }}</div>
-            <div class="record-time">{{ record.paymentTime }}</div>
-          </div>
-          <div class="record-right">
-            <div class="record-amount">+¥{{ formatPrice(record.amount) }}</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- 维修项目 -->
-      <div class="repair-section">
-        <div class="section-title">维修项目</div>
-        <div class="repair-item">
-          <div class="repair-left">
-            <div class="repair-name">前保险杠补漆</div>
-            <div class="repair-code">C1031000035</div>
-            <div class="repair-type">一般维修-保险-无</div>
-          </div>
-          <div class="repair-right">
-            <div class="repair-price">¥621.50</div>
-            <div class="repair-discount">优惠 ¥0.00</div>
-          </div>
-        </div>
-        <div class="repair-item-bottom">
-          <span class="original-price">¥700.00</span>
-          <span class="quantity">x6.44</span>
-        </div>
-
-        <div class="repair-item">
-          <div class="repair-left">
-            <div class="repair-name">前保险杠补漆</div>
-            <div class="repair-code">C1031000035</div>
-            <div class="repair-type">一般维修-保险-无</div>
-          </div>
-          <div class="repair-right">
-            <div class="repair-price">¥621.50</div>
-            <div class="repair-discount">优惠 ¥0.00</div>
-          </div>
-        </div>
-        <div class="repair-item-bottom">
-          <span class="original-price">¥700.00</span>
-          <span class="quantity">x1.00</span>
-        </div>
-
-        <div class="repair-item special">
-          <div class="repair-left">
-            <div class="repair-name">更换或拆装左迁门电动防夹玻璃升降器总成</div>
-            <div class="repair-code">C1031000035</div>
-            <div class="repair-type">一般维修-保险-无</div>
-          </div>
-          <div class="repair-right">
-            <div class="repair-price">¥621.50</div>
-            <div class="repair-discount">优惠 ¥0.00</div>
-          </div>
-        </div>
-        <div class="repair-item-bottom">
-          <span class="original-price">¥700.00</span>
-          <span class="quantity">x1.00</span>
-        </div>
-      </div>
-
-      <!-- 维修配件 -->
-      <div class="parts-section">
-        <div class="section-title">维修配件</div>
-        <div class="part-item">
-          <div class="part-left">
-            <div class="part-name-row">
-              <span class="part-name">左前大灯</span>
-              <span class="part-tag">原厂件</span>
-            </div>
-            <div class="part-code">C1031000035</div>
-            <div class="part-type">一般维修-保险-无</div>
-            <div class="part-detail-row">
-              <span class="part-original">¥700.00</span>
-              <span class="part-actual">实际领料 1</span>
-              <span class="part-return">退料 0</span>
+      <!-- 内容区域 -->
+      <div class="content" :class="{ 'has-tab': tabs.length > 1 }">
+        <!-- 客户签字模块 -->
+        <!-- a. 有待提交的结算单则不显示 -->
+        <div v-if="!hasPendingSettlement" class="sign-section" @click="handleSignClick">
+          <div class="sign-header">
+            <span class="sign-title">客户签字</span>
+            <div class="sign-status">
+              <span :class="signStatusClass">{{ signStatusText }}</span>
+              <svg class="chevron-icon" width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path
+                  d="M6 4L10 8L6 12"
+                  :stroke="signStatusClass === 'status-green' ? '#009100' : '#888888'"
+                  stroke-width="1.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
             </div>
           </div>
-          <div class="part-right">
-            <div class="part-price">¥8,681.81</div>
-            <div class="part-discount">优惠 ¥2.46</div>
-          </div>
-        </div>
-        <div class="part-item-bottom">
-          <span class="original-price">¥700.00</span>
-          <span class="quantity">x1.00</span>
+          <div class="sign-desc">为保障双方合理权益，请完成客户签字确认</div>
         </div>
 
-        <div class="part-item">
-          <div class="part-left">
-            <div class="part-name-row">
-              <span class="part-name">保险杠侧边支架</span>
-              <span class="part-tag">原厂件</span>
+        <!-- 结算信息卡片 -->
+        <div class="settle-info-card">
+          <div class="info-title">结算信息</div>
+          <div class="info-rows">
+            <div class="info-row">
+              <span class="row-label">总金额</span>
+              <span class="row-value">¥{{ formatPrice(detailData.totalAmount) }}</span>
             </div>
-            <div class="part-code">C1031000035</div>
-            <div class="part-type">一般维修-保险-无</div>
-            <div class="part-detail-row">
-              <span class="part-original">¥700.00</span>
-              <span class="part-actual">实际领料 1</span>
-              <span class="part-return">退料 0</span>
+            <div class="info-row">
+              <span class="row-label">已收金额</span>
+              <span class="row-value green">¥{{ formatPrice(detailData.paidAmount) }}</span>
             </div>
-          </div>
-          <div class="part-right">
-            <div class="part-price">¥8,681.81</div>
-            <div class="part-discount">优惠 ¥2.46</div>
-          </div>
-        </div>
-        <div class="part-item-bottom">
-          <span class="original-price">¥700.00</span>
-          <span class="quantity">x1.00</span>
-        </div>
-
-        <div class="part-item special">
-          <div class="part-left">
-            <div class="part-name-row">
-              <span class="part-name">B01左前门电动防夹玻璃升降器总成</span>
-              <span class="part-tag">原厂件</span>
+            <div class="info-row">
+              <span class="row-label">优惠金额</span>
+              <span class="row-value">¥{{ formatPrice(detailData.discountAmount) }}</span>
             </div>
-            <div class="part-code">C1031000035</div>
-            <div class="part-type">一般维修-保险-无</div>
-            <div class="part-detail-row">
-              <span class="part-original">¥700.00</span>
-              <span class="part-actual">实际领料 1</span>
-              <span class="part-return">退料 0</span>
+            <div class="info-row">
+              <span class="row-label">去零金额</span>
+              <span class="row-value">¥{{ formatPrice(detailData.noFractionAmount) }}</span>
+            </div>
+            <div class="info-divider"></div>
+            <div class="info-row">
+              <span class="row-label">实际应付金额</span>
+              <span class="row-value">¥{{ formatPrice(detailData.payableAmount) }}</span>
+            </div>
+            <div class="info-row">
+              <span class="row-label">剩余应付金额</span>
+              <span class="row-value red">¥{{ formatPrice(detailData.remainAmount) }}</span>
             </div>
           </div>
-          <div class="part-right">
-            <div class="part-price">¥8,681.81</div>
-            <div class="part-discount">优惠 ¥2.46</div>
+        </div>
+
+        <!-- 收款记录列表 -->
+        <div v-if="invoiceRecords.length > 0" class="payment-records-section">
+          <div class="section-title">收款记录</div>
+          <div v-for="(record, index) in invoiceRecords" :key="index" class="payment-record-item">
+            <div class="record-left">
+              <div class="record-method">{{ getPayTypeText(record.payType) }}</div>
+              <div class="record-time">{{ record.createTime }}</div>
+            </div>
+            <div class="record-right">
+              <div class="record-amount">+¥{{ formatPrice(record.payAmount) }}</div>
+            </div>
           </div>
         </div>
-        <div class="part-item-bottom">
-          <span class="original-price">¥700.00</span>
-          <span class="quantity">x1.00</span>
+
+        <!-- 维修项目 -->
+        <div v-if="repairItems.length > 0" class="repair-section">
+          <div class="section-title">维修项目</div>
+          <template v-for="(item, index) in repairItems" :key="index">
+            <div class="repair-item" :class="{ special: item.repairItemName && item.repairItemName.length > 15 }">
+              <div class="repair-left">
+                <div class="repair-name">{{ item.repairItemName }}</div>
+                <div class="repair-code">{{ item.repairItemCode }}</div>
+                <div class="repair-type">{{ item.checkoutTypeName }}-{{ item.warrantyTypeName }}</div>
+              </div>
+              <div class="repair-right">
+                <div class="repair-price">¥{{ formatPrice(item.repairAmount) }}</div>
+                <div class="repair-discount">优惠 ¥{{ formatPrice(item.discountAmount) }}</div>
+              </div>
+            </div>
+            <div class="repair-item-bottom">
+              <span class="original-price">¥{{ formatPrice(item.price) }}</span>
+              <span class="quantity">x{{ item.workHour }}</span>
+            </div>
+          </template>
+        </div>
+
+        <!-- 维修配件 -->
+        <div v-if="partItems.length > 0" class="parts-section">
+          <div class="section-title">维修配件</div>
+          <template v-for="(item, index) in partItems" :key="index">
+            <div class="part-item" :class="{ special: item.partsName && item.partsName.length > 15 }">
+              <div class="part-left">
+                <div class="part-name-row">
+                  <span class="part-name">{{ item.partsName }}</span>
+                  <span v-if="item.isOemPart === 1" class="part-tag">原厂件</span>
+                </div>
+                <div class="part-code">{{ item.partsCode }}</div>
+                <div class="part-type">{{ item.checkoutTypeName }}-{{ item.warrantyTypeName }}</div>
+              </div>
+              <div class="part-right">
+                <div class="part-price">¥{{ formatPrice(item.partsAmount) }}</div>
+                <div class="part-discount">优惠 ¥{{ formatPrice(item.discountAmount) }}</div>
+              </div>
+            </div>
+            <div class="part-item-bottom">
+              <span class="original-price">¥{{ formatPrice(item.price) }}</span>
+              <span class="quantity">x{{ item.quantity }}</span>
+            </div>
+          </template>
         </div>
       </div>
-    </div>
 
-    <!-- 底部操作栏 -->
-    <div v-if="showBottomAction" class="action-bar">
-      <!-- 保修/合同类型：签字后显示提示，无点击交互 -->
-      <div v-if="isWarrantyOrContract && isSigned" class="action-hint">
-        请移步PC创建保修申请单
+      <!-- 底部操作栏 -->
+      <div class="action-bar">
+        <!-- 已交车状态：只显示联系车主 -->
+        <template v-if="isCompleted">
+          <div class="btn-pill btn-outline" @click="handleContact">
+            联系车主
+          </div>
+        </template>
+        <!-- 待交车状态：显示联系车主和结算 -->
+        <template v-else-if="isPending">
+          <div class="btn-pill btn-outline" @click="handleContact">
+            联系车主
+          </div>
+          <div class="btn-pill btn-primary" @click="handleSettle">
+            结算
+          </div>
+        </template>
       </div>
-
-      <!-- 自费/保险/内部结算：提交结算并签字 -->
-      <div v-else-if="isSelfPayOrInsuranceOrInternal && !isSigned" class="action-btn" @click="handleSubmitSettlement">
-        提交结算并签字
-      </div>
-
-      <!-- 自费/保险/内部结算：签字后有待支付金额 -->
-      <div v-else-if="isSelfPayOrInsuranceOrInternal && isSigned && remainingAmount > 0" class="action-btn add-payment" @click="handleAddPayment">
-        添加收款
-      </div>
-
-      <!-- 自费/保险/内部结算：签字后无待支付金额 -->
-      <div v-else-if="isSelfPayOrInsuranceOrInternal && isSigned && remainingAmount <= 0 && !isPaymentConfirmed" class="action-btn confirm-payment" @click="handleConfirmPayment">
-        确认收款
-      </div>
-    </div>
+    </template>
 
     <!-- 添加收款弹窗 -->
     <AisPopup v-model:show="showAddPayment" title="添加收款" position="bottom" round>
@@ -341,12 +261,89 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
-import { showToast } from 'vant'
-import { useRouter } from 'vue-router'
+import { ref, computed, onMounted } from 'vue'
+import { showToast, showLoadingToast, closeToast } from 'vant'
+import { useRouter, useRoute } from 'vue-router'
 import AisPopup from '@/libs/components/AisPopup.vue'
+import { callPhone } from '@/libs/utils/nativeFn'
+import { getServiceStatementDetail } from '@/api/settlementStatement'
 
 const router = useRouter()
+const route = useRoute()
+
+// 加载状态
+const isLoading = ref(true)
+
+// 详情数据
+const detailData = ref({})
+
+// 维修项目列表
+const repairItems = ref([])
+
+// 配件列表
+const partItems = ref([])
+
+// 收款记录
+const invoiceRecords = ref([])
+
+// 本地收款记录（用于前端临时记录）
+const paymentRecords = ref([])
+
+// 已收金额
+const paidAmount = ref(0)
+
+// 剩余应付金额
+const remainingAmount = computed(() => {
+  return (detailData.value.payableAmount || 0) - paidAmount.value
+})
+
+// 从路由获取来源状态：pending-待交车，completed-已交车
+const sourceStatus = ref('pending')
+
+// 从路由获取结算单ID
+const statementId = ref('')
+
+onMounted(() => {
+  // 获取路由参数
+  sourceStatus.value = route.query.status || 'pending'
+  statementId.value = route.query.id || ''
+  // 获取详情
+  getDetail()
+})
+
+// 获取详情
+const getDetail = async() => {
+  if (!statementId.value) {
+    showToast('缺少结算单ID')
+    isLoading.value = false
+    return
+  }
+
+  isLoading.value = true
+
+  try {
+    const res = await getServiceStatementDetail(statementId.value)
+    if (res.code === 200) {
+      const data = res.data || {}
+      detailData.value = data
+      repairItems.value = data.repairItemResps || []
+      partItems.value = data.partResps || []
+      invoiceRecords.value = data.invoiceRecordResps || []
+    } else {
+      showToast(res.msg || '获取详情失败')
+    }
+  } catch (error) {
+    showToast('获取详情失败')
+  } finally {
+    isLoading.value = false
+  }
+}
+
+// 是否为待交车状态
+const isPending = computed(() => sourceStatus.value === 'pending')
+
+// 是否为已交车状态
+const isCompleted = computed(() => sourceStatus.value === 'completed')
 
 const tabs = ref(['结算单1'])
 const activeTab = ref(0)
@@ -355,82 +352,35 @@ const selectedChannel = ref('paper')
 
 // ========== 结算状态数据 ==========
 // 结算类型：warranty(保修)、contract(合同)、self_pay(自费)、insurance(保险)、internal(内部结算)
-const settlementType = ref('self_pay') // 可切换测试：'warranty', 'contract', 'self_pay', 'insurance', 'internal'
+const settlementType = ref('self_pay')
 
 // 是否已签字完成
 const isSigned = ref(false)
 
-// 是否已确认收款（点击确认收款后）
+// 是否已确认收款
 const isPaymentConfirmed = ref(false)
 
-// 模拟签字状态数据
-// - hasPendingSettlement: 是否有待提交的结算单
-// - signStatus: 'pending' | 'not_signed' | 'signed'
-// - signChannel: 'paper' | 'app'
-const hasPendingSettlement = ref(false) // a. 有待提交的结算单则不显示该模块
-const signStatus = ref('not_signed') // c. 已提交但未签字
-// const signStatus = ref('signed') // d. 已签字完成
-// const signStatus = ref('pending') // b. 纸质单据已提交，显示查看客户签字
-
-// ========== 金额计算 ==========
-// 结算金额数据
-const totalAmount = ref(38201.56)
-const paidAmount = ref(0)
-const discountAmount = ref(50.0)
-const zeroAmount = ref(1.56)
-
-// 实际应付金额
-const actualAmount = computed(() => {
-  return totalAmount.value - discountAmount.value - zeroAmount.value
-})
-
-// 剩余应付金额
-const remainingAmount = computed(() => {
-  return actualAmount.value - paidAmount.value
-})
-
-// ========== 结算类型判断 ==========
-// 是否是保修或合同类型
-const isWarrantyOrContract = computed(() => {
-  return settlementType.value === 'warranty' || settlementType.value === 'contract'
-})
-
-// 是否是自费、保险、内部结算类型
-const isSelfPayOrInsuranceOrInternal = computed(() => {
-  return (
-    settlementType.value === 'self_pay' ||
-    settlementType.value === 'insurance' ||
-    settlementType.value === 'internal'
-  )
-})
-
-// 是否显示底部操作栏
-const showBottomAction = computed(() => {
-  // c条款: 若已在PC端收款完成，则APP端也不需要显示按钮
-  if (isPaymentConfirmed.value) {
-    return false
-  }
-
-  // a条款: 保修/合同类型签字后不显示按钮
-  if (isWarrantyOrContract.value && isSigned.value) {
-    return true // 显示提示信息
-  }
-
-  // b条款: 自费/保险/内部结算类型
-  if (isSelfPayOrInsuranceOrInternal.value) {
-    return true
-  }
-
-  return false
-})
-
-// 收款记录
-const paymentRecords = ref([])
+// 签字状态
+const hasPendingSettlement = ref(false)
+const signStatus = ref('not_signed')
 
 // 格式化金额
 const formatPrice = (price) => {
-  if (typeof price !== 'number') return '0.00'
+  if (typeof price !== 'number' || !price) return '0.00'
   return price.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+}
+
+// 获取支付方式文本
+const getPayTypeText = (payType) => {
+  const payTypeMap = {
+    1: '现金',
+    2: '刷卡',
+    3: '微信支付',
+    4: '支付宝',
+    5: '银行转账',
+    6: '其他'
+  }
+  return payTypeMap[payType] || '未知'
 }
 
 // 添加收款弹窗
@@ -444,12 +394,12 @@ const paymentForm = ref({
 
 // 收款方式选项
 const paymentMethods = [
-  { text: '现金', value: 'cash' },
-  { text: '刷卡', value: 'card' },
-  { text: '微信支付', value: 'wechat' },
-  { text: '支付宝', value: 'alipay' },
-  { text: '银行转账', value: 'bank' },
-  { text: '其他', value: 'other' }
+  { text: '现金', value: 1 },
+  { text: '刷卡', value: 2 },
+  { text: '微信支付', value: 3 },
+  { text: '支付宝', value: 4 },
+  { text: '银行转账', value: 5 },
+  { text: '其他', value: 6 }
 ]
 
 // 收款方式选择确认
@@ -462,20 +412,35 @@ const onPaymentMethodConfirm = ({ selectedOptions }) => {
 // 根据签字状态显示不同文案和颜色
 const signStatusText = computed(() => {
   if (signStatus.value === 'signed') {
-    return '已签字' // b, d
+    return '已签字'
   }
   if (signStatus.value === 'pending') {
-    return '查看客户签字' // b
+    return '查看客户签字'
   }
-  return '邀请客户签字' // c
+  return '邀请客户签字'
 })
 
 const signStatusClass = computed(() => {
   if (signStatus.value === 'not_signed') {
-    return 'status-green' // c: 待签字绿色
+    return 'status-green'
   }
-  return 'status-gray' // b, d: 已签字或查看客户签字灰色
+  return 'status-gray'
 })
+
+// 联系车主
+const handleContact = () => {
+  const phone = detailData.value.customerPhone
+  if (phone) {
+    callPhone(phone)
+  } else {
+    showToast('暂无联系电话')
+  }
+}
+
+// 结算
+const handleSettle = () => {
+  showSignChannel.value = true
+}
 
 const switchTab = (index) => {
   activeTab.value = index
@@ -586,6 +551,14 @@ const formatDateTime = (date) => {
 
   &::-webkit-scrollbar {
     display: none;
+  }
+
+  // 页面加载中样式
+  .page-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 80vh;
   }
 
   .sticky-header {
@@ -1099,6 +1072,31 @@ const formatDateTime = (date) => {
       align-items: center;
       justify-content: center;
       cursor: default;
+    }
+
+    // 底部按钮样式
+    .btn-pill {
+      padding: 0 24px;
+      height: 40px;
+      font-family: 'PingFang SC';
+      font-size: 14px;
+      border-radius: 38px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+
+    .btn-outline {
+      color: #009100;
+      background: #ffffff;
+      border: 1px solid #009100;
+    }
+
+    .btn-primary {
+      color: #ffffff;
+      background: #009100;
+      border: 1px solid #009100;
     }
   }
 }

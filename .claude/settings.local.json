@@ -60,13 +60,16 @@
       "Bash(python3:*)",
       "Bash(jq '.[0].text' -r)",
       "Bash(curl -s \"https://itdev-yapi.leapmotor.com/api/interface/get?id=28309&token=\")",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Skill(claude-hud:setup)",
+      "Bash(dir:*)",
+      "Bash(where node:*)",
+      "Bash(C:\\\\Program Files\\\\nodejs\\\\node.exe:*)"
     ]
   },
   "statusLine": {
     "type": "command",
-    "command": "bash",
-    "padding": 1
+    "command": "\"C:\\Program Files\\nodejs\\node.exe\" \"C:\\Users\\990900\\.claude\\plugins\\cache\\claude-hud\\claude-hud\\0.0.12\\dist\\index.js\""
   },
   "enabledPlugins": {
     "claude-hud@claude-hud": true

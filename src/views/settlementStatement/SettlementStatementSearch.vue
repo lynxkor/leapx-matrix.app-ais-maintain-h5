@@ -61,32 +61,56 @@
         >
           <template #header>
             <div class="item-header">
-              <span class="order-no">{{ item.settlementNo }}</span>
-              <span class="status-tag" :class="getStatusClass(item.status)">
-                {{ getStatusText(item.status) }}
+              <span class="order-no">{{ item.code }}</span>
+              <span class="status-tag" :class="getStatusClass(item.orderStatus)">
+                {{ item.orderStatusLabel }}
               </span>
             </div>
           </template>
 
           <template #card-info>
-            <van-row class="card-info">
-              <van-col span="24" class="card-info-col">
-                <span class="card-info-title">工单号</span>
-                <span class="card-info-des">{{ item.workOrderNo }}</span>
-              </van-col>
-              <van-col span="24" class="card-info-col">
-                <span class="card-info-title">VIN</span>
-                <span class="card-info-des">{{ item.vin }}</span>
-              </van-col>
-              <van-col span="24" class="card-info-col">
-                <span class="card-info-title">门店</span>
-                <span class="card-info-des">{{ item.storeName }}</span>
-              </van-col>
-              <van-col span="24" class="card-info-col">
-                <span class="card-info-title">金额</span>
-                <span class="card-info-des price">¥{{ formatPrice(item.settlementAmount) }}</span>
-              </van-col>
-            </van-row>
+            <div class="card-body">
+              <!-- 车牌行 -->
+              <div class="plate-row">
+                <span class="plate-number">{{ item.carPlate }}</span>
+                <!-- 预警图标 - 根据 alarmLevel 显示不同颜色: 10=绿色, 20=橙色, 30=红色 -->
+                <svg
+                  v-if="item.alarmLevel"
+                  class="vehicle-icon"
+                  width="16"
+                  height="16"
+                  viewBox="0 0 15.35 13.88"
+                  fill="none"
+                >
+                  <path :fill="getAlarmColor(item.alarmLevel)" d="M7.3351851 0C7.9718513 0 8.5651855 0.31133342 8.9285183 0.83133328L8.998518 0.93799996L14.407852 9.9700003C15.123848 11.210074 14.297827 12.772247 12.869853 12.878666L12.739853 12.883999L1.9231861 12.883999C0.49417353 12.867918 -0.42892668 11.36636 0.20185265 10.083999L0.26785263 9.9606657L5.6745195 0.93533206C6.0265875 0.35477138 6.6562138 0.00014813742 7.3351851 0ZM7.3418517 8.8866673L7.257185 8.8913336C6.9218178 8.9312248 6.6692615 9.2156019 6.6692615 9.5533333C6.6692615 9.8910656 6.9218178 10.175444 7.257185 10.215334L7.3351851 10.22L7.4198513 10.215334C7.7552185 10.175442 8.0077753 9.8910656 8.0077753 9.5533333C8.0077753 9.2156019 7.7552185 8.9312248 7.4198513 8.8913336L7.3418517 8.8866673ZM7.3351851 4.2200003C6.9972014 4.2200446 6.7127285 4.4730048 6.6731849 4.8086672L6.6685181 4.8866668L6.6685181 7.5533333L6.6731849 7.6313334C6.7130756 7.9667006 6.9974532 8.2192574 7.3351851 8.2192574C7.6729164 8.2192574 7.957294 7.9667006 7.9971848 7.6313334L8.001852 7.5533333L8.001852 4.8866668L7.9971848 4.8086672C7.9576411 4.4730048 7.6731682 4.2200446 7.3351851 4.2200003Z"/>
+                </svg>
+                <!-- 业务类型标签 -->
+                <span v-if="item.warrantyTypeCollect" class="svc-tag">{{ item.warrantyTypeCollect }}</span>
+              </div>
+
+              <!-- VIN -->
+              <div class="vehicle-line">
+                {{ item.vehProfileVin }}
+              </div>
+
+              <!-- 信息行 -->
+              <div class="info-rows">
+                <div class="info-row">
+                  <span class="info-label">车主</span>
+                  <div class="info-value-wrap">
+                    <span class="info-value">{{ item.customerName }}</span>
+                  </div>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">客户经理</span>
+                  <span class="info-value">{{ item.serviceOwnerName }}</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">开单时间</span>
+                  <span class="info-value">{{ item.createTime }}</span>
+                </div>
+              </div>
+            </div>
           </template>
         </ListItem>
 
@@ -108,6 +132,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { showToast } from 'vant'
 import RefreshList from '@/libs/components/RefreshList.vue'
 import ListItem from '@/components/ListItem.vue'
+import { getSettlementStatementPage } from '@/api/settlementStatement'
 
 const router = useRouter()
 const route = useRoute()
@@ -127,72 +152,56 @@ try {
   console.error('读取搜索历史失败', e)
 }
 
-// 模拟数据
-const mockData = [
-  {
-    id: 1,
-    settlementNo: 'JS-260401141948383401',
-    status: 'pending',
-    workOrderNo: 'WO-20250401001',
-    vin: 'LFV3H6686RKYM3393',
-    storeName: '杭州服务中心芯图大厦店',
-    settlementAmount: 2580.50
-  },
-  {
-    id: 2,
-    settlementNo: 'JS-260401141948383402',
-    status: 'completed',
-    workOrderNo: 'WO-20250401002',
-    vin: 'LFV3H6686RKYM3394',
-    storeName: '上海浦东服务中心',
-    settlementAmount: 3850.00
-  }
-]
+// 状态映射：从路由参数获取tab状态
+const statusMap = {
+  pending: '160', // 待交车
+  completed: '180' // 已交车
+}
+
+// 从路由获取当前tab状态，默认为pending
+const currentTab = ref(route.query.tab || 'pending')
 
 // requestData 配置
 const requestData = reactive({
   data: {
-    keyWord: '',
+    appSearchKeyWord: '',
     pageNum: 1,
-    pageSize: 10
+    pageSize: 10,
+    orderStatus: statusMap[currentTab.value]
   },
-  api: () => Promise.resolve({ code: 200, data: mockData })
+  api: getSettlementStatementPage
 })
 
 // 监听搜索值变化
 watch(searchValue, (newVal) => {
   if (newVal) {
-    requestData.data.keyWord = newVal
+    requestData.data.appSearchKeyWord = newVal
     requestData.data.pageNum = 1
   }
 })
 
 // 格式化金额
 const formatPrice = (price) => {
-  if (typeof price !== 'number') return '0.00'
+  if (typeof price !== 'number' || !price) return '0.00'
   return price.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',')
-}
-
-// 获取状态文本
-const getStatusText = (status) => {
-  const statusMap = {
-    pending: '待结算',
-    processing: '结算中',
-    completed: '已结算',
-    rejected: '已驳回'
-  }
-  return statusMap[status] || '未知'
 }
 
 // 获取状态样式类
 const getStatusClass = (status) => {
-  const classMap = {
-    pending: 'status-orange',
-    processing: 'status-blue',
-    completed: 'status-green',
-    rejected: 'status-red'
+  // 根据orderStatus返回对应样式
+  if (status === 160) return 'status-orange'
+  if (status === 180) return 'status-green'
+  return 'status-gray'
+}
+
+// 根据预警等级返回对应颜色
+const getAlarmColor = (alarmLevel) => {
+  const colorMap = {
+    '10': '#009100', // 绿色
+    '20': '#C8A12B', // 橙色
+    '30': '#B91919' // 红色
   }
-  return classMap[status] || ''
+  return colorMap[alarmLevel] || '#009100'
 }
 
 // 保存搜索历史
@@ -220,7 +229,7 @@ const handleSearch = () => {
     return
   }
   saveSearchHistory(searchValue.value.trim())
-  requestData.data.keyWord = searchValue.value.trim()
+  requestData.data.appSearchKeyWord = searchValue.value.trim()
   requestData.data.pageNum = 1
 }
 
@@ -263,7 +272,14 @@ const setData = (res) => {
 
 // 跳转到详情
 const goToDetail = (item) => {
-  router.push(`/settlement-statement/${item.id}`)
+  // 待交车状态：不跳转（搜索页主要用于搜索，结算操作回到列表页进行）
+  // 已交车状态：跳转到售后结算单详情页
+  if (currentTab.value === 'completed') {
+    router.push({
+      path: '/settlement-statement/after-sales',
+      query: { id: item.id }
+    })
+  }
 }
 
 // 初始化
@@ -383,6 +399,9 @@ if (route.params.initialValue) {
 
     .result-item {
       margin-bottom: 12px;
+      background: #ffffff;
+      border-radius: 6px;
+      padding: 12px;
     }
 
     .item-header {
@@ -390,11 +409,12 @@ if (route.params.initialValue) {
       justify-content: space-between;
       align-items: center;
       width: 100%;
+      padding-bottom: 8px;
+      border-bottom: 0.5px solid #e6e6e5;
 
       .order-no {
         font-family: 'PingFang SC';
-        font-size: 16px;
-        font-weight: 500;
+        font-size: 14px;
         color: #191a1b;
       }
 
@@ -402,54 +422,94 @@ if (route.params.initialValue) {
         font-family: 'PingFang SC';
         font-size: 12px;
         font-weight: 500;
-        padding: 2px 8px;
-        border-radius: 4px;
 
         &.status-orange {
-          color: #ff6b00;
-          background: rgba(255, 107, 0, 0.1);
-        }
-
-        &.status-blue {
-          color: #2261dd;
-          background: rgba(34, 97, 221, 0.1);
+          color: #c8a12b;
         }
 
         &.status-green {
           color: #009100;
-          background: rgba(0, 145, 0, 0.1);
         }
 
-        &.status-red {
-          color: #ee0a24;
-          background: rgba(238, 10, 36, 0.1);
+        &.status-gray {
+          color: #999999;
         }
       }
     }
 
-    .card-info {
-      margin-top: 8px;
+    .card-body {
+      padding-top: 8px;
 
-      .card-info-col {
-        font-family: 'PingFang SC';
-        font-size: 14px;
-        padding: 4px 0;
+      .plate-row {
         display: flex;
-        gap: 12px;
+        align-items: center;
+        gap: 4px;
+        margin-bottom: 2px;
+        flex-wrap: nowrap;
+        overflow: visible;
 
-        .card-info-title {
-          color: #545454;
-          width: 60px;
+        .plate-number {
+          font-family: 'PingFang SC';
+          font-size: 16px;
+          font-weight: 500;
+          color: #191a1b;
+          white-space: nowrap;
+        }
+
+        .vehicle-icon {
+          width: 16px;
+          height: 16px;
+          cursor: pointer;
           flex-shrink: 0;
         }
 
-        .card-info-des {
+        .svc-tag {
+          padding: 1px 4px;
+          font-family: 'PingFang SC';
+          font-size: 12px;
           color: #191a1b;
-          flex: 1;
+          background: #ffffff;
+          border: 0.5px solid #191a1b;
+          border-radius: 4px;
+          flex-shrink: 0;
+          white-space: nowrap;
+          margin-left: 12px;
+        }
+      }
 
-          &.price {
-            color: #ff6b00;
-            font-weight: 500;
+      .vehicle-line {
+        font-family: 'PingFang SC';
+        font-size: 12px;
+        color: #545454;
+        margin-bottom: 8px;
+      }
+
+      .info-rows {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+
+        .info-row {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          font-size: 14px;
+
+          .info-label {
+            color: #545454;
+            width: 56px;
+            flex-shrink: 0;
+          }
+
+          .info-value-wrap {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            flex: 1;
+          }
+
+          .info-value {
+            color: #191a1b;
           }
         }
       }
