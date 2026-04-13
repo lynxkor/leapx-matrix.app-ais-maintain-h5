@@ -2578,7 +2578,7 @@ const handleImageFileChange = (event) => {
     const attachTypeMap = {
       interior: '车内检查',
       exterior: '车外检查',
-      attachment: '附件资料'
+      attachment: '附件资料',
     }
 
     // 先添加临时预览
@@ -2586,7 +2586,7 @@ const handleImageFileChange = (event) => {
       url: previewUrl,
       status: 'uploading',
       message: '上传中...',
-      id: null
+      id: null,
     }
 
     // 根据当前上传类型添加到对应的文件列表
@@ -2609,7 +2609,7 @@ const handleImageFileChange = (event) => {
           fileUrl: previewUrl,
           businessId: route.query.id,
           configCode: 'mcs_serviceproxy',
-          attachType: attachTypeMap[currentUploadType.value]
+          attachType: attachTypeMap[currentUploadType.value],
         }
 
         const res = await uploadFileByUrl([params])
@@ -2626,7 +2626,7 @@ const handleImageFileChange = (event) => {
               status: 'done',
               message: '',
               id: uploadData.id || null,
-              url: uploadData.authFileUrl || previewUrl
+              url: uploadData.authFileUrl || previewUrl,
             }
           }
 
@@ -2665,7 +2665,7 @@ onMounted(() => {
     const attachTypeMap = {
       interior: '车内检查',
       exterior: '车外检查',
-      attachment: '附件资料'
+      attachment: '附件资料',
     }
 
     // 先添加临时预览
@@ -2673,7 +2673,7 @@ onMounted(() => {
       url: url,
       status: 'uploading',
       message: '上传中...',
-      id: null
+      id: null,
     }
 
     // 根据当前上传类型添加到对应的文件列表
@@ -2695,7 +2695,7 @@ onMounted(() => {
         fileUrl: url,
         businessId: route.query.id,
         configCode: 'mcs_serviceproxy',
-        attachType: attachTypeMap[currentUploadType.value]
+        attachType: attachTypeMap[currentUploadType.value],
       }
 
       const res = await uploadFileByUrl([params])
@@ -2712,7 +2712,7 @@ onMounted(() => {
             status: 'done',
             message: '',
             id: uploadData.id || null,
-            url: uploadData.authFileUrl || url
+            url: uploadData.authFileUrl || url,
           }
         }
 
@@ -2937,6 +2937,8 @@ const onInspectionSave = async (type) => {
     finalCheckerId: detail.finalCheckerId,
     finalChecker: detail.finalChecker,
     ticketStep: detail.ticketStep,
+    exteriorPhotoList: detail.exteriorImages,
+    interiorPhotoList: detail.interiorImages,
     warrantyStatus: detail.warrantyStatus,
     claimItemAmount: detail.claimItemAmount,
     claimOtherAmount: detail.claimOtherAmount,
@@ -3005,8 +3007,6 @@ const onInspectionSave = async (type) => {
     targetUnitCode: detail.targetUnitCode,
     beforeChangeCode: detail.beforeChangeCode,
     afterChangeCode: detail.afterChangeCode,
-    exteriorPhotoList: detail.exteriorImages,
-    interiorPhotoList: detail.interiorImages,
     isStoreLive: detail.isStoreLive,
     faultAlertRecordParams: detail.faultModules.map((m) => ({
       cccId: m.cccCode || '',
@@ -3019,7 +3019,7 @@ const onInspectionSave = async (type) => {
     latelyServiceProxy: detail.latelyServiceProxy,
     earlyServiceProxy: detail.earlyServiceProxy,
   }
-  showToast(JSON.stringify(params))
+  showToast(JSON.stringify(params.exteriorPhotoList))
   const res = await serviceAddOrUpdate(params)
   if (res.code === 200) {
     showToast('保存成功')
@@ -4073,8 +4073,8 @@ onMounted(() => {
 
   .delete_icon {
     position: absolute;
-    top: 4px;
-    right: 4px;
+    top: 0;
+    right: 0;
     width: 20px;
     height: 20px;
     cursor: pointer;
