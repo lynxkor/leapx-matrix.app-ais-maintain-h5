@@ -179,16 +179,26 @@
             <div class="card-container marginB1">
               <div class="card-info-title marginB1">
                 车内检查
-                <span v-if="interiorConfig.required === '1'" style="color: #b91919; font-size: 15px">*</span>
+                <span v-if="interiorConfig.required === '1'" style="color: #b91919; font-size: 15px"
+                  >*</span
+                >
               </div>
               <div class="upload-content">
-                <div class="upload-box" v-for="(file, index) in detail.interiorImages" :key="file.id || index">
+                <div
+                  class="upload-box"
+                  v-for="(file, index) in detail.interiorImages"
+                  :key="file.id || index"
+                >
                   <img
                     style="width: 100%; height: 100%; margin-bottom: 0"
                     :src="file.url"
                     @click="showImg(file.url)"
                   />
-                  <img class="delete_icon" src="../../assets/image/delete_icon.png" @click="handleInteriorDelete(file)" />
+                  <img
+                    class="delete_icon"
+                    src="@/assets/image/delete_icon.png"
+                    @click="handleInteriorDelete(file)"
+                  />
                 </div>
                 <div
                   class="upload-box upload-placeholder"
@@ -206,16 +216,26 @@
             <div class="card-container marginB1">
               <div class="card-info-title marginB1">
                 车外检查
-                <span v-if="exteriorConfig.required === '1'" style="color: #b91919; font-size: 15px">*</span>
+                <span v-if="exteriorConfig.required === '1'" style="color: #b91919; font-size: 15px"
+                  >*</span
+                >
               </div>
               <div class="upload-content">
-                <div class="upload-box" v-for="(file, index) in detail.exteriorImages" :key="file.id || index">
+                <div
+                  class="upload-box"
+                  v-for="(file, index) in detail.exteriorImages"
+                  :key="file.id || index"
+                >
                   <img
                     style="width: 100%; height: 100%; margin-bottom: 0"
                     :src="file.url"
                     @click="showImg(file.url)"
                   />
-                  <img class="delete_icon" src="../../assets/image/delete_icon.png" @click="handleExteriorDelete(file)" />
+                  <img
+                    class="delete_icon"
+                    src="@/assets/image/delete_icon.png"
+                    @click="handleExteriorDelete(file)"
+                  />
                 </div>
                 <div
                   class="upload-box upload-placeholder"
@@ -658,16 +678,26 @@
           <div class="card-container marginB1">
             <div class="card-info-title marginB1">
               附件资料
-              <span v-if="attachmentConfig.required === '1'" style="color: #b91919; font-size: 15px">*</span>
+              <span v-if="attachmentConfig.required === '1'" style="color: #b91919; font-size: 15px"
+                >*</span
+              >
             </div>
             <div class="upload-content">
-              <div class="upload-box" v-for="(file, index) in signatureData.attachments" :key="file.id || index">
+              <div
+                class="upload-box"
+                v-for="(file, index) in signatureData.attachments"
+                :key="file.id || index"
+              >
                 <img
                   style="width: 100%; height: 100%; margin-bottom: 0"
                   :src="file.url"
                   @click="showImg(file.url)"
                 />
-                <img class="delete_icon" src="../../assets/image/delete_icon.png" @click="handleAttachmentDelete(file)" />
+                <img
+                  class="delete_icon"
+                  src="@/assets/image/delete_icon.png"
+                  @click="handleAttachmentDelete(file)"
+                />
               </div>
               <div
                 class="upload-box upload-placeholder"
@@ -1305,7 +1335,12 @@ import AisPopup from '@/libs/components/AisPopup.vue'
 import AisCascader from '@/components/AisCascader/index.vue'
 import PackageDetailPopup from '@/components/PackageDetailPopup.vue'
 import { useRepairItemBusinessRules, useRepairItemData } from '@/components/SelectRepairItem/hooks'
-import { uploadFileByUrl, getUploadConfig, deleteAttachmentConfig, getFileList } from '@/libs/api/fileConfig'
+import {
+  uploadFileByUrl,
+  getUploadConfig,
+  deleteAttachmentConfig,
+  getFileList,
+} from '@/libs/api/fileConfig'
 import { getAppImgLimit } from '@/libs/utils/nativeFn'
 import {
   getDetail,
@@ -2210,7 +2245,7 @@ const handleInteriorDelete = async (file) => {
         await deleteAttachmentConfig([file.id])
         refreshAttachmentList()
       } else {
-        const index = detail.interiorImages.findIndex(item => item === file)
+        const index = detail.interiorImages.findIndex((item) => item === file)
         if (index > -1) {
           detail.interiorImages.splice(index, 1)
         }
@@ -2231,7 +2266,7 @@ const handleExteriorDelete = async (file) => {
         await deleteAttachmentConfig([file.id])
         refreshAttachmentList()
       } else {
-        const index = detail.exteriorImages.findIndex(item => item === file)
+        const index = detail.exteriorImages.findIndex((item) => item === file)
         if (index > -1) {
           detail.exteriorImages.splice(index, 1)
         }
@@ -2252,7 +2287,7 @@ const handleAttachmentDelete = async (file) => {
         await deleteAttachmentConfig([file.id])
         refreshAttachmentList()
       } else {
-        const index = signatureData.attachments.findIndex(item => item === file)
+        const index = signatureData.attachments.findIndex((item) => item === file)
         if (index > -1) {
           signatureData.attachments.splice(index, 1)
         }
