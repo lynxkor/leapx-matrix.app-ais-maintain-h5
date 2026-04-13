@@ -176,45 +176,55 @@
             </div>
 
             <!-- 车内检查 -->
-            <div class="section-card borderB">
-              <div class="section-title">车内检查</div>
-              <div class="image-grid">
-                <div
-                  v-for="(img, index) in detail.interiorImages"
-                  :key="'interior-' + index"
-                  class="image-item"
-                  @click="onPreviewImage('interior', index)"
-                >
-                  <van-image :src="img" fit="cover" />
-                  <span class="delete-btn" @click.stop="onDeleteImage('interior', index)">
-                    <van-icon name="cross" />
-                  </span>
+            <div class="card-container marginB1">
+              <div class="card-info-title marginB1">
+                车内检查
+                <span v-if="interiorConfig.required === '1'" style="color: #b91919; font-size: 15px">*</span>
+              </div>
+              <div class="upload-content">
+                <div class="upload-box" v-for="(file, index) in detail.interiorImages" :key="file.id || index">
+                  <img
+                    style="width: 100%; height: 100%; margin-bottom: 0"
+                    :src="file.url"
+                    @click="showImg(file.url)"
+                  />
+                  <img class="delete_icon" src="../../assets/image/delete_icon.png" @click="handleInteriorDelete(file)" />
                 </div>
-                <div class="image-item upload-item" @click="onUploadImage('interior')">
-                  <van-icon name="photo-o" size="24" />
-                  <span>上传</span>
+                <div
+                  class="upload-box upload-placeholder"
+                  v-if="detail.interiorImages.length < (interiorConfig.maxNum || 3)"
+                  @click="uploadGeneric('interior')"
+                >
+                  <svg class="icon upload-img" aria-hidden="true">
+                    <use xlink:href="#icon-lxp-h5upload-mob"></use>
+                  </svg>
                 </div>
               </div>
             </div>
 
             <!-- 车外检查 -->
-            <div class="section-card borderB">
-              <div class="section-title">车外检查</div>
-              <div class="image-grid">
-                <div
-                  v-for="(img, index) in detail.exteriorImages"
-                  :key="'exterior-' + index"
-                  class="image-item"
-                  @click="onPreviewImage('exterior', index)"
-                >
-                  <van-image :src="img" fit="cover" />
-                  <span class="delete-btn" @click.stop="onDeleteImage('exterior', index)">
-                    <van-icon name="cross" />
-                  </span>
+            <div class="card-container marginB1">
+              <div class="card-info-title marginB1">
+                车外检查
+                <span v-if="exteriorConfig.required === '1'" style="color: #b91919; font-size: 15px">*</span>
+              </div>
+              <div class="upload-content">
+                <div class="upload-box" v-for="(file, index) in detail.exteriorImages" :key="file.id || index">
+                  <img
+                    style="width: 100%; height: 100%; margin-bottom: 0"
+                    :src="file.url"
+                    @click="showImg(file.url)"
+                  />
+                  <img class="delete_icon" src="../../assets/image/delete_icon.png" @click="handleExteriorDelete(file)" />
                 </div>
-                <div class="image-item upload-item" @click="onUploadImage('exterior')">
-                  <van-icon name="photo-o" size="24" />
-                  <span>上传</span>
+                <div
+                  class="upload-box upload-placeholder"
+                  v-if="detail.exteriorImages.length < (exteriorConfig.maxNum || 3)"
+                  @click="uploadGeneric('exterior')"
+                >
+                  <svg class="icon upload-img" aria-hidden="true">
+                    <use xlink:href="#icon-lxp-h5upload-mob"></use>
+                  </svg>
                 </div>
               </div>
             </div>
@@ -386,7 +396,7 @@
                       </div>
                       <div class="card-price">
                         <div class="item-price">
-                          ¥{{ (item.price * item.quantity - item.discountAmount).toFixed(2) }}
+                          ¥{{ (item.price * item.workHour - item.discountAmount).toFixed(2) }}
                         </div>
                         <div class="discount-tags">
                           <span class="discount-tag">优惠</span>
@@ -397,7 +407,7 @@
                     <div class="card-bottom">
                       <div class="item-subtotal">¥{{ item.price }}</div>
                       <div class="quantity-stepper">
-                        <van-stepper v-model="item.quantity" :min="1" size="small" />
+                        <van-stepper v-model="item.workHour" :min="1" size="small" />
                       </div>
                     </div>
                   </div>
@@ -437,7 +447,7 @@
                       </div>
                       <div class="card-price">
                         <div class="item-price">
-                          ¥{{ (item.price * item.quantity - item.discountAmount).toFixed(2) }}
+                          ¥{{ (item.price * item.workHour - item.discountAmount).toFixed(2) }}
                         </div>
                         <div class="discount-tags">
                           <span class="discount-tag">优惠</span>
@@ -448,7 +458,7 @@
                     <div class="card-bottom">
                       <div class="item-subtotal">¥{{ item.price }}</div>
                       <div class="quantity-stepper">
-                        <van-stepper v-model="item.quantity" :min="1" size="small" />
+                        <van-stepper v-model="item.workHour" :min="1" size="small" />
                       </div>
                     </div>
                   </div>
@@ -644,23 +654,29 @@
             </div>
           </div>
 
-          <!-- 附件信息 -->
-          <div class="attachment-section">
-            <div class="section-title">附件信息</div>
-            <div class="image-grid">
-              <div
-                v-for="(img, index) in signatureData.attachments"
-                :key="'attachment-' + index"
-                class="image-item"
-              >
-                <van-image :src="img" fit="cover" />
-                <span class="delete-btn" @click="onDeleteAttachment(index)">
-                  <van-icon name="cross" />
-                </span>
+          <!-- 附件资料 -->
+          <div class="card-container marginB1">
+            <div class="card-info-title marginB1">
+              附件资料
+              <span v-if="attachmentConfig.required === '1'" style="color: #b91919; font-size: 15px">*</span>
+            </div>
+            <div class="upload-content">
+              <div class="upload-box" v-for="(file, index) in signatureData.attachments" :key="file.id || index">
+                <img
+                  style="width: 100%; height: 100%; margin-bottom: 0"
+                  :src="file.url"
+                  @click="showImg(file.url)"
+                />
+                <img class="delete_icon" src="../../assets/image/delete_icon.png" @click="handleAttachmentDelete(file)" />
               </div>
-              <div class="image-item upload-item" @click="onUploadAttachment">
-                <van-icon name="photo-o" size="24" />
-                <span>上传</span>
+              <div
+                class="upload-box upload-placeholder"
+                v-if="signatureData.attachments.length < (attachmentConfig.maxNum || 3)"
+                @click="uploadGeneric('attachment')"
+              >
+                <svg class="icon upload-img" aria-hidden="true">
+                  <use xlink:href="#icon-lxp-h5upload-mob"></use>
+                </svg>
               </div>
             </div>
           </div>
@@ -1289,7 +1305,7 @@ import AisPopup from '@/libs/components/AisPopup.vue'
 import AisCascader from '@/components/AisCascader/index.vue'
 import PackageDetailPopup from '@/components/PackageDetailPopup.vue'
 import { useRepairItemBusinessRules, useRepairItemData } from '@/components/SelectRepairItem/hooks'
-import { uploadFileByUrl, getUploadConfig, getFileList } from '@/libs/api/fileConfig'
+import { uploadFileByUrl, getUploadConfig, deleteAttachmentConfig, getFileList } from '@/libs/api/fileConfig'
 import { getAppImgLimit } from '@/libs/utils/nativeFn'
 import {
   getDetail,
@@ -1322,6 +1338,13 @@ const getAttachConfig = (attachType) => {
   const detailList = uploadConfig.value?.detailList || []
   return detailList.find((item) => item.attachType === attachType) || {}
 }
+
+// 车内检查配置
+const interiorConfig = computed(() => getAttachConfig('车内检查'))
+// 车外检查配置
+const exteriorConfig = computed(() => getAttachConfig('车外检查'))
+// 附件资料配置
+const attachmentConfig = computed(() => getAttachConfig('附件资料'))
 
 // 施工单状态
 const isSaved = ref(false) // 是否已保存
@@ -1705,6 +1728,7 @@ const detail = reactive({
   hasFault: '1',
   faultModules: [],
   customerFaultDesc: '',
+  testResult: '',
 })
 
 // 初始环检数据快照
@@ -1861,7 +1885,7 @@ const signatureData = reactive({
 const recalculateCosts = () => {
   // 计算维修项目费用
   const workCost = (partsData.repairItemRespList || []).reduce((sum, item) => {
-    return sum + (Number(item.price) * Number(item.quantity) - Number(item.discountAmount))
+    return sum + (Number(item.price) * Number(item.workHour) - Number(item.discountAmount))
   }, 0)
   partsData.workCostCount = workCost.toFixed(2)
 
@@ -1997,6 +2021,7 @@ const fetchDetail = async () => {
               ? '绑车人'
               : '其他'
         detail.id = data.id || ''
+        detail.testResult = data.testResult || ''
         // 预约客户默认预约到店，否则默认自然到店
         detail.businessType = data.businessType || (detail.isAppointment ? 50 : 10)
         detail.mileage = data.mileage || ''
@@ -2004,12 +2029,8 @@ const fetchDetail = async () => {
         detail.networkMileageAdd = data.netMileageExtend || ''
         detail.battery = data.inPower || ''
         detail.networkBattery = data.inNetPower || ''
-        detail.interiorImages = data.interiorPhotos
-          ? data.interiorPhotos.split(',').filter(Boolean)
-          : []
-        detail.exteriorImages = data.exteriorPhotos
-          ? data.exteriorPhotos.split(',').filter(Boolean)
-          : []
+        detail.interiorImages = []
+        detail.exteriorImages = []
         detail.abnormalDesc = data.anomalyDescription || ''
         detail.currentFault = String(data.currentFault || '')
         detail.hasFault = data.currentFault === 1 ? '1' : '2'
@@ -2178,31 +2199,126 @@ const onEditPlate = () => {
   changePlateDialog.value = true
 }
 
-// 删除图片
-const onDeleteImage = (type, index) => {
+// 删除车内检查图片
+const handleInteriorDelete = async (file) => {
   showConfirmDialog({
     title: '提示',
     message: '确定删除该图片吗？',
   })
-    .then(() => {
-      if (type === 'interior') {
-        detail.interiorImages.splice(index, 1)
+    .then(async () => {
+      if (file.id) {
+        await deleteAttachmentConfig([file.id])
+        refreshAttachmentList()
       } else {
-        detail.exteriorImages.splice(index, 1)
+        const index = detail.interiorImages.findIndex(item => item === file)
+        if (index > -1) {
+          detail.interiorImages.splice(index, 1)
+        }
       }
       showToast('删除成功')
     })
     .catch(() => {})
 }
 
+// 删除车外检查图片
+const handleExteriorDelete = async (file) => {
+  showConfirmDialog({
+    title: '提示',
+    message: '确定删除该图片吗？',
+  })
+    .then(async () => {
+      if (file.id) {
+        await deleteAttachmentConfig([file.id])
+        refreshAttachmentList()
+      } else {
+        const index = detail.exteriorImages.findIndex(item => item === file)
+        if (index > -1) {
+          detail.exteriorImages.splice(index, 1)
+        }
+      }
+      showToast('删除成功')
+    })
+    .catch(() => {})
+}
+
+// 删除附件资料
+const handleAttachmentDelete = async (file) => {
+  showConfirmDialog({
+    title: '提示',
+    message: '确定删除该附件吗？',
+  })
+    .then(async () => {
+      if (file.id) {
+        await deleteAttachmentConfig([file.id])
+        refreshAttachmentList()
+      } else {
+        const index = signatureData.attachments.findIndex(item => item === file)
+        if (index > -1) {
+          signatureData.attachments.splice(index, 1)
+        }
+      }
+      showToast('删除成功')
+    })
+    .catch(() => {})
+}
+
+// 刷新附件列表
+const refreshAttachmentList = () => {
+  getFileList({ businessId: route.query.id }).then((res) => {
+    if (res.code === 200) {
+      const fileList = res.data || []
+      // 清空所有列表
+      detail.interiorImages = []
+      detail.exteriorImages = []
+      signatureData.attachments = []
+      // 根据 attachType 分类回显文件
+      fileList.forEach((item) => {
+        const fileObj = { ...item, url: item.fileUrl }
+        switch (item.attachType) {
+          case '车内检查':
+            detail.interiorImages.push(fileObj)
+            break
+          case '车外检查':
+            detail.exteriorImages.push(fileObj)
+            break
+          case '附件资料':
+            signatureData.attachments.push(fileObj)
+            break
+        }
+      })
+    }
+  })
+}
+
 // 预览图片
 const onPreviewImage = (type, index) => {
   const imageArray = type === 'interior' ? detail.interiorImages : detail.exteriorImages
+  const images = imageArray.map((item) => item.url)
   showImagePreview({
-    images: imageArray,
+    images: images,
     startPosition: index,
     showIndex: true,
   })
+}
+
+// 统一图片预览方法
+const showImg = (url) => {
+  showImagePreview({
+    images: [url],
+    startPosition: 0,
+    showIndex: false,
+  })
+}
+
+// 预览文件
+const onPreviewFile = (file) => {
+  if (file.isImage) {
+    showImagePreview({
+      images: [file.url],
+      startPosition: 0,
+      showIndex: false,
+    })
+  }
 }
 
 // 上传图片
@@ -2211,6 +2327,21 @@ const onUploadImage = (type) => {
   currentUploadIndex.value = 0
   // 获取配置中的最大文件大小
   const config = getAttachConfig(type === 'interior' ? '车内检查' : '车外检查')
+  const maxSize = config.maxSize || 10
+  getAppImgLimit(maxSize)
+}
+
+// 统一上传方法
+const uploadGeneric = (type) => {
+  currentUploadType.value = type
+  currentUploadIndex.value = 0
+  // attachType 映射
+  const attachTypeMap = {
+    interior: '车内检查',
+    exterior: '车外检查',
+    attachment: '附件资料',
+  }
+  const config = getAttachConfig(attachTypeMap[type] || '车内检查')
   const maxSize = config.maxSize || 10
   getAppImgLimit(maxSize)
 }
@@ -2233,12 +2364,39 @@ const handleImageFileChange = async (event) => {
 
   const file = files[0]
   const previewUrl = URL.createObjectURL(file)
-  const imageArray =
-    currentUploadType.value === 'interior' ? detail.interiorImages : detail.exteriorImages
-  console.log('previewUrl', previewUrl)
 
-  // 添加临时预览
-  imageArray.push(previewUrl)
+  // attachType 映射
+  const attachTypeMap = {
+    interior: '车内检查',
+    exterior: '车外检查',
+    attachment: '附件资料',
+  }
+
+  // 获取目标文件列表
+  const getTargetFileList = (type) => {
+    switch (type) {
+      case 'interior':
+        return detail.interiorImages
+      case 'exterior':
+        return detail.exteriorImages
+      case 'attachment':
+        return signatureData.attachments
+      default:
+        return detail.interiorImages
+    }
+  }
+
+  const imageArray = getTargetFileList(currentUploadType.value)
+  const attachType = attachTypeMap[currentUploadType.value] || '车内检查'
+
+  // 先添加临时预览
+  const fileObj = {
+    url: previewUrl,
+    status: 'uploading',
+    message: '上传中...',
+    id: null,
+  }
+  imageArray.push(fileObj)
 
   try {
     const params = [
@@ -2246,7 +2404,7 @@ const handleImageFileChange = async (event) => {
         fileUrl: previewUrl,
         businessId: route.query.id || '',
         configCode: 'mcs_serviceproxy',
-        attachType: currentUploadType.value === 'interior' ? '车内检查' : '车外检查',
+        attachType,
       },
     ]
 
@@ -2255,14 +2413,14 @@ const handleImageFileChange = async (event) => {
     if (res.code === 200) {
       const uploadData = res.data && res.data.length > 0 ? res.data[0] : {}
       // 更新为实际上传后的URL
-      const index = imageArray.indexOf(previewUrl)
-      if (index > -1) {
-        imageArray[index] = uploadData.authFileUrl || previewUrl
-      }
+      fileObj.url = uploadData.authFileUrl || previewUrl
+      fileObj.status = 'done'
+      fileObj.message = ''
+      fileObj.id = uploadData.id || null
       showToast('上传成功')
     } else {
       // 上传失败，移除临时预览
-      const index = imageArray.indexOf(previewUrl)
+      const index = imageArray.indexOf(fileObj)
       if (index > -1) {
         imageArray.splice(index, 1)
       }
@@ -2270,7 +2428,7 @@ const handleImageFileChange = async (event) => {
     }
   } catch (e) {
     console.error('上传出错:', e)
-    const index = imageArray.indexOf(previewUrl)
+    const index = imageArray.indexOf(fileObj)
     if (index > -1) {
       imageArray.splice(index, 1)
     }
@@ -2286,11 +2444,38 @@ onMounted(() => {
   window.getImage = async (url) => {
     if (!url) return
 
-    const imageArray =
-      currentUploadType.value === 'interior' ? detail.interiorImages : detail.exteriorImages
+    // attachType 映射
+    const attachTypeMap = {
+      interior: '车内检查',
+      exterior: '车外检查',
+      attachment: '附件资料',
+    }
 
-    // 添加临时预览
-    imageArray.push(url)
+    // 获取目标文件列表
+    const getTargetFileList = (type) => {
+      switch (type) {
+        case 'interior':
+          return detail.interiorImages
+        case 'exterior':
+          return detail.exteriorImages
+        case 'attachment':
+          return signatureData.attachments
+        default:
+          return detail.interiorImages
+      }
+    }
+
+    const imageArray = getTargetFileList(currentUploadType.value)
+    const attachType = attachTypeMap[currentUploadType.value] || '车内检查'
+
+    // 先添加临时预览
+    const fileObj = {
+      url: url,
+      status: 'uploading',
+      message: '上传中...',
+      id: null,
+    }
+    imageArray.push(fileObj)
 
     try {
       const params = [
@@ -2298,7 +2483,7 @@ onMounted(() => {
           fileUrl: url,
           businessId: route.query.id || '',
           configCode: 'mcs_serviceproxy',
-          attachType: currentUploadType.value === 'interior' ? '车内检查' : '车外检查',
+          attachType,
         },
       ]
 
@@ -2306,13 +2491,13 @@ onMounted(() => {
 
       if (res.code === 200) {
         const uploadData = res.data && res.data.length > 0 ? res.data[0] : {}
-        const index = imageArray.indexOf(url)
-        if (index > -1) {
-          imageArray[index] = uploadData.authFileUrl || url
-        }
+        fileObj.url = uploadData.authFileUrl || url
+        fileObj.status = 'done'
+        fileObj.message = ''
+        fileObj.id = uploadData.id || null
         showToast('上传成功')
       } else {
-        const index = imageArray.indexOf(url)
+        const index = imageArray.indexOf(fileObj)
         if (index > -1) {
           imageArray.splice(index, 1)
         }
@@ -2320,7 +2505,7 @@ onMounted(() => {
       }
     } catch (e) {
       console.error('上传出错:', e)
-      const index = imageArray.indexOf(url)
+      const index = imageArray.indexOf(fileObj)
       if (index > -1) {
         imageArray.splice(index, 1)
       }
@@ -2597,8 +2782,8 @@ const onInspectionSave = async (type) => {
     targetUnitCode: '',
     beforeChangeCode: '',
     afterChangeCode: '',
-    exteriorPhotos: detail.exteriorImages.join(','),
-    interiorPhotos: detail.interiorImages.join(','),
+    exteriorPhotoList: detail.exteriorImages,
+    interiorPhotoList: detail.interiorImages,
     isStoreLive: '',
     faultAlertRecordParams: detail.faultModules.map((m) => ({
       cccId: m.cccCode || '',
@@ -2730,22 +2915,13 @@ const onConfirmAndSign = () => {
   showToast('制单确认并签字')
 }
 
-// 删除附件
-const onDeleteAttachment = (index) => {
-  showConfirmDialog({
-    title: '提示',
-    message: '确定删除该附件吗？',
-  })
-    .then(() => {
-      signatureData.attachments.splice(index, 1)
-      showToast('删除成功')
-    })
-    .catch(() => {})
-}
-
 // 上传附件
 const onUploadAttachment = () => {
-  showToast('上传附件')
+  currentUploadType.value = 'attachment'
+  currentUploadIndex.value = 0
+  const config = getAttachConfig('附件资料')
+  const maxSize = config.maxSize || 10
+  getAppImgLimit(maxSize)
 }
 
 // 打开预计交车时间选择器
@@ -2827,7 +3003,6 @@ const onConfirmBattery = () => {
   detail.battery = batteryInputValue.value
   showToast('保存成功')
 }
-
 onMounted(() => {
   fetchDetail()
   // 获取枚举数据
@@ -3634,5 +3809,64 @@ onMounted(() => {
 
 .action-sheet-item:last-child {
   border-bottom: none;
+}
+
+// 上传组件样式
+.card-container {
+  background: #fff;
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.card-info-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: #191a1b;
+}
+
+.marginB1 {
+  margin-bottom: 8px;
+}
+
+.upload-content {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.upload-box {
+  width: 80px;
+  height: 80px;
+  border-radius: 6px;
+  overflow: hidden;
+  position: relative;
+  background: #f5f5f5;
+
+  img {
+    object-fit: cover;
+  }
+
+  .delete_icon {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+  }
+}
+
+.upload-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px dashed #ddd;
+  cursor: pointer;
+
+  .upload-img {
+    width: 32px;
+    height: 32px;
+    color: #888;
+  }
 }
 </style>

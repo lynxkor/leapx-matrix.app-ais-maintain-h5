@@ -312,18 +312,35 @@
               <span class="label">签字渠道</span>
               <span class="value">{{ signatureData.signChannel || '-' }}</span>
             </div>
+            <div class="signature-row">
+              <span class="label">签字状态</span>
+              <span class="value">{{ signatureData.signStatusLabel || '-' }}</span>
+            </div>
           </div>
 
           <!-- 附件信息 -->
           <div class="attachment-section" v-if="signatureData.attachments.length > 0">
             <div class="section-title">附件信息</div>
-            <div class="image-grid readonly">
+            <div class="attachment-list">
               <div
-                v-for="(img, index) in signatureData.attachments"
+                v-for="(file, index) in signatureData.attachments"
                 :key="'attachment-' + index"
-                class="image-item"
+                class="attachment-item"
+                @click="onPreviewFile(file)"
               >
-                <van-image :src="img" fit="cover" />
+                <div class="file-icon">
+                  <van-image
+                    v-if="file.isImage"
+                    :src="file.fileUrl"
+                    fit="cover"
+                    class="file-preview"
+                  />
+                  <img v-else :src="getFileIconPath(file)" class="file-type-icon" />
+                </div>
+                <div class="file-info">
+                  <div class="file-name">{{ file.fileName || '未命名文件' }}</div>
+                  <div class="file-size">{{ formatFileSize(file.fileSize) }}</div>
+                </div>
               </div>
             </div>
           </div>
@@ -380,12 +397,14 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, computed, nextTick } from 'vue'
+import { ref, reactive, onMounted, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { showToast, showConfirmDialog } from 'vant'
+import { showToast, showImagePreview } from 'vant'
 import { useGlobalStore } from '@/stores/global'
 import AisPopup from '@/libs/components/AisPopup.vue'
 import { getDetail, serviceProxyCancel } from '@/api/reception'
+import { getFileList } from '@/libs/api/fileConfig'
+import { isFileType } from '@/libs/utils/file'
 import './detail.scss'
 
 const route = useRoute()
@@ -399,7 +418,7 @@ const moreActionsList = [
   { name: '权益查询', tag: '1', color: '#191a1b' },
   { name: '维修履历', tag: '2', color: '#191a1b' },
   { name: '实时故障', tag: '3', color: '#191a1b' },
-  { name: '作废', tag: '4', color: '#191a1b' }
+  { name: '作废', tag: '4', color: '#191a1b' },
 ]
 // 作废原因弹框状态
 const showCancelReason = ref(false)
@@ -416,16 +435,16 @@ const onSelectMoreAction = (action) => {
     router.push({
       path: '/reception/maintenance-history',
       query: {
-        id: route.query.id
-      }
+        id: route.query.id,
+      },
     })
   }
   if (action.name === '权益查询') {
     router.push({
       path: '/reception/rights-query',
       query: {
-        id: route.query.id
-      }
+        id: route.query.id,
+      },
     })
   }
 }
@@ -438,7 +457,7 @@ const onConfirmCancel = () => {
   cancelLoading.value = true
   serviceProxyCancel({
     id: detail.value.id,
-    invaildDesc: cancelReason.value
+    invaildDesc: cancelReason.value,
   })
     .then((res) => {
       if (res.code === 200) {
@@ -472,8 +491,6 @@ const customerFaultDescExpanded = ref(false)
 const customerFaultDescNeedExpand = ref(false)
 
 // 选择器显示状态
-const showRepairPersonPicker = ref(false)
-const showBusinessTypePicker = ref(false)
 const showMoreActions = ref(false)
 
 // 详情数据
@@ -503,9 +520,8 @@ const detail = ref({
   anomalyDescription: '',
   currentFault: '',
   faultAlertRecordRespList: [],
-  customerContent: ''
+  customerContent: '',
 })
-
 // 项目零件数据
 const partsData = reactive({
   workCostCount: '',
@@ -513,7 +529,7 @@ const partsData = reactive({
   maintenanceCostEstimation: '',
   repairItemRespList: [],
   packageRespList: [],
-  sparePartRespList: []
+  sparePartRespList: [],
 })
 
 // 签字确认数据
@@ -523,11 +539,12 @@ const signatureData = reactive({
   expectFinishAt: '',
   isLive: false,
   signChannel: '',
-  attachments: []
+  signStatusLabel: '',
+  attachments: [],
 })
 
 // 获取详情
-const fetchDetail = async() => {
+const fetchDetail = async () => {
   const id = route.query.id
   if (!id) return
   loading.value = true
@@ -565,6 +582,7 @@ const fetchDetail = async() => {
         signatureData.expectFinishAt = data.expectFinishAt || ''
         signatureData.isLive = data.isLive === 1
         signatureData.signChannel = getSignChannelName(data.signChannel)
+        signatureData.signStatusLabel = data.signStatusLabel
         signatureData.attachments = data.attachmentPhotos
           ? data.attachmentPhotos.split(',').filter(Boolean)
           : []
@@ -589,10 +607,68 @@ const fetchDetail = async() => {
 // 签字渠道转换
 const getSignChannelName = (channel) => {
   const channelMap = {
-    1: '纸质单据',
-    2: 'APP/短信/零小跑'
+    40: '纸质单据',
+    999: 'APP/短信/零小跑',
   }
   return channelMap[channel] || ''
+}
+
+// 加载附件列表
+const loadAttachmentList = async () => {
+  if (!route.query.id) return
+  try {
+    const res = await getFileList({ businessId: route.query.id, attachType: '' })
+    if (res.code === 200 && res.data) {
+      signatureData.attachments = res.data.map((file) => ({
+        ...file,
+        isImage: isFileType(file, 'image'),
+        isPdf: isFileType(file, 'pdf'),
+        isExcel: isFileType(file, 'excel'),
+        isWord: isFileType(file, 'word'),
+        isPpt: isFileType(file, 'ppt'),
+        isVideo: isFileType(file, 'video'),
+        isZip: isFileType(file, 'zip') || isFileType(file, 'rar'),
+      }))
+    }
+  } catch (error) {
+    console.error('加载附件列表失败:', error)
+  }
+}
+
+// 获取文件图标路径
+const getFileIconPath = (file) => {
+  if (file.isImage) return file.fileUrl
+  if (file.isPdf) return require('@/libs/components/AisAttachment/icon/pdf.png')
+  if (file.isExcel) return require('@/libs/components/AisAttachment/icon/xls.png')
+  if (file.isWord) return require('@/libs/components/AisAttachment/icon/word.png')
+  if (file.isPpt) return require('@/libs/components/AisAttachment/icon/ppt.png')
+  if (file.isVideo) return require('@/libs/components/AisAttachment/icon/video.png')
+  if (file.isZip) return require('@/libs/components/AisAttachment/icon/zip.png')
+  return require('@/libs/components/AisAttachment/icon/text.png')
+}
+
+// 格式化文件大小
+const formatFileSize = (size) => {
+  if (!size) return '0 B'
+  const units = ['B', 'KB', 'MB', 'GB']
+  let index = 0
+  let fileSize = size
+  while (fileSize >= 1024 && index < units.length - 1) {
+    fileSize /= 1024
+    index++
+  }
+  return fileSize.toFixed(1) + ' ' + units[index]
+}
+
+// 预览文件
+const onPreviewFile = (file) => {
+  if (file.isImage) {
+    showImagePreview({
+      images: [file.fileUrl],
+      startPosition: 0,
+      showIndex: false,
+    })
+  }
 }
 
 // 更多操作
@@ -610,6 +686,8 @@ onMounted(() => {
       abnormalDescNeedExpand.value = el.scrollHeight > lineHeight * 3
     }
   })
+  // 加载附件列表
+  loadAttachmentList()
 })
 </script>
 <style lang="scss" scoped>
