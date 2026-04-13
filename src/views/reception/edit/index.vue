@@ -1746,6 +1746,7 @@ const detail = reactive({
   ownerPhone: '',
   bindingUser: '',
   binderPhone: '',
+  bindingUserId: '',
   repairPerson: '',
   repairPersonPhone: '',
   repairPersonTag: '车主',
@@ -1764,6 +1765,86 @@ const detail = reactive({
   faultModules: [],
   customerFaultDesc: '',
   testResult: '',
+  // 新增字段
+  code: '',
+  dataSource: '',
+  orderStatus: '',
+  warrantyTypeCollect: '',
+  custType: '',
+  salesDealerName: '',
+  salesDealerCode: '',
+  appointmentNo: '',
+  lastMileage: null,
+  createStatementInfoDate: '',
+  remark: '',
+  status: '',
+  statusDesc: '',
+  pickStatus: '',
+  payType: '',
+  warrantyCompany: '',
+  signChannel: '',
+  signCompletedOn: '',
+  signGeneratedOn: '',
+  signStatus: '',
+  signUrlExpiredOn: '',
+  appointmentType: '',
+  preAuthType: '',
+  isLockLive: '',
+  isCreateWarranty: '',
+  isOutboundOrder: '',
+  isVehRetentionRemind: '',
+  isCancelStorage: '',
+  discountId: '',
+  finalCheckAt: '',
+  finalCheckerId: '',
+  finalChecker: '',
+  ticketStep: '',
+  warrantyStatus: '',
+  claimItemAmount: '',
+  claimOtherAmount: '',
+  claimPartsAmount: '',
+  departureMileage: '',
+  outPower: '',
+  departureNetMileage: '',
+  outNetPower: '',
+  departureNetMileageElectricity: '',
+  departureNetMileageExtend: '',
+  electricalMileage: '',
+  motorModel: '',
+  motorSerialNumber: '',
+  batteryModel: '',
+  batterySerialNumber: '',
+  enginenNumber: '',
+  repairItemTypeDetailCollect: '',
+  alarmLevel: '',
+  isLive: '',
+  inCustomerContent: '',
+  customerComment: '',
+  invaildDesc: '',
+  previewingFinishAt: '',
+  confirmedOn: '',
+  expectStartAt: '',
+  startAt: '',
+  finishAt: '',
+  faultSolve: '',
+  faultAlert: '',
+  faultPeriod: '',
+  earliestfaultServiceProxy: '',
+  recentlyfaultServiceProxy: '',
+  isCreateStatementInfo: 0,
+  isPreAuth: '',
+  isCreatePreAuth: '',
+  preAuthRuleId: '',
+  unresolvedReason: '',
+  faultDesc: '',
+  batteryUnitId: '',
+  batteryUnitName: '',
+  targetUnitCode: '',
+  beforeChangeCode: '',
+  afterChangeCode: '',
+  isStoreLive: '',
+  latelyServiceProxy: '',
+  earlyServiceProxy: '',
 })
 
 // 初始环检数据快照
@@ -2046,6 +2127,7 @@ const fetchDetail = async () => {
         detail.ownerPhone = data.customerPhone || ''
         detail.bindingUser = data.bindingUser || ''
         detail.binderPhone = data.bindingPhone || ''
+        detail.bindingUserId = data.bindingUserId || ''
         detail.repairPerson = data.shuttleName || ''
         detail.repairPersonPhone = data.shuttlePhone || ''
         // 计算送修人类型
@@ -2064,14 +2146,119 @@ const fetchDetail = async () => {
         detail.networkMileageAdd = data.netMileageExtend || ''
         detail.battery = data.inPower || ''
         detail.networkBattery = data.inNetPower || ''
-        detail.interiorImages = []
-        detail.exteriorImages = []
         detail.abnormalDesc = data.anomalyDescription || ''
         detail.currentFault = String(data.currentFault || '')
         detail.hasFault = data.currentFault === 1 ? '1' : '2'
         detail.customerFaultDesc = data.customerContent || ''
         detail.faultAlertRecordRespList = data.faultAlertRecordRespList || []
         detail.vehicleProfileServiceResp = data.vehicleProfileServiceResp || {}
+
+        // 获取附件列表并分类回显
+        getFileList({ businessId: route.query.id }).then((fileRes) => {
+          if (fileRes.code === 200) {
+            const fileList = fileRes.data || []
+            // 清空列表
+            detail.interiorImages = []
+            detail.exteriorImages = []
+            signatureData.attachments = []
+            // 根据 attachType 分类回显文件
+            fileList.forEach((item) => {
+              const fileObj = { ...item, url: item.fileUrl }
+              switch (item.attachType) {
+                case '车内检查':
+                  detail.interiorImages.push(fileObj)
+                  break
+                case '车外检查':
+                  detail.exteriorImages.push(fileObj)
+                  break
+                case '附件资料':
+                  signatureData.attachments.push(fileObj)
+                  break
+              }
+            })
+          }
+        })
+
+        // 新增字段赋值
+        detail.code = data.code || ''
+        detail.dataSource = data.dataSource || ''
+        detail.orderStatus = data.orderStatus || ''
+        detail.warrantyTypeCollect = data.warrantyTypeCollect || ''
+        detail.custType = data.custType || ''
+        detail.salesDealerName = data.dealerName || ''
+        detail.salesDealerCode = data.dealerCode || ''
+        detail.appointmentNo = data.appointmentNo || ''
+        detail.lastMileage = data.lastMileage || null
+        detail.createStatementInfoDate = data.createStatementInfoDate || ''
+        detail.remark = data.remark || ''
+        detail.status = data.status || ''
+        detail.statusDesc = data.statusDesc || ''
+        detail.pickStatus = data.pickStatus || ''
+        detail.payType = data.payType || ''
+        detail.warrantyCompany = data.warrantyCompany || ''
+        detail.signChannel = data.signChannel || ''
+        detail.signCompletedOn = data.signCompletedOn || ''
+        detail.signGeneratedOn = data.signGeneratedOn || ''
+        detail.signStatus = data.signStatus || ''
+        detail.signUrlExpiredOn = data.signUrlExpiredOn || ''
+        detail.appointmentType = data.appointmentType || ''
+        detail.preAuthType = data.preAuthType || ''
+        detail.isLockLive = data.isLockLive || ''
+        detail.isCreateWarranty = data.isCreateWarranty || ''
+        detail.isOutboundOrder = data.isOutboundOrder || ''
+        detail.isVehRetentionRemind = data.isVehRetentionRemind || ''
+        detail.isCancelStorage = data.isCancelStorage || ''
+        detail.discountId = data.discountId || ''
+        detail.finalCheckAt = data.finalCheckAt || ''
+        detail.finalCheckerId = data.finalCheckerId || ''
+        detail.finalChecker = data.finalChecker || ''
+        detail.ticketStep = data.ticketStep || ''
+        detail.warrantyStatus = data.warrantyStatus || ''
+        detail.claimItemAmount = data.claimItemAmount || ''
+        detail.claimOtherAmount = data.claimOtherAmount || ''
+        detail.claimPartsAmount = data.claimPartsAmount || ''
+        detail.departureMileage = data.departureMileage || ''
+        detail.outPower = data.outPower || ''
+        detail.departureNetMileage = data.departureNetMileage || ''
+        detail.outNetPower = data.outNetPower || ''
+        detail.departureNetMileageElectricity = data.departureNetMileageElectricity || ''
+        detail.departureNetMileageExtend = data.departureNetMileageExtend || ''
+        detail.electricalMileage = data.netMileageElectricity || ''
+        detail.motorModel = data.motorModel || ''
+        detail.motorSerialNumber = data.motorSerialNumber || ''
+        detail.batteryModel = data.batteryModel || ''
+        detail.batterySerialNumber = data.batterySerialNumber || ''
+        detail.enginenNumber = data.engineNumber || ''
+        detail.repairItemTypeDetailCollect = data.repairItemTypeDetailCollect || ''
+        detail.alarmLevel = data.alarmLevel || ''
+        detail.isLive = data.isLive || ''
+        detail.inCustomerContent = data.inCustomerContent || ''
+        detail.customerComment = data.customerComment || ''
+        detail.invaildDesc = data.invaildDesc || ''
+        detail.previewingFinishAt = data.previewingFinishAt || ''
+        detail.confirmedOn = data.confirmedOn || ''
+        detail.expectStartAt = data.expectStartAt || ''
+        detail.startAt = data.startAt || ''
+        detail.finishAt = data.finishAt || ''
+        detail.faultSolve = data.faultSolve || ''
+        detail.faultAlert = data.faultAlert || ''
+        detail.faultPeriod = data.faultPeriod || ''
+        detail.earliestfaultServiceProxy = data.earliestfaultServiceProxy || ''
+        detail.recentlyfaultServiceProxy = data.recentlyfaultServiceProxy || ''
+        detail.isCreateStatementInfo = data.isCreateStatementInfo || 0
+        detail.isPreAuth = data.isPreAuth || ''
+        detail.isCreatePreAuth = data.isCreatePreAuth || ''
+        detail.preAuthRuleId = data.preAuthRuleId || ''
+        detail.unresolvedReason = data.unresolvedReason || ''
+        detail.faultDesc = data.faultDesc || ''
+        detail.batteryUnitId = data.batteryUnitId || ''
+        detail.batteryUnitName = data.batteryUnitName || ''
+        detail.targetUnitCode = data.targetUnitCode || ''
+        detail.beforeChangeCode = data.beforeChangeCode || ''
+        detail.afterChangeCode = data.afterChangeCode || ''
+        detail.isStoreLive = data.isStoreLive || ''
+        detail.latelyServiceProxy = data.latelyServiceProxy || ''
+        detail.earlyServiceProxy = data.earlyServiceProxy || ''
 
         // 签字确认数据
         signatureData.maintenanceCostEstimation =
@@ -2080,9 +2267,6 @@ const fetchDetail = async () => {
         signatureData.expectFinishAt = data.expectFinishAt || ''
         signatureData.isLive = data.isLive === 1
         signatureData.signChannel = getSignChannelName(data.signChannel)
-        signatureData.attachments = data.attachmentPhotos
-          ? data.attachmentPhotos.split(',').filter(Boolean)
-          : []
 
         // 项目零件数据
         if (data.costCountResp) {
@@ -2236,65 +2420,41 @@ const onEditPlate = () => {
 
 // 删除车内检查图片
 const handleInteriorDelete = async (file) => {
-  showConfirmDialog({
-    title: '提示',
-    message: '确定删除该图片吗？',
-  })
-    .then(async () => {
-      if (file.id) {
-        await deleteAttachmentConfig([file.id])
-        refreshAttachmentList()
-      } else {
-        const index = detail.interiorImages.findIndex((item) => item === file)
-        if (index > -1) {
-          detail.interiorImages.splice(index, 1)
-        }
-      }
-      showToast('删除成功')
-    })
-    .catch(() => {})
+  if (file.id) {
+    await deleteAttachmentConfig([file.id])
+    refreshAttachmentList()
+  } else {
+    const index = detail.interiorImages.findIndex((item) => item === file)
+    if (index > -1) {
+      detail.interiorImages.splice(index, 1)
+    }
+  }
 }
 
 // 删除车外检查图片
 const handleExteriorDelete = async (file) => {
-  showConfirmDialog({
-    title: '提示',
-    message: '确定删除该图片吗？',
-  })
-    .then(async () => {
-      if (file.id) {
-        await deleteAttachmentConfig([file.id])
-        refreshAttachmentList()
-      } else {
-        const index = detail.exteriorImages.findIndex((item) => item === file)
-        if (index > -1) {
-          detail.exteriorImages.splice(index, 1)
-        }
-      }
-      showToast('删除成功')
-    })
-    .catch(() => {})
+  if (file.id) {
+    await deleteAttachmentConfig([file.id])
+    refreshAttachmentList()
+  } else {
+    const index = detail.exteriorImages.findIndex((item) => item === file)
+    if (index > -1) {
+      detail.exteriorImages.splice(index, 1)
+    }
+  }
 }
 
 // 删除附件资料
 const handleAttachmentDelete = async (file) => {
-  showConfirmDialog({
-    title: '提示',
-    message: '确定删除该附件吗？',
-  })
-    .then(async () => {
-      if (file.id) {
-        await deleteAttachmentConfig([file.id])
-        refreshAttachmentList()
-      } else {
-        const index = signatureData.attachments.findIndex((item) => item === file)
-        if (index > -1) {
-          signatureData.attachments.splice(index, 1)
-        }
-      }
-      showToast('删除成功')
-    })
-    .catch(() => {})
+  if (file.id) {
+    await deleteAttachmentConfig([file.id])
+    refreshAttachmentList()
+  } else {
+    const index = signatureData.attachments.findIndex((item) => item === file)
+    if (index > -1) {
+      signatureData.attachments.splice(index, 1)
+    }
+  }
 }
 
 // 刷新附件列表
@@ -2392,84 +2552,106 @@ const onSelectImageSource = (source) => {
   }
 }
 
+// 获取目标文件列表
+const getTargetFileList = (type) => {
+  switch (type) {
+    case 'interior':
+      return detail.interiorImages
+    case 'exterior':
+      return detail.exteriorImages
+    case 'attachment':
+      return signatureData.attachments
+    default:
+      return detail.interiorImages
+  }
+}
+
 // 处理图片文件选择
-const handleImageFileChange = async (event) => {
+const handleImageFileChange = (event) => {
   const files = event.target.files
-  if (!files || files.length === 0) return
+  if (files && files.length > 0) {
+    const file = files[0]
+    // 创建本地预览 URL
+    const previewUrl = URL.createObjectURL(file)
 
-  const file = files[0]
-  const previewUrl = URL.createObjectURL(file)
+    // attachType 映射
+    const attachTypeMap = {
+      interior: '车内检查',
+      exterior: '车外检查',
+      attachment: '附件资料'
+    }
 
-  // attachType 映射
-  const attachTypeMap = {
-    interior: '车内检查',
-    exterior: '车外检查',
-    attachment: '附件资料',
-  }
+    // 先添加临时预览
+    const fileObj = {
+      url: previewUrl,
+      status: 'uploading',
+      message: '上传中...',
+      id: null
+    }
 
-  // 获取目标文件列表
-  const getTargetFileList = (type) => {
-    switch (type) {
+    // 根据当前上传类型添加到对应的文件列表
+    switch (currentUploadType.value) {
       case 'interior':
-        return detail.interiorImages
+        detail.interiorImages.push(fileObj)
+        break
       case 'exterior':
-        return detail.exteriorImages
+        detail.exteriorImages.push(fileObj)
+        break
       case 'attachment':
-        return signatureData.attachments
-      default:
-        return detail.interiorImages
+        signatureData.attachments.push(fileObj)
+        break
     }
-  }
 
-  const imageArray = getTargetFileList(currentUploadType.value)
-  const attachType = attachTypeMap[currentUploadType.value] || '车内检查'
+    // 调用上传接口
+    const uploadFile = async () => {
+      try {
+        const params = {
+          fileUrl: previewUrl,
+          businessId: route.query.id,
+          configCode: 'mcs_serviceproxy',
+          attachType: attachTypeMap[currentUploadType.value]
+        }
 
-  // 先添加临时预览
-  const fileObj = {
-    url: previewUrl,
-    status: 'uploading',
-    message: '上传中...',
-    id: null,
-  }
-  imageArray.push(fileObj)
+        const res = await uploadFileByUrl([params])
 
-  try {
-    const params = [
-      {
-        fileUrl: previewUrl,
-        businessId: route.query.id || '',
-        configCode: 'mcs_serviceproxy',
-        attachType,
-      },
-    ]
+        if (res.code === 200) {
+          const uploadData = res.data && res.data.length > 0 ? res.data[0] : {}
 
-    const res = await uploadFileByUrl(params)
+          // 更新文件状态
+          const targetList = getTargetFileList(currentUploadType.value)
+          if (targetList.length > 0) {
+            const lastIndex = targetList.length - 1
+            targetList[lastIndex] = {
+              ...targetList[lastIndex],
+              status: 'done',
+              message: '',
+              id: uploadData.id || null,
+              url: uploadData.authFileUrl || previewUrl
+            }
+          }
 
-    if (res.code === 200) {
-      const uploadData = res.data && res.data.length > 0 ? res.data[0] : {}
-      // 更新为实际上传后的URL
-      fileObj.url = uploadData.authFileUrl || previewUrl
-      fileObj.status = 'done'
-      fileObj.message = ''
-      fileObj.id = uploadData.id || null
-      showToast('上传成功')
-    } else {
-      // 上传失败，移除临时预览
-      const index = imageArray.indexOf(fileObj)
-      if (index > -1) {
-        imageArray.splice(index, 1)
+          showToast('上传成功')
+        } else {
+          // 上传失败，移除临时文件
+          const targetList = getTargetFileList(currentUploadType.value)
+          if (targetList.length > 0) {
+            targetList.pop()
+          }
+          showToast(res.msg || '上传失败')
+        }
+      } catch (e) {
+        console.error('上传出错:', e)
+        // 出错时移除临时文件
+        const targetList = getTargetFileList(currentUploadType.value)
+        if (targetList.length > 0) {
+          targetList.pop()
+        }
+        showToast('上传出错')
       }
-      showToast(res.msg || '上传失败')
     }
-  } catch (e) {
-    console.error('上传出错:', e)
-    const index = imageArray.indexOf(fileObj)
-    if (index > -1) {
-      imageArray.splice(index, 1)
-    }
-    showToast('上传出错')
-  }
 
+    uploadFile()
+  }
   // 清空 input 值，允许重复选择同一文件
   event.target.value = ''
 }
@@ -2483,66 +2665,72 @@ onMounted(() => {
     const attachTypeMap = {
       interior: '车内检查',
       exterior: '车外检查',
-      attachment: '附件资料',
+      attachment: '附件资料'
     }
-
-    // 获取目标文件列表
-    const getTargetFileList = (type) => {
-      switch (type) {
-        case 'interior':
-          return detail.interiorImages
-        case 'exterior':
-          return detail.exteriorImages
-        case 'attachment':
-          return signatureData.attachments
-        default:
-          return detail.interiorImages
-      }
-    }
-
-    const imageArray = getTargetFileList(currentUploadType.value)
-    const attachType = attachTypeMap[currentUploadType.value] || '车内检查'
 
     // 先添加临时预览
     const fileObj = {
       url: url,
       status: 'uploading',
       message: '上传中...',
-      id: null,
+      id: null
     }
-    imageArray.push(fileObj)
 
+    // 根据当前上传类型添加到对应的文件列表
+    switch (currentUploadType.value) {
+      case 'interior':
+        detail.interiorImages.push(fileObj)
+        break
+      case 'exterior':
+        detail.exteriorImages.push(fileObj)
+        break
+      case 'attachment':
+        signatureData.attachments.push(fileObj)
+        break
+    }
+
+    // 调用上传接口
     try {
-      const params = [
-        {
-          fileUrl: url,
-          businessId: route.query.id || '',
-          configCode: 'mcs_serviceproxy',
-          attachType,
-        },
-      ]
+      const params = {
+        fileUrl: url,
+        businessId: route.query.id,
+        configCode: 'mcs_serviceproxy',
+        attachType: attachTypeMap[currentUploadType.value]
+      }
 
-      const res = await uploadFileByUrl(params)
+      const res = await uploadFileByUrl([params])
 
       if (res.code === 200) {
         const uploadData = res.data && res.data.length > 0 ? res.data[0] : {}
-        fileObj.url = uploadData.authFileUrl || url
-        fileObj.status = 'done'
-        fileObj.message = ''
-        fileObj.id = uploadData.id || null
+
+        // 更新文件状态
+        const targetList = getTargetFileList(currentUploadType.value)
+        if (targetList.length > 0) {
+          const lastIndex = targetList.length - 1
+          targetList[lastIndex] = {
+            ...targetList[lastIndex],
+            status: 'done',
+            message: '',
+            id: uploadData.id || null,
+            url: uploadData.authFileUrl || url
+          }
+        }
+
         showToast('上传成功')
       } else {
-        const index = imageArray.indexOf(fileObj)
-        if (index > -1) {
-          imageArray.splice(index, 1)
+        // 上传失败，移除临时文件
+        const targetList = getTargetFileList(currentUploadType.value)
+        if (targetList.length > 0) {
+          targetList.pop()
         }
         showToast(res.msg || '上传失败')
       }
     } catch (e) {
       console.error('上传出错:', e)
-      const index = imageArray.indexOf(fileObj)
-      if (index > -1) {
-        imageArray.splice(index, 1)
+      // 出错时移除临时文件
+      const targetList = getTargetFileList(currentUploadType.value)
+      if (targetList.length > 0) {
+        targetList.pop()
       }
       showToast('上传出错')
     }
@@ -2700,68 +2888,68 @@ const onInspectionSave = async (type) => {
     }
     return { code: 200 }
   }
-  const res = await serviceAddOrUpdate({
+  let params = {
     id: detail.id,
-    code: '',
-    dataSource: '',
-    orderStatus: '',
-    warrantyTypeCollect: '',
+    code: detail.code,
+    dataSource: detail.dataSource,
+    orderStatus: detail.orderStatus,
+    warrantyTypeCollect: detail.warrantyTypeCollect,
     customerName: detail.owner,
     customerPhone: detail.ownerPhone,
-    custType: '',
+    custType: detail.custType,
     vehModelName: detail.vehicleModelName,
     bindingPhone: detail.binderPhone,
     bindingUser: detail.bindingUser,
-    bindingUserId: '',
+    bindingUserId: detail.bindingUserId,
     carPlate: detail.plateNo,
     dealerName: detail.salesDealerName,
     dealerCode: detail.salesDealerCode,
-    appointmentNo: '',
+    appointmentNo: detail.appointmentNo,
     mileage: detail.mileage,
-    lastMileage: null,
+    lastMileage: detail.lastMileage,
     startWarrantyDate: detail.vehicleProfileServiceResp.warrantyStartdate || '',
     exclusiveServiceDealerName: detail.vehicleProfileServiceResp.serviceDealerName || '',
     exclusiveServiceDealerCode: detail.vehicleProfileServiceResp.serviceDealerCode || '',
     expectFinishAt: signatureData.deliveryTime,
-    createStatementInfoDate: '',
-    remark: '',
-    status: '',
-    statusDesc: '',
-    pickStatus: '',
+    createStatementInfoDate: detail.createStatementInfoDate,
+    remark: detail.remark,
+    status: detail.status,
+    statusDesc: detail.statusDesc,
+    pickStatus: detail.pickStatus,
     shuttleName: detail.repairPerson,
     shuttlePhone: detail.repairPersonPhone,
-    payType: '',
-    warrantyCompany: '',
-    signChannel: '',
-    signCompletedOn: '',
-    signGeneratedOn: '',
-    signStatus: '',
-    signUrlExpiredOn: '',
-    appointmentType: '',
-    preAuthType: '',
-    isLockLive: '',
-    isCreateWarranty: '',
-    isOutboundOrder: '',
-    isVehRetentionRemind: '',
-    isCancelStorage: '',
-    discountId: '',
-    finalCheckAt: '',
-    finalCheckerId: '',
-    finalChecker: '',
-    ticketStep: '',
-    warrantyStatus: '',
-    claimItemAmount: '',
-    claimOtherAmount: '',
-    claimPartsAmount: '',
-    departureMileage: '',
+    payType: detail.payType,
+    warrantyCompany: detail.warrantyCompany,
+    signChannel: detail.signChannel,
+    signCompletedOn: detail.signCompletedOn,
+    signGeneratedOn: detail.signGeneratedOn,
+    signStatus: detail.signStatus,
+    signUrlExpiredOn: detail.signUrlExpiredOn,
+    appointmentType: detail.appointmentType,
+    preAuthType: detail.preAuthType,
+    isLockLive: detail.isLockLive,
+    isCreateWarranty: detail.isCreateWarranty,
+    isOutboundOrder: detail.isOutboundOrder,
+    isVehRetentionRemind: detail.isVehRetentionRemind,
+    isCancelStorage: detail.isCancelStorage,
+    discountId: detail.discountId,
+    finalCheckAt: detail.finalCheckAt,
+    finalCheckerId: detail.finalCheckerId,
+    finalChecker: detail.finalChecker,
+    ticketStep: detail.ticketStep,
+    warrantyStatus: detail.warrantyStatus,
+    claimItemAmount: detail.claimItemAmount,
+    claimOtherAmount: detail.claimOtherAmount,
+    claimPartsAmount: detail.claimPartsAmount,
+    departureMileage: detail.departureMileage,
     inPower: detail.battery,
-    outPower: '',
+    outPower: detail.outPower,
     netMileage: detail.networkMileageTotal,
-    departureNetMileage: '',
+    departureNetMileage: detail.departureNetMileage,
     inNetPower: detail.networkBattery,
-    outNetPower: '',
-    departureNetMileageElectricity: '',
-    departureNetMileageExtend: '',
+    outNetPower: detail.outNetPower,
+    departureNetMileageElectricity: detail.departureNetMileageElectricity,
+    departureNetMileageExtend: detail.departureNetMileageExtend,
     netMileageElectricity: detail.electricalMileage,
     netMileageExtend: detail.networkMileageAdd,
     vehProfileId: detail.id,
@@ -2780,46 +2968,46 @@ const onInspectionSave = async (type) => {
     batteryModel: detail.batteryModel,
     batterySerialNumber: detail.batterySerialNumber,
     engineNumber: detail.enginenNumber,
-    repairItemTypeDetailCollect: '',
+    repairItemTypeDetailCollect: detail.repairItemTypeDetailCollect,
     businessType: detail.businessType,
-    alarmLevel: '',
-    isLive: '',
+    alarmLevel: detail.alarmLevel,
+    isLive: detail.isLive,
     haveRework: 0,
     isCarWash: 0,
     isRetainOldParts: 0,
-    inCustomerContent: '',
-    customerComment: '',
+    inCustomerContent: detail.inCustomerContent,
+    customerComment: detail.customerComment,
     testResult: detail.testResult,
     currentFault: detail.hasFault === '1' ? 1 : 0,
     customerContent: detail.customerFaultDesc,
-    invaildDesc: '',
+    invaildDesc: detail.invaildDesc,
     anomalyDescription: detail.abnormalDesc,
-    previewingFinishAt: '',
-    confirmedOn: '',
-    expectStartAt: '',
-    startAt: '',
-    finishAt: '',
-    faultSolve: '',
+    previewingFinishAt: detail.previewingFinishAt,
+    confirmedOn: detail.confirmedOn,
+    expectStartAt: detail.expectStartAt,
+    startAt: detail.startAt,
+    finishAt: detail.finishAt,
+    faultSolve: detail.faultSolve,
     currentSituation: detail.hasFault === '1' ? 20 : 10,
-    faultAlert: '',
-    faultPeriod: '',
-    earliestfaultServiceProxy: '',
-    recentlyfaultServiceProxy: '',
+    faultAlert: detail.faultAlert,
+    faultPeriod: detail.faultPeriod,
+    earliestfaultServiceProxy: detail.earliestfaultServiceProxy,
+    recentlyfaultServiceProxy: detail.recentlyfaultServiceProxy,
     faultModule: detail.faultModules.map((m) => m.cccCode).join(','),
-    isCreateStatementInfo: 0,
-    isPreAuth: '',
-    isCreatePreAuth: '',
-    preAuthRuleId: '',
-    unresolvedReason: '',
-    faultDesc: '',
-    batteryUnitId: '',
-    batteryUnitName: '',
-    targetUnitCode: '',
-    beforeChangeCode: '',
-    afterChangeCode: '',
+    isCreateStatementInfo: detail.isCreateStatementInfo,
+    isPreAuth: detail.isPreAuth,
+    isCreatePreAuth: detail.isCreatePreAuth,
+    preAuthRuleId: detail.preAuthRuleId,
+    unresolvedReason: detail.unresolvedReason,
+    faultDesc: detail.faultDesc,
+    batteryUnitId: detail.batteryUnitId,
+    batteryUnitName: detail.batteryUnitName,
+    targetUnitCode: detail.targetUnitCode,
+    beforeChangeCode: detail.beforeChangeCode,
+    afterChangeCode: detail.afterChangeCode,
     exteriorPhotoList: detail.exteriorImages,
     interiorPhotoList: detail.interiorImages,
-    isStoreLive: '',
+    isStoreLive: detail.isStoreLive,
     faultAlertRecordParams: detail.faultModules.map((m) => ({
       cccId: m.cccCode || '',
       cccName: m.cccName || '',
@@ -2828,9 +3016,11 @@ const onInspectionSave = async (type) => {
       vrtId: m.vrtCode || '',
       vrtName: m.vrtName || '',
     })),
-    latelyServiceProxy: '',
-    earlyServiceProxy: '',
-  })
+    latelyServiceProxy: detail.latelyServiceProxy,
+    earlyServiceProxy: detail.earlyServiceProxy,
+  }
+  showToast(JSON.stringify(params))
+  const res = await serviceAddOrUpdate(params)
   if (res.code === 200) {
     showToast('保存成功')
   } else {
