@@ -175,10 +175,10 @@
               <div class="sub-info">车联网电量: {{ detail.networkBattery }}%</div>
             </div>
 
-            <!-- 车内检查 -->
+            <!-- 车内照片 -->
             <div class="card-container marginB1">
               <div class="card-info-title marginB1">
-                车内检查
+                车内照片
                 <span v-if="interiorConfig.required === '1'" style="color: #b91919; font-size: 15px"
                   >*</span
                 >
@@ -212,10 +212,10 @@
               </div>
             </div>
 
-            <!-- 车外检查 -->
+            <!-- 车外照片 -->
             <div class="card-container marginB1">
               <div class="card-info-title marginB1">
-                车外检查
+                车外照片
                 <span v-if="exteriorConfig.required === '1'" style="color: #b91919; font-size: 15px"
                   >*</span
                 >
@@ -1374,10 +1374,10 @@ const getAttachConfig = (attachType) => {
   return detailList.find((item) => item.attachType === attachType) || {}
 }
 
-// 车内检查配置
-const interiorConfig = computed(() => getAttachConfig('车内检查'))
-// 车外检查配置
-const exteriorConfig = computed(() => getAttachConfig('车外检查'))
+// 车内照片配置
+const interiorConfig = computed(() => getAttachConfig('车内照片'))
+// 车外照片配置
+const exteriorConfig = computed(() => getAttachConfig('车外照片'))
 // 附件资料配置
 const attachmentConfig = computed(() => getAttachConfig('附件资料'))
 
@@ -2165,10 +2165,10 @@ const fetchDetail = async () => {
             fileList.forEach((item) => {
               const fileObj = { ...item, url: item.fileUrl }
               switch (item.attachType) {
-                case '车内检查':
+                case '车内照片':
                   detail.interiorImages.push(fileObj)
                   break
-                case '车外检查':
+                case '车外照片':
                   detail.exteriorImages.push(fileObj)
                   break
                 case '附件资料':
@@ -2418,7 +2418,7 @@ const onEditPlate = () => {
   changePlateDialog.value = true
 }
 
-// 删除车内检查图片
+// 删除车内照片图片
 const handleInteriorDelete = async (file) => {
   if (file.id) {
     await deleteAttachmentConfig([file.id])
@@ -2431,7 +2431,7 @@ const handleInteriorDelete = async (file) => {
   }
 }
 
-// 删除车外检查图片
+// 删除车外照片图片
 const handleExteriorDelete = async (file) => {
   if (file.id) {
     await deleteAttachmentConfig([file.id])
@@ -2470,10 +2470,10 @@ const refreshAttachmentList = () => {
       fileList.forEach((item) => {
         const fileObj = { ...item, url: item.fileUrl }
         switch (item.attachType) {
-          case '车内检查':
+          case '车内照片':
             detail.interiorImages.push(fileObj)
             break
-          case '车外检查':
+          case '车外照片':
             detail.exteriorImages.push(fileObj)
             break
           case '附件资料':
@@ -2515,28 +2515,17 @@ const onPreviewFile = (file) => {
     })
   }
 }
-
-// 上传图片
-const onUploadImage = (type) => {
-  currentUploadType.value = type
-  currentUploadIndex.value = 0
-  // 获取配置中的最大文件大小
-  const config = getAttachConfig(type === 'interior' ? '车内检查' : '车外检查')
-  const maxSize = config.maxSize || 10
-  getAppImgLimit(maxSize)
-}
-
 // 统一上传方法
 const uploadGeneric = (type) => {
   currentUploadType.value = type
   currentUploadIndex.value = 0
   // attachType 映射
   const attachTypeMap = {
-    interior: '车内检查',
-    exterior: '车外检查',
+    interior: '车内照片',
+    exterior: '车外照片',
     attachment: '附件资料',
   }
-  const config = getAttachConfig(attachTypeMap[type] || '车内检查')
+  const config = getAttachConfig(attachTypeMap[type] || '车内照片')
   const maxSize = config.maxSize || 10
   getAppImgLimit(maxSize)
 }
@@ -2576,8 +2565,8 @@ const handleImageFileChange = (event) => {
 
     // attachType 映射
     const attachTypeMap = {
-      interior: '车内检查',
-      exterior: '车外检查',
+      interior: '车内照片',
+      exterior: '车外照片',
       attachment: '附件资料',
     }
 
@@ -2663,8 +2652,8 @@ onMounted(() => {
 
     // attachType 映射
     const attachTypeMap = {
-      interior: '车内检查',
-      exterior: '车外检查',
+      interior: '车内照片',
+      exterior: '车外照片',
       attachment: '附件资料',
     }
 
