@@ -284,8 +284,8 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, watch, nextTick } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
+import { ref, reactive, nextTick } from 'vue'
+import { useRouter } from 'vue-router'
 import { showToast } from 'vant'
 import dayjs from 'dayjs'
 import RefreshList from '@/libs/components/RefreshList.vue'
@@ -295,7 +295,6 @@ import { getSettlementStatementPage, cancelServiceProxy, addServiceProxyStatemen
 import { callPhone } from '@/libs/utils/nativeFn'
 
 const router = useRouter()
-const route = useRoute()
 
 const activeTab = ref('pending')
 const searchValue = ref('')
@@ -431,28 +430,6 @@ const refreshList = () => {
   })
 }
 
-// 复制文本
-const copyText = async(text) => {
-  try {
-    if (navigator.clipboard && window.isSecureContext) {
-      await navigator.clipboard.writeText(text)
-    } else {
-      const textArea = document.createElement('textarea')
-      textArea.value = text
-      textArea.style.position = 'fixed'
-      textArea.style.left = '-9999px'
-      document.body.appendChild(textArea)
-      textArea.focus()
-      textArea.select()
-      document.execCommand('copy')
-      document.body.removeChild(textArea)
-    }
-    showToast('复制成功')
-  } catch {
-    showToast('复制失败')
-  }
-}
-
 const dataList = ref([])
 
 const setData = (res) => {
@@ -491,12 +468,20 @@ const getAlarmColor = (alarmLevel) => {
 }
 
 const goToDetail = (item) => {
-  // 待交车和已交车都跳转到售后结算单详情页，传递状态区分显示不同按钮
+  const serviceProxyId = item.serviceProxyId || item.id
+
+  if (!serviceProxyId) {
+    showToast('缺少施工单ID')
+    return
+  }
+
   router.push({
     path: '/settlement-statement/after-sales',
     query: {
-      id: item.id,
-      status: activeTab.value
+      serviceProxyId,
+      status: activeTab.value,
+      serviceProxyCode: item.serviceProxyCode || item.code || '',
+      vehProfileVin: item.vehProfileVin || ''
     }
   })
 }
@@ -531,7 +516,7 @@ const executeCancel = async() => {
     } else {
       showToast(res.msg || '作废失败')
     }
-  } catch (error) {
+  } catch {
     showToast('作废失败')
   }
 }
@@ -569,7 +554,7 @@ const executeSettle = async() => {
     // 基于列表项数据，添加/修改结算相关字段
     const res = await addServiceProxyStatement({
       ...currentItem.value,
-      serviceProxyId: currentItem.value.id,
+      serviceProxyId: currentItem.value.serviceProxyId || currentItem.value.id,
       faultSolve: settleOption.value === 'resolved' ? 1 : 0,
       faultSolveLabel: settleOption.value === 'resolved' ? '已解决' : '未解决',
       reason: settleOption.value === 'unresolved' ? selectedReason.value : ''
@@ -577,12 +562,19 @@ const executeSettle = async() => {
     if (res.success) {
       showToast('结算成功')
       refreshList()
-      // 跳转到售后结算单页面
-      router.push('/settlement-statement/after-sales')
+      router.push({
+        path: '/settlement-statement/after-sales',
+        query: {
+          serviceProxyId: currentItem.value.serviceProxyId || currentItem.value.id,
+          status: activeTab.value,
+          serviceProxyCode: currentItem.value.serviceProxyCode || currentItem.value.code || '',
+          vehProfileVin: currentItem.value.vehProfileVin || ''
+        }
+      })
     } else {
       showToast(res.msg || '结算失败')
     }
-  } catch (error) {
+  } catch {
     showToast('结算失败')
   }
 }

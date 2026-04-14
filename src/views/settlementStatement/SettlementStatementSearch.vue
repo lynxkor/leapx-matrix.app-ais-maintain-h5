@@ -272,14 +272,22 @@ const setData = (res) => {
 
 // 跳转到详情
 const goToDetail = (item) => {
-  // 待交车状态：不跳转（搜索页主要用于搜索，结算操作回到列表页进行）
-  // 已交车状态：跳转到售后结算单详情页
-  if (currentTab.value === 'completed') {
-    router.push({
-      path: '/settlement-statement/after-sales',
-      query: { id: item.id }
-    })
+  const serviceProxyId = item.serviceProxyId || item.id
+
+  if (!serviceProxyId) {
+    showToast('缺少施工单ID')
+    return
   }
+
+  router.push({
+    path: '/settlement-statement/after-sales',
+    query: {
+      serviceProxyId,
+      status: currentTab.value,
+      serviceProxyCode: item.serviceProxyCode || item.code || '',
+      vehProfileVin: item.vehProfileVin || ''
+    }
+  })
 }
 
 // 初始化

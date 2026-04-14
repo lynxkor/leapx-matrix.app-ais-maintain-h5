@@ -46,6 +46,18 @@ export function getServiceStatementDetail(payload) {
   return postJson(`${SERVICE_STATEMENT_BASE}/get`, data)
 }
 
+/**
+ * 根据施工单查询对应的结算单详情列表
+ * 兼容两种调用方式：
+ * 1. getServiceStatementListByServiceProxy('serviceProxyId')
+ * 2. getServiceStatementListByServiceProxy({ serviceProxyId: 'serviceProxyId' })
+ * @param {string|Object} payload - 施工单 ID 或查询参数
+ * @returns {Promise}
+ */
+export function getServiceStatementListByServiceProxy(payload) {
+  return postJson(`${SERVICE_STATEMENT_BASE}/list/statement`, payload)
+}
+
 // ==================== 作废相关 ====================
 
 /**
@@ -71,4 +83,40 @@ export function cancelServiceProxy(data) {
  */
 export function addServiceProxyStatement(data) {
   return postJson(`${SERVICE_PROXY_BASE}/statement/add`, data)
+}
+
+/**
+ * 结算单--提交结算并确认签字
+ * @param {Object} data - 提交参数
+ * @returns {Promise}
+ */
+export function signSettlementStatement(data) {
+  return post(`${SERVICE_STATEMENT_BASE}/signSettlement`, data)
+}
+
+/**
+ * 结算单--提交结算
+ * @param {Object} data - 提交参数
+ * @returns {Promise}
+ */
+export function submitSettlementStatement(data) {
+  return post(`${SERVICE_STATEMENT_BASE}/submitSettlementAndSign`, data)
+}
+
+/**
+ * 结算单--创建收款记录
+ * @param {Object} data - 提交参数
+ * @returns {Promise}
+ */
+export function addReceiptRecord(data) {
+  return post('app/sp/serviceStatement/addReceiptRecord', data)
+}
+
+/**
+ * 结算单--确认收款
+ * @param {Object} data - 提交参数
+ * @returns {Promise}
+ */
+export function receiptCompletion(data) {
+  return postJson('app/sp/serviceStatement/receiptCompletion', data)
 }
