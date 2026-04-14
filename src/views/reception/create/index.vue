@@ -773,7 +773,7 @@
           >
             <div class="channel-content">
               <span class="channel-text">{{ item.label }}</span>
-              <span v-if="item.value === 'app'" class="channel-hint"
+              <span v-if="item.value === '999'" class="channel-hint"
                 >将生成待签字施工单且需要用户签字</span
               >
             </div>
@@ -1550,8 +1550,8 @@ const deliveryTimeList = ref([
 
 // 签字渠道列表
 const signatureChannelList = ref([
-  { value: 'paper', label: '纸质单据' },
-  { value: 'app', label: 'APP/短信/零小跑' },
+  { value: 40, label: '纸质单据' },
+  { value: 999, label: 'APP/短信/零小跑' },
 ])
 
 // 获取详情
@@ -1902,7 +1902,7 @@ const onSave = async () => {
       shuttlePhone: detail.repairPersonPhone,
       payType: '',
       warrantyCompany: '',
-      signChannel: '',
+      signChannel: signatureData.signatureChannel === '纸质单据' ? '40' : '',
       signCompletedOn: '',
       signGeneratedOn: '',
       signStatus: '',
