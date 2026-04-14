@@ -27,14 +27,19 @@
   >
     <!-- 搜索结果列表 -->
     <div v-if="activeCards.length === 0" class="search-result-list">
-      <div
-        v-for="item in results"
-        :key="item.id"
-        class="dropdown-item"
-        @click="onItemClick(item)"
-      >
-        <span class="item-text" v-html="highlight(item.partName || item.name)"></span>
-        <span class="item-code" v-html="'—' + highlight(item.partCode || item.code)"></span>
+      <div v-if="results.length > 0">
+        <div
+          v-for="item in results"
+          :key="item.id"
+          class="dropdown-item"
+          @click="onItemClick(item)"
+        >
+          <span class="item-text" v-html="highlight(item.partName || item.name)"></span>
+          <span class="item-code" v-html="'—' + highlight(item.partCode || item.code)"></span>
+        </div>
+      </div>
+      <div v-else-if="hasSearched" class="search-empty">
+        <span>没有找到相关维修项目</span>
       </div>
     </div>
 
@@ -89,6 +94,7 @@ const emit = defineEmits(['search', 'add-item-with-parts', 'update-item', 'delet
 const keyword = ref('')
 const results = ref([])
 const showResult = ref(false)
+const hasSearched = ref(false)
 const activeCards = ref([])
 const isFocused = ref(false)
 let debounceTimer = null
@@ -167,7 +173,8 @@ const showActiveCards = (cards) => {
 // 供父组件调用
 const setResults = (list) => {
   results.value = list
-  showResult.value = list.length > 0
+  hasSearched.value = true
+  showResult.value = true
   activeCards.value = []
 }
 
@@ -180,6 +187,7 @@ const reset = () => {
   keyword.value = ''
   results.value = []
   showResult.value = false
+  hasSearched.value = false
   activeCards.value = []
   isFocused.value = false
 }
@@ -252,6 +260,14 @@ defineExpose({ setResults, showActiveCards, close, reset })
   .search-result-list {
     max-height: 60vh;
     overflow-y: auto;
+  }
+
+  .search-empty {
+    height: 50px;
+    line-height: 50px;
+    padding: 0 12px;
+    font-size: 14px;
+    color: var(--leap-color-default-light-2);
   }
 
   .dropdown-item {
