@@ -207,25 +207,29 @@
           <span class="card-title">附件信息</span>
         </div>
         <div class="card-body">
-          <div class="attachments-section">
-            <div class="attachments-section-title">车辆信息</div>
+          <div
+            v-for="section in attachmentSections"
+            :key="section.key"
+            class="attachments-section"
+          >
+            <div class="attachments-section-title">{{ section.label }}</div>
             <div class="attachments-image-list">
-              <div v-for="(img, index) in detail.vehicleImages" :key="index" class="attachments-image-item">
-                <img :src="img" class="attached-img" />
+              <div
+                v-for="(img, index) in detail.attachments[section.key]"
+                :key="img.fileId || index"
+                class="attachments-image-item"
+              >
+                <img :src="img.url" class="attached-img" />
               </div>
-              <div v-if="!detail.vehicleImages || detail.vehicleImages.length === 0" class="no-image">
-                暂无图片
+              <div
+                v-if="detail.attachments[section.key].length < MAX_ATTACHMENT_COUNT"
+                class="attachments-upload-item"
+                @click="uploadAttachment(section.key)"
+              >
+                <van-icon name="photograph" size="24" color="#d8d8d8" />
+                <span class="attachments-upload-text">上传</span>
               </div>
-            </div>
-          </div>
-
-          <div class="attachments-section">
-            <div class="attachments-section-title">行驶证</div>
-            <div class="attachments-image-list">
-              <div v-for="(img, index) in detail.licenseImages" :key="index" class="attachments-image-item">
-                <img :src="img" class="attached-img" />
-              </div>
-              <div v-if="!detail.licenseImages || detail.licenseImages.length === 0" class="no-image">
+              <div v-if="detail.attachments[section.key].length === 0" class="no-image">
                 暂无图片
               </div>
             </div>
@@ -386,11 +390,26 @@
 <script setup>
 import { ref, onMounted, onUnmounted, nextTick, computed } from 'vue'
 import { useRoute } from 'vue-router'
-import { showToast } from 'vant'
+import { showToast, showLoadingToast, closeToast } from 'vant'
 import AisPopup from '@/components/AisPopup.vue'
 import { preAuthGet, preAuthAudit, preAuthGetErrorCodeList } from '@/api/authorization'
+import { bindFile, getAttachmentList, uploadFileByUrl } from '@/libs/api/fileConfig'
+import { getAppImg } from '@/libs/utils/nativeFn'
 
 const route = useRoute()
+const PRE_AUTH_ATTACHMENT_CONFIG_CODE = 'mcs_preauth'
+const MAX_ATTACHMENT_COUNT = 3
+const attachmentSections = [
+  { key: 'vehicle', label: '车辆信息' },
+  { key: 'license', label: '行驶证' },
+  { key: 'fault', label: '故障信息' },
+  { key: 'finalRight', label: '终审权益' },
+  { key: 'firstMaintain', label: '首保凭证' },
+  { key: 'maintainQuality', label: '保养质检' },
+  { key: 'oldParts', label: '施工旧件' },
+  { key: 'oldPartInfo', label: '旧件信息' },
+  { key: 'other', label: '其他' }
+]
 
 const activeTab = ref('basic')
 const faultDescExpanded = ref(false)
@@ -411,6 +430,8 @@ const errorCodeLoading = ref(false) // 错误代码加载状态
 const errorCodeFinished = ref(false) // 错误代码是否加载完成
 const errorCodePageNum = ref(1) // 错误代码当前页码
 const errorCodePageSize = 10 // 错误代码每页条数
+const currentUploadType = ref('')
+const isUploadingAttachment = ref(false)
 const auditOptions = [
   { label: '审批通过', value: 'approve' },
   { label: '审批驳回', value: 'reject' },
@@ -452,6 +473,10 @@ const tabs = ref([
 
 // IntersectionObserver 实例
 let scrollContainer = null
+const buildEmptyAttachments = () => attachmentSections.reduce((acc, item) => {
+  acc[item.key] = []
+  return acc
+}, {})
 
 /**
  * 获取滚动容器
@@ -587,8 +612,7 @@ const detail = ref({
   auditRecords: [],
   repairItems: [],
   partsItems: [],
-  vehicleImages: [],
-  licenseImages: []
+  attachments: buildEmptyAttachments()
 })
 
 // 切换 Tab
@@ -737,6 +761,148 @@ const handleUploadAttachment = () => {
   showToast('上传附件')
 }
 
+const isSuccessResponse = (res) => res?.code === 0 || res?.code === 200
+
+const getAttachmentTypeLabel = (type) => {
+  return attachmentSections.find(item => item.key === type)?.label || ''
+}
+
+const normalizeAttachmentItem = (item) => ({
+  ...item,
+  url: item.fileUrl || item.url || ''
+})
+
+const getFileNameFromUrl = (fileUrl) => {
+  if (!fileUrl || typeof fileUrl !== 'string') return ''
+  const segments = fileUrl.split(/[\\/]/)
+  return segments[segments.length - 1] || ''
+}
+
+const normalizeUploadResult = (res, fileUrl) => {
+  const data = Array.isArray(res?.data) ? res.data[0] : (res?.data || {})
+  const fallbackFileName = getFileNameFromUrl(fileUrl)
+  const fallbackFileType = fallbackFileName.includes('.') ? fallbackFileName.split('.').pop() : ''
+
+  return {
+    fileId: data.fileId || data.id || '',
+    fileName: data.fileName || data.name || fallbackFileName,
+    fileUrl: data.fileUrl || data.url || fileUrl,
+    fileSize: data.fileSize || data.size || 0,
+    fileType: data.fileType || data.suffix || fallbackFileType
+  }
+}
+
+const fetchAttachmentListByType = async(type) => {
+  const businessId = route.params.id
+  const attachType = getAttachmentTypeLabel(type)
+  if (!businessId || !attachType) return
+
+  const res = await getAttachmentList({
+    businessId,
+    attachType
+  })
+
+  if (!isSuccessResponse(res)) {
+    throw new Error(res?.msg || '获取附件列表失败')
+  }
+
+  const data = res?.data
+  const list = Array.isArray(data) ? data : (data?.records || data?.list || [])
+  detail.value.attachments[type] = list.map(normalizeAttachmentItem)
+}
+
+const fetchAllAttachmentLists = async() => {
+  const tasks = attachmentSections.map(async(section) => {
+    try {
+      await fetchAttachmentListByType(section.key)
+    } catch (error) {
+      console.error(`获取${section.label}失败:`, error)
+      detail.value.attachments[section.key] = []
+    }
+  })
+
+  await Promise.all(tasks)
+}
+
+const uploadAttachment = (type) => {
+  const currentList = detail.value.attachments[type] || []
+  if (currentList.length >= MAX_ATTACHMENT_COUNT) {
+    showToast(`最多上传${MAX_ATTACHMENT_COUNT}个附件`)
+    return
+  }
+  currentUploadType.value = type
+  getAppImg()
+}
+
+const handleNativeImage = async(rawFileUrl) => {
+  const uploadType = currentUploadType.value
+  const businessId = route.params.id
+  const fileUrl = typeof rawFileUrl === 'string'
+    ? rawFileUrl
+    : rawFileUrl?.fileUrl || rawFileUrl?.url || ''
+
+  currentUploadType.value = ''
+
+  if (!uploadType) return
+  if (!businessId) {
+    showToast('缺少预授权ID')
+    return
+  }
+  if (!fileUrl) {
+    showToast('未获取到图片地址')
+    return
+  }
+  if (isUploadingAttachment.value) return
+
+  const attachType = getAttachmentTypeLabel(uploadType)
+  if (!attachType) {
+    showToast('附件类型无效')
+    return
+  }
+
+  try {
+    isUploadingAttachment.value = true
+    showLoadingToast({ message: '上传中...', forbidClick: true })
+
+    const uploadRes = await uploadFileByUrl({
+      fileUrl,
+      businessId,
+      configCode: PRE_AUTH_ATTACHMENT_CONFIG_CODE,
+      attachType
+    })
+
+    if (!isSuccessResponse(uploadRes)) {
+      closeToast()
+      showToast(uploadRes?.msg || '上传失败')
+      return
+    }
+
+    const fileData = normalizeUploadResult(uploadRes, fileUrl)
+    const bindRes = await bindFile({
+      ...fileData,
+      businessId,
+      attachType,
+      configCode: PRE_AUTH_ATTACHMENT_CONFIG_CODE
+    })
+
+    if (!isSuccessResponse(bindRes)) {
+      closeToast()
+      showToast(bindRes?.msg || '附件绑定失败')
+      return
+    }
+
+    await fetchAttachmentListByType(uploadType)
+    closeToast()
+    showToast('上传成功')
+  } catch (error) {
+    closeToast()
+    console.error('上传附件失败:', error)
+    showToast('上传失败，请稍后重试')
+  } finally {
+    isUploadingAttachment.value = false
+  }
+}
+
 // 删除附件
 const removeAttachment = (index) => {
   attachmentList.value.splice(index, 1)
@@ -803,8 +969,9 @@ const fetchDetail = async() => {
   detailLoading.value = true
   try {
     const res = await preAuthGet(id)
-    if (res.code === 200 && res.data) {
+    if (isSuccessResponse(res) && res.data) {
       Object.assign(detail.value, formatDetailData(res.data))
+      await fetchAllAttachmentLists()
       updateTabsByStatus()
     } else {
       showToast(res.msg || '获取详情失败')
@@ -904,10 +1071,7 @@ const formatDetailData = (data) => {
       actualQuantity: item.actualPickNumber || '0',
       returnQuantity: item.refundedNumber || '0'
     })),
-
-    // 附件图片 - 待补充
-    vehicleImages: [],
-    licenseImages: []
+    attachments: buildEmptyAttachments()
   }
 }
 
@@ -924,6 +1088,7 @@ const getStatusClass = (status) => {
 }
 
 onMounted(() => {
+  window.getImage = handleNativeImage
   console.log('预授权详情页加载，ID:', route.params.id)
   fetchDetail()
 
@@ -933,6 +1098,9 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+  if (window.getImage === handleNativeImage) {
+    window.getImage = null
+  }
   const container = getScrollContainer()
   if (container === window) {
     window.removeEventListener('scroll', handleScroll)
@@ -1454,6 +1622,25 @@ onUnmounted(() => {
       width: 100%;
       height: 100%;
       object-fit: cover;
+    }
+  }
+
+  .attachments-upload-item {
+    width: 80px;
+    height: 80px;
+    border: 1px dashed #d8d8d8;
+    border-radius: 6px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: #fafafa;
+
+    .attachments-upload-text {
+      margin-top: 6px;
+      font-family: 'PingFang SC';
+      font-size: 12px;
+      color: #999999;
     }
   }
 

@@ -237,10 +237,10 @@ const handleResetFilter = () => {
 
 const getStatusClass = (label) => {
   if (!label) return ''
-  if (label === '待提交') return 'status-blue'
-  if (label === '审批中') return 'status-yellow'
-  if (label === '审批通过') return 'status-green'
-  if (label === '审批驳回' || label === '已拒绝') return 'status-red'
+  if (label === '未提交') return 'status-blue'
+  if (label === '审核中') return 'status-yellow'
+  if (label === '审核通过') return 'status-green'
+  if (label === '已驳回' || label === '已拒绝') return 'status-red'
   return ''
 }
 

@@ -534,16 +534,29 @@ import {
   preAuthGetConstructionList,
   preAuthGetQualityFeedbackList
 } from '@/api/authorization'
+import { bindFile, getAttachmentList, uploadFileByUrl } from '@/libs/api/fileConfig'
 import { getAppImg } from '@/libs/utils/nativeFn'
 
 const router = useRouter()
+const PRE_AUTH_ATTACHMENT_CONFIG_CODE = 'mcs_preauth'
+const attachmentTypeMap = {
+  vehicle: '车辆信息',
+  license: '行驶证',
+  fault: '故障信息',
+  finalRight: '终审权益',
+  firstMaintain: '首保凭证',
+  maintainQuality: '保养质检',
+  oldParts: '施工旧件',
+  oldPartInfo: '旧件信息',
+  other: '其他'
+}
 
 const activeTab = ref('basic')
-const tabsNavRef = ref(null)
 const isHeaderVisible = ref(true)
 const navBarHeight = ref(43)
-const constructionRefreshListRef = ref(null)
-const feedbackRefreshListRef = ref(null)
+const currentBusinessId = ref('')
+const currentUploadType = ref('')
+const isUploadingAttachment = ref(false)
 
 // Tab 配置
 const tabs = [
@@ -599,6 +612,7 @@ const scrollToPosition = (targetScrollTop, behavior = 'smooth') => {
 }
 
 onMounted(async() => {
+  window.getImage = handleNativeImage
   await nextTick()
   // 获取 nav-bar 的真实高度
   const navBarEl = document.querySelector('.base-container header')
@@ -610,6 +624,9 @@ onMounted(async() => {
 })
 
 onUnmounted(() => {
+  if (window.getImage === handleNativeImage) {
+    window.getImage = null
+  }
   if (headerObserver) {
     headerObserver.disconnect()
   }
@@ -650,16 +667,11 @@ const handleScroll = () => {
 }
 
 // 根据滚动位置同步切换 tab
-let lastScrollTop = 0
 const scrollSyncTimeout = null
 const syncTabByScroll = () => {
   const scrollTop = getScrollTop()
   const tabNavHeight = document.querySelector('.detail-tabs-nav')?.offsetHeight || 50
   const offset = navBarHeight.value + tabNavHeight + 20
-
-  // 判断滚动方向
-  const isScrollingDown = scrollTop > lastScrollTop
-  lastScrollTop = scrollTop
 
   // 清除之前的定时器
   if (scrollSyncTimeout) {
@@ -903,23 +915,6 @@ const handleFeedbackSearch = () => {
   }
 }
 
-// 获取单号前缀（ZLR-）
-const getSerialPrefix = (serialNumber) => {
-  return serialNumber.split('-')[0] + '-'
-}
-
-// 获取单号日期部分（绿色）
-const getSerialDate = (serialNumber) => {
-  const parts = serialNumber.split('-')
-  return parts[1]?.substring(0, 4) || ''
-}
-
-// 获取单号剩余部分
-const getSerialRest = (serialNumber) => {
-  const parts = serialNumber.split('-')
-  return parts[1]?.substring(4) || ''
-}
-
 // 高亮搜索匹配的文本
 const highlightSearch = (text, searchText) => {
   if (!searchText || !text) return text
@@ -941,47 +936,238 @@ const getAlarmColor = (alarmLevel) => {
   }
 }
 
-// 提交申请
-const handleSubmit = async() => {
-  // 校验
+const isSuccessResponse = (res) => res?.code === 0 || res?.code === 200
+
+const validatePreAuthForm = () => {
   if (!constructionId.value) {
     showToast('请选择施工单')
-    return
+    return false
   }
   if (!feedbackId.value) {
     showToast('请选择质量反馈单号')
-    return
+    return false
   }
   if (!applyReason.value.trim()) {
     showToast('请填写申请原因')
+    return false
+  }
+  return true
+}
+
+const buildPreAuthPayload = (saveOrSubmit) => {
+  const payload = {
+    serviceProxyId: constructionId.value,
+    qualityOrderReportId: feedbackId.value,
+    reason: applyReason.value,
+    saveOrSubmit
+  }
+  if (currentBusinessId.value) {
+    payload.id = currentBusinessId.value
+  }
+  return payload
+}
+
+const syncBusinessId = (res) => {
+  const data = res?.data
+  const businessId = typeof data === 'string'
+    ? data
+    : data?.id || data?.businessId || data?.preAuthId || res?.id || ''
+
+  if (businessId) {
+    currentBusinessId.value = businessId
+  }
+
+  return currentBusinessId.value
+}
+
+const savePreAuth = async({
+  saveOrSubmit,
+  loadingMessage,
+  successMessage = '',
+  failureMessage,
+  errorLogMessage,
+  errorToastMessage,
+  redirectAfterSuccess = false,
+  resetEdited = false
+}) => {
+  if (!validatePreAuthForm()) return null
+
+  try {
+    showLoadingToast({ message: loadingMessage, forbidClick: true })
+
+    const res = await preAuthAddOrUpdate(buildPreAuthPayload(saveOrSubmit))
+    closeToast()
+
+    if (isSuccessResponse(res)) {
+      syncBusinessId(res)
+      if (successMessage) {
+        showToast(successMessage)
+      }
+      if (resetEdited) {
+        hasEdited.value = false
+      }
+      if (redirectAfterSuccess) {
+        router.back()
+      }
+      return res
+    }
+
+    showToast(res?.msg || failureMessage)
+    return null
+  } catch (error) {
+    closeToast()
+    console.error(errorLogMessage, error)
+    showToast(errorToastMessage)
+    return null
+  }
+}
+
+const getAttachmentTypeLabel = (type) => attachmentTypeMap[type] || ''
+
+const getFileNameFromUrl = (fileUrl) => {
+  if (!fileUrl || typeof fileUrl !== 'string') return ''
+  const segments = fileUrl.split(/[\\/]/)
+  return segments[segments.length - 1] || ''
+}
+
+const normalizeAttachmentItem = (item) => ({
+  ...item,
+  url: item.fileUrl || item.url || '',
+  name: item.fileName || item.name || ''
+})
+
+const normalizeUploadResult = (res, fileUrl) => {
+  const data = Array.isArray(res?.data) ? res.data[0] : (res?.data || {})
+  const fallbackFileName = getFileNameFromUrl(fileUrl)
+  const fallbackFileType = fallbackFileName.includes('.') ? fallbackFileName.split('.').pop() : ''
+
+  return {
+    fileId: data.fileId || data.id || '',
+    fileName: data.fileName || data.name || fallbackFileName,
+    fileUrl: data.fileUrl || data.url || fileUrl,
+    fileSize: data.fileSize || data.size || 0,
+    fileType: data.fileType || data.suffix || fallbackFileType
+  }
+}
+
+const fetchAttachmentListByType = async(type) => {
+  const attachType = getAttachmentTypeLabel(type)
+  if (!currentBusinessId.value || !attachType) return
+
+  const res = await getAttachmentList({
+    businessId: currentBusinessId.value,
+    attachType
+  })
+
+  if (!isSuccessResponse(res)) {
+    throw new Error(res?.msg || '获取附件列表失败')
+  }
+
+  const data = res?.data
+  const list = Array.isArray(data) ? data : (data?.records || data?.list || [])
+  attachmentData[type] = list.map(normalizeAttachmentItem)
+}
+
+const ensureBusinessIdForUpload = async() => {
+  if (currentBusinessId.value) {
+    return currentBusinessId.value
+  }
+
+  const res = await savePreAuth({
+    saveOrSubmit: false,
+    loadingMessage: '保存草稿中...',
+    failureMessage: '保存草稿失败',
+    errorLogMessage: '保存草稿失败:',
+    errorToastMessage: '保存草稿失败，请稍后重试'
+  })
+
+  const businessId = syncBusinessId(res)
+  if (!businessId) {
+    showToast('未获取到单据ID')
+  }
+  return businessId
+}
+
+const handleNativeImage = async(rawFileUrl) => {
+  const uploadType = currentUploadType.value
+  const fileUrl = typeof rawFileUrl === 'string'
+    ? rawFileUrl
+    : rawFileUrl?.fileUrl || rawFileUrl?.url || ''
+
+  currentUploadType.value = ''
+
+  if (!uploadType) return
+  if (!fileUrl) {
+    showToast('未获取到图片地址')
+    return
+  }
+  if (isUploadingAttachment.value) return
+
+  const attachType = getAttachmentTypeLabel(uploadType)
+  if (!attachType) {
+    showToast('附件类型无效')
     return
   }
 
   try {
-    showLoadingToast({ message: '提交中...', forbidClick: true })
+    isUploadingAttachment.value = true
+    const businessId = await ensureBusinessIdForUpload()
+    if (!businessId) return
 
-    const submitData = {
-      serviceProxyId: constructionId.value,
-      qualityOrderReportId: feedbackId.value,
-      reason: applyReason.value,
-      saveOrSubmit: true
+    showLoadingToast({ message: '上传中...', forbidClick: true })
+
+    const uploadRes = await uploadFileByUrl({
+      fileUrl,
+      businessId,
+      configCode: PRE_AUTH_ATTACHMENT_CONFIG_CODE,
+      attachType
+    })
+
+    if (!isSuccessResponse(uploadRes)) {
+      closeToast()
+      showToast(uploadRes?.msg || '上传失败')
+      return
     }
 
-    const res = await preAuthAddOrUpdate(submitData)
+    const fileData = normalizeUploadResult(uploadRes, fileUrl)
+    const bindRes = await bindFile({
+      ...fileData,
+      businessId,
+      configCode: PRE_AUTH_ATTACHMENT_CONFIG_CODE,
+      attachType
+    })
+
+    if (!isSuccessResponse(bindRes)) {
+      closeToast()
+      showToast(bindRes?.msg || '附件绑定失败')
+      return
+    }
+
+    await fetchAttachmentListByType(uploadType)
     closeToast()
-
-    if (res?.code === 0 || res?.code === 200) {
-      showToast('提交成功')
-      hasEdited.value = false
-      router.back()
-    } else {
-      showToast(res?.msg || '提交失败')
-    }
+    hasEdited.value = false
+    showToast('上传成功')
   } catch (error) {
     closeToast()
-    console.error('提交失败:', error)
-    showToast('提交失败，请稍后重试')
+    console.error('上传附件失败:', error)
+    showToast('上传失败，请稍后重试')
+  } finally {
+    isUploadingAttachment.value = false
   }
+}
+
+// 提交申请
+const handleSubmit = async() => {
+  await savePreAuth({
+    saveOrSubmit: true,
+    loadingMessage: '提交中...',
+    successMessage: '提交成功',
+    failureMessage: '提交失败',
+    errorLogMessage: '提交失败:',
+    errorToastMessage: '提交失败，请稍后重试',
+    redirectAfterSuccess: true,
+    resetEdited: true
+  })
 }
 
 // 方法
@@ -1066,7 +1252,7 @@ const onConstructionSelect = async(item) => {
         warningInfo: data.alarmInfo || item.alarmInfo || '无'
       }
       // 预授权类型: 1=技术预授权, 2=保修预授权
-      authType.value = data.preAuthType == 1 ? 'tech' : 'warranty'
+      authType.value = data.preAuthType === 1 ? 'tech' : 'warranty'
 
       // 维修项目数据
       repairItems.value = (data.spRepairItemResps || []).map((item) => ({
@@ -1118,6 +1304,11 @@ const onFeedbackSelect = (item) => {
 
 // 附件相关方法
 const uploadAttachment = (type) => {
+  if ((attachmentData[type] || []).length >= 3) {
+    showToast('最多上传3个附件')
+    return
+  }
+  currentUploadType.value = type
   getAppImg()
   hasEdited.value = true
 }
@@ -1128,48 +1319,18 @@ const deleteAttachment = (type, index) => {
 }
 
 const onSaveConfirm = async() => {
-  // 校验
-  if (!constructionId.value) {
-    showToast('请选择施工单')
-    return
-  }
-  if (!feedbackId.value) {
-    showToast('请选择质量反馈单号')
-    return
-  }
-  if (!applyReason.value.trim()) {
-    showToast('请填写申请原因')
-    return
-  }
-
   showSaveConfirmDialog.value = false
 
-  try {
-    showLoadingToast({ message: '保存中...', forbidClick: true })
-
-    const saveData = {
-      serviceProxyId: constructionId.value,
-      qualityOrderReportId: feedbackId.value,
-      reason: applyReason.value,
-      saveOrSubmit: false
-    }
-    console.log('保存草稿参数:', saveData)
-
-    const res = await preAuthAddOrUpdate(saveData)
-    closeToast()
-
-    if (res?.code === 0 || res?.code === 200) {
-      showToast('保存成功')
-      hasEdited.value = false
-      router.back()
-    } else {
-      showToast(res?.msg || '保存失败')
-    }
-  } catch (error) {
-    closeToast()
-    console.error('保存失败:', error)
-    showToast('保存失败，请稍后重试')
-  }
+  await savePreAuth({
+    saveOrSubmit: false,
+    loadingMessage: '保存中...',
+    successMessage: '保存成功',
+    failureMessage: '保存失败',
+    errorLogMessage: '保存失败:',
+    errorToastMessage: '保存失败，请稍后重试',
+    redirectAfterSuccess: true,
+    resetEdited: true
+  })
 }
 
 const onSaveCancel = () => {
