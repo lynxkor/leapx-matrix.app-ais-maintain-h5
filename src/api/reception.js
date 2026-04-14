@@ -142,3 +142,13 @@ export function getRepairItemTypeList(data) {
 export function saveSpRepairItem(data) {
   return post('/maintain/app/sp/serviceProxy/repairItem/save', data)
 }
+
+// 施工单签到完成
+export function spSignFinish(data) {
+  return post('/maintain/open/leapapp/api/serviceproxy/signcomplete', data)
+}
+
+// 接车施工单--制单确认并签字
+export function spConfirmAndSign(data) {
+  return post('/maintain/app/sp/serviceProxy/confirmToSign', data)
+}

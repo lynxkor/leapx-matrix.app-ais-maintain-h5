@@ -672,6 +672,26 @@
                 <van-icon name="arrow" size="12" color="#545454" />
               </div>
             </div>
+            <!-- 已签字状态显示 -->
+            <div class="signature-row" v-if="detail.signStatus == 20">
+              <span class="label">签字状态</span>
+              <div class="value-wrapper">
+                <span class="value signed">已签字</span>
+              </div>
+            </div>
+            <div class="signature-action-row" v-if="detail.signStatus == 20">
+              <van-button type="primary" size="small" @click="onViewSignature">查看签字</van-button>
+            </div>
+            <!-- 未签字状态显示 -->
+            <div class="signature-row" v-if="detail.signStatus != 20">
+              <span class="label">签字状态</span>
+              <div class="value-wrapper">
+                <span class="value unsigned">未签字</span>
+              </div>
+            </div>
+            <div class="signature-action-row" v-if="detail.signStatus != 20">
+              <van-button type="primary" size="small" @click="onGoToSign">客户签字</van-button>
+            </div>
           </div>
 
           <!-- 附件资料 -->
@@ -1010,7 +1030,7 @@
           >
             <div class="channel-content">
               <span class="channel-text">{{ item.label }}</span>
-              <span v-if="item.value === 'app'" class="channel-hint"
+              <span v-if="item.value === 30" class="channel-hint"
                 >将生成待签字施工单且需要用户签字</span
               >
             </div>
@@ -1351,6 +1371,7 @@ import {
   servicePreCheck,
   getRemindInfo,
   saveSpRepairItem,
+  spConfirmAndSign,
 } from '@/api/reception'
 import '../create/create.scss'
 
@@ -1783,6 +1804,7 @@ const detail = reactive({
   payType: '',
   warrantyCompany: '',
   signChannel: '',
+  signUrl: '',
   signCompletedOn: '',
   signGeneratedOn: '',
   signStatus: '',
@@ -2092,15 +2114,17 @@ const deliveryTimeList = ref([
 
 // 签字渠道列表
 const signatureChannelList = ref([
-  { value: 'paper', label: '纸质单据' },
-  { value: 'app', label: 'APP/短信/零小跑' },
+  { value: 40, label: '纸质单据' },
+  { value: 30, label: 'APP/短信/零小跑' },
 ])
 
 // 签字渠道转换
 const getSignChannelName = (channel) => {
   const channelMap = {
-    1: '纸质单据',
-    2: 'APP/短信/零小跑',
+    40: '纸质单据',
+    10: 'APP/短信/零小跑',
+    20: 'APP/短信/零小跑',
+    30: 'APP/短信/零小跑',
   }
   return channelMap[channel] || ''
 }
@@ -2174,6 +2198,9 @@ const fetchDetail = async () => {
                 case '附件资料':
                   signatureData.attachments.push(fileObj)
                   break
+                case '制单签字':
+                  detail.signUrl = item.fileUrl
+                  break
               }
             })
           }
@@ -2197,6 +2224,7 @@ const fetchDetail = async () => {
         detail.payType = data.payType || ''
         detail.warrantyCompany = data.warrantyCompany || ''
         detail.signChannel = data.signChannel || ''
+        detail.signUrl = data.signUrl || ''
         detail.signCompletedOn = data.signCompletedOn || ''
         detail.signGeneratedOn = data.signGeneratedOn || ''
         detail.signStatus = data.signStatus || ''
@@ -2909,7 +2937,7 @@ const onInspectionSave = async (type) => {
     shuttlePhone: detail.repairPersonPhone,
     payType: detail.payType,
     warrantyCompany: detail.warrantyCompany,
-    signChannel: detail.signChannel,
+    signChannel: signatureData.signChannel === '纸质单据' || detail.signChannel == 40 ? '40' : '',
     signCompletedOn: detail.signCompletedOn,
     signGeneratedOn: detail.signGeneratedOn,
     signStatus: detail.signStatus,
@@ -3139,16 +3167,38 @@ const onAddPackage = () => {
 
 // 制单确认并签字
 const onConfirmAndSign = () => {
-  showToast('制单确认并签字')
+  spConfirmAndSign()
+  // router.push({
+  //   path: '/reception/sign',
+  //   query: {
+  //     vin: detail.vin,
+  //     serviceProxyNo: detail.code,
+  //   },
+  // })
 }
 
-// 上传附件
-const onUploadAttachment = () => {
-  currentUploadType.value = 'attachment'
-  currentUploadIndex.value = 0
-  const config = getAttachConfig('附件资料')
-  const maxSize = config.maxSize || 10
-  getAppImgLimit(maxSize)
+// 查看签字
+const onViewSignature = () => {
+  if (detail.signUrl) {
+    showImagePreview({
+      images: [detail.signUrl],
+      startPosition: 0,
+      showIndex: false,
+    })
+  } else {
+    showToast('暂无签字图片')
+  }
+}
+
+// 去签字
+const onGoToSign = () => {
+  router.push({
+    path: '/reception/sign',
+    query: {
+      vin: detail.vin,
+      serviceProxyNo: detail.code,
+    },
+  })
 }
 
 // 打开预计交车时间选择器
@@ -4094,6 +4144,59 @@ onMounted(() => {
     width: 32px;
     height: 32px;
     color: #888;
+  }
+}
+
+// 签字确认样式
+.signature-section {
+  background: #fff;
+  border-radius: 8px;
+  padding: 12px;
+
+  .signature-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 0;
+    border-bottom: 0.5px solid #e6e6e5;
+
+    &:last-child {
+      border-bottom: none;
+    }
+
+    .label {
+      font-size: 14px;
+      color: #545454;
+    }
+
+    .value {
+      font-size: 14px;
+      color: #191a1b;
+
+      &.signed {
+        color: #009100;
+      }
+
+      &.unsigned {
+        color: #b91919;
+      }
+
+      &.placeholder {
+        color: #888888;
+      }
+    }
+
+    .value-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+  }
+
+  .signature-action-row {
+    padding: 12px 0;
+    display: flex;
+    justify-content: flex-end;
   }
 }
 </style>

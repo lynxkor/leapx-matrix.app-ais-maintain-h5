@@ -95,6 +95,15 @@ const router = createRouter({
           }
         },
         {
+          path: '/reception/sign',
+          name: 'signView',
+          component: () => import('../views/reception/sign/SignView.vue'),
+          meta: {
+            title: '施工单签字',
+            keepAlive: false
+          }
+        },
+        {
           path: '/reception/work-order/create/:vehicleInfo?',
           name: 'workOrderCreate',
           component: () => import('../views/reception/create/index.vue'),

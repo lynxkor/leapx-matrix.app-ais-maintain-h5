@@ -608,7 +608,9 @@ const fetchDetail = async () => {
 const getSignChannelName = (channel) => {
   const channelMap = {
     40: '纸质单据',
-    999: 'APP/短信/零小跑',
+    10: 'APP/短信/零小跑',
+    20: 'APP/短信/零小跑',
+    30: 'APP/短信/零小跑',
   }
   return channelMap[channel] || ''
 }
