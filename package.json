@@ -8,7 +8,7 @@
   },
   "scripts": {
     "prepare": "husky",
-    "dev": "vite",
+    "dev": "vite --host",
     "build": "vite build",
     "preview": "vite preview",
     "lint": "eslint . --fix",
@@ -22,9 +22,6 @@
   "lint-staged": {
     "src/**/*.{js,vue}": [
       "eslint"
-    ],
-    "src/**/*.{css,scss,vue}": [
-      "stylelint"
     ]
   },
   "author": "pan_ji2@leapmotor.com",

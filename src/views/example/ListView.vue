@@ -53,11 +53,7 @@ getList()
 
 <template>
   <div class="m-example-list-c">
-    <van-search
-      v-model="value"
-      placeholder="请输入搜索关键词"
-      @search="onSearch"
-    />
+    <van-search v-model="value" placeholder="请输入搜索关键词" @search="onSearch" />
     <van-pull-refresh v-model="refreshing" @refresh="onRefresh">
       <van-list
         v-model:loading="loading"
