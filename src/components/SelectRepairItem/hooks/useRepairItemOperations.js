@@ -163,9 +163,23 @@ export default function useRepairItemOperations({
    */
   const validatePreSaleWarranty = () => {
     const allItems = [...selectedItems.value, ...selectedParts.value]
-    const preSaleItems = allItems.filter(i => i.warrantyTypeId === WarrantyTypeEnum.PRE_SALE_WARRANTY)
-    if (preSaleItems.length > 0 && allItems.length > preSaleItems.length) {
+    const filteredItems = allItems.filter(i => i.warrantyTypeId === WarrantyTypeEnum.PRE_SALE_WARRANTY)
+    if (filteredItems.length > 0 && allItems.length > filteredItems.length) {
       showToast({ message: '售前保修只能单独开单', 'z-index': 5100 })
+      return false
+    }
+    return true
+  }
+
+  /**
+   * 验证善意保修只能单独开单
+   * @returns {boolean} 是否通过验证
+   */
+  const validateGoodWillWarranty = () => {
+    const allItems = [...selectedItems.value, ...selectedParts.value]
+    const filteredItems = allItems.filter(i => i.warrantyTypeId === WarrantyTypeEnum.GOODWILL_WARRANTY)
+    if (filteredItems.length > 0 && allItems.length > filteredItems.length) {
+      showToast({ message: '善意保修只能单独开单', 'z-index': 5100 })
       return false
     }
     return true
@@ -181,6 +195,9 @@ export default function useRepairItemOperations({
 
     // 售前保修只能单独开单
     if (!validatePreSaleWarranty()) return false
+
+    // 善意保修只能单独开单
+    if (!validateGoodWillWarranty()) return false
 
     try {
       saving.value = true
