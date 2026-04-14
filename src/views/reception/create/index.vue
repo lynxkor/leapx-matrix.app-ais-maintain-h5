@@ -171,16 +171,25 @@
               <div class="sub-info">车联网电量: {{ detail.networkBattery }}%</div>
             </div>
 
-            <!-- 车内检查 -->
-            <div class="section-card borderB">
-              <div class="section-title">车内检查</div>
+            <!-- 车内照片 -->
+            <div class="card-container marginB1">
+              <div class="card-info-title marginB1">
+                车内照片
+                <span v-if="interiorConfig.required === '1'" style="color: #b91919; font-size: 15px"
+                  >*</span
+                >
+              </div>
               <div class="upload-content">
                 <div
                   class="upload-box"
-                  v-for="(file, index) in interiorFileList"
+                  v-for="(file, index) in detail.interiorImages"
                   :key="file.id || index"
                 >
-                  <img :src="file.url" @click="showImg(file.url)" />
+                  <img
+                    style="width: 100%; height: 100%; margin-bottom: 0"
+                    :src="file.url"
+                    @click="showImg(file.url)"
+                  />
                   <img
                     class="delete_icon"
                     src="@/assets/image/delete_icon.png"
@@ -189,7 +198,7 @@
                 </div>
                 <div
                   class="upload-box upload-placeholder"
-                  v-if="interiorFileList.length < (interiorConfig.maxNum || 3)"
+                  v-if="detail.interiorImages.length < (interiorConfig.maxNum || 3)"
                   @click="uploadGeneric('interior')"
                 >
                   <svg class="icon upload-img" aria-hidden="true">
@@ -199,16 +208,25 @@
               </div>
             </div>
 
-            <!-- 车外检查 -->
-            <div class="section-card borderB">
-              <div class="section-title">车外检查</div>
+            <!-- 车外照片 -->
+            <div class="card-container marginB1">
+              <div class="card-info-title marginB1">
+                车外照片
+                <span v-if="exteriorConfig.required === '1'" style="color: #b91919; font-size: 15px"
+                  >*</span
+                >
+              </div>
               <div class="upload-content">
                 <div
                   class="upload-box"
-                  v-for="(file, index) in exteriorFileList"
+                  v-for="(file, index) in detail.exteriorImages"
                   :key="file.id || index"
                 >
-                  <img :src="file.url" @click="showImg(file.url)" />
+                  <img
+                    style="width: 100%; height: 100%; margin-bottom: 0"
+                    :src="file.url"
+                    @click="showImg(file.url)"
+                  />
                   <img
                     class="delete_icon"
                     src="@/assets/image/delete_icon.png"
@@ -217,7 +235,7 @@
                 </div>
                 <div
                   class="upload-box upload-placeholder"
-                  v-if="exteriorFileList.length < (exteriorConfig.maxNum || 3)"
+                  v-if="detail.exteriorImages.length < (exteriorConfig.maxNum || 3)"
                   @click="uploadGeneric('exterior')"
                 >
                   <svg class="icon upload-img" aria-hidden="true">
@@ -421,23 +439,39 @@
             </div>
           </div>
 
-          <!-- 附件信息 -->
-          <div class="attachment-section">
-            <div class="section-title">附件信息</div>
-            <div class="image-grid">
-              <div
-                v-for="(img, index) in signatureData.attachments"
-                :key="'attachment-' + index"
-                class="image-item"
+          <!-- 附件资料 -->
+          <div class="card-container marginB1">
+            <div class="card-info-title marginB1">
+              附件资料
+              <span v-if="attachmentConfig.required === '1'" style="color: #b91919; font-size: 15px"
+                >*</span
               >
-                <van-image :src="img" fit="cover" />
-                <span class="delete-btn" @click="onDeleteAttachment(index)">
-                  <van-icon name="cross" />
-                </span>
+            </div>
+            <div class="upload-content">
+              <div
+                class="upload-box"
+                v-for="(file, index) in signatureData.attachments"
+                :key="file.id || index"
+              >
+                <img
+                  style="width: 100%; height: 100%; margin-bottom: 0"
+                  :src="file.url"
+                  @click="showImg(file.url)"
+                />
+                <img
+                  class="delete_icon"
+                  src="@/assets/image/delete_icon.png"
+                  @click="handleAttachmentDelete(file)"
+                />
               </div>
-              <div class="image-item upload-item" @click="onUploadAttachment">
-                <van-icon name="photo-o" size="24" />
-                <span>上传</span>
+              <div
+                class="upload-box upload-placeholder"
+                v-if="signatureData.attachments.length < (attachmentConfig.maxNum || 3)"
+                @click="uploadGeneric('attachment')"
+              >
+                <svg class="icon upload-img" aria-hidden="true">
+                  <use xlink:href="#icon-lxp-h5upload-mob"></use>
+                </svg>
               </div>
             </div>
           </div>
@@ -1033,15 +1067,30 @@ const getAttachConfig = (attachType) => {
 }
 
 // 车内检查
-const interiorFileList = ref([])
-const interiorConfig = computed(() => getAttachConfig('车内检查'))
+const interiorConfig = computed(() => getAttachConfig('车内照片'))
 
 // 车外检查
-const exteriorFileList = ref([])
-const exteriorConfig = computed(() => getAttachConfig('车外检查'))
+const exteriorConfig = computed(() => getAttachConfig('车外照片'))
+
+// 附件资料配置
+const attachmentConfig = computed(() => getAttachConfig('附件资料'))
 
 // 当前上传类型
 const currentUploadType = ref('')
+
+// 获取目标文件列表
+const getTargetFileList = (type) => {
+  switch (type) {
+    case 'interior':
+      return detail.interiorImages
+    case 'exterior':
+      return detail.exteriorImages
+    case 'attachment':
+      return signatureData.attachments
+    default:
+      return detail.interiorImages
+  }
+}
 import { getAppImgLimit } from '@/libs/utils/nativeFn'
 import {
   getVehicleInfo,
@@ -1644,12 +1693,14 @@ const onEditPlate = () => {
 // 通用上传方法
 const uploadGeneric = (type) => {
   currentUploadType.value = type
-  // 获取配置中的最大文件大小，默认10M
-  const configMap = {
-    interior: interiorConfig,
-    exterior: exteriorConfig,
+  // attachType 映射
+  const attachTypeMap = {
+    interior: '车内照片',
+    exterior: '车外照片',
+    attachment: '附件资料',
   }
-  const maxSize = configMap[type]?.value?.maxSize || 10
+  const config = getAttachConfig(attachTypeMap[type] || '车内照片')
+  const maxSize = config.maxSize || 10
   getAppImgLimit(maxSize)
 }
 
@@ -1658,25 +1709,36 @@ const showImg = (url) => {
   showImagePreview([url])
 }
 
-// 处理车内检查删除
+// 处理车内照片删除
 const handleInteriorDelete = async (file) => {
   if (file.id) {
     await deleteAttachmentConfig([file.id])
   }
-  const index = interiorFileList.value.findIndex((item) => item === file)
+  const index = detail.interiorImages.findIndex((item) => item === file)
   if (index > -1) {
-    interiorFileList.value.splice(index, 1)
+    detail.interiorImages.splice(index, 1)
   }
 }
 
-// 处理车外检查删除
+// 处理车外照片删除
 const handleExteriorDelete = async (file) => {
   if (file.id) {
     await deleteAttachmentConfig([file.id])
   }
-  const index = exteriorFileList.value.findIndex((item) => item === file)
+  const index = detail.exteriorImages.findIndex((item) => item === file)
   if (index > -1) {
-    exteriorFileList.value.splice(index, 1)
+    detail.exteriorImages.splice(index, 1)
+  }
+}
+
+// 处理附件资料删除
+const handleAttachmentDelete = async (file) => {
+  if (file.id) {
+    await deleteAttachmentConfig([file.id])
+  }
+  const index = signatureData.attachments.findIndex((item) => item === file)
+  if (index > -1) {
+    signatureData.attachments.splice(index, 1)
   }
 }
 
@@ -1810,7 +1872,6 @@ const onSave = async () => {
   savingLoading.value = true
   try {
     const res = await serviceAddOrUpdate({
-      // id: '',
       code: '',
       dataSource: '',
       orderStatus: '',
@@ -1926,8 +1987,22 @@ const onSave = async () => {
       targetUnitCode: '',
       beforeChangeCode: '',
       afterChangeCode: '',
-      exteriorPhotos: exteriorFileList.value.map((f) => f.url).join(','),
-      interiorPhotos: interiorFileList.value.map((f) => f.url).join(','),
+      exteriorPhotoList: detail.exteriorImages.map((item) => ({
+        ...item,
+        fileId: item.id,
+        businessId: route.query.id,
+        fileUrl: item.url,
+        attachType: '车外照片',
+        configCode: 'mcs_serviceproxy',
+      })),
+      interiorPhotoList: detail.interiorImages.map((item) => ({
+        ...item,
+        fileId: item.id,
+        businessId: route.query.id,
+        fileUrl: item.url,
+        attachType: '车内照片',
+        configCode: 'mcs_serviceproxy',
+      })),
       isStoreLive: '',
       faultAlertRecordParams: detail.faultModules.map((m) => ({
         cccId: m.cccCode || '',
@@ -2006,24 +2081,6 @@ const onAddPackage = () => {
       serviceProxyId: route.query.id,
     },
   })
-}
-
-// 删除附件
-const onDeleteAttachment = (index) => {
-  showConfirmDialog({
-    title: '提示',
-    message: '确定删除该附件吗？',
-  })
-    .then(() => {
-      signatureData.attachments.splice(index, 1)
-      showToast('删除成功')
-    })
-    .catch(() => {})
-}
-
-// 上传附件
-const onUploadAttachment = () => {
-  showToast('上传附件')
 }
 
 // 打开预计交车时间选择器
@@ -2116,7 +2173,7 @@ onMounted(() => {
 
   // 获取上传配置
   getUploadConfig({
-    configCode: 'mcs_subsidies',
+    configCode: 'mcs_serviceproxy',
   }).then((res) => {
     if (res.code === 200) {
       uploadConfig.value = res.data
@@ -2130,8 +2187,9 @@ onMounted(() => {
 
     // attachType 映射
     const attachTypeMap = {
-      interior: '车内检查',
-      exterior: '车外检查',
+      interior: '车内照片',
+      exterior: '车外照片',
+      attachment: '附件资料',
     }
 
     // 先添加临时预览
@@ -2143,10 +2201,16 @@ onMounted(() => {
     }
 
     // 根据当前上传类型添加到对应的文件列表
-    if (currentUploadType.value === 'interior') {
-      interiorFileList.value.push(fileObj)
-    } else if (currentUploadType.value === 'exterior') {
-      exteriorFileList.value.push(fileObj)
+    switch (currentUploadType.value) {
+      case 'interior':
+        detail.interiorImages.push(fileObj)
+        break
+      case 'exterior':
+        detail.exteriorImages.push(fileObj)
+        break
+      case 'attachment':
+        signatureData.attachments.push(fileObj)
+        break
     }
 
     // 调用上传接口
@@ -2154,7 +2218,7 @@ onMounted(() => {
       const params = {
         fileUrl: url,
         businessId: route.query.id,
-        configCode: 'mcs_subsidies',
+        configCode: 'mcs_serviceproxy',
         attachType: attachTypeMap[currentUploadType.value],
       }
 
@@ -2164,8 +2228,7 @@ onMounted(() => {
         const uploadData = res.data && res.data.length > 0 ? res.data[0] : {}
 
         // 更新文件状态
-        const targetList =
-          currentUploadType.value === 'interior' ? interiorFileList.value : exteriorFileList.value
+        const targetList = getTargetFileList(currentUploadType.value)
         if (targetList.length > 0) {
           const lastIndex = targetList.length - 1
           targetList[lastIndex] = {
@@ -2180,8 +2243,7 @@ onMounted(() => {
         showToast('上传成功')
       } else {
         // 上传失败，移除临时文件
-        const targetList =
-          currentUploadType.value === 'interior' ? interiorFileList.value : exteriorFileList.value
+        const targetList = getTargetFileList(currentUploadType.value)
         if (targetList.length > 0) {
           targetList.pop()
         }
@@ -2190,8 +2252,7 @@ onMounted(() => {
     } catch (e) {
       console.error('上传出错:', e)
       // 出错时移除临时文件
-      const targetList =
-        currentUploadType.value === 'interior' ? interiorFileList.value : exteriorFileList.value
+      const targetList = getTargetFileList(currentUploadType.value)
       if (targetList.length > 0) {
         targetList.pop()
       }

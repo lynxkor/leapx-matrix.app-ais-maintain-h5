@@ -3022,7 +3022,6 @@ const onInspectionSave = async (type) => {
     latelyServiceProxy: detail.latelyServiceProxy,
     earlyServiceProxy: detail.earlyServiceProxy,
   }
-  showToast(JSON.stringify(params.exteriorPhotoList))
   const res = await serviceAddOrUpdate(params)
   if (res.code === 200) {
     showToast('保存成功')
