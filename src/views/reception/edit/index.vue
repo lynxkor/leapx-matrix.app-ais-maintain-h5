@@ -3167,14 +3167,19 @@ const onAddPackage = () => {
 
 // 制单确认并签字
 const onConfirmAndSign = () => {
-  spConfirmAndSign()
-  // router.push({
-  //   path: '/reception/sign',
-  //   query: {
-  //     vin: detail.vin,
-  //     serviceProxyNo: detail.code,
-  //   },
-  // })
+  let params = {
+    serviceProxyId: detail.id,
+    signChannel: '',
+    expectFinishAt: signatureData.deliveryTime,
+  }
+  spConfirmAndSign(params).then((res) => {
+    if (res.code === 200) {
+      showToast('操作成功')
+      fetchDetail()
+    } else {
+      showToast(res.msg || '操作失败')
+    }
+  })
 }
 
 // 查看签字
@@ -3197,6 +3202,7 @@ const onGoToSign = () => {
     query: {
       vin: detail.vin,
       serviceProxyNo: detail.code,
+      serviceProxyId: detail.id,
     },
   })
 }
