@@ -62,14 +62,14 @@
   font-weight: normal;
 }
 
-html, body {
+html,
+body {
   height: 100vh;
   color: var(--color-text);
   background: var(--color-background);
   transition:
     color 0.5s,
     background-color 0.5s;
-  line-height: 1.6;
   font-family:
     Inter,
     -apple-system,
@@ -83,8 +83,28 @@ html, body {
     'Droid Sans',
     'Helvetica Neue',
     sans-serif;
-  font-size: 15px;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+.custom-title {
+  font-size: 16px;
+  font-weight: 500;
+  color: #191a1b;
+}
+.van-tab {
+  color: #545454;
+}
+.van-tab--active {
+  color: #009100;
+  font-weight: 500;
+}
+
+.van-tabs__line {
+  background: #009100;
+  height: 2px;
+}
+
+.van-nav-bar .van-icon {
+  color: #191a1b;
 }

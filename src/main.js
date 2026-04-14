@@ -1,6 +1,6 @@
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
-import { List, Cell, Search, NavBar, PullRefresh, Image as VanImage, Lazyload, Swipe, SwipeItem, ActionSheet, ActionBar, ActionBarButton, Button, Form, Field, CellGroup, Icon, Dialog, Popup, DatePicker, TimePicker, Tabs, Tab, Loading, Row, Col } from 'vant'
+import { List, Cell, Search, NavBar, PullRefresh, Image as VanImage, Lazyload, Swipe, SwipeItem, ActionSheet, ActionBar, ActionBarButton, Button, Form, Field, CellGroup, Icon, Dialog, Popup, DatePicker, TimePicker, Tabs, Tab, Loading, Row, Col, RadioGroup, Radio, Highlight, Stepper, Switch, NumberKeyboard, Collapse, CollapseItem, Overlay, Sticky, Cascader } from 'vant'
 import * as Sentry from '@sentry/vue'
 
 import App from './App.vue'
@@ -9,12 +9,14 @@ import router from './router'
 import 'vant/lib/index.css'
 // 必须写在vant样式后，覆盖vant样式
 import './assets/main.css'
+// 引入全局样式变量
+import '@/libs/assets/styles/variables.scss'
 
 const setHtmlFontsize = () => {
   var htmlWidth = document.documentElement.clientWidth || document.body.clientWidth
   console.log('width：', htmlWidth)
   var htmlDom = document.getElementsByTagName('html')[0]
-  htmlDom.style.fontSize = (htmlWidth / 37.5) + 'px'
+  htmlDom.style.fontSize = htmlWidth / 37.5 + 'px'
 }
 window.onresize = setHtmlFontsize
 setHtmlFontsize()
@@ -22,7 +24,7 @@ setHtmlFontsize()
 const app = createApp(App)
 
 // 初始化 Sentry 错误追踪
-const environment = import.meta.env.VITE_SENTRY_ENV
+const environment = window.APP_AIS_H5_CONFIG.VITE_SENTRY_ENV
 if (environment) {
   Sentry.init({
     app,
@@ -67,16 +69,29 @@ app.use(Tab)
 app.use(Loading)
 app.use(Row)
 app.use(Col)
+app.use(RadioGroup)
+app.use(Radio)
+app.use(Highlight)
+app.use(Stepper)
+app.use(Switch)
+app.use(NumberKeyboard)
+app.use(Collapse)
+app.use(CollapseItem)
+app.use(Loading)
+app.use(Overlay)
+app.use(Sticky)
+app.use(Stepper)
+app.use(Cascader)
 
 // 注册时可以配置额外的选项
 app.use(Lazyload, {
   lazyComponent: true
 })
 
-if (import.meta.env.DEV) {
-  import('vconsole').then(({ default: VConsole }) => {
-    new VConsole()
-  })
-}
+// if (import.meta.env.DEV) {
+import('vconsole').then(({ default: VConsole }) => {
+  new VConsole()
+})
+// }
 
 app.mount('#app')

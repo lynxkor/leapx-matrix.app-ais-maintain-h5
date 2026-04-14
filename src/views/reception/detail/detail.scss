@@ -1,0 +1,529 @@
+.work-order-detail {
+  display: flex;
+  flex-direction: column;
+  background: #f7f7f7;
+  padding-bottom: 88px;
+
+  :deep(.van-tabs) {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+
+  :deep(.van-tabs__content) {
+    flex: 1;
+    overflow-y: auto;
+  }
+
+  :deep(.van-tabs__nav) {
+    background: #ffffff;
+  }
+}
+
+.vehicle-card {
+  background: #ffffff;
+  padding: 12px;
+  margin-bottom: 8px;
+
+  .plate-row {
+    display: flex;
+    align-items: center;
+    margin-bottom: 4px;
+
+    .plate-no {
+      font-size: 18px;
+      font-weight: 600;
+      color: #191a1b;
+      margin-right: 8px;
+    }
+
+    .appointment-tag {
+      font-size: 12px;
+      padding: 2px 8px;
+      border-radius: 4px;
+      background: #f2f2f2;
+      color: #191a1b;
+    }
+  }
+
+  .vehicle-model {
+    font-size: 12px;
+    color: #545454;
+    margin-bottom: 8px;
+  }
+
+  .info-row {
+    font-size: 12px;
+    margin-bottom: 4px;
+
+    .label {
+      color: #545454;
+    }
+
+    .value {
+      color: #191a1b;
+    }
+  }
+
+  .divider {
+    height: 1px;
+    background: rgba(25, 26, 27, 0.06);
+    margin: 12px 0;
+  }
+
+  .select-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 0;
+
+    .label {
+      font-size: 14px;
+      color: #191a1b;
+    }
+
+    .value-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 14px;
+      color: #191a1b;
+
+      .tag {
+        color: #545454;
+      }
+    }
+  }
+}
+
+.tab-content {
+  .inspection-info {
+    padding: 0 12px 12px 12px;
+    background: #ffffff;
+    margin-bottom: 12px;
+  }
+  .fault-info {
+    padding: 0 12px 12px 12px;
+    background: #ffffff;
+  }
+}
+.borderB {
+  border-bottom: 1px solid #e6e6e5;
+}
+.section-card {
+  padding: 12px;
+  .section-title {
+    font-size: 14px;
+    font-weight: 500;
+    color: #191a1b;
+    margin-bottom: 12px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+
+    .number {
+      font-size: 14px;
+      color: #191a1b;
+    }
+
+    .unit {
+      font-size: 12px;
+      color: #545454;
+      margin-left: 2px;
+    }
+  }
+
+  .sub-info {
+    font-size: 12px;
+    color: #888888;
+    margin-bottom: 4px;
+  }
+
+  .image-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+
+    .image-item {
+      width: 80px;
+      height: 80px;
+      border-radius: 4px;
+      overflow: hidden;
+
+      .van-image {
+        width: 100%;
+        height: 100%;
+      }
+    }
+  }
+
+  :deep(.van-cell) {
+    background: #f7f7f7;
+    border-radius: 8px;
+    padding: 12px;
+
+    &::after {
+      display: none;
+    }
+  }
+}
+
+.bottom-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 70px;
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  gap: 12px;
+  justify-content: center;
+
+  .more-btn {
+    width: 52px;
+    font-size: 16px;
+    color: #191a1b;
+    text-align: center;
+  }
+}
+
+// 项目零件Tab样式
+.parts-tab {
+  .cost-summary {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px;
+    margin-bottom: 12px;
+    border-bottom: 1px solid #e6e6e5;
+    background: #e6f4e6;
+    border-radius: 8px;
+
+    .summary-row {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 33.33%;
+      .label {
+        font-size: 12px;
+        color: #191a1b;
+        margin-bottom: 4px;
+      }
+
+      .amount {
+        font-size: 14px;
+        font-weight: 500;
+        color: #009100;
+      }
+
+      &.total {
+        .amount {
+          color: #009100;
+        }
+      }
+    }
+
+    .operator {
+      font-size: 14px;
+      color: #009100;
+      margin: 0 8px;
+      margin-top: 16px;
+    }
+  }
+
+  .package-card {
+    background: #ffffff;
+    border-radius: 8px;
+    padding: 15px 12px;
+    border: 0.5px solid #e6e6e5;
+    margin-bottom: 8px;
+    .package-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+
+      .package-name {
+        font-size: 14px;
+        font-weight: 500;
+        color: #191a1b;
+      }
+    }
+  }
+
+  // 项目零件卡片样式（只读）
+  .parts-item-card {
+    background: #ffffff;
+    border-radius: 8px;
+    padding: 15px 12px;
+    border: 0.5px solid #e6e6e5;
+    margin-bottom: 8px;
+
+    .item-main {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 4px;
+
+      .item-left {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        flex: 1;
+
+        .item-name {
+          font-size: 14px;
+          font-weight: 500;
+          color: #191a1b;
+          line-height: 20px;
+        }
+
+        .item-name-row {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+
+          .item-name {
+            font-size: 14px;
+            font-weight: 500;
+            color: #191a1b;
+            line-height: 20px;
+          }
+
+          .oem-tag {
+            font-size: 10px;
+            padding: 1px 4px;
+            background: rgba(25, 26, 27, 0.06);
+            border-radius: 4px;
+            color: #191a1b;
+          }
+        }
+
+        .item-code {
+          font-size: 12px;
+          color: #545454;
+          line-height: 17px;
+        }
+
+        .item-category {
+          font-size: 12px;
+          color: #545454;
+          line-height: 17px;
+        }
+      }
+
+      .item-right {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 2px;
+
+        .item-price {
+          font-size: 14px;
+          font-weight: 500;
+          color: #191a1b;
+          line-height: 20px;
+        }
+
+        .item-discount {
+          font-size: 12px;
+          color: #545454;
+          line-height: 17px;
+        }
+      }
+    }
+
+    .item-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+
+      .footer-info {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+
+        .item-subtotal {
+          font-size: 12px;
+          color: #545454;
+          line-height: 17px;
+        }
+
+        .footer-divider {
+          font-size: 12px;
+          color: #e6e6e5;
+        }
+
+        .footer-text {
+          font-size: 12px;
+          color: #545454;
+          line-height: 17px;
+        }
+      }
+
+      .item-quantity {
+        font-size: 14px;
+        color: #191a1b;
+        line-height: 20px;
+      }
+    }
+  }
+}
+
+// 签字确认Tab样式
+.signature-tab {
+  background: #ffffff;
+  padding: 12px;
+
+  .signature-section {
+    margin-bottom: 16px;
+
+    .signature-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 0;
+      border-bottom: 0.5px solid #e6e6e5;
+
+      &:last-child {
+        border-bottom: none;
+      }
+
+      .label {
+        font-size: 14px;
+        color: #191a1b;
+        width: 150px;
+      }
+
+      .value {
+        font-size: 14px;
+        color: #191a1b;
+      }
+    }
+  }
+
+  .attachment-section {
+    .section-title {
+      font-size: 14px;
+      font-weight: 500;
+      color: #191a1b;
+      margin-bottom: 12px;
+    }
+
+    .image-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+
+      .image-item {
+        width: 80px;
+        height: 80px;
+        border-radius: 4px;
+        overflow: hidden;
+
+        .van-image {
+          width: 100%;
+          height: 100%;
+        }
+      }
+    }
+  }
+}
+.cancel-reason-content {
+  padding: 16px;
+  background: #fff;
+  border-radius: 6px;
+  :deep(.van-cell) {
+    background: #f7f7f7;
+    border-radius: 8px;
+    padding: 12px;
+
+    &::after {
+      display: none;
+    }
+  }
+}
+.confirm-btn {
+  width: 100%;
+  height: 40px;
+  background: #009100;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 16px;
+}
+
+// 可展开文本样式
+.expandable-text {
+  font-size: 14px;
+  color: #191a1b;
+  line-height: 20px;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+
+  &.expanded {
+    -webkit-line-clamp: unset;
+    line-clamp: unset;
+    overflow: visible;
+  }
+}
+
+.expand-btn {
+  font-size: 12px;
+  color: #009100;
+  margin-top: 8px;
+  cursor: pointer;
+}
+
+// 故障模块列表样式
+.fault-modules {
+  .modules-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+
+    .fault-module-item {
+      background: #f8f7f7;
+      border-radius: 6px;
+      padding: 10px 8px;
+
+      .module-name {
+        font-size: 14px;
+        color: #191a1b;
+        line-height: 20px;
+      }
+    }
+  }
+}
+.fault-toggle-section {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px;
+
+  .title {
+    font-size: 14px;
+    font-weight: 500;
+    color: #191a1b;
+  }
+
+  .toggle-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+
+    .toggle-text {
+      font-size: 14px;
+      color: #191a1b;
+    }
+  }
+}
