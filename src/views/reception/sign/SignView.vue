@@ -21,16 +21,14 @@ const router = useRouter()
 const signParams = ref({
   vin: route.query.vin || '',
   serviceProxyNo: route.query.serviceProxyNo || '',
-  serviceProxyId: route.query.serviceProxyId || '',
 })
 
 const submitSign = async (val) => {
   console.log('submitSign', val)
-  console.log('signParams', signParams.value)
   // 先上传 base64 签名图片，获取 URL
   const uploadParams = {
     fileUrl: val.signatureImageData, // base64 格式
-    businessId: signParams.value.serviceProxyId,
+    businessId: route.query.serviceProxyId || '',
     configCode: 'mcs_serviceproxy',
     attachType: '制单签字',
   }
