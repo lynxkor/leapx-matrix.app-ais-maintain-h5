@@ -101,6 +101,7 @@
                     :placeholder="repairPersonInputDisabled ? '' : '请输入手机号'"
                     class="edit-input"
                     :disabled="repairPersonInputDisabled"
+                    maxlength="11"
                     @input="onRepairPersonPhoneChange"
                   />
                   <van-icon
@@ -116,31 +117,13 @@
         </van-collapse-item>
       </van-collapse>
 
-      <!-- 业务类型折叠面板 -->
-      <van-collapse v-model="businessTypeCollapse" class="collapse-panel">
-        <van-collapse-item name="businessType">
-          <template #title>
-            <div class="select-row">
-              <span class="label">业务类型</span>
-              <span class="value">{{
-                businessTypeList.find((i) => i.value === detail.businessType)?.label
-              }}</span>
-            </div>
-          </template>
-          <div class="collapse-content">
-            <div class="type-grid">
-              <div
-                v-for="item in businessTypeList"
-                :key="item.value"
-                :class="['type-item', { active: detail.businessType === item.value }]"
-                @click="onSelectBusinessType(item)"
-              >
-                {{ item.label }}
-              </div>
-            </div>
-          </div>
-        </van-collapse-item>
-      </van-collapse>
+      <!-- 业务类型 -->
+      <div class="select-row">
+        <span class="label">业务类型</span>
+        <span class="value">{{
+          businessTypeList.find((i) => i.value === computedBusinessType)?.label
+        }}</span>
+      </div>
     </div>
 
     <!-- Tab导航 -->
@@ -350,279 +333,41 @@
       </van-tab>
 
       <van-tab v-if="isSaved" title="项目零件" name="parts">
-        <div class="tab-content parts-tab">
+        <div
+          class="tab-content parts-tab"
+          style="max-height: calc(100vh - 130px); min-height: 54vh"
+        >
           <!-- 费用汇总 -->
           <div style="padding: 12px; background: #fff">
             <div class="cost-summary">
               <div class="summary-row">
                 <span class="label">维修项目</span>
-                <span class="amount">¥{{ partsData.workCostCount }}</span>
+                <span class="amount">¥{{ computedWorkCost }}</span>
               </div>
               <span class="operator">+</span>
               <div class="summary-row">
                 <span class="label">维修配件</span>
-                <span class="amount">¥{{ partsData.barkCostCount }}</span>
+                <span class="amount">¥{{ computedPartsCost }}</span>
               </div>
               <span class="operator">=</span>
               <div class="summary-row total">
                 <span class="label">费用合计</span>
-                <span class="amount">¥{{ partsData.maintenanceCostEstimation }}</span>
+                <span class="amount">¥{{ computedTotalCost }}</span>
               </div>
             </div>
           </div>
 
-          <!-- 维修项目列表 -->
-          <div v-if="partsData.repairItemRespList?.length > 0" class="parts-section">
-            <div class="section-title">维修项目</div>
-            <template v-for="(group, gIndex) in groupedRepairItems" :key="'repair-' + gIndex">
-              <!-- 套餐分组：需要加标题并用div包裹 -->
-              <div v-if="group.isPackage" class="package-group">
-                <div class="package-group-header" @click="onPackageGroupClick(group)">
-                  <span class="package-group-title">
-                    <span class="package-label">{{ group.packageTypeLabel }}-</span>
-                    <span class="package-code">{{ group.packageCode }}</span>
-                  </span>
-                  <van-icon name="arrow" size="12" color="#545454" />
-                </div>
-                <div
-                  v-for="(item, index) in group.items"
-                  :key="'repair-item-' + index"
-                  class="parts-card"
-                >
-                  <div
-                    class="card-delete"
-                    @click="onDeleteRepairItem(partsData.repairItemRespList.indexOf(item))"
-                  >
-                    <van-icon name="delete-o" size="16" color="#b91919" />
-                  </div>
-                  <div class="card-content">
-                    <div class="card-top">
-                      <div class="card-info">
-                        <div class="item-name">{{ item.repairItemName }}</div>
-                        <div class="item-category" @click="onCategoryClick(item)">
-                          <span class="category-text">
-                            {{ item.repairItemTypeName || '请选择' }}-{{
-                              item.checkoutTypeName || ''
-                            }}-{{ item.warrantyTypeName || '' }}
-                          </span>
-                          <van-icon
-                            v-if="!item.packageType"
-                            name="arrow"
-                            size="12"
-                            color="#545454"
-                            style="height: 17px; line-height: 19px"
-                          />
-                        </div>
-                      </div>
-                      <div class="card-price">
-                        <div class="item-price">
-                          ¥{{ (item.price * item.workHour - item.discountAmount).toFixed(2) }}
-                        </div>
-                        <div class="discount-tags">
-                          <span class="discount-tag">优惠</span>
-                          <span class="discount-amount">¥{{ item.discountAmount }}</span>
-                        </div>
-                      </div>
-                    </div>
-                    <div class="card-bottom">
-                      <div class="item-subtotal">¥{{ item.price }}</div>
-                      <div class="quantity-stepper">
-                        <van-stepper v-model="item.workHour" :min="1" size="small" />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <!-- 非套餐项目：直接展示卡片，不加标题 -->
-              <div v-else>
-                <div
-                  v-for="(item, index) in group.items"
-                  :key="'repair-item-' + index"
-                  class="parts-card"
-                >
-                  <div
-                    class="card-delete"
-                    @click="onDeleteRepairItem(partsData.repairItemRespList.indexOf(item))"
-                  >
-                    <van-icon name="delete-o" size="16" color="#b91919" />
-                  </div>
-                  <div class="card-content">
-                    <div class="card-top">
-                      <div class="card-info">
-                        <div class="item-name">{{ item.repairItemName }}</div>
-                        <div class="item-category" @click="onCategoryClick(item)">
-                          <span class="category-text">
-                            {{ item.repairItemTypeName || '请选择' }}-{{
-                              item.checkoutTypeName || ''
-                            }}-{{ item.warrantyTypeName || '' }}
-                          </span>
-                          <van-icon
-                            v-if="!item.packageType"
-                            name="arrow"
-                            size="12"
-                            color="#545454"
-                            style="height: 17px; line-height: 19px"
-                          />
-                        </div>
-                      </div>
-                      <div class="card-price">
-                        <div class="item-price">
-                          ¥{{ (item.price * item.workHour - item.discountAmount).toFixed(2) }}
-                        </div>
-                        <div class="discount-tags">
-                          <span class="discount-tag">优惠</span>
-                          <span class="discount-amount">¥{{ item.discountAmount }}</span>
-                        </div>
-                      </div>
-                    </div>
-                    <div class="card-bottom">
-                      <div class="item-subtotal">¥{{ item.price }}</div>
-                      <div class="quantity-stepper">
-                        <van-stepper v-model="item.workHour" :min="1" size="small" />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </template>
+          <!-- 维修项目零件内容 - 使用 RepairItemContent 组件 -->
+          <div style="height: calc(38vh - 5px)">
+            <RepairItemContent
+              ref="repairItemContentRef"
+              :service-proxy-id="route.query.id"
+              :initial-items="partsData.repairItemRespList"
+              :initial-parts="partsData.sparePartRespList"
+              isComponent
+            />
           </div>
 
-          <!-- 维修配件列表 -->
-          <div v-if="partsData.sparePartRespList?.length > 0" class="parts-section">
-            <div class="section-title">维修配件</div>
-            <template v-for="(group, gIndex) in groupedSpareParts" :key="'spare-' + gIndex">
-              <!-- 套餐分组：需要加标题并用div包裹 -->
-              <div v-if="group.isPackage" class="package-group">
-                <div class="package-group-header" @click="onPackageGroupClick(group)">
-                  <span class="package-group-title">
-                    <span class="package-label">{{ group.packageTypeLabel }}-</span>
-                    <span class="package-code">{{ group.packageCode }}</span>
-                  </span>
-                  <van-icon name="arrow" size="12" color="#545454" />
-                </div>
-                <div
-                  v-for="(item, index) in group.items"
-                  :key="'spare-item-' + index"
-                  class="parts-card"
-                >
-                  <div
-                    class="card-delete"
-                    @click="onDeleteSparePart(partsData.sparePartRespList.indexOf(item))"
-                  >
-                    <van-icon name="delete-o" size="16" color="#b91919" />
-                  </div>
-                  <div class="card-content">
-                    <div class="card-top">
-                      <div class="card-info">
-                        <div class="item-name">{{ item.packageName }}</div>
-                        <div class="item-category" @click="onCategoryClick(item)">
-                          <span class="category-text">
-                            {{ item.repairItemTypeName || '请选择' }}-{{
-                              item.checkoutTypeName || ''
-                            }}-{{ item.warrantyTypeName || '' }}
-                          </span>
-                          <van-icon
-                            v-if="!item.packageType"
-                            name="arrow"
-                            size="12"
-                            color="#545454"
-                            style="height: 17px; line-height: 19px"
-                          />
-                        </div>
-                      </div>
-                      <div class="card-price">
-                        <div class="item-price">
-                          ¥{{ (item.price * item.quantity - item.discountAmount).toFixed(2) }}
-                        </div>
-                        <div class="discount-tags">
-                          <span class="discount-tag">优惠</span>
-                          <span class="discount-amount">¥{{ item.discountAmount }}</span>
-                        </div>
-                      </div>
-                    </div>
-                    <div class="card-bottom">
-                      <div class="item-subtotal">¥{{ item.price }}</div>
-                      <div class="quantity-stepper">
-                        <van-stepper v-model="item.quantity" :min="1" size="small" />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <!-- 非套餐配件：直接展示卡片，不加标题 -->
-              <div v-else>
-                <div
-                  v-for="(item, index) in group.items"
-                  :key="'spare-item-' + index"
-                  class="parts-card"
-                >
-                  <div
-                    class="card-delete"
-                    @click="onDeleteSparePart(partsData.sparePartRespList.indexOf(item))"
-                  >
-                    <van-icon name="delete-o" size="16" color="#b91919" />
-                  </div>
-                  <div class="card-content">
-                    <div class="card-top">
-                      <div class="card-info">
-                        <div class="item-name">{{ item.partsName }}</div>
-                        <div class="item-category" @click="onCategoryClick(item)">
-                          <span class="category-text">
-                            {{ item.repairItemTypeName || '请选择' }}-{{
-                              item.checkoutTypeName || ''
-                            }}-{{ item.warrantyTypeName || '' }}
-                          </span>
-                          <van-icon
-                            v-if="!item.packageType"
-                            name="arrow"
-                            size="12"
-                            color="#545454"
-                            style="height: 17px; line-height: 19px"
-                          />
-                        </div>
-                      </div>
-                      <div class="card-price">
-                        <div class="item-price">
-                          ¥{{ (item.price * item.quantity - item.discountAmount).toFixed(2) }}
-                        </div>
-                        <div class="discount-tags">
-                          <span class="discount-tag">优惠</span>
-                          <span class="discount-amount">¥{{ item.discountAmount }}</span>
-                        </div>
-                      </div>
-                    </div>
-                    <div class="card-bottom">
-                      <div class="item-subtotal">¥{{ item.price }}</div>
-                      <div class="quantity-stepper">
-                        <van-stepper v-model="item.quantity" :min="1" size="small" />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </template>
-          </div>
-
-          <!-- 套餐列表 -->
-          <!-- <div v-if="partsData.packageRespList?.length > 0" class="parts-section">
-            <div class="section-title">套餐</div>
-            <div
-              v-for="(pkg, pIndex) in partsData.packageRespList"
-              :key="'package-' + pIndex"
-              class="parts-card"
-            >
-              <div class="card-header">
-                <div class="delete-btn">
-                  <van-icon name="delete-o" size="16" color="#b91919" />
-                </div>
-                <div class="card-content">
-                  <div class="content-top">
-                    <span class="item-name">{{ pkg.packageTypeLabel }}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div> -->
           <!-- 添加按钮 -->
           <div class="add-buttons">
             <div class="add-btn" @click="onAddParts">
@@ -643,11 +388,11 @@
           <div class="signature-section">
             <div class="signature-row">
               <span class="label">费用合计</span>
-              <span class="value">¥{{ signatureData.maintenanceCostEstimation }}</span>
+              <span class="value">¥{{ computedTotalCost }}</span>
             </div>
             <div class="signature-row">
               <span class="label">维修类型</span>
-              <span class="value">{{ signatureData.repairTypes }}</span>
+              <span class="value">{{ signatureData.repairItemTypeDetailCollect }}</span>
             </div>
             <div class="signature-row" @click="onOpenDeliveryTimePicker">
               <span class="label">预计交车时间</span>
@@ -1354,6 +1099,7 @@ import { useGlobalStore } from '@/stores/global'
 import AisPopup from '@/libs/components/AisPopup.vue'
 import AisCascader from '@/components/AisCascader/index.vue'
 import PackageDetailPopup from '@/components/PackageDetailPopup.vue'
+import RepairItemContent from '@/components/SelectRepairItem/RepairItemContent.vue'
 import { useRepairItemBusinessRules, useRepairItemData } from '@/components/SelectRepairItem/hooks'
 import {
   uploadFileByUrl,
@@ -1382,6 +1128,9 @@ const addFaultModuleShow = ref(false)
 const changeCarDialog = ref(false)
 const changePlateDialog = ref(false)
 
+// RepairItemContent 组件引用
+const repairItemContentRef = ref(null)
+
 // 图片上传相关
 const currentUploadType = ref('') // 'interior' or 'exterior'
 const currentUploadIndex = ref(0)
@@ -1401,6 +1150,11 @@ const interiorConfig = computed(() => getAttachConfig('车内照片'))
 const exteriorConfig = computed(() => getAttachConfig('车外照片'))
 // 附件资料配置
 const attachmentConfig = computed(() => getAttachConfig('附件资料'))
+
+// 业务类型计算：优先使用已有值，否则根据是否预约判断
+const computedBusinessType = computed(() => {
+  return detail.businessType || (detail.isAppointment ? 50 : 10)
+})
 
 // 施工单状态
 const isSaved = ref(false) // 是否已保存
@@ -1663,6 +1417,7 @@ const onSelectMoreAction = (action) => {
         vin: detail.vin,
         plateNo: detail.plateNo,
         vehicleModel: detail.vehicleModel,
+        id: route.query.id,
       },
     })
   }
@@ -1771,7 +1526,7 @@ const detail = reactive({
   repairPerson: '',
   repairPersonPhone: '',
   repairPersonTag: '车主',
-  businessType: 10,
+  businessType: null, // 初始为null，后续根据isAppointment计算
   mileage: '',
   networkMileageTotal: '',
   networkMileageAdd: '',
@@ -2017,6 +1772,34 @@ const signatureData = reactive({
   isLive: false,
   signChannel: '',
   attachments: [],
+})
+
+// 从组件数据计算费用（computed 实现联动）
+const computedWorkCost = computed(() => {
+  const items = repairItemContentRef.value?.selectedItems || []
+  return items
+    .reduce((sum, item) => {
+      return (
+        sum +
+        (Number(item.price) * Number(item.quantity || item.workHour) -
+          Number(item.discountAmount || 0))
+      )
+    }, 0)
+    .toFixed(2)
+})
+
+const computedPartsCost = computed(() => {
+  const parts = repairItemContentRef.value?.selectedParts || []
+  return parts
+    .reduce((sum, item) => {
+      return sum + (Number(item.price) * Number(item.quantity) - Number(item.discountAmount || 0))
+    }, 0)
+    .toFixed(2)
+})
+
+const computedTotalCost = computed(() => {
+  const total = Number(computedWorkCost.value) + Number(computedPartsCost.value)
+  return total.toFixed(2)
 })
 
 // 重新计算费用合计
@@ -2327,7 +2110,7 @@ const fetchDetail = async () => {
           abnormalDesc: detail.abnormalDesc,
           hasFault: detail.hasFault,
           customerFaultDesc: detail.customerFaultDesc,
-          businessType: detail.businessType,
+          businessType: computedBusinessType.value,
           repairPerson: detail.repairPerson,
           repairPersonPhone: detail.repairPersonPhone,
           faultModules: [...detail.faultModules],
@@ -2820,8 +2603,9 @@ const onSelectRepairPersonType = (type) => {
     repairPersonPhoneInput.value = detail.binderPhone
     detail.repairPersonTag = '绑车人'
   } else {
-    repairPersonNameInput.value = ''
-    repairPersonPhoneInput.value = ''
+    // 其他：带出车主信息，支持编辑
+    repairPersonNameInput.value = detail.owner
+    repairPersonPhoneInput.value = detail.ownerPhone
     detail.repairPersonTag = '其他'
   }
   // 同步更新送修人信息
@@ -2898,7 +2682,7 @@ const onInspectionSave = async (type) => {
       abnormalDesc: detail.abnormalDesc,
       hasFault: detail.hasFault,
       customerFaultDesc: detail.customerFaultDesc,
-      businessType: detail.businessType,
+      businessType: computedBusinessType.value,
       repairPerson: detail.repairPerson,
       repairPersonPhone: detail.repairPersonPhone,
       faultModules: [...detail.faultModules],
@@ -3002,7 +2786,7 @@ const onInspectionSave = async (type) => {
     batterySerialNumber: detail.batterySerialNumber,
     engineNumber: detail.enginenNumber,
     repairItemTypeDetailCollect: detail.repairItemTypeDetailCollect,
-    businessType: detail.businessType,
+    businessType: computedBusinessType.value,
     alarmLevel: detail.alarmLevel,
     isLive: detail.isLive,
     haveRework: 0,
@@ -3063,12 +2847,16 @@ const onInspectionSave = async (type) => {
 const onPartsSave = async () => {
   savingLoading.value = true
   try {
+    // 从 RepairItemContent 组件获取数据
+    const items = repairItemContentRef.value?.selectedItems || []
+    const parts = repairItemContentRef.value?.selectedParts || []
+
     // 保存项目零件
     const res = await saveSpRepairItem({
       serviceProxyId: route.query.id,
       discountId: '',
-      itemList: partsData.repairItemRespList,
-      partsList: partsData.sparePartRespList,
+      itemList: items,
+      partsList: parts,
     })
     if (res.code !== 200) {
       showToast(res.msg || '保存失败')
@@ -3092,12 +2880,16 @@ const onPartsSave = async () => {
 const onSignatureSave = async () => {
   savingLoading.value = true
   try {
+    // 从 RepairItemContent 组件获取数据
+    const items = repairItemContentRef.value?.selectedItems || []
+    const parts = repairItemContentRef.value?.selectedParts || []
+
     // 保存项目零件
     const res = await saveSpRepairItem({
       serviceProxyId: route.query.id,
       discountId: '',
-      itemList: partsData.repairItemRespList,
-      partsList: partsData.sparePartRespList,
+      itemList: items,
+      partsList: parts,
     })
     if (res.code !== 200) {
       showToast(res.msg || '保存失败')
@@ -3167,19 +2959,42 @@ const onAddPackage = () => {
 
 // 制单确认并签字
 const onConfirmAndSign = () => {
-  let params = {
-    serviceProxyId: detail.id,
-    signChannel: '',
-    expectFinishAt: signatureData.deliveryTime,
-  }
-  spConfirmAndSign(params).then((res) => {
-    if (res.code === 200) {
-      showToast('操作成功')
-      fetchDetail()
-    } else {
-      showToast(res.msg || '操作失败')
-    }
+  // 先显示确认弹框
+  showConfirmDialog({
+    title: '问题确认',
+    message: `您本次进店反馈的问题为："${detail.customerFaultDesc || ''}"，门店描述是否准确？\n(准确记录能帮技师精准维修，避免您重复进店哦~）`,
+    confirmButtonText: '准确',
+    cancelButtonText: '不准确',
+    confirmButtonColor: '#009100',
   })
+    .then(() => {
+      // 点击"准确"，执行接口
+      let params = {
+        serviceProxyId: detail.id,
+        signChannel: signatureData.signChannel === '纸质单据' || detail.signChannel == 40 ? '40' : '',
+        expectFinishAt: signatureData.deliveryTime,
+      }
+      spConfirmAndSign(params).then((res) => {
+        if (res.code === 200) {
+          showToast('操作成功')
+          fetchDetail()
+          // 接口成功后跳转签字页面
+          router.push({
+            path: '/reception/sign',
+            query: {
+              vin: detail.vin,
+              serviceProxyNo: detail.code,
+              serviceProxyId: detail.id,
+            },
+          })
+        } else {
+          showToast(res.msg || '操作失败')
+        }
+      })
+    })
+    .catch(() => {
+      // 点击"不准确"，关闭弹框留在当前页
+    })
 }
 
 // 查看签字
@@ -4173,6 +3988,7 @@ onMounted(() => {
     .label {
       font-size: 14px;
       color: #545454;
+      width: 200px;
     }
 
     .value {

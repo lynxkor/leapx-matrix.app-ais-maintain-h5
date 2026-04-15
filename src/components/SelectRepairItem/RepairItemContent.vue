@@ -144,7 +144,7 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, watch, onMounted } from 'vue'
 import Empty from '@/views/repairWork/components/Empty.vue'
 import SearchBar from './SearchBar.vue'
 import RepairItemCard from './RepairItemCard.vue'
@@ -169,6 +169,16 @@ const props = defineProps({
   isComponent: {
     type: Boolean,
     default: false,
+  },
+  // 外部传入的维修项目数据
+  initialItems: {
+    type: Array,
+    default: null,
+  },
+  // 外部传入的维修零件数据
+  initialParts: {
+    type: Array,
+    default: null,
   },
 })
 
@@ -279,6 +289,38 @@ const openPackageDetail = (group) => {
 // 监听器
 watch(activeTab, () => {
   searchBarRef.value?.reset()
+})
+
+// 监听外部传入数据变化，同步到组件内部
+watch(
+  () => props.initialItems,
+  (newItems) => {
+    if (newItems && newItems.length > 0) {
+      selectedItems.value = newItems.map(normalizeItem)
+    }
+  },
+  { immediate: true },
+)
+
+watch(
+  () => props.initialParts,
+  (newParts) => {
+    if (newParts && newParts.length > 0) {
+      selectedParts.value = newParts.map(normalizePart)
+    }
+  },
+  { immediate: true },
+)
+
+// 组件挂载时，如果有外部数据则使用外部数据，否则加载枚举数据
+onMounted(async () => {
+  if (props.isComponent && (props.initialItems || props.initialParts)) {
+    // 有外部数据时，只加载枚举数据（用于分类选择器）
+    await loadInitialData()
+  } else if (props.serviceProxyId) {
+    // 无外部数据时，调用完整加载
+    await loadInitialData()
+  }
 })
 
 // 暴露方法供父组件调用
