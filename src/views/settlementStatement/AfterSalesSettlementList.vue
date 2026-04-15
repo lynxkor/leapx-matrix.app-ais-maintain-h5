@@ -690,16 +690,9 @@ const handleSignClick = () => {
     // c: 所有结算单都已提交且未签字，显示签字渠道选择弹窗
     showSignChannel.value = true
   } else {
-    // b, d: 已签字或纸质单据已提交，跳转到已签字状态
-    router.push({
-      path: '/settlement-statement/signed',
-      query: {
-        statementId: detailData.value.id,
-        serviceProxyId: serviceProxyId.value,
-        sourceStatus: sourceStatus.value,
-        signed: 'true'
-      }
-    })
+    // b, d: 已签字或纸质单据已提交，跳转到外部施工单页面
+    const targetUrl = `https://staticres-sitb.leapmotor.com/leapx/biling/ais/settlement?serviceProxyId=${serviceProxyId.value}`
+    window.location.href = targetUrl
   }
 }
 
@@ -729,17 +722,12 @@ const validateSettlementPayload = (payload) => {
 
 // 签字成功后的回调
 const handleSignSuccess = async() => {
-  // APP/短信/零小跑：跳转到结算预览页面
+  // APP/短信/零小跑：跳转到外部施工单页面
   if (selectedChannel.value === 'app') {
     showSignChannel.value = false
-    router.push({
-      path: '/settlement-statement/preview',
-      query: {
-        statementId: detailData.value.id,
-        serviceProxyId: serviceProxyId.value,
-        sourceStatus: sourceStatus.value
-      }
-    })
+    // 跳转到外部页面，不再处理后续逻辑
+    const targetUrl = `https://staticres-sitb.leapmotor.com/leapx/biling/ais/settlement?serviceProxyId=${serviceProxyId.value}`
+    window.location.href = targetUrl
     return
   }
 
