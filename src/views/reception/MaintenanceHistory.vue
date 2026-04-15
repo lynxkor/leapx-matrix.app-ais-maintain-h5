@@ -55,6 +55,12 @@
     <AisPopup v-model:show="showPopup" title="维修详情" style="height: 70%">
       <template #content>
         <div class="popup-content">
+          <!-- loading -->
+          <van-overlay :show="popupLoading" class="popup-loading">
+            <div class="loading-wrapper">
+              <van-loading size="24px" vertical color="#009100">加载中...</van-loading>
+            </div>
+          </van-overlay>
           <!-- 顶部信息卡片 -->
           <div class="info-card">
             <div class="card-header">
@@ -90,12 +96,12 @@
                 :key="'repair-' + index"
                 class="item-row"
               >
-                <span class="item-name">{{ item.name }}</span>
+                <span class="item-name">{{ item.repairItemName }}</span>
                 <span
                   class="payment-tag"
-                  :class="item.paymentType === '保险' ? 'insurance' : 'self-pay'"
+                  :class="item.checkoutTypeName === '保险' ? 'insurance' : 'self-pay'"
                 >
-                  {{ item.paymentType }}
+                  {{ item.checkoutTypeName }}
                 </span>
               </div>
             </div>
@@ -110,12 +116,12 @@
                 :key="'part-' + index"
                 class="item-row"
               >
-                <span class="item-name">{{ item.name }}</span>
+                <span class="item-name">{{ item.partsName }}</span>
                 <span
                   class="payment-tag"
-                  :class="item.paymentType === '保险' ? 'insurance' : 'self-pay'"
+                  :class="item.checkoutTypeName === '保险' ? 'insurance' : 'self-pay'"
                 >
-                  {{ item.paymentType }}
+                  {{ item.checkoutTypeName }}
                 </span>
               </div>
             </div>
@@ -131,7 +137,8 @@ import { ref, reactive, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import RefreshList from '@/libs/components/RefreshList.vue'
 import AisPopup from '@/libs/components/AisPopup.vue'
-import { getDetail, getHistory } from '@/api/reception'
+import { getDetail, getHistoryDetail } from '@/api/reception'
+import { showToast } from 'vant'
 
 const route = useRoute()
 const needRefresh = ref(false)
@@ -141,7 +148,7 @@ const refreshListRef = ref(null)
 const vehicleInfo = reactive({
   vin: '',
   plateNo: '',
-  vehicleModel: ''
+  vehicleModel: '',
 })
 
 // 详情数据
@@ -158,11 +165,12 @@ const detailData = reactive({
   netMileageExtend: '',
   serviceAdvisorName: '',
   createTime: '',
-  historyList: []
+  historyList: [],
 })
 
 // 弹框控制
 const showPopup = ref(false)
+const popupLoading = ref(false)
 const popupData = reactive({
   serviceProxyCode: '',
   status: '',
@@ -173,7 +181,7 @@ const popupData = reactive({
   netMileage: '',
   serviceAdvisorName: '',
   repairItems: [],
-  repairParts: []
+  repairParts: [],
 })
 const list = ref([])
 
@@ -205,7 +213,7 @@ const fetchDetail = () => {
 // RefreshList适配：包装api使其接受对象但内部提取id
 const requestData = reactive({
   api: (params) => getDetail(params.id),
-  data: { id: route.query.id }
+  data: { id: route.query.id },
 })
 // 设置列表数据
 const onSetData = (data) => {
@@ -237,10 +245,22 @@ const onCardClick = (item) => {
   popupData.mileage = item.mileage || ''
   popupData.netMileage = item.netMileage || ''
   popupData.serviceAdvisorName = item.serviceAdvisorName || ''
-  popupData.repairItems = item.repairItemRespList || []
-  popupData.repairParts = item.partsRespList || []
+  popupData.repairItems = []
+  popupData.repairParts = []
   showPopup.value = true
-  getHistory(item.serviceProxyId).then((res) => {})
+  popupLoading.value = true
+  getHistoryDetail(item.id)
+    .then((res) => {
+      if (res.code === 200) {
+        popupData.repairItems = res.data?.costCountResp?.repairItemRespList || []
+        popupData.repairParts = res.data?.costCountResp?.sparePartRespList || []
+      } else {
+        showToast(res.msg || '接口异常')
+      }
+    })
+    .finally(() => {
+      popupLoading.value = false
+    })
 }
 </script>
 
@@ -443,6 +463,23 @@ const onCardClick = (item) => {
           color: #009100;
         }
       }
+    }
+  }
+
+  .popup-loading {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.7);
+    z-index: 1;
+
+    .loading-wrapper {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
     }
   }
 }

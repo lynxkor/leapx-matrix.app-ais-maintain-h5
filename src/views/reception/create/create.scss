@@ -767,7 +767,7 @@
       .label {
         font-size: 14px;
         color: #191a1b;
-        width: 260px;
+        width: 200px;
       }
 
       .value {
@@ -1026,5 +1026,64 @@
       font-size: 14px;
       color: #ffffff;
     }
+  }
+}
+
+// 上传组件样式
+.card-container {
+  background: #fff;
+  border-radius: 8px;
+  padding: 12px;
+
+  .card-info-title {
+    font-size: 14px;
+    font-weight: 500;
+    color: #191a1b;
+  }
+}
+
+.marginB1 {
+  margin-bottom: 8px;
+}
+
+.upload-content {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.upload-box {
+  width: 80px;
+  height: 80px;
+  border-radius: 6px;
+  overflow: hidden;
+  position: relative;
+  background: #f5f5f5;
+
+  img {
+    object-fit: cover;
+  }
+
+  .delete_icon {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+  }
+}
+
+.upload-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px dashed #ddd;
+  cursor: pointer;
+
+  .upload-img {
+    width: 32px;
+    height: 32px;
+    color: #888;
   }
 }

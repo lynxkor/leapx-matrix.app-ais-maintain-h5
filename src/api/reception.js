@@ -22,7 +22,11 @@ export function serviceProxyCancel(data) {
 
 // 维修履历
 export function getHistory(data) {
-  return postText('/datacenter/app/vehicle/serviceProxyHis/get', data)
+  return postText('/maintain/app/vehicle/serviceProxyHis/get', data)
+}
+// 维修履历详情
+export function getHistoryDetail(data) {
+  return postText('/maintain/app/sp/serviceProxyHis/get', data)
 }
 
 // 权益列表
