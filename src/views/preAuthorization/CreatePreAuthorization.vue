@@ -1068,22 +1068,6 @@ const fetchAttachmentListByType = async(type) => {
   attachmentData[type] = list.map(normalizeAttachmentItem)
 }
 
-const ensureBusinessIdForUpload = async() => {
-  if (currentBusinessId.value) {
-    return currentBusinessId.value
-  }
-
-  const res = await savePreAuth({
-    saveOrSubmit: false,
-    loadingMessage: '保存草稿中...',
-    failureMessage: '保存草稿失败',
-    errorLogMessage: '保存草稿失败:',
-    errorToastMessage: '保存草稿失败，请稍后重试'
-  })
-
-  return syncBusinessId(res)
-}
-
 const handleNativeImage = async(rawFileUrl) => {
   const uploadType = currentUploadType.value
   const fileUrl = typeof rawFileUrl === 'string'
@@ -1097,6 +1081,10 @@ const handleNativeImage = async(rawFileUrl) => {
     showToast('未获取到图片地址')
     return
   }
+  if (!constructionId.value) {
+    showToast('请先选择施工单')
+    return
+  }
   if (isUploadingAttachment.value) return
 
   const attachType = getAttachmentTypeLabel(uploadType)
@@ -1107,8 +1095,7 @@ const handleNativeImage = async(rawFileUrl) => {
 
   try {
     isUploadingAttachment.value = true
-    const businessId = await ensureBusinessIdForUpload()
-    if (!businessId) return
+    const businessId = constructionId.value
 
     showLoadingToast({ message: '上传中...', forbidClick: true })
 
