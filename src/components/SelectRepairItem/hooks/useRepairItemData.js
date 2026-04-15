@@ -28,6 +28,9 @@ export default function useRepairItemData({ serviceProxyId }) {
   const selectedItems = ref([])
   const selectedParts = ref([])
 
+  /** 接口返回的额外数据（除两个列表外的字段） */
+  const extraInfo = ref({})
+
   /** 经销商权限配置 */
   const dealerPermission = ref({
     repairItemHasPermission: false,
@@ -254,9 +257,10 @@ export default function useRepairItemData({ serviceProxyId }) {
         loadEnumData(),
         getRepairItemInfo(serviceProxyId).then((res) => {
           if (res?.code === 200 && res?.data) {
-            const { repairItemRespList = [], sparePartRespList = [] } = res.data
+            const { repairItemRespList = [], sparePartRespList = [], ...rest } = res.data
             selectedItems.value = repairItemRespList.map(normalizeItem)
             selectedParts.value = sparePartRespList.map(normalizePart)
+            extraInfo.value = rest
           }
         })
       ])
@@ -273,6 +277,7 @@ export default function useRepairItemData({ serviceProxyId }) {
   const resetData = () => {
     selectedItems.value = []
     selectedParts.value = []
+    extraInfo.value = {}
   }
 
   // ============ 公开 API ============
@@ -286,6 +291,7 @@ export default function useRepairItemData({ serviceProxyId }) {
     enumDefaults,
     selectedItems,
     selectedParts,
+    extraInfo,
     dealerPermission,
 
     // 方法

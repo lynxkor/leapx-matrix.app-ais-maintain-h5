@@ -217,6 +217,12 @@ const loadDetail = async() => {
         beforeChangeCode: data.beforeChangeCode || '',
         afterChangeCode: data.afterChangeCode || ''
       }
+      if (data.batteryUnitId && data.batteryUnitName) {
+        batteryUnitOptions.value = [{
+          label: data.batteryUnitName,
+          value: data.batteryUnitId
+        }]
+      }
       // 填充配件追溯列表
       partsList.value = (data.partsTraceRecordResps || []).map((item) => ({
         ...item,
@@ -319,6 +325,7 @@ const handleSubmit = () => {
   // 电池信息
   if (detailData.value?.batteryFlag) {
     submitData.batteryUnitId = formData.value.batteryUnitId
+    submitData.batteryUnitName = formData.value.batteryUnitName
     submitData.targetUnitCode = formData.value.targetUnitCode
     submitData.beforeChangeCode = formData.value.beforeChangeCode
     submitData.afterChangeCode = formData.value.afterChangeCode

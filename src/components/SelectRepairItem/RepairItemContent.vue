@@ -29,6 +29,7 @@
     <SearchBar
       v-if="!isComponent"
       ref="searchBarRef"
+      :disabled="isAuditComplete"
       :placeholder="
         activeTab === 'item'
           ? '输入维修项目代码、名称、拼音简码'
@@ -61,6 +62,7 @@
             :discount-disabled="!isDiscountEditable(item)"
             :name-editable="isNameEditable(item)"
             :deletable="isItemDeletable(item)"
+            :disabled="isAuditComplete"
             @delete="removeItem(item, 'item')"
             @update-item="handleItemUpdateWrapper"
           />
@@ -73,6 +75,7 @@
           :discount-disabled="!isDiscountEditable(item)"
           :name-editable="isNameEditable(item)"
           :deletable="isItemDeletable(item)"
+          :disabled="isAuditComplete"
           @delete="removeItem(item, 'item')"
           @update-item="handleItemUpdateWrapper"
         />
@@ -96,6 +99,7 @@
             :discount-disabled="!isDiscountEditable(item)"
             :name-editable="false"
             :deletable="isPartDeletable(item)"
+            :disabled="isAuditComplete"
             @delete="removeItem(item, 'part')"
             @update-item="handleItemUpdateWrapper"
           />
@@ -108,6 +112,7 @@
           :discount-disabled="!isDiscountEditable(item)"
           :name-editable="false"
           :deletable="isPartDeletable(item)"
+          :disabled="isAuditComplete"
           @delete="removeItem(item, 'part')"
           @update-item="handleItemUpdateWrapper"
         />
@@ -130,7 +135,7 @@
 
     <!-- 底部保存按钮 -->
     <div class="popup-footer" v-if="!isComponent">
-      <div class="save-btn" :class="{ disabled: !hasAnySelectedItems }" @click="onSave">保存</div>
+      <div class="save-btn" :class="{ disabled: !hasAnySelectedItems || isAuditComplete }" @click="onSave">保存</div>
     </div>
 
     <!-- 套餐详情弹窗 -->
@@ -144,7 +149,7 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, computed, watch } from 'vue'
 import Empty from '@/views/repairWork/components/Empty.vue'
 import SearchBar from './SearchBar.vue'
 import RepairItemCard from './RepairItemCard.vue'
@@ -154,22 +159,22 @@ import {
   useRepairItemData,
   useRepairItemBusinessRules,
   useRepairItemOperations,
-  useRepairItemList,
+  useRepairItemList
 } from './hooks'
 
 const props = defineProps({
   serviceProxyId: {
     type: String,
-    default: '',
+    default: ''
   },
   showHeader: {
     type: Boolean,
-    default: false,
+    default: false
   },
   isComponent: {
     type: Boolean,
-    default: false,
-  },
+    default: false
+  }
 })
 
 const emit = defineEmits(['close', 'confirm'])
@@ -177,6 +182,7 @@ const emit = defineEmits(['close', 'confirm'])
 // UI 状态
 const searchBarRef = ref(null)
 const activeTab = ref('item')
+const isAuditComplete = computed(() => extraInfo.value.isAuditComplete)
 
 // 数据管理 Hook
 const {
@@ -185,12 +191,13 @@ const {
   rawMaintenanceTypes,
   selectedItems,
   selectedParts,
+  extraInfo,
   dealerPermission,
   normalizeItem,
   normalizePart,
   getPermFilteredDefaults,
   loadInitialData,
-  resetData,
+  resetData
 } = useRepairItemData({ serviceProxyId: props.serviceProxyId })
 
 // 业务规则 Hook
@@ -205,14 +212,14 @@ const {
   editingItem,
   showCheckoutPicker,
   openCheckoutPicker,
-  onCheckoutConfirm,
+  onCheckoutConfirm
 } = useRepairItemBusinessRules({
   dealerPermission,
   rawMaintenanceTypes,
   rawCheckoutTypes,
   rawRepairItemTypes,
   selectedItems,
-  selectedParts,
+  selectedParts
 })
 
 // 操作 Hook
@@ -225,7 +232,7 @@ const { performSearch, handleAddItemWithParts, handleItemUpdate, removeItem, han
     normalizePart,
     getPermFilteredDefaults,
     activeTab,
-    searchBarRef,
+    searchBarRef
   })
 
 // 列表分组 Hook
@@ -249,7 +256,8 @@ const onSaveSuccess = (data) => {
   emit('confirm', data)
 }
 
-const onSave = async () => {
+const onSave = async() => {
+  if (isAuditComplete.value) return
   const success = await handleSave(onSaveSuccess)
   if (success) {
     searchBarRef.value?.reset()
@@ -262,7 +270,7 @@ const showPackageDetail = ref(false)
 const selectedPackageDetail = ref({
   name: '',
   code: '',
-  itemRespList: [],
+  itemRespList: []
 })
 const currentPackageGroup = ref(null)
 
@@ -271,7 +279,7 @@ const openPackageDetail = (group) => {
   selectedPackageDetail.value = {
     name: group.title || '',
     code: group.key || '',
-    itemRespList: group.items || [],
+    itemRespList: group.items || []
   }
   showPackageDetail.value = true
 }
@@ -288,7 +296,7 @@ defineExpose({
   searchBarRef,
   selectedItems,
   selectedParts,
-  onSave,
+  onSave
 })
 </script>
 

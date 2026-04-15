@@ -1,6 +1,6 @@
 <template>
   <div class="repair-item-card">
-    <div v-if="deletable" class="card-delete" @click="$emit('delete')">
+    <div v-if="deletable && !disabled" class="card-delete" @click="$emit('delete')">
       <div class="delete-circle">
         <img :src="icon_delete" />
       </div>
@@ -18,7 +18,7 @@
           <div class="name-row">
             <span class="card-name">{{ item.name }}</span>
             <img
-              v-if="nameEditable"
+              v-if="nameEditable && !disabled"
               :src="icon_edit"
               class="edit-icon"
               alt=""
@@ -28,10 +28,10 @@
           <div class="code-row">
             <span class="card-code">{{ item.code }}</span>
           </div>
-          <div class="checkout-row" @click="openCascaderPopup">
+          <div class="checkout-row" @click="!disabled && openCascaderPopup()">
             <span class="checkout-label">{{ checkoutLabel }}</span>
             <van-icon
-              v-if="!item.packageId"
+              v-if="!item.packageId && !disabled"
               name="arrow"
               size="12"
               color="#545454"
@@ -46,8 +46,8 @@
           </div>
           <div
             class="discount-wrapper"
-            :class="{ 'discount-disabled': discountDisabled }"
-            @click="startEditDiscount"
+            :class="{ 'discount-disabled': discountDisabled || disabled }"
+            @click="!disabled && !discountDisabled && startEditDiscount()"
           >
             <span class="discount-tag-label">优惠</span>
             <template v-if="editingDiscount">
@@ -68,7 +68,7 @@
       <div class="card-bottom-row">
         <span class="original-price">¥{{ item.price || '0.00' }}</span>
         <van-stepper
-          v-if="!stepperDisabled"
+          v-if="!stepperDisabled && !disabled"
           :model-value="item.quantity"
           min="0"
           class="card-stepper"
@@ -110,24 +110,28 @@ import icon_edit from '@/assets/images/icon_edit.svg'
 const props = defineProps({
   item: {
     type: Object,
-    required: true,
+    required: true
   },
   stepperDisabled: {
     type: Boolean,
-    default: false,
+    default: false
   },
   discountDisabled: {
     type: Boolean,
-    default: false,
+    default: false
   },
   nameEditable: {
     type: Boolean,
-    default: false,
+    default: false
   },
   deletable: {
     type: Boolean,
-    default: true,
+    default: true
   },
+  disabled: {
+    type: Boolean,
+    default: false
+  }
 })
 
 const emit = defineEmits(['delete', 'update-item'])
