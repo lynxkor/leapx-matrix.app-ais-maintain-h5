@@ -135,7 +135,13 @@
 
     <!-- 底部保存按钮 -->
     <div class="popup-footer" v-if="!isComponent">
-      <div class="save-btn" :class="{ disabled: !hasAnySelectedItems || isAuditComplete }" @click="onSave">保存</div>
+      <div
+        class="save-btn"
+        :class="{ disabled: !hasAnySelectedItems || isAuditComplete }"
+        @click="onSave"
+      >
+        保存
+      </div>
     </div>
 
     <!-- 套餐详情弹窗 -->
@@ -149,7 +155,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import Empty from '@/views/repairWork/components/Empty.vue'
 import SearchBar from './SearchBar.vue'
 import RepairItemCard from './RepairItemCard.vue'
@@ -159,22 +165,32 @@ import {
   useRepairItemData,
   useRepairItemBusinessRules,
   useRepairItemOperations,
-  useRepairItemList
+  useRepairItemList,
 } from './hooks'
 
 const props = defineProps({
   serviceProxyId: {
     type: String,
-    default: ''
+    default: '',
   },
   showHeader: {
     type: Boolean,
-    default: false
+    default: false,
   },
   isComponent: {
     type: Boolean,
-    default: false
-  }
+    default: false,
+  },
+  // 外部传入的维修项目数据
+  initialItems: {
+    type: Array,
+    default: null,
+  },
+  // 外部传入的维修零件数据
+  initialParts: {
+    type: Array,
+    default: null,
+  },
 })
 
 const emit = defineEmits(['close', 'confirm'])
@@ -197,7 +213,7 @@ const {
   normalizePart,
   getPermFilteredDefaults,
   loadInitialData,
-  resetData
+  resetData,
 } = useRepairItemData({ serviceProxyId: props.serviceProxyId })
 
 // 业务规则 Hook
@@ -212,14 +228,14 @@ const {
   editingItem,
   showCheckoutPicker,
   openCheckoutPicker,
-  onCheckoutConfirm
+  onCheckoutConfirm,
 } = useRepairItemBusinessRules({
   dealerPermission,
   rawMaintenanceTypes,
   rawCheckoutTypes,
   rawRepairItemTypes,
   selectedItems,
-  selectedParts
+  selectedParts,
 })
 
 // 操作 Hook
@@ -232,7 +248,7 @@ const { performSearch, handleAddItemWithParts, handleItemUpdate, removeItem, han
     normalizePart,
     getPermFilteredDefaults,
     activeTab,
-    searchBarRef
+    searchBarRef,
   })
 
 // 列表分组 Hook
@@ -256,7 +272,7 @@ const onSaveSuccess = (data) => {
   emit('confirm', data)
 }
 
-const onSave = async() => {
+const onSave = async () => {
   if (isAuditComplete.value) return
   const success = await handleSave(onSaveSuccess)
   if (success) {
@@ -270,7 +286,7 @@ const showPackageDetail = ref(false)
 const selectedPackageDetail = ref({
   name: '',
   code: '',
-  itemRespList: []
+  itemRespList: [],
 })
 const currentPackageGroup = ref(null)
 
@@ -279,7 +295,7 @@ const openPackageDetail = (group) => {
   selectedPackageDetail.value = {
     name: group.title || '',
     code: group.key || '',
-    itemRespList: group.items || []
+    itemRespList: group.items || [],
   }
   showPackageDetail.value = true
 }
@@ -289,6 +305,38 @@ watch(activeTab, () => {
   searchBarRef.value?.reset()
 })
 
+// 监听外部传入数据变化，同步到组件内部
+watch(
+  () => props.initialItems,
+  (newItems) => {
+    if (newItems && newItems.length > 0) {
+      selectedItems.value = newItems.map(normalizeItem)
+    }
+  },
+  { immediate: true },
+)
+
+watch(
+  () => props.initialParts,
+  (newParts) => {
+    if (newParts && newParts.length > 0) {
+      selectedParts.value = newParts.map(normalizePart)
+    }
+  },
+  { immediate: true },
+)
+
+// 组件挂载时，如果有外部数据则使用外部数据，否则加载枚举数据
+onMounted(async () => {
+  if (props.isComponent && (props.initialItems || props.initialParts)) {
+    // 有外部数据时，只加载枚举数据（用于分类选择器）
+    await loadInitialData()
+  } else if (props.serviceProxyId) {
+    // 无外部数据时，调用完整加载
+    await loadInitialData()
+  }
+})
+
 // 暴露方法供父组件调用
 defineExpose({
   loadInitialData,
@@ -296,7 +344,7 @@ defineExpose({
   searchBarRef,
   selectedItems,
   selectedParts,
-  onSave
+  onSave,
 })
 </script>
 

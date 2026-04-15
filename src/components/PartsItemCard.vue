@@ -50,9 +50,9 @@ const props = defineProps({
       price: '0.00',
       discount: '0.00',
       subtotal: '0.00',
-      quantity: 1
-    })
-  }
+      quantity: 1,
+    }),
+  },
 })
 
 const emit = defineEmits(['delete', 'change', 'categoryClick'])
