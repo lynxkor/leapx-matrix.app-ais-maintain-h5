@@ -9,5 +9,9 @@
       "Bash(exit 0)",
       "mcp___master_mastergo-magic-mcp__mcp__getMeta"
     ]
+  },
+  "statusLine": {
+    "type": "command",
+    "command": "cd & for /f \"tokens=*\" %g in ('git branch --show-current 2^>nul') do @echo [%g]"
   }
 }

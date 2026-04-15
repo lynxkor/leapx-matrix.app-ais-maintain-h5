@@ -75,11 +75,3 @@
     "claude-hud@claude-hud": true
   }
 }
-{
-  "permissions": {
-    "allow": [
-      "mcp___master_mastergo-magic-mcp__mcp__getDsl",
-      "Bash(node -e \":*)"
-    ]
-  }
-}

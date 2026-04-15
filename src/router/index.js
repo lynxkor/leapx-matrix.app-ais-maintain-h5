@@ -227,6 +227,46 @@ const router = createRouter({
             title: '售后结算单',
             keepAlive: true
           }
+        },
+        // 结算预览
+        {
+          path: '/settlement-statement/preview',
+          name: 'settlementPreview',
+          component: () => import('../views/settlementStatement/SettlementPreview.vue'),
+          meta: {
+            title: '结算预览',
+            keepAlive: false
+          }
+        },
+        // 签字页面
+        {
+          path: '/settlement-statement/signing',
+          name: 'signSettlement',
+          component: () => import('../views/settlementStatement/SignSettlement.vue'),
+          meta: {
+            title: '签字确认',
+            keepAlive: false
+          }
+        },
+        // 已签署结算单
+        {
+          path: '/settlement-statement/signed',
+          name: 'signedSettlement',
+          component: () => import('../views/settlementStatement/SignedSettlement.vue'),
+          meta: {
+            title: '已签署结算单',
+            keepAlive: false
+          }
+        },
+        // 查看签字（待定）
+        {
+          path: '/settlement-statement/sign/:index',
+          name: 'viewSignSettlement',
+          component: () => import('../views/settlementStatement/SignedSettlement.vue'),
+          meta: {
+            title: '查看签字',
+            keepAlive: false
+          }
         }
       ]
     }

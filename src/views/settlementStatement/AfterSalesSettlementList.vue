@@ -40,12 +40,12 @@
         </div>
 
         <template v-else>
-        <!-- 客户签字模块：仅已交车展示，并按签字状态展示 -->
-        <div v-if="isCompleted" class="sign-section" @click="handleSignClick">
+        <!-- 客户签字模块：按签字规则展示 -->
+        <div v-if="showSignSection" class="sign-section" @click="handleSignClick">
           <div class="sign-header">
             <span class="sign-title">客户签字</span>
             <div class="sign-status">
-              <span :class="signStatusClass">{{ signStatusText }}</span>
+              <span :class="signStatusClass">{{ signActionText }}</span>
               <svg class="chevron-icon" width="16" height="16" viewBox="0 0 16 16" fill="none">
                 <path
                   d="M6 4L10 8L6 12"
@@ -57,7 +57,7 @@
               </svg>
             </div>
           </div>
-          <div class="sign-desc">为保障双方合理权益，请完成客户签字确认</div>
+          <div class="sign-desc">{{ signDescription }}</div>
         </div>
 
         <!-- 结算信息卡片 -->
@@ -208,6 +208,25 @@
       </template>
     </AisPopup>
 
+    <!-- 多个待结算单提示弹窗 -->
+    <AisPopup
+      v-model:show="showPendingTip"
+      class="pending-tip-popup"
+      title="提示"
+      position="center"
+      round
+      :popup-style="{ width: '280px', borderRadius: '12px' }"
+    >
+      <template #content>
+        <div class="pending-tip-content">
+          还剩 <span class="highlight">{{ pendingSettlementCount }}个</span>结算单待提交，全部提交结算完毕生成待签字单
+        </div>
+      </template>
+      <template #footer>
+        <div class="pending-tip-btn" @click="showPendingTip = false">我知道了</div>
+      </template>
+    </AisPopup>
+
     <!-- 签字渠道选择弹窗 -->
     <AisPopup
       v-model:show="showSignChannel"
@@ -217,10 +236,10 @@
       round
       :overlay="true"
       :lock-scroll="false"
-      closeable
-      :popup-style="{ height: '330px' }"
+      :popup-style="{ height: '360px' }"
     >
       <template #content>
+        <div class="sign-hint-text">此操作将生成待签字结算单且需要用户签字</div>
         <div class="channel-list">
           <div
             class="channel-item"
@@ -252,7 +271,7 @@
           >
             <div class="channel-name-wrap">
               <span class="channel-name">APP/短信/零小跑</span>
-              <span class="channel-desc">将生成待签字施工单且需要用户签字</span>
+              <span class="channel-desc">将生成待签字结算单且需要用户签字</span>
             </div>
             <svg
               v-if="selectedChannel === 'app'"
@@ -274,7 +293,8 @@
         </div>
       </template>
       <template #footer>
-        <div class="sign-popup-footer">
+        <div class="sign-popup-footer two-btn">
+          <div class="sign-popup-btn btn-cancel" @click="showSignChannel = false">取消</div>
           <div class="sign-popup-btn" @click="handleSignSuccess">确定</div>
         </div>
       </template>
@@ -339,6 +359,7 @@ const activeTab = ref(0)
 const showSignChannel = ref(false)
 const selectedChannel = ref('paper')
 const signStatus = ref('not_signed')
+const showPendingTip = ref(false)
 
 const isSuccessResponse = (res) => res?.code === 200 || res?.code === 0 || res?.success === true
 
@@ -367,6 +388,31 @@ const getSignStatus = (statement) => {
   }
 
   return 'not_signed'
+}
+
+const getStatementStatusText = (statement = {}) => {
+  return statement?.statementStatusLabel || statement?.statementStatusDesc || ''
+}
+
+const isStatementSubmitted = (statement = {}) => {
+  const statusText = getStatementStatusText(statement)
+
+  if (statusText.includes('待提交') || statusText.includes('未提交')) {
+    return false
+  }
+
+  if (
+    statement?.submitTime ||
+    statement?.submitOn ||
+    statement?.submittedOn ||
+    statement?.signGeneratedOn ||
+    statement?.signCompletedOn ||
+    statement?.receiveTime
+  ) {
+    return true
+  }
+
+  return statusText.includes('已提交') || statusText.includes('待签字') || statusText.includes('已签字')
 }
 
 const buildTabLabels = (list) => list.map((_, index) => `结算单${index + 1}`)
@@ -456,6 +502,24 @@ const statementTypeLabel = computed(() => detailData.value.statementTypeLabel ||
 const statementStatusText = computed(() => detailData.value.statementStatusLabel || detailData.value.statementStatusDesc || '')
 const isWarrantyOrContract = computed(() => ['保修', '合同'].some((item) => statementTypeLabel.value.includes(item)))
 const isSelfPaySettlement = computed(() => ['自费', '保险', '内部结算'].some((item) => statementTypeLabel.value.includes(item)))
+const pendingSettlementCount = computed(() => {
+  return statementList.value.filter((item) => !isStatementSubmitted(item)).length
+})
+const allSettlementsSubmitted = computed(() => {
+  return statementList.value.length > 0 && pendingSettlementCount.value === 0
+})
+const isPaperSubmittedSigned = computed(() => {
+  return Number(detailData.value.signChannel) === 40 && isStatementSubmitted(detailData.value)
+})
+const currentStatementSigned = computed(() => {
+  return signStatus.value === 'signed' || isPaperSubmittedSigned.value
+})
+const showSignSection = computed(() => {
+  if (currentStatementSigned.value) {
+    return true
+  }
+  return isCompleted.value && allSettlementsSubmitted.value
+})
 const isPcPaymentCompleted = computed(() => {
   return Boolean(detailData.value.receiveTime) || statementStatusText.value.includes('已收款')
 })
@@ -472,7 +536,7 @@ const bottomActionConfig = computed(() => {
     if (signStatus.value === 'signed') {
       return {
         type: 'hint',
-        text: '请请移步PC创建保修申请单'
+        text: '请移步PC创建保修申请单'
       }
     }
 
@@ -513,7 +577,7 @@ const bottomActionConfig = computed(() => {
     action: shouldUseSignFlow.value ? 'submitSign' : 'submitSettlement'
   }
 })
-const signChannelValue = computed(() => (selectedChannel.value === 'paper' ? 40 : ''))
+const signChannelValue = computed(() => (selectedChannel.value === 'paper' ? 40 : undefined))
 const buildSettlementPayload = (includeSignChannel = false) => {
   const payload = {
     id: detailData.value.id,
@@ -524,7 +588,7 @@ const buildSettlementPayload = (includeSignChannel = false) => {
     partList: partItems.value
   }
 
-  if (includeSignChannel) {
+  if (includeSignChannel && signChannelValue.value !== undefined) {
     payload.signChannel = signChannelValue.value
   }
 
@@ -589,16 +653,23 @@ const selectPaymentMethod = (item) => {
   paymentForm.value.paymentMethodText = item.text
 }
 
-// 根据签字状态显示不同文案和颜色
-const signStatusText = computed(() => {
-  if (signStatus.value === 'signed') {
-    return '已签字'
+// 根据签字规则显示不同文案和颜色
+const signActionText = computed(() => {
+  if (currentStatementSigned.value) {
+    return '查看客户签字'
   }
-  return '待签字'
+  return '请客户签字'
+})
+
+const signDescription = computed(() => {
+  if (currentStatementSigned.value) {
+    return '客户已完成签字确认'
+  }
+  return '为保障双方合理权益，请完成客户签字确认'
 })
 
 const signStatusClass = computed(() => {
-  if (signStatus.value !== 'signed') {
+  if (!currentStatementSigned.value) {
     return 'status-green'
   }
   return 'status-gray'
@@ -611,17 +682,34 @@ const switchTab = (index) => {
 
 // 签字模块点击
 const handleSignClick = () => {
-  if (signStatus.value === 'not_signed') {
-    // c: 未签字，显示签字渠道选择弹窗
+  if (!showSignSection.value) {
+    return
+  }
+
+  if (!currentStatementSigned.value) {
+    // c: 所有结算单都已提交且未签字，显示签字渠道选择弹窗
     showSignChannel.value = true
   } else {
     // b, d: 已签字或纸质单据已提交，跳转到已签字状态
-    router.push(`/settlement-statement/sign/${activeTab.value}`)
+    router.push({
+      path: '/settlement-statement/signed',
+      query: {
+        statementId: detailData.value.id,
+        serviceProxyId: serviceProxyId.value,
+        sourceStatus: sourceStatus.value,
+        signed: 'true'
+      }
+    })
   }
 }
 
 // 提交结算并签字
 const handleSubmitSettlement = () => {
+  // 判断是否有多个待结算单
+  if (pendingSettlementCount.value > 1) {
+    showPendingTip.value = true
+    return
+  }
   showSignChannel.value = true
 }
 
@@ -641,7 +729,22 @@ const validateSettlementPayload = (payload) => {
 
 // 签字成功后的回调
 const handleSignSuccess = async() => {
-  if (isPending.value && shouldUseSignFlow.value) {
+  // APP/短信/零小跑：跳转到结算预览页面
+  if (selectedChannel.value === 'app') {
+    showSignChannel.value = false
+    router.push({
+      path: '/settlement-statement/preview',
+      query: {
+        statementId: detailData.value.id,
+        serviceProxyId: serviceProxyId.value,
+        sourceStatus: sourceStatus.value
+      }
+    })
+    return
+  }
+
+  // 纸质单据：直接按已签字处理并调接口
+  if (shouldUseSignFlow.value) {
     const payload = buildSettlementPayload(true)
 
     if (!validateSettlementPayload(payload)) {
@@ -1377,6 +1480,14 @@ const handlePaymentSubmit = async() => {
   background: #fff;
   box-shadow: 0 -4px 20px rgba(25, 26, 27, 0.08);
 
+  .sign-hint-text {
+    font-family: 'PingFang SC';
+    font-size: 13px;
+    color: #888888;
+    padding: 8px 12px 12px;
+    line-height: 1.5;
+  }
+
   .sign-popup-header {
     padding: 14px 16px 8px;
 
@@ -1395,6 +1506,21 @@ const handlePaymentSubmit = async() => {
     justify-content: center;
     padding: 0 12px calc(16px + env(safe-area-inset-bottom));
     background: #fff;
+
+    &.two-btn {
+      display: flex;
+      gap: 12px;
+
+      .sign-popup-btn {
+        flex: 1;
+      }
+
+      .btn-cancel {
+        color: #545454;
+        background: #ffffff;
+        border: 1px solid #e6e6e5;
+      }
+    }
   }
 
   .sign-popup-btn {
@@ -1606,5 +1732,37 @@ const handlePaymentSubmit = async() => {
   align-items: center;
   justify-content: center;
   cursor: pointer;
+}
+
+// 多个待结算单提示弹窗
+.pending-tip-popup {
+  .pending-tip-content {
+    padding: 20px 16px;
+    font-family: 'PingFang SC';
+    font-size: 14px;
+    color: #191a1b;
+    text-align: center;
+    line-height: 22px;
+
+    .highlight {
+      color: #009100;
+      font-weight: 500;
+    }
+  }
+
+  .pending-tip-btn {
+    width: calc(100% - 24px);
+    height: 40px;
+    margin: 0 12px 12px;
+    background: #009100;
+    border-radius: 8px;
+    font-family: 'PingFang SC';
+    font-size: 14px;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+  }
 }
 </style>
