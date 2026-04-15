@@ -7,13 +7,14 @@
         v-model="keyword"
         type="search"
         class="search-input"
+        :disabled="disabled"
         :placeholder="placeholder"
         @input="onInput"
         @focus="onFocus"
         @blur="onBlur"
         @keydown.enter="onSearch"
       />
-      <div v-if="showBtn" class="search-btn" @click="onSearch">搜索</div>
+      <div v-if="showBtn && !disabled" class="search-btn" @click="onSearch">搜索</div>
     </div>
   </div>
 
@@ -86,6 +87,10 @@ defineProps({
   placeholder: {
     type: String,
     default: '输入代码、名称、拼音简码'
+  },
+  disabled: {
+    type: Boolean,
+    default: false
   }
 })
 
