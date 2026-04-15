@@ -29,6 +29,7 @@
     <SearchBar
       v-if="!isComponent"
       ref="searchBarRef"
+      :disabled="isAuditComplete"
       :placeholder="
         activeTab === 'item'
           ? '输入维修项目代码、名称、拼音简码'
@@ -61,6 +62,7 @@
             :discount-disabled="!isDiscountEditable(item)"
             :name-editable="isNameEditable(item)"
             :deletable="isItemDeletable(item)"
+            :disabled="isAuditComplete"
             @delete="removeItem(item, 'item')"
             @update-item="handleItemUpdateWrapper"
           />
@@ -73,6 +75,7 @@
           :discount-disabled="!isDiscountEditable(item)"
           :name-editable="isNameEditable(item)"
           :deletable="isItemDeletable(item)"
+          :disabled="isAuditComplete"
           @delete="removeItem(item, 'item')"
           @update-item="handleItemUpdateWrapper"
         />
@@ -96,6 +99,7 @@
             :discount-disabled="!isDiscountEditable(item)"
             :name-editable="false"
             :deletable="isPartDeletable(item)"
+            :disabled="isAuditComplete"
             @delete="removeItem(item, 'part')"
             @update-item="handleItemUpdateWrapper"
           />
@@ -108,6 +112,7 @@
           :discount-disabled="!isDiscountEditable(item)"
           :name-editable="false"
           :deletable="isPartDeletable(item)"
+          :disabled="isAuditComplete"
           @delete="removeItem(item, 'part')"
           @update-item="handleItemUpdateWrapper"
         />
@@ -130,7 +135,13 @@
 
     <!-- 底部保存按钮 -->
     <div class="popup-footer" v-if="!isComponent">
-      <div class="save-btn" :class="{ disabled: !hasAnySelectedItems }" @click="onSave">保存</div>
+      <div
+        class="save-btn"
+        :class="{ disabled: !hasAnySelectedItems || isAuditComplete }"
+        @click="onSave"
+      >
+        保存
+      </div>
     </div>
 
     <!-- 套餐详情弹窗 -->
@@ -144,7 +155,7 @@
 </template>
 
 <script setup>
-import { ref, watch, onMounted } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import Empty from '@/views/repairWork/components/Empty.vue'
 import SearchBar from './SearchBar.vue'
 import RepairItemCard from './RepairItemCard.vue'
@@ -187,6 +198,7 @@ const emit = defineEmits(['close', 'confirm'])
 // UI 状态
 const searchBarRef = ref(null)
 const activeTab = ref('item')
+const isAuditComplete = computed(() => extraInfo.value.isAuditComplete)
 
 // 数据管理 Hook
 const {
@@ -195,6 +207,7 @@ const {
   rawMaintenanceTypes,
   selectedItems,
   selectedParts,
+  extraInfo,
   dealerPermission,
   normalizeItem,
   normalizePart,
@@ -260,6 +273,7 @@ const onSaveSuccess = (data) => {
 }
 
 const onSave = async () => {
+  if (isAuditComplete.value) return
   const success = await handleSave(onSaveSuccess)
   if (success) {
     searchBarRef.value?.reset()

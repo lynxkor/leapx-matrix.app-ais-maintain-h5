@@ -16,21 +16,22 @@
 
 <style lang="scss" scoped>
 .list-item-content {
-  background: #ffffff;
-  padding: 1.2rem;
-  border-radius: 7px;
+  background: #fff;
+  padding: 12px;
+  border-radius: 8px;
   margin-bottom: 12px;
+
   .card_title_header {
     display: flex;
     justify-content: space-between;
-    font-family: PingFang SC;
+    font-family: "PingFang SC";
     font-size: 16px;
     font-weight: 500;
     color: #191a1b;
   }
 
   .card-subtitle-text {
-    font-family: PingFang SC;
+    font-family: "PingFang SC";
     font-size: 13px;
     color: #545454;
   }
