@@ -1116,12 +1116,12 @@ const handleNativeImage = async(rawFileUrl) => {
 
     showLoadingToast({ message: '上传中...', forbidClick: true })
 
-    const uploadRes = await uploadFileByUrl({
+    const uploadRes = await uploadFileByUrl([{
       fileUrl,
       businessId,
       configCode: PRE_AUTH_ATTACHMENT_CONFIG_CODE,
       attachType
-    })
+    }])
 
     if (!isSuccessResponse(uploadRes)) {
       closeToast()

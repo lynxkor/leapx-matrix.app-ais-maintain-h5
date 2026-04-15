@@ -229,9 +229,6 @@
                 <van-icon name="photograph" size="24" color="#d8d8d8" />
                 <span class="attachments-upload-text">上传</span>
               </div>
-              <div v-if="detail.attachments[section.key].length === 0" class="no-image">
-                暂无图片
-              </div>
             </div>
           </div>
         </div>
@@ -864,12 +861,12 @@ const handleNativeImage = async(rawFileUrl) => {
     isUploadingAttachment.value = true
     showLoadingToast({ message: '上传中...', forbidClick: true })
 
-    const uploadRes = await uploadFileByUrl({
+    const uploadRes = await uploadFileByUrl([{
       fileUrl,
       businessId,
       configCode: PRE_AUTH_ATTACHMENT_CONFIG_CODE,
       attachType
-    })
+    }])
 
     if (!isSuccessResponse(uploadRes)) {
       closeToast()
