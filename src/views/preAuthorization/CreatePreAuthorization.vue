@@ -971,7 +971,7 @@ const syncBusinessId = (res) => {
   const data = res?.data
   const businessId = typeof data === 'string'
     ? data
-    : data?.id || data?.businessId || data?.preAuthId || res?.id || ''
+    : data?.preAuthId || data?.id || data?.businessId || res?.id || ''
 
   if (businessId) {
     currentBusinessId.value = businessId
@@ -1081,11 +1081,7 @@ const ensureBusinessIdForUpload = async() => {
     errorToastMessage: '保存草稿失败，请稍后重试'
   })
 
-  const businessId = syncBusinessId(res)
-  if (!businessId) {
-    showToast('未获取到单据ID')
-  }
-  return businessId
+  return syncBusinessId(res)
 }
 
 const handleNativeImage = async(rawFileUrl) => {
