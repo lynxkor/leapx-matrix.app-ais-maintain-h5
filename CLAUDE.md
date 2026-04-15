@@ -42,11 +42,13 @@ npm run format       # Format code with Prettier
 ### Shared Library (src/libs/)
 
 This is a git submodule (`app-ais-com-h5`). When cloning:
+
 ```bash
 git clone --recurse-submodules <repo-url>
 ```
 
 Contains reusable components:
+
 - `RefreshList.vue` - Pull-refresh + infinite scroll list
 - `FilterHeader.vue` - Filter/search header
 - `AisDialog.vue` - Custom dialog

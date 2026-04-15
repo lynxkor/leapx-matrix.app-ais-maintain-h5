@@ -1,4 +1,81 @@
 {
+  "env": {
+    "YAPI_TOKEN": "10e112eafdb3a739133cc1ce7421205b25fb0d3f8c24666f3aecc8514690f8ac"
+  },
+  "permissions": {
+    "allow": [
+      "mcp___master_mastergo-magic-mcp__mcp__getDsl",
+      "mcp___master_mastergo-magic-mcp__mcp__getMeta",
+      "Bash(cat .stylelintrc*)",
+      "Bash(cat stylelint.config.*)",
+      "Bash(npx stylelint:*)",
+      "Bash(git add:*)",
+      "Bash(npx lint-staged:*)",
+      "Bash(npx eslint:*)",
+      "Bash(git commit:*)",
+      "mcp__MiniMax__understand_image",
+      "Bash(jq -r .[0].text)",
+      "Bash(jq -r \".dsl.topology[0].children[] | select\\(.type==\"\"Frame\"\"\\) | .children[] | select\\(.type==\"\"Group\"\"\\) | .children[] | select\\(.type==\"\"Text\"\"\\) | .text\")",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\([x for x in str\\(d\\).split\\(''''\\\\n''''\\) if ''''客户'''' in x or ''''预授权'''' in x or ''''施工单'''' in x][:10]\\)\")",
+      "mcp___master_mastergo-magic-mcp__mcp__getComponentLink",
+      "Bash(grep -o \"\"nodeText\"\":\"\"[^\"\"]*\"\" C:Users990900.claudeprojectsD--leapmotor-app-ais-maintenance-h5cc005174-2c3a-40ed-b5b8-4c8142eed86dtool-resultsmcp-_master_mastergo-magic-mcp-mcp__getDsl-1774953204329.txt)",
+      "Bash(powershell -Command \"Get-Content 'C:\\\\Users\\\\990900\\\\.claude\\\\projects\\\\D--leapmotor-app-ais-maintenance-h5\\\\cc005174-2c3a-40ed-b5b8-4c8142eed86d\\\\tool-results\\\\mcp-_master_mastergo-magic-mcp-mcp__getDsl-1774953204329.txt' -Raw | Select-String -Pattern '客户|预授权|VIN|施工单' | ForEach-Object { $_.Matches.Value }\")",
+      "Bash(python:*)",
+      "Bash(node:*)",
+      "mcp___master_mastergo-magic-mcp__mcp__getD2c",
+      "mcp__ide__getDiagnostics",
+      "WebFetch(domain:mastergo.com)",
+      "Bash(npm run:*)",
+      "mcp___leapmotor_yapi-mcp__getYapiProjectInterfaces",
+      "mcp___leapmotor_yapi-mcp__getYapiInterfaceDetailsById",
+      "WebFetch(domain:itdev-yapi.leapmotor.com)",
+      "Bash(curl -s \"https://itdev-yapi.leapmotor.com/project/96/interface/api/51295\")",
+      "Bash(curl -sL -H \"User-Agent: Mozilla/5.0\" \"https://itdev-yapi.leapmotor.com/project/96/interface/api/51295\")",
+      "Bash(curl -v \"https://itdev-yapi.leapmotor.com/project/96/interface/api/51295\")",
+      "mcp___leapmotor_yapi-mcp__getYapiInterfaceByUrl",
+      "Bash(sort -t: -k2 -n)",
+      "Bash(winget install:*)",
+      "Bash(choco install:*)",
+      "Bash(scoop install:*)",
+      "Bash(where pdftoppm:*)",
+      "Bash(cmd.exe /c \"choco install poppler -y --force\")",
+      "Bash(curl -L -o /tmp/poppler.zip \"https://github.com/oschwartz10612/poppler-windows/releases/download/v24.08.0-0.1/poppler-24.08.0/Library.zip\")",
+      "Bash(pip install:*)",
+      "Skill(statusline)",
+      "WebSearch",
+      "Bash(go version:*)",
+      "Bash(curl -s https://api.github.com/repos/fredrikaverpil/claudeline/releases/latest)",
+      "Bash(mkdir -p ~/.local/bin)",
+      "Bash(curl -L -o /tmp/claudeline.zip \"https://github.com/fredrikaverpil/claudeline/releases/download/v0.20.0/claudeline_windows_amd64.zip\")",
+      "Bash(curl -s https://api.github.com/repos/dwillitzer/claude-statusline/releases/latest)",
+      "WebFetch(domain:github.com)",
+      "Bash(npm install:*)",
+      "Bash(claude-statusline --help)",
+      "Bash(npx claude-statusline:*)",
+      "Bash(where claude-statusline:*)",
+      "Bash(ls -la ~/AppData/Roaming/npm/claude-statusline*)",
+      "Bash(~/AppData/Roaming/npm/claude-statusline.cmd:*)",
+      "Bash(claude-statusline)",
+      "Bash(bash:*)",
+      "Bash(python3:*)",
+      "Bash(jq '.[0].text' -r)",
+      "Bash(curl -s \"https://itdev-yapi.leapmotor.com/api/interface/get?id=28309&token=\")",
+      "Bash(curl:*)",
+      "Skill(claude-hud:setup)",
+      "Bash(dir:*)",
+      "Bash(where node:*)",
+      "Bash(C:\\\\Program Files\\\\nodejs\\\\node.exe:*)"
+    ]
+  },
+  "statusLine": {
+    "type": "command",
+    "command": "\"C:\\Program Files\\nodejs\\node.exe\" \"C:\\Users\\990900\\.claude\\plugins\\cache\\claude-hud\\claude-hud\\0.0.12\\dist\\index.js\""
+  },
+  "enabledPlugins": {
+    "claude-hud@claude-hud": true
+  }
+}
+{
   "permissions": {
     "allow": [
       "mcp___master_mastergo-magic-mcp__mcp__getDsl",
