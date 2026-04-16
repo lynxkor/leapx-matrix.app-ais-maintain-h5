@@ -131,7 +131,7 @@
                   <div class="card-right">
                     <div class="price-value">¥{{ item.subtotal || '0.00' }}</div>
                     <div class="discount-row">
-                      <span class="discount-label">优惠</span>
+                      <span class="discount-label">优惠1</span>
                       <span class="discount-value">¥{{ item.discount || '0.00' }}</span>
                     </div>
                   </div>
@@ -455,7 +455,7 @@ import {
   getRepairItem,
   getMaintenanceParts,
   getRepairItemTypeList,
-  saveSpRepairItem
+  saveSpRepairItem,
 } from '@/api/reception'
 import './add-parts.scss'
 
@@ -495,11 +495,11 @@ const selectedCategory = reactive({
   checkoutTypeId: '',
   checkoutTypeName: '',
   warrantyTypeId: '',
-  warrantyTypeName: ''
+  warrantyTypeName: '',
 })
 
 // 搜索
-const onSearch = async(value) => {
+const onSearch = async (value) => {
   if (!value || !value.trim()) {
     searchResults.value = []
     showSearchPopup.value = false
@@ -523,7 +523,7 @@ const onSearch = async(value) => {
       // 维修项目搜索
       const res = await getRepairItem({
         serviceProxyId: route.query.serviceProxyId,
-        nameOrCodeOrPinyinLike: value.trim()
+        nameOrCodeOrPinyinLike: value.trim(),
       })
       if (res.code === 200) {
         searchResults.value = (res.data || []).map((item) => ({
@@ -531,7 +531,7 @@ const onSearch = async(value) => {
           code: item.code || '',
           name: item.name || '',
           price: item.workhourPrice || 0,
-          discount: 0
+          discount: 0,
         }))
       } else {
         searchResults.value = []
@@ -540,7 +540,7 @@ const onSearch = async(value) => {
       // 维修配件搜索
       const res = await getMaintenanceParts({
         serviceProxyId: route.query.serviceProxyId,
-        nameOrCodeOrPinyinLike: value.trim()
+        nameOrCodeOrPinyinLike: value.trim(),
       })
       if (res.code === 200) {
         searchResults.value = (res.data || []).map((item) => ({
@@ -548,7 +548,7 @@ const onSearch = async(value) => {
           code: item.partsCode || item.code || '',
           name: item.partsName || item.name || '',
           price: item.price || 0,
-          discount: 0
+          discount: 0,
         }))
       } else {
         searchResults.value = []
@@ -611,7 +611,7 @@ const onAddToEdit = (item) => {
     ...item,
     category: '',
     quantity: 1,
-    subtotal: item.price
+    subtotal: item.price,
   })
 }
 
@@ -759,7 +759,7 @@ const onSave = () => {
     serviceProxyId: route.query.serviceProxyId,
     discountId: '',
     itemList: itemList.value,
-    partsList: partsList.value
+    partsList: partsList.value,
   })
     .then((res) => {
       if (res.code === 200) {
@@ -775,13 +775,13 @@ const onSave = () => {
 }
 onMounted(() => {
   getRepairItemTypeList({
-    categorys: [20]
+    categorys: [20],
   }).then((res) => {
     const d = (res.data || []).reduce((p, c) => {
       const item = {
         ...c,
         warrantyTypeId: c.id,
-        warrantyTypeName: c.name
+        warrantyTypeName: c.name,
       }
       if (p[c.checkoutTypeName]) {
         p[c.checkoutTypeName].push(item)
