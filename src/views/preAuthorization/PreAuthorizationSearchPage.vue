@@ -80,6 +80,8 @@
             </ais-button>
           </template>
         </list-item>
+        <!-- 没有更多了提示 -->
+        <div class="no-more-tip">没有更多了</div>
       </div>
 
       <!-- 无搜索结果 -->
@@ -152,14 +154,14 @@ const handleSearch = async(keyword) => {
 const getStatusClass = (label) => {
   if (!label) return ''
   if (label === '未提交') return 'status-blue'
-  if (label === '审批中') return 'status-yellow'
-  if (label === '审批通过') return 'status-green'
-  if (label === '审批驳回') return 'status-red'
+  if (label === '审核中') return 'status-yellow'
+  if (label === '审核通过') return 'status-green'
+  if (label === '已驳回' || label === '已拒绝') return 'status-red'
   return ''
 }
 
 const handleContact = (item) => {
-  const phone = item.creatorPhone || item.subUserPhone || ''
+  const phone = item.creatorMobile
   if (phone) {
     callPhone(phone)
   } else {
@@ -333,6 +335,15 @@ const goToDetail = (item) => {
 .status-red {
   color: #E43122;
 }
+
+// 没有更多了
+.no-more-tip {
+  text-align: center;
+  padding: 16px 0;
+  font-size: 14px;
+  color: #999;
+}
+
 // 无搜索结果
 .no-results-wrapper {
   flex: 1;
