@@ -1290,14 +1290,48 @@ const onKeyboardKeyClick = (key) => {
 }
 
 // 确认更换车牌
-const onConfirmChangePlate = () => {
+const onConfirmChangePlate = async () => {
   const newPlate = plateInputChars.value.join('')
   if (newPlate.length < 7) {
     showToast('请输入完整的车牌号')
     return
   }
-  detail.plateNo = newPlate
-  showToast('车牌修改成功')
+
+  // 如果车牌没有变化，直接关闭弹框
+  if (newPlate === detail.plateNo) {
+    changePlateDialog.value = false
+    return
+  }
+
+  savingLoading.value = true
+  try {
+    // 校验新车牌号唯一性
+    const res = await getVehicleInfo({ searchVin: newPlate })
+    if (res.code === 200) {
+      const vehicleList = res.data || []
+      // 检查是否存在其他车辆使用该车牌号（排除当前车辆）
+      const existingVehicle = vehicleList.find(
+        (v) => v.vehiclePlateNo === newPlate && v.vin !== detail.vin
+      )
+
+      if (existingVehicle) {
+        // 该车牌已具有一个VIN码，请检查确认
+        showToast('该车牌已具有一个VIN码，请检查确认')
+      } else {
+        // 车牌唯一，直接更新页面数据并关闭弹框
+        detail.plateNo = newPlate
+        showToast('车牌修改成功')
+        changePlateDialog.value = false
+      }
+    } else {
+      showToast(res.msg || '校验车牌失败')
+    }
+  } catch (error) {
+    console.error('更换车牌失败:', error)
+    showToast('更换车牌失败，请稍后重试')
+  } finally {
+    savingLoading.value = false
+  }
 }
 
 const moreActionsList = [
@@ -1641,6 +1675,28 @@ const signatureChannelList = ref([
   { value: 999, label: 'APP/短信/零小跑' },
 ])
 
+// 里程校验
+const validateMileage = (mileage, lastMileage, netMileage) => {
+  // 1. 进店里程与上次进店里程对比
+  if (mileage && lastMileage) {
+    const mileageNum = Number(mileage)
+    const lastMileageNum = Number(lastMileage)
+    if (mileageNum < lastMileageNum) {
+      showToast(`本次进店里程${mileageNum}小于上次进店里程数${lastMileageNum},请注意`)
+    }
+  }
+
+  // 2. 进店里程与车联网里程对比
+  if (mileage && netMileage) {
+    const mileageNum = Number(mileage)
+    const netMileageNum = Number(netMileage)
+    const diff = Math.abs(mileageNum - netMileageNum)
+    if (diff > 300) {
+      showToast('进店里程数和车联网里程数不符，请注意')
+    }
+  }
+}
+
 // 获取详情
 const fetchDetail = async () => {
   const id = route.query.id
@@ -1765,6 +1821,8 @@ const fetchVehicleMileage = async (vin) => {
       detail.networkMileageAdd = res.data.oilMileage || ''
       detail.networkBattery = res.data.electricity || ''
       detail.electricalMileage = res.data.electricMileage || ''
+      // 获取车联网里程后进行校验
+      validateMileage(detail.mileage, detail.lastMileage, detail.networkMileageTotal)
     }
   } catch (error) {
     console.error('获取车联网里程失败:', error)

@@ -52,7 +52,7 @@ const submitSign = async (val) => {
     }
 
     // 3. 拿到返回的 url
-    const fileUrl = uploadRes.data?.url || uploadRes.data?.[0]?.url || ''
+    const fileUrl = uploadRes.data?.authFileUrl || uploadRes.data?.[0]?.authFileUrl || ''
 
     // 4. 把 url 赋值给 uploadParams.fileUrl，调用 uploadFileByUrl
     const uploadParams = {
