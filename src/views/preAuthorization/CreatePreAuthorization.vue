@@ -534,7 +534,7 @@ import {
   preAuthGetConstructionList,
   preAuthGetQualityFeedbackList
 } from '@/api/authorization'
-import { bindFile, getAttachmentList, uploadFileByUrl } from '@/libs/api/fileConfig'
+import { getAttachmentList, uploadFileByUrl } from '@/libs/api/fileConfig'
 import { getAppImg } from '@/libs/utils/nativeFn'
 
 const router = useRouter()
@@ -1024,31 +1024,11 @@ const savePreAuth = async({
 
 const getAttachmentTypeLabel = (type) => attachmentTypeMap[type] || ''
 
-const getFileNameFromUrl = (fileUrl) => {
-  if (!fileUrl || typeof fileUrl !== 'string') return ''
-  const segments = fileUrl.split(/[\\/]/)
-  return segments[segments.length - 1] || ''
-}
-
 const normalizeAttachmentItem = (item) => ({
   ...item,
   url: item.fileUrl || item.url || '',
   name: item.fileName || item.name || ''
 })
-
-const normalizeUploadResult = (res, fileUrl) => {
-  const data = Array.isArray(res?.data) ? res.data[0] : (res?.data || {})
-  const fallbackFileName = getFileNameFromUrl(fileUrl)
-  const fallbackFileType = fallbackFileName.includes('.') ? fallbackFileName.split('.').pop() : ''
-
-  return {
-    fileId: data.fileId || data.id || '',
-    fileName: data.fileName || data.filename || data.name || fallbackFileName,
-    fileUrl: data.url || fileUrl,
-    fileSize: data.fileSize || data.size || 0,
-    fileType: data.fileType || data.ext || fallbackFileType
-  }
-}
 
 const fetchAttachmentListByType = async(type) => {
   const attachType = getAttachmentTypeLabel(type)
@@ -1109,20 +1089,6 @@ const handleNativeImage = async(rawFileUrl) => {
     if (!isSuccessResponse(uploadRes)) {
       closeToast()
       showToast(uploadRes?.msg || '上传失败')
-      return
-    }
-
-    const fileData = normalizeUploadResult(uploadRes, fileUrl)
-    const bindRes = await bindFile({
-      ...fileData,
-      businessId,
-      configCode: PRE_AUTH_ATTACHMENT_CONFIG_CODE,
-      attachType
-    })
-
-    if (!isSuccessResponse(bindRes)) {
-      closeToast()
-      showToast(bindRes?.msg || '附件绑定失败')
       return
     }
 

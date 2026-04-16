@@ -390,7 +390,7 @@ import { useRoute } from 'vue-router'
 import { showToast, showLoadingToast, closeToast } from 'vant'
 import AisPopup from '@/components/AisPopup.vue'
 import { preAuthGet, preAuthAudit, preAuthGetErrorCodeList } from '@/api/authorization'
-import { bindFile, getAttachmentList, uploadFileByUrl } from '@/libs/api/fileConfig'
+import { getAttachmentList, uploadFileByUrl } from '@/libs/api/fileConfig'
 import { getAppImg } from '@/libs/utils/nativeFn'
 
 const route = useRoute()
@@ -774,26 +774,6 @@ const normalizeAttachmentItem = (item) => ({
   url: item.fileUrl || item.url || ''
 })
 
-const getFileNameFromUrl = (fileUrl) => {
-  if (!fileUrl || typeof fileUrl !== 'string') return ''
-  const segments = fileUrl.split(/[\\/]/)
-  return segments[segments.length - 1] || ''
-}
-
-const normalizeUploadResult = (res, fileUrl) => {
-  const data = Array.isArray(res?.data) ? res.data[0] : (res?.data || {})
-  const fallbackFileName = getFileNameFromUrl(fileUrl)
-  const fallbackFileType = fallbackFileName.includes('.') ? fallbackFileName.split('.').pop() : ''
-
-  return {
-    fileId: data.fileId || data.id || '',
-    fileName: data.originalFilename || data.fileName || data.filename || data.name || fallbackFileName,
-    fileUrl: data.url || fileUrl,
-    fileSize: data.fileSize || data.size || 0,
-    fileType: data.fileType || data.ext || fallbackFileType
-  }
-}
-
 const fetchAttachmentListByType = async(type) => {
   const businessId = route.params.id
   const attachType = getAttachmentTypeLabel(type)
@@ -876,20 +856,6 @@ const handleNativeImage = async(rawFileUrl) => {
     if (!isSuccessResponse(uploadRes)) {
       closeToast()
       showToast(uploadRes?.msg || '上传失败')
-      return
-    }
-
-    const fileData = normalizeUploadResult(uploadRes, fileUrl)
-    const bindRes = await bindFile({
-      ...fileData,
-      businessId,
-      attachType,
-      configCode: PRE_AUTH_ATTACHMENT_CONFIG_CODE
-    })
-
-    if (!isSuccessResponse(bindRes)) {
-      closeToast()
-      showToast(bindRes?.msg || '附件绑定失败')
       return
     }
 
