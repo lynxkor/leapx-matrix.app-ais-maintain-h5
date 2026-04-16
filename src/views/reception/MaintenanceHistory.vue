@@ -1,11 +1,8 @@
 <template>
   <div class="maintenance-history">
-    <!-- 车辆信息头部 -->
+    <!-- 车辆信息头部 - 固定在nav bar下面 -->
     <div class="vehicle-header" v-if="vehicleInfo.vin">
-      <div class="plate-row">
-        <span class="plate-no">{{ vehicleInfo.plateNo }}</span>
-      </div>
-      <div class="vehicle-model">{{ vehicleInfo.vehicleModel }} · {{ vehicleInfo.vin }}</div>
+      <div class="vin-text">{{ vehicleInfo.vin }}</div>
     </div>
 
     <!-- 列表内容 -->
@@ -226,11 +223,9 @@ const onSetData = (data) => {
 }
 // 页面加载时获取详情
 onMounted(() => {
-  const { vin, plateNo, vehicleModel } = route.query
+  const { vin } = route.query
   if (vin) {
     vehicleInfo.vin = vin
-    vehicleInfo.plateNo = plateNo || ''
-    vehicleInfo.vehicleModel = vehicleModel || ''
   }
   fetchDetail()
 })
@@ -273,24 +268,17 @@ const onCardClick = (item) => {
 
   .vehicle-header {
     background: #ffffff;
-    padding: 12px;
+    padding: 8px 12px;
     flex-shrink: 0;
+    position: sticky;
+    top: 0;
+    z-index: 1;
 
-    .plate-row {
-      display: flex;
-      align-items: center;
-      margin-bottom: 4px;
-
-      .plate-no {
-        font-size: 18px;
-        font-weight: 600;
-        color: #191a1b;
-      }
-    }
-
-    .vehicle-model {
-      font-size: 12px;
-      color: #545454;
+    .vin-text {
+      font-size: 14px;
+      color: #888;
+      line-height: 17px;
+      text-align: center;
     }
   }
 
