@@ -534,7 +534,7 @@ import {
   preAuthGetConstructionList,
   preAuthGetQualityFeedbackList
 } from '@/api/authorization'
-import { bindFile, getAttachmentList, uploadFileByUrl } from '@/libs/api/fileConfig'
+import { getAttachmentList, uploadFileByUrl } from '@/libs/api/fileConfig'
 import { getAppImg } from '@/libs/utils/nativeFn'
 
 const router = useRouter()
@@ -1024,38 +1024,19 @@ const savePreAuth = async({
 
 const getAttachmentTypeLabel = (type) => attachmentTypeMap[type] || ''
 
-const getFileNameFromUrl = (fileUrl) => {
-  if (!fileUrl || typeof fileUrl !== 'string') return ''
-  const segments = fileUrl.split(/[\\/]/)
-  return segments[segments.length - 1] || ''
-}
-
 const normalizeAttachmentItem = (item) => ({
   ...item,
   url: item.fileUrl || item.url || '',
   name: item.fileName || item.name || ''
 })
 
-const normalizeUploadResult = (res, fileUrl) => {
-  const data = Array.isArray(res?.data) ? res.data[0] : (res?.data || {})
-  const fallbackFileName = getFileNameFromUrl(fileUrl)
-  const fallbackFileType = fallbackFileName.includes('.') ? fallbackFileName.split('.').pop() : ''
-
-  return {
-    fileId: data.fileId || data.id || '',
-    fileName: data.fileName || data.name || fallbackFileName,
-    fileUrl: data.fileUrl || data.url || fileUrl,
-    fileSize: data.fileSize || data.size || 0,
-    fileType: data.fileType || data.suffix || fallbackFileType
-  }
-}
-
-const fetchAttachmentListByType = async(type) => {
+const fetchAttachmentListByType = async(type, businessId) => {
   const attachType = getAttachmentTypeLabel(type)
-  if (!currentBusinessId.value || !attachType) return
+  const id = businessId || currentBusinessId.value
+  if (!id || !attachType) return
 
   const res = await getAttachmentList({
-    businessId: currentBusinessId.value,
+    businessId: id,
     attachType
   })
 
@@ -1066,22 +1047,6 @@ const fetchAttachmentListByType = async(type) => {
   const data = res?.data
   const list = Array.isArray(data) ? data : (data?.records || data?.list || [])
   attachmentData[type] = list.map(normalizeAttachmentItem)
-}
-
-const ensureBusinessIdForUpload = async() => {
-  if (currentBusinessId.value) {
-    return currentBusinessId.value
-  }
-
-  const res = await savePreAuth({
-    saveOrSubmit: false,
-    loadingMessage: '保存草稿中...',
-    failureMessage: '保存草稿失败',
-    errorLogMessage: '保存草稿失败:',
-    errorToastMessage: '保存草稿失败，请稍后重试'
-  })
-
-  return syncBusinessId(res)
 }
 
 const handleNativeImage = async(rawFileUrl) => {
@@ -1097,6 +1062,10 @@ const handleNativeImage = async(rawFileUrl) => {
     showToast('未获取到图片地址')
     return
   }
+  if (!constructionId.value) {
+    showToast('请先选择施工单')
+    return
+  }
   if (isUploadingAttachment.value) return
 
   const attachType = getAttachmentTypeLabel(uploadType)
@@ -1107,8 +1076,7 @@ const handleNativeImage = async(rawFileUrl) => {
 
   try {
     isUploadingAttachment.value = true
-    const businessId = await ensureBusinessIdForUpload()
-    if (!businessId) return
+    const businessId = constructionId.value
 
     showLoadingToast({ message: '上传中...', forbidClick: true })
 
@@ -1125,21 +1093,7 @@ const handleNativeImage = async(rawFileUrl) => {
       return
     }
 
-    const fileData = normalizeUploadResult(uploadRes, fileUrl)
-    const bindRes = await bindFile({
-      ...fileData,
-      businessId,
-      configCode: PRE_AUTH_ATTACHMENT_CONFIG_CODE,
-      attachType
-    })
-
-    if (!isSuccessResponse(bindRes)) {
-      closeToast()
-      showToast(bindRes?.msg || '附件绑定失败')
-      return
-    }
-
-    await fetchAttachmentListByType(uploadType)
+    await fetchAttachmentListByType(uploadType, businessId)
     closeToast()
     hasEdited.value = false
     showToast('上传成功')

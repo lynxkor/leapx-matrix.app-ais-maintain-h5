@@ -46,12 +46,14 @@ npm run format       # Format code with Prettier
 ### Native App Integration
 
 The app runs inside native webviews. Navigation bridging lives in `src/libs/utils/app.js`:
+
 - `goBack()` - History back or exit webview if no history
 - `outWebview()` - Calls native Android (`window.Android.goback`) or iOS (`window.webkit.messageHandlers.revert`) methods
 
 ### HTTP Requests
 
 Use `get()`, `post()`, `postJson()`, and `postText()` from `src/api/request.js`.
+
 - Reads base URL from `window.APP_AIS_H5_CONFIG?.VITE_API_BASE_URL` with fallback to `import.meta.env.VITE_API_BASE_URL`
 - Automatically injects `Authorization: Bearer <token>` and `platform: leapx` from the Pinia user store
 - 401/403 responses trigger a Vant confirm dialog and call `outWebview()`
@@ -59,6 +61,7 @@ Use `get()`, `post()`, `postJson()`, and `postText()` from `src/api/request.js`.
 ### Shared Library (`src/libs/`)
 
 Git submodule. Key reusable pieces:
+
 - `RefreshList.vue` - Pull-to-refresh + infinite scroll list
 - `FilterHeader.vue` - Filter/search header
 - `AisDialog.vue` - Custom dialog

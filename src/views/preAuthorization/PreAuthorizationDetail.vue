@@ -1,5 +1,5 @@
 <template>
-  <div class="pre-auth-detail">
+  <div class="pre-auth-detail" :class="{ 'has-reject-reason': detail.status === 40 }">
     <!-- 加载状态 -->
     <div v-if="detailLoading" class="loading-overlay">
       <van-loading type="circular" color="#009100" />
@@ -390,7 +390,7 @@ import { useRoute } from 'vue-router'
 import { showToast, showLoadingToast, closeToast } from 'vant'
 import AisPopup from '@/components/AisPopup.vue'
 import { preAuthGet, preAuthAudit, preAuthGetErrorCodeList } from '@/api/authorization'
-import { bindFile, getAttachmentList, uploadFileByUrl } from '@/libs/api/fileConfig'
+import { getAttachmentList, uploadFileByUrl } from '@/libs/api/fileConfig'
 import { getAppImg } from '@/libs/utils/nativeFn'
 
 const route = useRoute()
@@ -542,12 +542,23 @@ const handleScroll = () => {
   }
 }
 
+/**
+ * 获取 sticky-header 的实际高度
+ */
+const getStickyHeaderHeight = () => {
+  const stickyHeader = document.querySelector('.sticky-header')
+  if (stickyHeader) {
+    return stickyHeader.offsetHeight
+  }
+  return 88 // 默认值
+}
+
 // 根据滚动位置同步切换 tab
 let lastScrollTop = 0
 let scrollSyncTimeout = null
 const syncTabByScroll = () => {
   const scrollTop = getScrollTop()
-  const stickyHeaderHeight = 88
+  const stickyHeaderHeight = getStickyHeaderHeight()
   const offset = stickyHeaderHeight + 20
 
   // 判断滚动方向
@@ -618,7 +629,7 @@ const switchTab = async(tabName) => {
   const targetEl = document.getElementById(`tab-${tabName}`)
   if (!targetEl) return
 
-  const stickyHeaderHeight = 88 // 状态栏 + Tab导航固定高度
+  const stickyHeaderHeight = getStickyHeaderHeight() // 状态栏 + Tab导航实际高度
 
   // 标记为点击触发的滚动
   isClickScrolling.value = true
@@ -632,16 +643,10 @@ const switchTab = async(tabName) => {
   // 强制同步更新 DOM
   await nextTick()
 
-  // 再次确保类名已添加
-  if (!targetEl.classList.contains('active-section')) {
-    targetEl.classList.add('active-section')
-  }
-
-  // 计算目标滚动位置（包含36px的active-section padding）
-  const rect = targetEl.getBoundingClientRect()
-  const currentScrollTop = getScrollTop()
-  const targetScrollTop = currentScrollTop + rect.top - stickyHeaderHeight
-  const finalScrollTop = Math.max(0, targetScrollTop)
+  // 计算目标滚动位置
+  // offsetTop 包含了 active-section 添加的 36px padding，所以直接用 offsetTop - stickyHeaderHeight
+  const targetOffsetTop = targetEl.offsetTop
+  const finalScrollTop = Math.max(0, targetOffsetTop - stickyHeaderHeight)
 
   // 使用 scrollTo 并监听滚动结束事件
   const container = getScrollContainer()
@@ -769,26 +774,6 @@ const normalizeAttachmentItem = (item) => ({
   url: item.fileUrl || item.url || ''
 })
 
-const getFileNameFromUrl = (fileUrl) => {
-  if (!fileUrl || typeof fileUrl !== 'string') return ''
-  const segments = fileUrl.split(/[\\/]/)
-  return segments[segments.length - 1] || ''
-}
-
-const normalizeUploadResult = (res, fileUrl) => {
-  const data = Array.isArray(res?.data) ? res.data[0] : (res?.data || {})
-  const fallbackFileName = getFileNameFromUrl(fileUrl)
-  const fallbackFileType = fallbackFileName.includes('.') ? fallbackFileName.split('.').pop() : ''
-
-  return {
-    fileId: data.fileId || data.id || '',
-    fileName: data.fileName || data.name || fallbackFileName,
-    fileUrl: data.fileUrl || data.url || fileUrl,
-    fileSize: data.fileSize || data.size || 0,
-    fileType: data.fileType || data.suffix || fallbackFileType
-  }
-}
-
 const fetchAttachmentListByType = async(type) => {
   const businessId = route.params.id
   const attachType = getAttachmentTypeLabel(type)
@@ -871,20 +856,6 @@ const handleNativeImage = async(rawFileUrl) => {
     if (!isSuccessResponse(uploadRes)) {
       closeToast()
       showToast(uploadRes?.msg || '上传失败')
-      return
-    }
-
-    const fileData = normalizeUploadResult(uploadRes, fileUrl)
-    const bindRes = await bindFile({
-      ...fileData,
-      businessId,
-      attachType,
-      configCode: PRE_AUTH_ATTACHMENT_CONFIG_CODE
-    })
-
-    if (!isSuccessResponse(bindRes)) {
-      closeToast()
-      showToast(bindRes?.msg || '附件绑定失败')
       return
     }
 
@@ -1113,6 +1084,10 @@ onUnmounted(() => {
   background: #f5f5f5;
   padding-bottom: calc(76px + env(safe-area-inset-bottom));
   padding-top: 84px;
+
+  &.has-reject-reason {
+    padding-top: 137px;
+  }
 }
 
 // 加载状态
