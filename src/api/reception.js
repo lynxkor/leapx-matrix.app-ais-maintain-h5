@@ -156,3 +156,8 @@ export function spSignFinish(data) {
 export function spConfirmAndSign(data) {
   return post('/maintain/app/sp/serviceProxy/confirmToSign', data)
 }
+
+// 更换车牌
+export function updateVehiclePlate(data) {
+  return post('/datacenter/app/vehicle/vehicleProfile/updatePlate', data)
+}
