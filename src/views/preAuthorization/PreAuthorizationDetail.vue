@@ -783,7 +783,7 @@ const normalizeUploadResult = (res, fileUrl) => {
   return {
     fileId: data.fileId || data.id || '',
     fileName: data.fileName || data.name || fallbackFileName,
-    fileUrl: data.fileUrl || data.url || fileUrl,
+    fileUrl: data.authFileUrl || data.fileUrl || data.url || fileUrl,
     fileSize: data.fileSize || data.size || 0,
     fileType: data.fileType || data.suffix || fallbackFileType
   }
