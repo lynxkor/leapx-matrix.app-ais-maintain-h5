@@ -787,7 +787,7 @@ const normalizeUploadResult = (res, fileUrl) => {
 
   return {
     fileId: data.fileId || data.id || '',
-    fileName: data.fileName || data.filename || data.name || fallbackFileName,
+    fileName: data.originalFileName || data.fileName || data.filename || data.name || fallbackFileName,
     fileUrl: data.url || fileUrl,
     fileSize: data.fileSize || data.size || 0,
     fileType: data.fileType || data.ext || fallbackFileType
