@@ -1030,12 +1030,13 @@ const normalizeAttachmentItem = (item) => ({
   name: item.fileName || item.name || ''
 })
 
-const fetchAttachmentListByType = async(type) => {
+const fetchAttachmentListByType = async(type, businessId) => {
   const attachType = getAttachmentTypeLabel(type)
-  if (!currentBusinessId.value || !attachType) return
+  const id = businessId || currentBusinessId.value
+  if (!id || !attachType) return
 
   const res = await getAttachmentList({
-    businessId: currentBusinessId.value,
+    businessId: id,
     attachType
   })
 
@@ -1092,7 +1093,7 @@ const handleNativeImage = async(rawFileUrl) => {
       return
     }
 
-    await fetchAttachmentListByType(uploadType)
+    await fetchAttachmentListByType(uploadType, businessId)
     closeToast()
     hasEdited.value = false
     showToast('上传成功')
