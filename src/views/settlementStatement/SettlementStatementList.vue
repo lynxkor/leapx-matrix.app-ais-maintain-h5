@@ -85,10 +85,10 @@
               <!-- 车牌行 -->
               <div class="plate-row">
                 <span class="plate-number">{{ item.carPlate }}</span>
-                <!-- 预警图标 - 根据 alarmLevel 数组显示多个图标: 10=绿色, 20=橙色, 30=红色 -->
-                <template v-if="item.alarmLevel && item.alarmLevel.length > 0">
+                <!-- 预警图标 - 根据 alarmLevelList 数组显示多个图标: 10=绿色, 20=橙色, 30=红色 -->
+                <template v-if="item.alarmLevelList && item.alarmLevelList.length > 0">
                   <svg
-                    v-for="(level, index) in item.alarmLevel"
+                    v-for="(level, index) in item.alarmLevelList"
                     :key="index"
                     class="vehicle-icon"
                     width="16"
