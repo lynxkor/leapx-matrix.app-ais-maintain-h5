@@ -109,7 +109,7 @@ export function submitSettlementStatement(data) {
  * @returns {Promise}
  */
 export function addReceiptRecord(data) {
-  return post('app/sp/serviceStatement/addReceiptRecord', data)
+  return post(`${SERVICE_STATEMENT_BASE}/addReceiptRecord`, data)
 }
 
 /**
@@ -118,5 +118,5 @@ export function addReceiptRecord(data) {
  * @returns {Promise}
  */
 export function receiptCompletion(data) {
-  return postJson('app/sp/serviceStatement/receiptCompletion', data)
+  return postJson(`${SERVICE_STATEMENT_BASE}/receiptCompletion`, data)
 }
