@@ -98,7 +98,6 @@
           <div v-for="(record, index) in invoiceRecords" :key="index" class="payment-record-item">
             <div class="record-left">
               <div class="record-method">{{ getPayTypeText(record.payType) }}</div>
-              <div class="record-time">{{ record.createTime }}</div>
             </div>
             <div class="record-right">
               <div class="record-amount">+¥{{ formatPrice(record.payAmount) }}</div>
@@ -360,8 +359,6 @@ const showSignChannel = ref(false)
 const selectedChannel = ref('paper')
 const signStatus = ref('not_signed')
 const showPendingTip = ref(false)
-// 标记是否从"客户签字"模块入口打开的弹窗
-const isFromSignClick = ref(false)
 
 const isSuccessResponse = (res) => res?.code === 200 || res?.code === 0 || res?.success === true
 
@@ -621,13 +618,12 @@ const formatPrice = (price) => {
 // 获取支付方式文本
 const getPayTypeText = (payType) => {
   const payTypeMap = {
-    1: '现金',
-    2: '刷卡',
-    3: '微信支付',
-    4: '支付宝',
-    5: '银行转账',
-    6: '其他',
-    7: '权益抵扣'
+    10: '银行卡',
+    20: '支付宝',
+    30: '微信',
+    40: '现金',
+    50: '权益抵扣',
+    60: '其他'
   }
   return payTypeMap[payType] || '未知'
 }
@@ -642,12 +638,12 @@ const paymentForm = ref({
 
 // 收款方式选项
 const paymentMethods = [
-  { text: '微信支付', value: 3, iconText: '微', iconType: 'wechat' },
-  { text: '支付宝', value: 4, iconText: '支', iconType: 'alipay' },
-  { text: '刷卡', value: 2, iconText: '卡', iconType: 'card' },
-  { text: '现金', value: 1, iconText: '¥', iconType: 'cash' },
-  { text: '权益抵扣', value: 7, iconText: '益', iconType: 'rights' },
-  { text: '其他', value: 6, iconText: '其', iconType: 'other' }
+  { text: '微信', value: 30, iconText: '微', iconType: 'wechat' },
+  { text: '支付宝', value: 20, iconText: '支', iconType: 'alipay' },
+  { text: '银行卡', value: 10, iconText: '卡', iconType: 'card' },
+  { text: '现金', value: 40, iconText: '¥', iconType: 'cash' },
+  { text: '权益抵扣', value: 50, iconText: '益', iconType: 'rights' },
+  { text: '其他', value: 60, iconText: '其', iconType: 'other' }
 ]
 
 const selectPaymentMethod = (item) => {
@@ -690,7 +686,6 @@ const handleSignClick = () => {
 
   if (!currentStatementSigned.value) {
     // c: 所有结算单都已提交且未签字，显示签字渠道选择弹窗
-    isFromSignClick.value = true
     showSignChannel.value = true
   } else {
     // b, d: 已签字或纸质单据已提交，跳转到外部施工单页面
@@ -706,7 +701,6 @@ const handleSubmitSettlement = () => {
     showPendingTip.value = true
     return
   }
-  isFromSignClick.value = false
   showSignChannel.value = true
 }
 
@@ -726,65 +720,12 @@ const validateSettlementPayload = (payload) => {
 
 // 签字成功后的回调
 const handleSignSuccess = async() => {
-  // APP/短信/零小跑
+  // APP/短信/零小跑：跳转到外部施工单页面
   if (selectedChannel.value === 'app') {
-    // 从"客户签字"模块入口进入，直接跳转外部页面，不调用接口
-    if (isFromSignClick.value) {
-      showSignChannel.value = false
-      const targetUrl = `https://staticres-sitb.leapmotor.com/leapx/biling/ais/settlement?serviceProxyId=${serviceProxyId.value}`
-      window.location.href = targetUrl
-      return
-    }
-
-    // 从"提交结算并签字"按钮入口进入，需要调用接口
-    if (shouldUseSignFlow.value) {
-      const payload = buildSettlementPayload(false)
-
-      if (!validateSettlementPayload(payload)) {
-        return
-      }
-
-      try {
-        const res = await signSettlementStatement(payload)
-        if (!isSuccessResponse(res)) {
-          showToast(res?.msg || '提交失败')
-          return
-        }
-
-        showSignChannel.value = false
-        showToast('提交成功')
-        // 接口调用成功后跳转到外部页面
-        const targetUrl = `https://staticres-sitb.leapmotor.com/leapx/biling/ais/settlement?serviceProxyId=${serviceProxyId.value}`
-        window.location.href = targetUrl
-        return
-      } catch {
-        showToast('提交失败')
-        return
-      }
-    }
-
-    // 非签字流程（多个结算单且非最后一个）：也需要调用接口
-    const payload = buildSettlementPayload(false)
-
-    if (!validateSettlementPayload(payload)) {
-      return
-    }
-
-    try {
-      const res = await signSettlementStatement(payload)
-      if (!isSuccessResponse(res)) {
-        showToast(res?.msg || '提交失败')
-        return
-      }
-
-      showSignChannel.value = false
-      showToast('提交成功')
-      // 接口调用成功后跳转到外部页面
-      const targetUrl = `https://staticres-sitb.leapmotor.com/leapx/biling/ais/settlement?serviceProxyId=${serviceProxyId.value}`
-      window.location.href = targetUrl
-    } catch {
-      showToast('提交失败')
-    }
+    showSignChannel.value = false
+    // 跳转到外部页面，不再处理后续逻辑
+    const targetUrl = `https://staticres-sitb.leapmotor.com/leapx/biling/ais/settlement?serviceProxyId=${serviceProxyId.value}`
+    window.location.href = targetUrl
     return
   }
 
@@ -834,7 +775,7 @@ const handleConfirmPayment = async() => {
   }
 
   try {
-    const res = await receiptCompletion({ id: detailData.value.id })
+    const res = await receiptCompletion(detailData.value.id)
     if (!isSuccessResponse(res)) {
       showToast(res?.msg || '确认收款失败')
       return
