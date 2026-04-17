@@ -6,7 +6,7 @@
         <van-icon name="cross" />
       </div>
       <van-cascader
-        v-model="innerValue"
+        :model-value="modelValue"
         :options="options"
         title="请选择"
         :show-header="false"
@@ -33,7 +33,7 @@
  * @emit update:modelValue - 双向绑定值
  * @emit confirm           - 选择完成，payload { selectedOptions }
  */
-import { computed, ref, watch } from 'vue'
+import { computed } from 'vue'
 
 const props = defineProps({
   show: {
@@ -61,16 +61,7 @@ const visible = computed({
   set: (val) => emit('update:show', val)
 })
 
-const innerValue = ref('')
-
 const fieldNames = { text: 'text', value: 'value', children: 'children' }
-
-// 弹窗打开时回显当前值
-watch(visible, (val) => {
-  if (val) {
-    innerValue.value = props.modelValue || ''
-  }
-})
 
 const onFinish = ({ selectedOptions }) => {
   emit('confirm', { selectedOptions })
