@@ -494,7 +494,7 @@ const isPending = computed(() => sourceStatus.value === 'pending')
 // 是否为已交车状态
 const isCompleted = computed(() => sourceStatus.value === 'completed')
 const isSingleSettlement = computed(() => statementList.value.length <= 1)
-const isCurrentLastSettlement = computed(() => Boolean(detailData.value.isCheck))
+const isCurrentLastSettlement = computed(() => !detailData.value.isCheck)
 const shouldUseSignFlow = computed(() => isSingleSettlement.value || isCurrentLastSettlement.value)
 const settleButtonText = computed(() => (shouldUseSignFlow.value ? '提交结算并签字' : '提交结算'))
 const statementTypeLabel = computed(() => detailData.value.statementTypeLabel || '')
