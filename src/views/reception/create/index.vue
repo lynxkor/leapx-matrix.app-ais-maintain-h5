@@ -388,10 +388,15 @@
             <div class="signature-row" @click="onOpenDeliveryTimePicker">
               <span class="label">预计交车时间</span>
               <div class="value-wrapper">
-                <span :class="['value', { placeholder: !signatureData.deliveryTime }]">
-                  {{ signatureData.deliveryTime || '请选择' }}
+                <span :class="['value', { placeholder: !signatureData.expectFinishAt }]">
+                  {{ signatureData.expectFinishAt || '请选择' }}
                 </span>
-                <van-icon name="arrow" size="12" color="#545454" />
+                <van-icon
+                  v-if="!signatureData.expectFinishAt"
+                  name="arrow"
+                  size="12"
+                  color="#545454"
+                />
               </div>
             </div>
             <!-- <div class="signature-row">
@@ -1659,7 +1664,7 @@ const computedTotalCost = computed(() => {
 
 // 制单确认并签字按钮是否禁用：预计交车时间为空或者签字渠道为空
 const isConfirmAndSignDisabled = computed(() => {
-  return !signatureData.deliveryTime || !signatureData.signChannel
+  return !signatureData.expectFinishAt || !signatureData.signChannel
 })
 
 // 项目零件保存按钮是否禁用：没有添加项目或者零件
@@ -1691,7 +1696,7 @@ const isInspectionSaveDisabled = computed(() => {
 // 签字确认数据
 const signatureData = reactive({
   repairItemTypeDetailCollect: '',
-  deliveryTime: '',
+  expectFinishAt: '',
   liveEnabled: false,
   signatureChannel: '',
   attachments: [],
@@ -2271,7 +2276,7 @@ const onSave = async () => {
       startWarrantyDate: detail.vehicleProfileServiceResp.warrantyStartdate || '',
       exclusiveServiceDealerName: detail.vehicleProfileServiceResp.serviceDealerName || '',
       exclusiveServiceDealerCode: detail.vehicleProfileServiceResp.serviceDealerCode || '',
-      expectFinishAt: signatureData.deliveryTime,
+      expectFinishAt: signatureData.expectFinishAt,
       createStatementInfoDate: '',
       remark: '',
       status: '',
@@ -2467,7 +2472,7 @@ const onInspectionSave = async () => {
       startWarrantyDate: detail.vehicleProfileServiceResp.warrantyStartdate || '',
       exclusiveServiceDealerName: detail.vehicleProfileServiceResp.serviceDealerName || '',
       exclusiveServiceDealerCode: detail.vehicleProfileServiceResp.serviceDealerCode || '',
-      expectFinishAt: signatureData.deliveryTime,
+      expectFinishAt: signatureData.expectFinishAt,
       createStatementInfoDate: '',
       remark: '',
       status: '',
@@ -2688,40 +2693,26 @@ const onConfirmAndSign = () => {
     showToast('项目及零件不可为空，请添加项目及零件')
     return
   }
-
-  // 先显示确认弹框
-  showConfirmDialog({
-    title: '问题确认',
-    message: `您本次进店反馈的问题为："${detail.customerFaultDesc || ''}"，门店描述是否准确？\n(准确记录能帮技师精准维修，避免您重复进店哦~）`,
-    confirmButtonText: '准确',
-    cancelButtonText: '不准确',
-    confirmButtonColor: '#009100',
+  // 点击"准确"，执行接口
+  let params = {
+    serviceProxyId: detail.id,
+    expectFinishAt: signatureData.expectFinishAt,
+  }
+  // 纸质单据时才传signChannel
+  if (signatureData.signChannel === '纸质单据' || detail.signChannel == 40) {
+    params.signChannel = '40'
+  }
+  spConfirmAndSign(params).then((res) => {
+    if (res.code === 200) {
+      showToast('操作成功')
+      fetchDetail()
+      // 接口成功后跳转结算页面
+      const settlementUrl = `https://staticres-sitb.leapmotor.com/leapx/biling/ais/settlement?serviceProxyId=${detail.id}`
+      window.location.href = settlementUrl
+    } else {
+      showToast(res.msg || '操作失败')
+    }
   })
-    .then(() => {
-      // 点击"准确"，执行接口
-      let params = {
-        serviceProxyId: detail.id,
-        expectFinishAt: signatureData.deliveryTime,
-      }
-      // 纸质单据时才传signChannel
-      if (signatureData.signChannel === '纸质单据' || detail.signChannel == 40) {
-        params.signChannel = '40'
-      }
-      spConfirmAndSign(params).then((res) => {
-        if (res.code === 200) {
-          showToast('操作成功')
-          fetchDetail()
-          // 接口成功后跳转结算页面
-          const settlementUrl = `https://staticres-sitb.leapmotor.com/leapx/biling/ais/settlement?serviceProxyId=${detail.id}`
-          window.location.href = settlementUrl
-        } else {
-          showToast(res.msg || '操作失败')
-        }
-      })
-    })
-    .catch(() => {
-      // 点击"不准确"，关闭弹框留在当前页
-    })
 }
 
 // 获取详情数据给签字确认页面赋值
@@ -2735,7 +2726,7 @@ const fetchDetailForSignature = async () => {
       const data = res.data
       // 更新签字确认数据
       signatureData.repairItemTypeDetailCollect = data.repairItemTypeDetailCollect || ''
-      signatureData.deliveryTime = data.expectFinishAt || ''
+      signatureData.expectFinishAt = data.expectFinishAt || ''
       // 更新项目零件数据
       if (data.costCountResp) {
         partsData.repairItemRespList = data.costCountResp.repairItemRespList || []
@@ -2782,10 +2773,11 @@ const onAddPackage = () => {
 // 打开预计交车时间选择器
 const onOpenDeliveryTimePicker = () => {
   // 如果已有值，回显
-  if (signatureData.deliveryTime) {
-    const [date, time] = signatureData.deliveryTime.split(' ')
-    selectedDeliveryDate.value = date
-    selectedDeliveryTime.value = time
+  if (signatureData.expectFinishAt) {
+    return
+    // const [date, time] = signatureData.expectFinishAt.split(' ')
+    // selectedDeliveryDate.value = date
+    // selectedDeliveryTime.value = time
   } else {
     // 没有值时，默认选中第一个日期和第一个时间
     if (deliveryDateList.value.length > 0) {
@@ -2808,7 +2800,7 @@ const onSelectDeliveryTime = (item) => {
   selectedDeliveryTime.value = item.value
   // 选中时间后直接确认
   if (selectedDeliveryDate.value && selectedDeliveryTime.value) {
-    signatureData.deliveryTime = `${selectedDeliveryDate.value} ${selectedDeliveryTime.value}`
+    signatureData.expectFinishAt = `${selectedDeliveryDate.value} ${selectedDeliveryTime.value}`
     showDeliveryTimePicker.value = false
   }
 }
