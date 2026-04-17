@@ -98,7 +98,6 @@
           <div v-for="(record, index) in invoiceRecords" :key="index" class="payment-record-item">
             <div class="record-left">
               <div class="record-method">{{ getPayTypeText(record.payType) }}</div>
-              <div class="record-time">{{ record.createTime }}</div>
             </div>
             <div class="record-right">
               <div class="record-amount">+¥{{ formatPrice(record.payAmount) }}</div>
@@ -495,7 +494,7 @@ const isPending = computed(() => sourceStatus.value === 'pending')
 // 是否为已交车状态
 const isCompleted = computed(() => sourceStatus.value === 'completed')
 const isSingleSettlement = computed(() => statementList.value.length <= 1)
-const isCurrentLastSettlement = computed(() => Boolean(detailData.value.isCheck))
+const isCurrentLastSettlement = computed(() => !detailData.value.isCheck)
 const shouldUseSignFlow = computed(() => isSingleSettlement.value || isCurrentLastSettlement.value)
 const settleButtonText = computed(() => (shouldUseSignFlow.value ? '提交结算并签字' : '提交结算'))
 const statementTypeLabel = computed(() => detailData.value.statementTypeLabel || '')
@@ -619,13 +618,12 @@ const formatPrice = (price) => {
 // 获取支付方式文本
 const getPayTypeText = (payType) => {
   const payTypeMap = {
-    1: '现金',
-    2: '刷卡',
-    3: '微信支付',
-    4: '支付宝',
-    5: '银行转账',
-    6: '其他',
-    7: '权益抵扣'
+    10: '银行卡',
+    20: '支付宝',
+    30: '微信',
+    40: '现金',
+    50: '权益抵扣',
+    60: '其他'
   }
   return payTypeMap[payType] || '未知'
 }
@@ -640,12 +638,12 @@ const paymentForm = ref({
 
 // 收款方式选项
 const paymentMethods = [
-  { text: '微信支付', value: 3, iconText: '微', iconType: 'wechat' },
-  { text: '支付宝', value: 4, iconText: '支', iconType: 'alipay' },
-  { text: '刷卡', value: 2, iconText: '卡', iconType: 'card' },
-  { text: '现金', value: 1, iconText: '¥', iconType: 'cash' },
-  { text: '权益抵扣', value: 7, iconText: '益', iconType: 'rights' },
-  { text: '其他', value: 6, iconText: '其', iconType: 'other' }
+  { text: '微信', value: 30, iconText: '微', iconType: 'wechat' },
+  { text: '支付宝', value: 20, iconText: '支', iconType: 'alipay' },
+  { text: '银行卡', value: 10, iconText: '卡', iconType: 'card' },
+  { text: '现金', value: 40, iconText: '¥', iconType: 'cash' },
+  { text: '权益抵扣', value: 50, iconText: '益', iconType: 'rights' },
+  { text: '其他', value: 60, iconText: '其', iconType: 'other' }
 ]
 
 const selectPaymentMethod = (item) => {
@@ -777,7 +775,7 @@ const handleConfirmPayment = async() => {
   }
 
   try {
-    const res = await receiptCompletion({ id: detailData.value.id })
+    const res = await receiptCompletion(detailData.value.id)
     if (!isSuccessResponse(res)) {
       showToast(res?.msg || '确认收款失败')
       return
