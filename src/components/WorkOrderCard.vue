@@ -4,7 +4,7 @@
     <!-- 卡片头部 -->
     <div class="card-header">
       <span class="order-no">{{ item.code }}---{{ item.orderStatus }}</span>
-      <span :class="['status-tag', `status-${item.status}`]">{{ item.statusText }}</span>
+      <span :class="['status-tag', `status-${item.orderStatus}`]">{{ item.orderStatusLabel }}</span>
     </div>
 
     <!-- 车辆信息 -->
@@ -21,9 +21,15 @@
           <span v-if="item.alarmLevel == 40">
             <img src="@/assets/image/warning-red.png" alt="" />
           </span>
-          <span v-if="item.repairItemTypeDetailCollect" class="info-tag">{{
-            item.repairItemTypeDetailCollect
-          }}</span>
+          <span v-if="item.repairItemTypeDetailCollect">
+            <span
+              v-for="(tag, index) in item.repairItemTypeDetailCollect.split('&')"
+              :key="index"
+              class="info-tag"
+            >
+              {{ tag }}
+            </span>
+          </span>
         </div>
       </div>
       <div class="vehicle-model">{{ item.vehModelName }} · {{ item.vehProfileVin }}</div>
@@ -36,6 +42,7 @@
         <div class="value-wrapper">
           <span class="value">{{ item.customerName }}</span>
           <span v-if="item.isAppointment" class="appointment-tag">预约客户</span>
+          <span v-else class="appointment-tag">随到客户</span>
         </div>
       </div>
       <div class="info-row">
@@ -90,12 +97,11 @@ const onCardClick = () => {
       padding: 2px 8px;
       border-radius: 4px;
       font-weight: 500;
+      color: #c8a12b;
 
-      &.status-pending {
-        color: #c8a12b;
-      }
-
-      &.status-completed {
+      // 反结算(200)和已作废(210)状态为灰色
+      &.status-200,
+      &.status-210 {
         color: #6c6e6c;
       }
     }
@@ -129,6 +135,9 @@ const onCardClick = () => {
           color: #191a1b;
           border: 0.5px solid #191a1b;
           border-radius: 4px;
+          margin-right: 5px;
+          line-height: 18px;
+          display: inline-block;
         }
       }
     }

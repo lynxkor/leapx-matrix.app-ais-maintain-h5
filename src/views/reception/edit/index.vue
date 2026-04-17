@@ -2935,12 +2935,18 @@ const onInspectionSave = async (type) => {
 
 // 项目零件保存
 const onPartsSave = async () => {
+  // 从 RepairItemContent 组件获取数据
+  const items = repairItemContentRef.value?.selectedItems || []
+  const parts = repairItemContentRef.value?.selectedParts || []
+
+  // 校验项目及零件不可为空
+  if (items.length === 0 && parts.length === 0) {
+    showToast('项目及零件不可为空，请添加项目及零件')
+    return
+  }
+
   savingLoading.value = true
   try {
-    // 从 RepairItemContent 组件获取数据
-    const items = repairItemContentRef.value?.selectedItems || []
-    const parts = repairItemContentRef.value?.selectedParts || []
-
     // 保存项目零件
     const res = await saveSpRepairItem({
       serviceProxyId: route.query.id,
@@ -2968,12 +2974,18 @@ const onPartsSave = async () => {
 
 // 签字确认保存
 const onSignatureSave = async () => {
+  // 从 RepairItemContent 组件获取数据
+  const items = repairItemContentRef.value?.selectedItems || []
+  const parts = repairItemContentRef.value?.selectedParts || []
+
+  // 校验项目及零件不可为空
+  if (items.length === 0 && parts.length === 0) {
+    showToast('项目及零件不可为空，请添加项目及零件')
+    return
+  }
+
   savingLoading.value = true
   try {
-    // 从 RepairItemContent 组件获取数据
-    const items = repairItemContentRef.value?.selectedItems || []
-    const parts = repairItemContentRef.value?.selectedParts || []
-
     // 保存项目零件
     const res = await saveSpRepairItem({
       serviceProxyId: route.query.id,
@@ -3049,6 +3061,16 @@ const onAddPackage = () => {
 
 // 制单确认并签字
 const onConfirmAndSign = () => {
+  // 从 RepairItemContent 组件获取数据
+  const items = repairItemContentRef.value?.selectedItems || []
+  const parts = repairItemContentRef.value?.selectedParts || []
+
+  // 校验维修项目或者维修零件有值
+  if (items.length === 0 && parts.length === 0) {
+    showToast('项目及零件不可为空，请添加项目及零件')
+    return
+  }
+
   // 先显示确认弹框
   showConfirmDialog({
     title: '问题确认',

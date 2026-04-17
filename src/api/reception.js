@@ -149,7 +149,7 @@ export function saveSpRepairItem(data) {
 
 // 施工单签到完成
 export function spSignFinish(data) {
-  return post('/maintain/open/leapapp/api/serviceproxy/signcomplete', data)
+  return post('/maintain/openApi/leapapp/api/serviceproxy/signcomplete', data)
 }
 
 // 接车施工单--制单确认并签字
