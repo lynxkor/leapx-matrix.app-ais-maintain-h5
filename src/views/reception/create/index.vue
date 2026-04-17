@@ -455,16 +455,27 @@
       <template v-if="activeTab === 'inspection'">
         <span v-if="!isSaved" class="save-btn" @click="onSave">保存</span>
         <template v-else-if="!isPreCheckCompleted">
-          <span class="save-btn" @click="onInspectionSave">保存</span>
+          <span
+            :class="['save-btn', { disabled: isInspectionSaveDisabled }]"
+            @click="onInspectionSave"
+            >保存</span
+          >
           <span class="complete-btn" @click="onComplete">预检完成</span>
         </template>
       </template>
       <template v-else-if="activeTab === 'parts'">
-        <span class="save-btn" @click="onPartsSave">保存</span>
+        <span :class="['save-btn', { disabled: isPartsSaveDisabled }]" @click="onPartsSave"
+          >保存</span
+        >
       </template>
       <template v-else-if="activeTab === 'signature'">
-        <span class="save-btn" @click="onSignatureSave">保存</span>
-        <span v-if="detail.orderStatus == 110" class="complete-btn" @click="onConfirmAndSign"
+        <span :class="['save-btn', { disabled: isPartsSaveDisabled }]" @click="onSignatureSave"
+          >保存</span
+        >
+        <span
+          v-if="detail.orderStatus == 110"
+          :class="['complete-btn', { disabled: isConfirmAndSignDisabled }]"
+          @click="onConfirmAndSign"
           >制单确认并签字</span
         >
       </template>
@@ -1338,9 +1349,7 @@ const onConfirmChangePlate = async () => {
 const moreActionsList = computed(() => {
   // 已作废210、反结算200、已生成结算单(isCreateStatementInfo == 1)时，作废禁用
   const isCancelDisabled =
-    detail.orderStatus == 210 ||
-    detail.orderStatus == 200 ||
-    detail.isCreateStatementInfo == 1
+    detail.orderStatus == 210 || detail.orderStatus == 200 || detail.isCreateStatementInfo == 1
 
   // 获取禁用原因文本
   let disabledReason = ''
@@ -1648,6 +1657,37 @@ const computedTotalCost = computed(() => {
   return total.toFixed(2)
 })
 
+// 制单确认并签字按钮是否禁用：预计交车时间为空或者签字渠道为空
+const isConfirmAndSignDisabled = computed(() => {
+  return !signatureData.deliveryTime || !signatureData.signChannel
+})
+
+// 项目零件保存按钮是否禁用：没有添加项目或者零件
+const isPartsSaveDisabled = computed(() => {
+  const items = repairItemContentRef.value?.selectedItems || []
+  const parts = repairItemContentRef.value?.selectedParts || []
+  return items.length === 0 && parts.length === 0
+})
+
+// 环检信息保存按钮是否禁用：进店里程数、进店电量、送修人信息、车内车外照片、异常描述、经理建议为空
+const isInspectionSaveDisabled = computed(() => {
+  // 进店里程数
+  if (!detail.mileage) return true
+  // 进店电量
+  if (!detail.battery) return true
+  // 送修人信息
+  if (!detail.repairPerson || !detail.repairPersonPhone) return true
+  // 车内照片（根据配置判断是否必填）
+  if (interiorConfig.value.required === '1' && detail.interiorImages.length === 0) return true
+  // 车外照片（根据配置判断是否必填）
+  if (exteriorConfig.value.required === '1' && detail.exteriorImages.length === 0) return true
+  // 异常描述
+  if (!detail.abnormalDesc) return true
+  // 经理建议
+  if (!detail.testResult) return true
+  return false
+})
+
 // 签字确认数据
 const signatureData = reactive({
   repairItemTypeDetailCollect: '',
@@ -1670,7 +1710,7 @@ const deliveryDateList = ref([])
 const generateDeliveryDates = () => {
   const dates = []
   const today = new Date()
-  for (let i = 0; i < 7; i++) {
+  for (let i = 0; i < 100; i++) {
     const date = new Date(today)
     date.setDate(today.getDate() + i)
     const year = date.getFullYear()
@@ -1684,21 +1724,18 @@ const generateDeliveryDates = () => {
   deliveryDateList.value = dates
 }
 
-// 预计交车时间列表
-const deliveryTimeList = ref([
-  { value: '08:00', label: '08:00' },
-  { value: '08:15', label: '08:15' },
-  { value: '08:30', label: '08:30' },
-  { value: '08:45', label: '08:45' },
-  { value: '09:00', label: '09:00' },
-  { value: '09:15', label: '09:15' },
-  { value: '09:30', label: '09:30' },
-  { value: '09:45', label: '09:45' },
-  { value: '10:00', label: '10:00' },
-  { value: '10:15', label: '10:15' },
-  { value: '10:30', label: '10:30' },
-  { value: '10:45', label: '10:45' },
-])
+// 预计交车时间列表（08:00:00 到 18:00:00，每15分钟一个）
+const deliveryTimeList = ref([])
+const generateDeliveryTimes = () => {
+  const times = []
+  for (let hour = 8; hour <= 18; hour++) {
+    for (let minute = 0; minute < 60; minute += 15) {
+      const timeStr = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}:00`
+      times.push({ value: timeStr, label: timeStr })
+    }
+  }
+  deliveryTimeList.value = times
+}
 
 // 签字渠道列表
 const signatureChannelList = ref([
@@ -1956,21 +1993,24 @@ const handleImageFileChange = (event) => {
 
     // 调用上传接口
     const uploadFile = async () => {
+      // 保存当前上传类型，避免异步上传完成时类型已改变
+      const uploadType = currentUploadType.value
       try {
         const params = {
           fileUrl: previewUrl,
           businessId: route.query.id,
           configCode: 'mcs_serviceproxy',
-          attachType: attachTypeMap[currentUploadType.value],
+          attachType: attachTypeMap[uploadType],
         }
 
         const res = await uploadFileByUrl([params])
 
         if (res.code === 200) {
-          const uploadData = res.data && res.data.length > 0 ? res.data[0] : {}
+          // 兼容两种返回格式：数组或对象
+          const uploadData = Array.isArray(res.data) ? res.data[0] || {} : res.data || {}
 
-          // 更新文件状态
-          const targetList = getTargetFileList(currentUploadType.value)
+          // 更新文件状态 - 使用保存的 uploadType
+          const targetList = getTargetFileList(uploadType)
           if (targetList.length > 0) {
             const lastIndex = targetList.length - 1
             targetList[lastIndex] = {
@@ -1984,8 +2024,8 @@ const handleImageFileChange = (event) => {
 
           showToast('上传成功')
         } else {
-          // 上传失败，移除临时文件
-          const targetList = getTargetFileList(currentUploadType.value)
+          // 上传失败，移除临时文件 - 使用保存的 uploadType
+          const targetList = getTargetFileList(uploadType)
           if (targetList.length > 0) {
             targetList.pop()
           }
@@ -1993,8 +2033,8 @@ const handleImageFileChange = (event) => {
         }
       } catch (e) {
         console.error('上传出错:', e)
-        // 出错时移除临时文件
-        const targetList = getTargetFileList(currentUploadType.value)
+        // 出错时移除临时文件 - 使用保存的 uploadType
+        const targetList = getTargetFileList(uploadType)
         if (targetList.length > 0) {
           targetList.pop()
         }
@@ -2661,23 +2701,19 @@ const onConfirmAndSign = () => {
       // 点击"准确"，执行接口
       let params = {
         serviceProxyId: detail.id,
-        signChannel:
-          signatureData.signChannel === '纸质单据' || detail.signChannel == 40 ? '40' : '',
         expectFinishAt: signatureData.deliveryTime,
+      }
+      // 纸质单据时才传signChannel
+      if (signatureData.signChannel === '纸质单据' || detail.signChannel == 40) {
+        params.signChannel = '40'
       }
       spConfirmAndSign(params).then((res) => {
         if (res.code === 200) {
           showToast('操作成功')
           fetchDetail()
-          // 接口成功后跳转签字页面
-          router.push({
-            path: '/reception/sign',
-            query: {
-              vin: detail.vin,
-              serviceProxyNo: detail.code,
-              serviceProxyId: detail.id,
-            },
-          })
+          // 接口成功后跳转结算页面
+          const settlementUrl = `https://staticres-sitb.leapmotor.com/leapx/biling/ais/settlement?serviceProxyId=${detail.id}`
+          window.location.href = settlementUrl
         } else {
           showToast(res.msg || '操作失败')
         }
@@ -2830,6 +2866,8 @@ onMounted(() => {
   repairPersonPhoneInput.value = detail.repairPersonPhone
   // 初始化预计交车日期列表
   generateDeliveryDates()
+  // 初始化预计交车时间列表
+  generateDeliveryTimes()
 
   // 获取上传配置
   getUploadConfig({
@@ -2885,7 +2923,8 @@ onMounted(() => {
       const res = await uploadFileByUrl([params])
 
       if (res.code === 200) {
-        const uploadData = res.data && res.data.length > 0 ? res.data[0] : {}
+        // 兼容两种返回格式：数组或对象
+        const uploadData = Array.isArray(res.data) ? res.data[0] || {} : res.data || {}
 
         // 更新文件状态
         const targetList = getTargetFileList(currentUploadType.value)

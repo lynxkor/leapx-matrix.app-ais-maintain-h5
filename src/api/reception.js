@@ -62,7 +62,7 @@ export function serviceAddOrUpdate(data) {
 }
 // 预检确认
 export function servicePreCheck(data) {
-  return post('/maintain/app/sp/serviceProxy/precheck', data)
+  return postText('/maintain/app/sp/serviceProxy/precheck', data)
 }
 
 // 特殊开单--维修套餐--列表查询
