@@ -1366,22 +1366,81 @@ const onKeyboardKeyClick = (key) => {
 }
 
 // 确认更换车牌
-const onConfirmChangePlate = () => {
+const onConfirmChangePlate = async () => {
   const newPlate = plateInputChars.value.join('')
   if (newPlate.length < 7) {
     showToast('请输入完整的车牌号')
     return
   }
-  detail.plateNo = newPlate
-  showToast('车牌修改成功')
+
+  // 如果车牌没有变化，直接关闭弹框
+  if (newPlate === detail.plateNo) {
+    changePlateDialog.value = false
+    return
+  }
+
+  savingLoading.value = true
+  try {
+    // 校验新车牌号唯一性
+    const res = await getVehicleInfo({ searchVin: newPlate })
+    if (res.code === 200) {
+      const vehicleList = res.data || []
+      // 检查是否存在其他车辆使用该车牌号（排除当前车辆）
+      const existingVehicle = vehicleList.find(
+        (v) => v.vehiclePlateNo === newPlate && v.vin !== detail.vin,
+      )
+
+      if (existingVehicle) {
+        // 该车牌已具有一个VIN码，请检查确认
+        showToast('该车牌已具有一个VIN码，请检查确认')
+      } else {
+        // 车牌唯一，直接更新页面数据并关闭弹框
+        detail.plateNo = newPlate
+        showToast('车牌修改成功')
+        changePlateDialog.value = false
+      }
+    } else {
+      showToast(res.msg || '校验车牌失败')
+    }
+  } catch (error) {
+    console.error('更换车牌失败:', error)
+    showToast('更换车牌失败，请稍后重试')
+  } finally {
+    savingLoading.value = false
+  }
 }
 
-const moreActionsList = [
-  { name: '权益查询', tag: '1', color: '#191a1b' },
-  { name: '维修履历', tag: '2', color: '#191a1b' },
-  { name: '实时故障', tag: '3', color: '#191a1b' },
-  { name: '作废', tag: '4', color: '#191a1b' },
-]
+// 更多操作列表 - 动态计算作废按钮状态
+const moreActionsList = computed(() => {
+  // 已作废210、反结算200、已生成结算单(isCreateStatementInfo == 1)时，作废禁用
+  const isCancelDisabled =
+    detail.orderStatus == 210 ||
+    detail.orderStatus == 200 ||
+    detail.isCreateStatementInfo == 1
+
+  // 获取禁用原因文本
+  let disabledReason = ''
+  if (detail.orderStatus == 210) {
+    disabledReason = '已作废'
+  } else if (detail.orderStatus == 200) {
+    disabledReason = '反结算'
+  } else if (detail.isCreateStatementInfo == 1) {
+    disabledReason = '已生成结算单'
+  }
+
+  return [
+    { name: '权益查询', tag: '1', color: '#191a1b' },
+    { name: '维修履历', tag: '2', color: '#191a1b' },
+    { name: '实时故障', tag: '3', color: '#191a1b' },
+    {
+      name: '作废',
+      tag: '4',
+      color: isCancelDisabled ? '#888888' : '#191a1b',
+      disabled: isCancelDisabled,
+      disabledReason: disabledReason,
+    },
+  ]
+})
 const faultModuleList = ref([])
 
 // 获取故障模块列表
@@ -1407,6 +1466,11 @@ const cancelReason = ref('')
 const onSelectMoreAction = (action) => {
   console.log(action)
   if (action.name === '作废') {
+    // 检查是否禁用
+    if (action.disabled) {
+      showToast(`该工单为${action.disabledReason}状态，无法作废`)
+      return
+    }
     cancelReason.value = ''
     showCancelReason.value = true
   }
@@ -1426,6 +1490,7 @@ const onSelectMoreAction = (action) => {
       path: '/reception/rights-query',
       query: {
         id: detail.id,
+        vin: detail.vin,
       },
     })
   }
@@ -1912,6 +1977,28 @@ const getSignChannelName = (channel) => {
   return channelMap[channel] || ''
 }
 
+// 里程校验
+const validateMileage = (mileage, lastMileage, netMileage) => {
+  // 1. 进店里程与上次进店里程对比
+  if (mileage && lastMileage) {
+    const mileageNum = Number(mileage)
+    const lastMileageNum = Number(lastMileage)
+    if (mileageNum < lastMileageNum) {
+      showToast(`本次进店里程${mileageNum}小于上次进店里程数${lastMileageNum},请注意`)
+    }
+  }
+
+  // 2. 进店里程与车联网里程对比
+  if (mileage && netMileage) {
+    const mileageNum = Number(mileage)
+    const netMileageNum = Number(netMileage)
+    const diff = Math.abs(mileageNum - netMileageNum)
+    if (diff > 300) {
+      showToast('进店里程数和车联网里程数不符，请注意')
+    }
+  }
+}
+
 // 获取详情
 const fetchDetail = async () => {
   const id = route.query.id
@@ -2100,6 +2187,9 @@ const fetchDetail = async () => {
         }
         repairPersonNameInput.value = detail.repairPerson
         repairPersonPhoneInput.value = detail.repairPersonPhone
+
+        // 里程校验
+        validateMileage(data.mileage, data.lastMileage, data.netMileage)
 
         // 保存环检数据快照
         initialInspectionData.value = {
@@ -2845,12 +2935,18 @@ const onInspectionSave = async (type) => {
 
 // 项目零件保存
 const onPartsSave = async () => {
+  // 从 RepairItemContent 组件获取数据
+  const items = repairItemContentRef.value?.selectedItems || []
+  const parts = repairItemContentRef.value?.selectedParts || []
+
+  // 校验项目及零件不可为空
+  if (items.length === 0 && parts.length === 0) {
+    showToast('项目及零件不可为空，请添加项目及零件')
+    return
+  }
+
   savingLoading.value = true
   try {
-    // 从 RepairItemContent 组件获取数据
-    const items = repairItemContentRef.value?.selectedItems || []
-    const parts = repairItemContentRef.value?.selectedParts || []
-
     // 保存项目零件
     const res = await saveSpRepairItem({
       serviceProxyId: route.query.id,
@@ -2878,12 +2974,18 @@ const onPartsSave = async () => {
 
 // 签字确认保存
 const onSignatureSave = async () => {
+  // 从 RepairItemContent 组件获取数据
+  const items = repairItemContentRef.value?.selectedItems || []
+  const parts = repairItemContentRef.value?.selectedParts || []
+
+  // 校验项目及零件不可为空
+  if (items.length === 0 && parts.length === 0) {
+    showToast('项目及零件不可为空，请添加项目及零件')
+    return
+  }
+
   savingLoading.value = true
   try {
-    // 从 RepairItemContent 组件获取数据
-    const items = repairItemContentRef.value?.selectedItems || []
-    const parts = repairItemContentRef.value?.selectedParts || []
-
     // 保存项目零件
     const res = await saveSpRepairItem({
       serviceProxyId: route.query.id,
@@ -2959,6 +3061,16 @@ const onAddPackage = () => {
 
 // 制单确认并签字
 const onConfirmAndSign = () => {
+  // 从 RepairItemContent 组件获取数据
+  const items = repairItemContentRef.value?.selectedItems || []
+  const parts = repairItemContentRef.value?.selectedParts || []
+
+  // 校验维修项目或者维修零件有值
+  if (items.length === 0 && parts.length === 0) {
+    showToast('项目及零件不可为空，请添加项目及零件')
+    return
+  }
+
   // 先显示确认弹框
   showConfirmDialog({
     title: '问题确认',
@@ -2971,7 +3083,8 @@ const onConfirmAndSign = () => {
       // 点击"准确"，执行接口
       let params = {
         serviceProxyId: detail.id,
-        signChannel: signatureData.signChannel === '纸质单据' || detail.signChannel == 40 ? '40' : '',
+        signChannel:
+          signatureData.signChannel === '纸质单据' || detail.signChannel == 40 ? '40' : '',
         expectFinishAt: signatureData.deliveryTime,
       }
       spConfirmAndSign(params).then((res) => {

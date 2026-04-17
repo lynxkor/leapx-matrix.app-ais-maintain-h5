@@ -1,5 +1,10 @@
 <template>
   <div class="rights-query">
+    <!-- 车辆信息头部 - 固定在nav bar下面 -->
+    <div class="vehicle-header" v-if="vehicleInfo.vin">
+      <div class="vin-text">{{ vehicleInfo.vin }}</div>
+    </div>
+
     <!-- Tab 导航 -->
     <van-tabs v-model:active="activeTab" sticky offset-top="0px" @change="onTabChange">
       <van-tab title="未使用" :name="2"></van-tab>
@@ -22,7 +27,7 @@
                 </div>
                 <div class="card-bottom">
                   <span v-if="item.forever == 1" class="validity-period">永久有效</span>
-                  <span v-else>{{ item.effectDate }} 至 {{ item.expireDate }}</span>
+                  <span v-else>{{ item.effectDate }} 至 {{ item.expiryDate }}</span>
                 </div>
               </div>
               <div class="card-divider"></div>
@@ -49,7 +54,7 @@
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import RefreshList from '@/libs/components/RefreshList.vue'
 import { getRightsList } from '@/api/reception'
 import { useRoute } from 'vue-router'
@@ -57,6 +62,11 @@ import { useRoute } from 'vue-router'
 const needRefresh = ref(false)
 const loading = ref(false)
 const route = useRoute()
+
+// 车辆信息
+const vehicleInfo = reactive({
+  vin: '',
+})
 
 // Tab 状态
 const activeTab = ref('unused')
@@ -69,9 +79,9 @@ const requestData = reactive({
   data: {
     rightsTypeList: [1, 3],
     serviceProxyId: route.query.id,
-    status: 2
+    status: 2,
   },
-  api: getRightsList
+  api: getRightsList,
 })
 
 // Tab 切换
@@ -92,6 +102,14 @@ const onSetData = (data) => {
   needRefresh.value = false
   loading.value = false
 }
+
+// 页面加载时获取车辆信息
+onMounted(() => {
+  const { vin } = route.query
+  if (vin) {
+    vehicleInfo.vin = vin
+  }
+})
 </script>
 
 <style lang="scss" scoped>
@@ -100,6 +118,22 @@ const onSetData = (data) => {
   flex-direction: column;
   height: 100%;
   background: #f7f7f7;
+
+  .vehicle-header {
+    background: #ffffff;
+    padding: 8px 12px;
+    flex-shrink: 0;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+
+    .vin-text {
+      font-size: 14px;
+      color: #888;
+      line-height: 17px;
+      text-align: center;
+    }
+  }
 
   :deep(.van-tabs) {
     flex-shrink: 0;

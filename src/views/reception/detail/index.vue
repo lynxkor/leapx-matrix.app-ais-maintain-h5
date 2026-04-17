@@ -397,7 +397,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, nextTick } from 'vue'
+import { ref, reactive, onMounted, nextTick, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { showToast, showImagePreview } from 'vant'
 import { useGlobalStore } from '@/stores/global'
@@ -414,12 +414,37 @@ const changeCarDialog = ref(false)
 const loading = ref(false)
 const cancelLoading = ref(false)
 
-const moreActionsList = [
-  { name: '权益查询', tag: '1', color: '#191a1b' },
-  { name: '维修履历', tag: '2', color: '#191a1b' },
-  { name: '实时故障', tag: '3', color: '#191a1b' },
-  { name: '作废', tag: '4', color: '#191a1b' },
-]
+// 更多操作列表 - 动态计算作废按钮状态
+const moreActionsList = computed(() => {
+  // 已作废210、反结算200、已生成结算单(isCreateStatementInfo == 1)时，作废禁用
+  const isCancelDisabled =
+    detail.value.orderStatus == 210 ||
+    detail.value.orderStatus == 200 ||
+    detail.value.isCreateStatementInfo == 1
+
+  // 获取禁用原因文本
+  let disabledReason = ''
+  if (detail.value.orderStatus == 210) {
+    disabledReason = '已作废'
+  } else if (detail.value.orderStatus == 200) {
+    disabledReason = '反结算'
+  } else if (detail.value.isCreateStatementInfo == 1) {
+    disabledReason = '已生成结算单'
+  }
+
+  return [
+    { name: '权益查询', tag: '1', color: '#191a1b' },
+    { name: '维修履历', tag: '2', color: '#191a1b' },
+    { name: '实时故障', tag: '3', color: '#191a1b' },
+    {
+      name: '作废',
+      tag: '4',
+      color: isCancelDisabled ? '#888888' : '#191a1b',
+      disabled: isCancelDisabled,
+      disabledReason: disabledReason,
+    },
+  ]
+})
 // 作废原因弹框状态
 const showCancelReason = ref(false)
 // 作废原因
@@ -428,6 +453,11 @@ const cancelReason = ref('')
 const onSelectMoreAction = (action) => {
   console.log(action)
   if (action.name === '作废') {
+    // 检查是否禁用
+    if (action.disabled) {
+      showToast(`该工单为${action.disabledReason}状态，无法作废`)
+      return
+    }
     cancelReason.value = ''
     showCancelReason.value = true
   }
@@ -436,6 +466,7 @@ const onSelectMoreAction = (action) => {
       path: '/reception/maintenance-history',
       query: {
         id: route.query.id,
+        vin: detail.value.vehProfileVin,
       },
     })
   }
@@ -444,6 +475,7 @@ const onSelectMoreAction = (action) => {
       path: '/reception/rights-query',
       query: {
         id: route.query.id,
+        vin: detail.value.vehProfileVin,
       },
     })
   }

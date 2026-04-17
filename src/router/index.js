@@ -71,7 +71,8 @@ const router = createRouter({
           component: () => import('../views/reception/WorkOrder.vue'),
           meta: {
             title: '接车施工单',
-            keepAlive: true
+            keepAlive: true,
+            closeWindow: 1
           }
         },
         {
