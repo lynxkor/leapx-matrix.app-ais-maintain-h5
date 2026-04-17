@@ -85,23 +85,37 @@
               <!-- 车牌行 -->
               <div class="plate-row">
                 <span class="plate-number">{{ item.carPlate }}</span>
-                <!-- 预警图标 - 根据 alarmLevel 显示不同颜色: 10=绿色, 20=橙色, 30=红色 -->
-                <svg
-                  v-if="item.alarmLevel"
-                  class="vehicle-icon"
-                  width="16"
-                  height="16"
-                  viewBox="0 0 15.35 13.88"
-                  fill="none"
-                >
-                  <path :fill="getAlarmColor(item.alarmLevel)" d="M7.3351851 0C7.9718513 0 8.5651855 0.31133342 8.9285183 0.83133328L8.998518 0.93799996L14.407852 9.9700003C15.123848 11.210074 14.297827 12.772247 12.869853 12.878666L12.739853 12.883999L1.9231861 12.883999C0.49417353 12.867918 -0.42892668 11.36636 0.20185265 10.083999L0.26785263 9.9606657L5.6745195 0.93533206C6.0265875 0.35477138 6.6562138 0.00014813742 7.3351851 0ZM7.3418517 8.8866673L7.257185 8.8913336C6.9218178 8.9312248 6.6692615 9.2156019 6.6692615 9.5533333C6.6692615 9.8910656 6.9218178 10.175444 7.257185 10.215334L7.3351851 10.22L7.4198513 10.215334C7.7552185 10.175442 8.0077753 9.8910656 8.0077753 9.5533333C8.0077753 9.2156019 7.7552185 8.9312248 7.4198513 8.8913336L7.3418517 8.8866673ZM7.3351851 4.2200003C6.9972014 4.2200446 6.7127285 4.4730048 6.6731849 4.8086672L6.6685181 4.8866668L6.6685181 7.5533333L6.6731849 7.6313334C6.7130756 7.9667006 6.9974532 8.2192574 7.3351851 8.2192574C7.6729164 8.2192574 7.957294 7.9667006 7.9971848 7.6313334L8.001852 7.5533333L8.001852 4.8866668L7.9971848 4.8086672C7.9576411 4.4730048 7.6731682 4.2200446 7.3351851 4.2200003Z"/>
-                </svg>
+                <!-- 预警图标 - 根据 alarmLevelList 数组显示多个图标: 10=绿色, 20=橙色, 30=红色 -->
+                <template v-if="item.alarmLevelList && item.alarmLevelList.length > 0">
+                  <svg
+                    v-for="(level, index) in item.alarmLevelList"
+                    :key="index"
+                    class="vehicle-icon"
+                    width="16"
+                    height="16"
+                    viewBox="0 0 15.35 13.88"
+                    fill="none"
+                  >
+                    <path
+                      :fill="getAlarmColor(level)"
+                      d="M7.3351851 0C7.9718513 0 8.5651855 0.31133342 8.9285183 0.83133328L8.998518 0.93799996L14.407852 9.9700003C15.123848 11.210074 14.297827 12.772247 12.869853 12.878666L12.739853 12.883999L1.9231861 12.883999C0.49417353 12.867918 -0.42892668 11.36636 0.20185265 10.083999L0.26785263 9.9606657L5.6745195 0.93533206C6.0265875 0.35477138 6.6562138 0.00014813742 7.3351851 0ZM7.3418517 8.8866673L7.257185 8.8913336C6.9218178 8.9312248 6.6692615 9.2156019 6.6692615 9.5533333C6.6692615 9.8910656 6.9218178 10.175444 7.257185 10.215334L7.3351851 10.22L7.4198513 10.215334C7.7552185 10.175442 8.0077753 9.8910656 8.0077753 9.5533333C8.0077753 9.2156019 7.7552185 8.9312248 7.4198513 8.8913336L7.3418517 8.8866673ZM7.3351851 4.2200003C6.9972014 4.2200446 6.7127285 4.4730048 6.6731849 4.8086672L6.6685181 4.8866668L6.6685181 7.5533333L6.6731849 7.6313334C6.7130756 7.9667006 6.9974532 8.2192574 7.3351851 8.2192574C7.6729164 8.2192574 7.957294 7.9667006 7.9971848 7.6313334L8.001852 7.5533333L8.001852 4.8866668L7.9971848 4.8086672C7.9576411 4.4730048 7.6731682 4.2200446 7.3351851 4.2200003Z"
+                    />
+                  </svg>
+                </template>
                 <!-- 业务类型标签 -->
-                <span v-if="item.warrantyTypeCollect" class="svc-tag">{{ item.warrantyTypeCollect }}</span>
+                <template v-if="item.warrantyTypeCollect">
+                  <span
+                    v-for="(tag, index) in item.warrantyTypeCollect.split('&')"
+                    :key="index"
+                    class="svc-tag"
+                  >{{ tag }}</span>
+                </template>
               </div>
 
               <!-- VIN -->
               <div class="vehicle-line">
+                {{ item.vehModelName }}
+                ·
                 {{ item.vehProfileVin }}
               </div>
 
@@ -109,9 +123,7 @@
               <div class="info-rows">
                 <div class="info-row">
                   <span class="info-label">车主</span>
-                  <div class="info-value-wrap">
-                    <span class="info-value">{{ item.customerName }}</span>
-                  </div>
+                  <span class="info-value">{{ item.creatorName }}</span>
                 </div>
                 <div class="info-row">
                   <span class="info-label">客户经理</span>
@@ -134,9 +146,7 @@
               >
                 作废
               </div>
-              <div class="btn-pill btn-outline" @click.stop="handleContact(item)">
-                联系车主
-              </div>
+              <div class="btn-pill btn-outline" @click.stop="handleContact(item)">联系车主</div>
               <div
                 v-if="activeTab === 'pending'"
                 class="btn-pill btn-primary"
@@ -193,9 +203,7 @@
       <template #footer>
         <!-- 底部拖动条 + 提交按钮 -->
         <div class="settle-footer">
-          <div class="submit-btn" @click="confirmSettle">
-            确认结算
-          </div>
+          <div class="submit-btn" @click="confirmSettle">确认结算</div>
         </div>
       </template>
     </AisPopup>
@@ -291,7 +299,11 @@ import dayjs from 'dayjs'
 import RefreshList from '@/libs/components/RefreshList.vue'
 import ListItem from '@/components/ListItem.vue'
 import AisPopup from '@/libs/components/AisPopup.vue'
-import { getSettlementStatementPage, cancelServiceProxy, addServiceProxyStatement } from '@/api/settlementStatement'
+import {
+  getSettlementStatementPage,
+  cancelServiceProxy,
+  addServiceProxyStatement
+} from '@/api/settlementStatement'
 import { callPhone } from '@/libs/utils/nativeFn'
 
 const router = useRouter()
@@ -482,9 +494,9 @@ const getStatusClass = (status) => {
 // 根据预警等级返回对应颜色
 const getAlarmColor = (alarmLevel) => {
   const colorMap = {
-    '10': '#009100', // 绿色
-    '20': '#C8A12B', // 橙色
-    '30': '#B91919' // 红色
+    10: '#009100', // 绿色
+    20: '#C8A12B', // 橙色
+    30: '#B91919' // 红色
   }
   return colorMap[alarmLevel] || '#009100'
 }
@@ -832,6 +844,8 @@ const goToUpload = () => {
         font-size: 12px;
         color: #545454;
         margin-bottom: 8px;
+        display: flex;
+        align-items: center;
       }
 
       .info-rows {
@@ -860,6 +874,7 @@ const goToUpload = () => {
 
           .info-value {
             color: #191a1b;
+            margin-left: 12px;
           }
         }
       }
