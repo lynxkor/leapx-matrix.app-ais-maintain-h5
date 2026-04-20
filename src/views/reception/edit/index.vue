@@ -3102,21 +3102,19 @@ const onComplete = async () => {
     message: '确定预检完成吗？',
   })
     .then(async () => {
-      try {
-        servicePreCheck(route.query.id).then((res) => {
-          if (res.code === 200) {
-            showToast('预检完成')
-            isPreCheckCompleted.value = true
-            fetchDetail()
-          } else {
-            showToast(res.msg || '操作失败')
-          }
-        })
-      } catch (error) {
-        showToast('操作失败')
+      savingLoading.value = true
+      const res = await servicePreCheck(route.query.id)
+      if (res.code === 200) {
+        showToast('预检完成')
+        fetchDetail()
+      } else {
+        showToast(res.msg || '操作失败')
       }
+      savingLoading.value = false
     })
-    .catch(() => {})
+    .catch(() => {
+      savingLoading.value = false
+    })
 }
 
 // 添加项目/零件
