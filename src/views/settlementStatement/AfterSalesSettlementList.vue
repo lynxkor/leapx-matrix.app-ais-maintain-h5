@@ -180,8 +180,8 @@
                 v-for="item in paymentMethods"
                 :key="item.value"
                 class="payment-method-item"
-                :class="{ active: paymentForm.paymentMethod === item.value }"
-                @click="selectPaymentMethod(item)"
+                :class="{ active: paymentForm.paymentMethod === item.value, disabled: item.disabled }"
+                @click="item.disabled ? null : selectPaymentMethod(item)"
               >
                 <span class="payment-method-icon" :class="`icon-${item.iconType}`">{{ item.iconText }}</span>
                 <span class="payment-method-text">{{ item.text }}</span>
@@ -545,21 +545,7 @@ const isPcPaymentCompleted = computed(() => {
   return Boolean(detailData.value.receiveTime) || statementStatusText.value.includes('已收款')
 })
 const bottomActionConfig = computed(() => {
-  // 调试日志
-  console.log('=== bottomActionConfig 调试 ===')
-  console.log('isEmptyDetail:', isEmptyDetail.value)
-  console.log('isCompleted:', isCompleted.value)
-  console.log('isPcPaymentCompleted:', isPcPaymentCompleted.value)
-  console.log('isPaymentConfirmed:', isPaymentConfirmed.value)
-  console.log('isPending:', isPending.value)
-  console.log('isCheck:', detailData.value.isCheck)
-  console.log('statementTypeLabel:', statementTypeLabel.value)
-  console.log('isSelfPaySettlement:', isSelfPaySettlement.value)
-  console.log('signStatus:', signStatus.value)
-  console.log('remainingAmount:', remainingAmount.value)
-
   if (isEmptyDetail.value || isCompleted.value || isPcPaymentCompleted.value || isPaymentConfirmed.value) {
-    console.log('=> 前置条件拦截，返回 null')
     return null
   }
 
@@ -702,7 +688,7 @@ const paymentMethods = [
   { text: '支付宝', value: 20, iconText: '支', iconType: 'alipay' },
   { text: '银行卡', value: 10, iconText: '卡', iconType: 'card' },
   { text: '现金', value: 40, iconText: '¥', iconType: 'cash' },
-  { text: '权益抵扣', value: 50, iconText: '益', iconType: 'rights' },
+  { text: '权益抵扣', value: 50, iconText: '益', iconType: 'rights', disabled: true },
   { text: '其他', value: 60, iconText: '其', iconType: 'other' }
 ]
 
@@ -754,20 +740,16 @@ const handleSignClick = () => {
   }
 }
 
-// 提交结算并签字
+// 提交结算并签字（只有最后一个结算单才会走这里，不需要提示）
 const handleSubmitSettlement = () => {
-  // 判断是否有多个待结算单
-  if (pendingSettlementCount.value > 1) {
-    showPendingTip.value = true
-    return
-  }
   showSignChannel.value = true
 }
 
-// 提示弹窗确认后，显示签字渠道选择弹窗
+// 提示弹窗确认后，继续执行操作
 const handlePendingTipConfirm = () => {
   showPendingTip.value = false
-  showSignChannel.value = true
+  // 直接提交结算
+  doSubmitSettlement()
 }
 
 const validateSettlementPayload = (payload) => {
@@ -881,6 +863,17 @@ const handleBottomAction = () => {
 }
 
 const handleDirectSubmitSettlement = async() => {
+  // 判断是否有多个待结算单
+  if (pendingSettlementCount.value > 1) {
+    showPendingTip.value = true
+    return
+  }
+
+  await doSubmitSettlement()
+}
+
+// 实际执行提交结算
+const doSubmitSettlement = async() => {
   const payload = buildSettlementPayload()
 
   if (!validateSettlementPayload(payload)) {
@@ -1697,6 +1690,15 @@ const handlePaymentSubmit = async() => {
 
       .payment-method-text {
         color: #00a000;
+      }
+    }
+
+    &.disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+
+      .payment-method-text {
+        color: #999;
       }
     }
   }
