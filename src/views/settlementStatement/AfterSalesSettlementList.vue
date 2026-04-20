@@ -222,7 +222,7 @@
         </div>
       </template>
       <template #footer>
-        <div class="pending-tip-btn" @click="showPendingTip = false">我知道了</div>
+        <div class="pending-tip-btn" @click="handlePendingTipConfirm">我知道了</div>
       </template>
     </AisPopup>
 
@@ -732,6 +732,12 @@ const handleSubmitSettlement = () => {
     showPendingTip.value = true
     return
   }
+  showSignChannel.value = true
+}
+
+// 提示弹窗确认后，显示签字渠道选择弹窗
+const handlePendingTipConfirm = () => {
+  showPendingTip.value = false
   showSignChannel.value = true
 }
 
