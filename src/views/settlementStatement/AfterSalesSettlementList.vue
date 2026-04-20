@@ -494,15 +494,34 @@ const isPending = computed(() => sourceStatus.value === 'pending')
 // 是否为已交车状态
 const isCompleted = computed(() => sourceStatus.value === 'completed')
 const isSingleSettlement = computed(() => statementList.value.length <= 1)
-const isCurrentLastSettlement = computed(() => !detailData.value.isCheck)
+// 计算数组中 isCheck 为 false 的数量
+const uncheckedCount = computed(() => {
+  return statementList.value.filter((item) => item.isCheck === false).length
+})
+
+// 当前结算单是否为最后一个（isCheck 为 false 且整个数组中只有一个 isCheck 为 false）
+const isCurrentLastSettlement = computed(() => {
+  // 当前结算单 isCheck 不为 false，不是最后一个
+  if (detailData.value.isCheck !== false) {
+    return false
+  }
+  // 当前结算单 isCheck 为 false，且整个数组中只有一个 isCheck 为 false，才是最后一个
+  return uncheckedCount.value === 1
+})
 const shouldUseSignFlow = computed(() => isSingleSettlement.value || isCurrentLastSettlement.value)
 const settleButtonText = computed(() => (shouldUseSignFlow.value ? '提交结算并签字' : '提交结算'))
 const statementTypeLabel = computed(() => detailData.value.statementTypeLabel || '')
 const statementStatusText = computed(() => detailData.value.statementStatusLabel || detailData.value.statementStatusDesc || '')
 const isWarrantyOrContract = computed(() => ['保修', '合同'].some((item) => statementTypeLabel.value.includes(item)))
 const isSelfPaySettlement = computed(() => ['自费', '保险', '内部结算'].some((item) => statementTypeLabel.value.includes(item)))
+// 剩余待提交数量（不算当前单子）
 const pendingSettlementCount = computed(() => {
-  return statementList.value.filter((item) => !isStatementSubmitted(item)).length
+  // 基于 isCheck 为 false 的数量计算
+  // 如果当前单子 isCheck 为 false，则减去当前单子
+  if (detailData.value.isCheck === false) {
+    return Math.max(uncheckedCount.value - 1, 0)
+  }
+  return uncheckedCount.value
 })
 const allSettlementsSubmitted = computed(() => {
   return statementList.value.length > 0 && pendingSettlementCount.value === 0
@@ -531,6 +550,11 @@ const bottomActionConfig = computed(() => {
     return null
   }
 
+  // 如果当前结算单已结算（isCheck 为 true），隐藏按钮
+  if (detailData.value.isCheck === true) {
+    return null
+  }
+
   if (isWarrantyOrContract.value) {
     if (signStatus.value === 'signed') {
       return {
@@ -547,7 +571,8 @@ const bottomActionConfig = computed(() => {
   }
 
   if (isSelfPaySettlement.value || !statementTypeLabel.value) {
-    if (signStatus.value !== 'signed') {
+    // 未签字：显示提交结算按钮
+    if (signStatus.value === 'not_signed') {
       return {
         type: 'button',
         text: settleButtonText.value,
@@ -555,6 +580,7 @@ const bottomActionConfig = computed(() => {
       }
     }
 
+    // 已提交结算或已提交结算并签字（pending 或 signed）：根据剩余金额显示添加收款或确认收款按钮
     if (remainingAmount.value > 0) {
       return {
         type: 'button',
@@ -570,11 +596,16 @@ const bottomActionConfig = computed(() => {
     }
   }
 
-  return {
-    type: 'button',
-    text: settleButtonText.value,
-    action: shouldUseSignFlow.value ? 'submitSign' : 'submitSettlement'
+  // 其他类型：未签字显示提交结算按钮，已签字隐藏按钮
+  if (signStatus.value === 'not_signed') {
+    return {
+      type: 'button',
+      text: settleButtonText.value,
+      action: shouldUseSignFlow.value ? 'submitSign' : 'submitSettlement'
+    }
   }
+
+  return null
 })
 const signChannelValue = computed(() => (selectedChannel.value === 'paper' ? 40 : undefined))
 const buildSettlementPayload = (includeSignChannel = false) => {
