@@ -357,11 +357,11 @@
               <div class="repair-card-bottom">
                 <div class="repair-info-row">
                   <span class="info-item">
-                    <span class="info-label">工时费</span>
-                    <span class="info-value">¥{{ item.price || '0.00' }}</span>
+                    <span class="info-label">索赔价</span>
+                    <span class="info-value">¥{{ item.claimPrice || '0.00' }}</span>
                   </span>
                   <span class="info-item">
-                    <span class="info-label">数量</span>
+                    <span class="info-label">工时数</span>
                     <span class="info-value">x{{ item.quantity }}</span>
                   </span>
                 </div>
@@ -529,11 +529,11 @@
             <div class="repair-card-bottom">
               <div class="repair-info-row">
                 <span class="info-item">
-                  <span class="info-label">工时费</span>
+                  <span class="info-label">工时数</span>
                   <span class="info-value">¥{{ item.workingHours || '0.00' }}</span>
                 </span>
                 <span class="info-item">
-                  <span class="info-label">单价</span>
+                  <span class="info-label">工时单价</span>
                   <span class="info-value">¥{{ item.unitPrice }}</span>
                 </span>
               </div>
@@ -643,7 +643,7 @@
               <div class="repair-card-bottom">
                 <div class="repair-info-row">
                   <span class="info-item">
-                    <span class="info-label">工时费</span>
+                    <span class="info-label">工时</span>
                     <span class="info-value">¥{{ item.workHour || '0.00' }}</span>
                   </span>
                 </div>
@@ -670,7 +670,7 @@
                   <div class="repair-category">{{ part.checkoutTypeName }}</div>
                 </div>
                 <div class="repair-right">
-                  <div class="repair-price">¥{{ part.receivableAmount }}</div>
+                  <div class="repair-price">¥{{ part.partsAmount }}</div>
                   <div class="repair-discount" v-if="Number(part.discountAmount) > 0">
                     优惠 ¥{{ part.discountAmount }}
                   </div>
@@ -680,7 +680,7 @@
                 <div class="repair-info-row">
                   <span class="info-item">
                     <span class="info-label">单价</span>
-                    <span class="info-value">¥{{ part.unitPrice }}</span>
+                    <span class="info-value">¥{{ part.price }}</span>
                   </span>
                   <span class="info-item">
                     <span class="info-label">数量</span>
