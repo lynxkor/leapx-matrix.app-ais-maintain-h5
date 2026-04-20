@@ -113,7 +113,7 @@
               <div class="repair-left">
                 <div class="repair-name">{{ item.repairItemName }}</div>
                 <div class="repair-code">{{ item.repairItemCode }}</div>
-                <div class="repair-type">{{ item.checkoutTypeName }}-{{ item.warrantyTypeName }}</div>
+                <div class="repair-type">{{item.repairItemTypeName}}-{{ item.checkoutTypeName }}-{{ item.warrantyTypeName }}</div>
               </div>
               <div class="repair-right">
                 <div class="repair-price">¥{{ formatPrice(item.repairAmount) }}</div>
@@ -639,20 +639,34 @@ const buildSettlementPayload = (includeSignChannel = false) => {
 
   return payload
 }
-const buildReceiptPayload = () => ({
-  statementId: detailData.value.id,
-  invoiceRecordList: [
-    {
-      statementId: detailData.value.id,
-      statementCode: detailData.value.code,
-      payAmount: Number(paymentForm.value.amount),
-      payType: paymentForm.value.paymentMethod,
-      rightsCode: '',
-      invoiceNumber: '',
-      invoiceType: ''
-    }
-  ]
-})
+const buildReceiptPayload = () => {
+  // 已有的收款记录
+  const existingRecords = invoiceRecords.value.map((record) => ({
+    statementId: record.statementId || detailData.value.id,
+    statementCode: record.statementCode || detailData.value.code,
+    payAmount: Number(record.payAmount),
+    payType: record.payType,
+    rightsCode: record.rightsCode || '',
+    invoiceNumber: record.invoiceNumber || '',
+    invoiceType: record.invoiceType || ''
+  }))
+
+  // 新增的收款记录
+  const newRecord = {
+    statementId: detailData.value.id,
+    statementCode: detailData.value.code,
+    payAmount: Number(paymentForm.value.amount),
+    payType: paymentForm.value.paymentMethod,
+    rightsCode: '',
+    invoiceNumber: '',
+    invoiceType: ''
+  }
+
+  return {
+    statementId: detailData.value.id,
+    invoiceRecordList: [...existingRecords, newRecord]
+  }
+}
 
 // 格式化金额
 const formatPrice = (price) => {
