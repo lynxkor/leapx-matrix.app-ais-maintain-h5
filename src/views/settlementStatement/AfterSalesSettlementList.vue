@@ -370,14 +370,17 @@ const getFallbackBaseInfo = () => ({
 const getSignStatus = (statement) => {
   const backendSignStatus = Number(statement?.signStatus)
 
+  // 20: 已签字
   if (backendSignStatus === 20) {
     return 'signed'
   }
 
+  // 10: 待签字
   if (backendSignStatus === 10) {
-    return 'not_signed'
+    return 'pending'
   }
 
+  // 兼容旧数据：通过时间字段判断
   if (statement?.signCompletedOn) {
     return 'signed'
   }
@@ -542,16 +545,25 @@ const isPcPaymentCompleted = computed(() => {
   return Boolean(detailData.value.receiveTime) || statementStatusText.value.includes('已收款')
 })
 const bottomActionConfig = computed(() => {
+  // 调试日志
+  console.log('=== bottomActionConfig 调试 ===')
+  console.log('isEmptyDetail:', isEmptyDetail.value)
+  console.log('isCompleted:', isCompleted.value)
+  console.log('isPcPaymentCompleted:', isPcPaymentCompleted.value)
+  console.log('isPaymentConfirmed:', isPaymentConfirmed.value)
+  console.log('isPending:', isPending.value)
+  console.log('isCheck:', detailData.value.isCheck)
+  console.log('statementTypeLabel:', statementTypeLabel.value)
+  console.log('isSelfPaySettlement:', isSelfPaySettlement.value)
+  console.log('signStatus:', signStatus.value)
+  console.log('remainingAmount:', remainingAmount.value)
+
   if (isEmptyDetail.value || isCompleted.value || isPcPaymentCompleted.value || isPaymentConfirmed.value) {
+    console.log('=> 前置条件拦截，返回 null')
     return null
   }
 
   if (!isPending.value) {
-    return null
-  }
-
-  // 如果当前结算单已结算（isCheck 为 true），隐藏按钮
-  if (detailData.value.isCheck === true) {
     return null
   }
 
@@ -570,9 +582,10 @@ const bottomActionConfig = computed(() => {
     }
   }
 
+  // 自费/保险/内部结算类型
   if (isSelfPaySettlement.value || !statementTypeLabel.value) {
-    // 未签字：显示提交结算按钮
-    if (signStatus.value === 'not_signed') {
+    // 未签字或待签字：显示提交结算按钮
+    if (signStatus.value === 'not_signed' || signStatus.value === 'pending') {
       return {
         type: 'button',
         text: settleButtonText.value,
@@ -580,19 +593,21 @@ const bottomActionConfig = computed(() => {
       }
     }
 
-    // 已提交结算或已提交结算并签字（pending 或 signed）：根据剩余金额显示添加收款或确认收款按钮
-    if (remainingAmount.value > 0) {
+    // 已签字：根据剩余金额显示添加收款或确认收款按钮
+    if (signStatus.value === 'signed') {
+      if (remainingAmount.value > 0) {
+        return {
+          type: 'button',
+          text: '添加收款',
+          action: 'addPayment'
+        }
+      }
+
       return {
         type: 'button',
-        text: '添加收款',
-        action: 'addPayment'
+        text: '确认收款',
+        action: 'confirmPayment'
       }
-    }
-
-    return {
-      type: 'button',
-      text: '确认收款',
-      action: 'confirmPayment'
     }
   }
 
