@@ -459,13 +459,15 @@
     <div class="bottom-bar">
       <template v-if="activeTab === 'inspection'">
         <span v-if="!isSaved" class="save-btn" @click="onSave">保存</span>
-        <template v-else-if="!isPreCheckCompleted">
+        <template v-else>
           <span
             :class="['save-btn', { disabled: isInspectionSaveDisabled }]"
             @click="onInspectionSave"
             >保存</span
           >
-          <span class="complete-btn" @click="onComplete">预检完成</span>
+          <span v-if="!detail.previewingFinishAt" class="complete-btn" @click="onComplete"
+            >预检完成</span
+          >
         </template>
       </template>
       <template v-else-if="activeTab === 'parts'">
@@ -1143,6 +1145,7 @@ const repairItemContentRef = ref(null)
 // 施工单状态
 const isSaved = ref(false) // 是否已保存
 const isPreCheckCompleted = ref(false) // 是否预检完成
+const serviceProxyId = ref('') // 新建保存后返回的施工单id
 
 // 换车相关
 const carSearchValue = ref('')
@@ -1419,7 +1422,7 @@ const onSelectMoreAction = (action) => {
         vin: detail.vin,
         plateNo: detail.plateNo,
         vehicleModel: detail.vehicleModel,
-        id: route.query.id,
+        id: serviceProxyId.value || route.query.id,
       },
     })
   }
@@ -1776,7 +1779,7 @@ const validateMileage = (mileage, lastMileage, netMileage) => {
 
 // 获取详情
 const fetchDetail = async () => {
-  const id = route.query.id
+  const id = serviceProxyId.value || route.query.id
   const vehicleInfoStr = route.params.vehicleInfo || route.query.vehicleInfo
 
   // 如果有车辆信息，则从车辆搜索页面跳转过来
@@ -2007,7 +2010,7 @@ const handleImageFileChange = (event) => {
       try {
         const params = {
           fileUrl: previewUrl,
-          businessId: route.query.id,
+          businessId: serviceProxyId.value || route.query.id,
           configCode: 'mcs_serviceproxy',
           attachType: attachTypeMap[uploadType],
         }
@@ -2059,7 +2062,7 @@ const handleImageFileChange = (event) => {
 
 // 刷新附件列表
 const refreshAttachmentList = () => {
-  getFileList({ businessId: route.query.id }).then((res) => {
+  getFileList({ businessId: serviceProxyId.value || route.query.id }).then((res) => {
     if (res.code === 200) {
       const fileList = res.data || []
       // 清空所有列表
@@ -2378,7 +2381,7 @@ const onSave = async () => {
       exteriorPhotoList: detail.exteriorImages.map((item) => ({
         ...item,
         fileId: item.id,
-        businessId: route.query.id,
+        businessId: serviceProxyId.value || route.query.id,
         fileUrl: item.url,
         attachType: '车外照片',
         configCode: 'mcs_serviceproxy',
@@ -2386,7 +2389,7 @@ const onSave = async () => {
       interiorPhotoList: detail.interiorImages.map((item) => ({
         ...item,
         fileId: item.id,
-        businessId: route.query.id,
+        businessId: serviceProxyId.value || route.query.id,
         fileUrl: item.url,
         attachType: '车内照片',
         configCode: 'mcs_serviceproxy',
@@ -2406,13 +2409,16 @@ const onSave = async () => {
     if (res.code === 200) {
       showToast('保存成功')
       isSaved.value = true
+      // 新建时保存返回的施工单id
+      if (res.data) {
+        serviceProxyId.value = res.data
+      }
       // 保存成功后获取详情数据更新
       fetchDetailForSignature()
     } else {
       showToast(res.msg || '保存失败')
     }
   } catch (error) {
-    console.error('保存失败:', error)
     showToast('保存失败')
   } finally {
     savingLoading.value = false
@@ -2431,23 +2437,21 @@ const onComplete = async () => {
     message: '确定预检完成吗？',
   })
     .then(async () => {
-      try {
-        servicePreCheck(route.query.id).then((res) => {
-          if (res.code === 200) {
-            showToast('预检完成')
-            isPreCheckCompleted.value = true
-            // 预检完成后获取详情数据，给签字确认页面赋值
-            fetchDetailForSignature()
-            fetchDetail()
-          } else {
-            showToast(res.msg || '操作失败')
-          }
-        })
-      } catch (error) {
-        showToast('操作失败')
+      savingLoading.value = true
+      const res = await servicePreCheck(serviceProxyId.value || route.query.id)
+      if (res.code === 200) {
+        showToast('预检完成')
+        isPreCheckCompleted.value = true
+        // 预检完成后获取详情数据，给签字确认页面赋值
+        fetchDetailForSignature()
+      } else {
+        showToast(res.msg || '操作失败')
       }
+      savingLoading.value = false
     })
-    .catch(() => {})
+    .catch(() => {
+      savingLoading.value = false
+    })
 }
 
 // 环检信息保存（已保存状态）
@@ -2573,7 +2577,7 @@ const onInspectionSave = async () => {
       exteriorPhotoList: detail.exteriorImages.map((item) => ({
         ...item,
         fileId: item.id,
-        businessId: route.query.id,
+        businessId: serviceProxyId.value || route.query.id,
         fileUrl: item.url,
         attachType: '车外照片',
         configCode: 'mcs_serviceproxy',
@@ -2581,7 +2585,7 @@ const onInspectionSave = async () => {
       interiorPhotoList: detail.interiorImages.map((item) => ({
         ...item,
         fileId: item.id,
-        businessId: route.query.id,
+        businessId: serviceProxyId.value || route.query.id,
         fileUrl: item.url,
         attachType: '车内照片',
         configCode: 'mcs_serviceproxy',
@@ -2629,7 +2633,7 @@ const onPartsSave = async () => {
   try {
     // 保存项目零件
     const res = await saveSpRepairItem({
-      serviceProxyId: route.query.id,
+      serviceProxyId: serviceProxyId.value || route.query.id,
       discountId: '',
       itemList: items,
       partsList: parts,
@@ -2665,7 +2669,7 @@ const onSignatureSave = async () => {
   try {
     // 保存项目零件
     const res = await saveSpRepairItem({
-      serviceProxyId: route.query.id,
+      serviceProxyId: serviceProxyId.value || route.query.id,
       discountId: '',
       itemList: items,
       partsList: parts,
@@ -2697,6 +2701,7 @@ const onConfirmAndSign = () => {
     return
   }
   // 点击"准确"，执行接口
+  savingLoading.value = true
   let params = {
     serviceProxyId: detail.id,
     expectFinishAt: signatureData.expectFinishAt,
@@ -2705,22 +2710,26 @@ const onConfirmAndSign = () => {
   if (signatureData.signChannel === '纸质单据' || detail.signChannel == 40) {
     params.signChannel = '40'
   }
-  spConfirmAndSign(params).then((res) => {
-    if (res.code === 200) {
-      showToast('操作成功')
-      fetchDetail()
-      // 接口成功后跳转结算页面
-      const settlementUrl = `https://staticres-sitb.leapmotor.com/leapx/biling/ais/settlement?serviceProxyId=${detail.id}`
-      window.location.href = settlementUrl
-    } else {
-      showToast(res.msg || '操作失败')
-    }
-  })
+  spConfirmAndSign(params)
+    .then((res) => {
+      if (res.code === 200) {
+        showToast('操作成功')
+        fetchDetail()
+        // 接口成功后跳转结算页面
+        const settlementUrl = `https://staticres-sitb.leapmotor.com/leapx/biling/ais/settlement?serviceProxyId=${detail.id}`
+        window.location.href = settlementUrl
+      } else {
+        showToast(res.msg || '操作失败')
+      }
+    })
+    .finally(() => {
+      savingLoading.value = false
+    })
 }
 
 // 获取详情数据给签字确认页面赋值
 const fetchDetailForSignature = async () => {
-  const id = route.query.id
+  const id = serviceProxyId.value || route.query.id
   if (!id) return
 
   try {
