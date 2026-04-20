@@ -1508,6 +1508,15 @@ const onSelectMoreAction = (action) => {
       },
     })
   }
+  if (action.name === '实时故障') {
+    window.location.href = `https://staticres.leapmotor.com/leapx/batteryDiagnosis?vin=${detail.vin}&vehicleModel=${detail.vehicleModel}`
+    // router.push({
+    //   path: `https://staticres.leapmotor.com/leapx/batteryDiagnosis?vin=${detail.vehProfileVin}&vehicleModel=${detail.vehModelId}`,
+    //   query: {
+    //     vin: detail.vehProfileVin,
+    //   },
+    // })
+  }
 }
 // 确认作废
 const onConfirmCancel = () => {
@@ -1894,9 +1903,10 @@ const isConfirmAndSignDisabled = computed(() => {
 
 // 项目零件保存按钮是否禁用：没有添加项目或者零件
 const isPartsSaveDisabled = computed(() => {
-  const items = repairItemContentRef.value?.selectedItems || []
-  const parts = repairItemContentRef.value?.selectedParts || []
-  return items.length === 0 && parts.length === 0
+  return false
+  // const items = repairItemContentRef.value?.selectedItems || []
+  // const parts = repairItemContentRef.value?.selectedParts || []
+  // return items.length === 0 && parts.length === 0
 })
 
 // 环检信息保存按钮是否禁用：进店里程数、进店电量、送修人信息、车内车外照片、异常描述、经理建议为空

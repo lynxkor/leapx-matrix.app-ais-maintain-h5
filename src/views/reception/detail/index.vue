@@ -479,6 +479,15 @@ const onSelectMoreAction = (action) => {
       },
     })
   }
+  if (action.name === '实时故障') {
+    window.location.href = `https://staticres.leapmotor.com/leapx/batteryDiagnosis?vin=${detail.value.vehProfileVin}&vehicleModel=${detail.value.vehSeriesName}`
+    // router.push({
+    //   path: `https://staticres.leapmotor.com/leapx/batteryDiagnosis?vin=${detail.value.vehProfileVin}&vehicleModel=${detail.value.vehSeriesName}`,
+    //   query: {
+    //     vin: detail.value.vehProfileVin,
+    //   },
+    // })
+  }
 }
 // 确认作废
 const onConfirmCancel = () => {
@@ -531,6 +540,8 @@ const detail = ref({
   carPlate: '',
   isAppointment: false,
   vehicleModel: '',
+  vehSeriesName: '',
+  vehSeriesId: '',
   vin: '',
   startWarrantyDate: '',
   customerName: '',
