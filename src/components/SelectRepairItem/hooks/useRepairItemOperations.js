@@ -82,7 +82,12 @@ export default function useRepairItemOperations({
       const parts = (rawItem.partsRespList || []).map((el) => {
         delete el.id
         el.isBindltem = 1
-        return normalizePart(el)
+        const res = normalizePart(el)
+        Object.assign(res, {
+          repairItemTypeId: rawItem.repairItemTypeId || res.repairItemTypeId,
+          repairItemTypeName: rawItem.repairItemTypeName || res.repairItemTypeName
+        })
+        return res
       })
       selectedParts.value.push(...parts)
 
