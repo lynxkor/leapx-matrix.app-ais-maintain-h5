@@ -1510,7 +1510,7 @@ const onSelectMoreAction = (action) => {
     })
   }
   if (action.name === '实时故障') {
-    window.location.href = `https://staticres.leapmotor.com/leapx/batteryDiagnosis?vin=${detail.vin}&vehicleModel=${detail.vehicleModel}`
+    window.location.href = `https://staticres.leapmotor.com/leapx/batteryDiagnosis?vin=${detail.vin}&vehicleModel=${detail.vehSeriesName}`
     // router.push({
     //   path: `https://staticres.leapmotor.com/leapx/batteryDiagnosis?vin=${detail.vehProfileVin}&vehicleModel=${detail.vehModelId}`,
     //   query: {
@@ -2620,6 +2620,9 @@ onMounted(() => {
   window.getImage = async (url) => {
     if (!url) return
 
+    // 保存当前上传类型，避免异步上传完成时类型已改变
+    const uploadType = currentUploadType.value
+
     // attachType 映射
     const attachTypeMap = {
       interior: '车内照片',
@@ -2636,7 +2639,7 @@ onMounted(() => {
     }
 
     // 根据当前上传类型添加到对应的文件列表
-    switch (currentUploadType.value) {
+    switch (uploadType) {
       case 'interior':
         detail.interiorImages.push(fileObj)
         break
@@ -2654,7 +2657,7 @@ onMounted(() => {
         fileUrl: url,
         businessId: route.query.id,
         configCode: 'mcs_serviceproxy',
-        attachType: attachTypeMap[currentUploadType.value],
+        attachType: attachTypeMap[uploadType],
       }
 
       const res = await uploadFileByUrl([params])
@@ -2663,8 +2666,8 @@ onMounted(() => {
         // 兼容两种返回格式：数组或对象
         const uploadData = Array.isArray(res.data) ? res.data[0] || {} : res.data || {}
 
-        // 更新文件状态
-        const targetList = getTargetFileList(currentUploadType.value)
+        // 更新文件状态 - 使用保存的 uploadType
+        const targetList = getTargetFileList(uploadType)
         if (targetList.length > 0) {
           const lastIndex = targetList.length - 1
           targetList[lastIndex] = {
@@ -2678,8 +2681,8 @@ onMounted(() => {
 
         showToast('上传成功')
       } else {
-        // 上传失败，移除临时文件
-        const targetList = getTargetFileList(currentUploadType.value)
+        // 上传失败，移除临时文件 - 使用保存的 uploadType
+        const targetList = getTargetFileList(uploadType)
         if (targetList.length > 0) {
           targetList.pop()
         }
@@ -2687,8 +2690,8 @@ onMounted(() => {
       }
     } catch (e) {
       console.error('上传出错:', e)
-      // 出错时移除临时文件
-      const targetList = getTargetFileList(currentUploadType.value)
+      // 出错时移除临时文件 - 使用保存的 uploadType
+      const targetList = getTargetFileList(uploadType)
       if (targetList.length > 0) {
         targetList.pop()
       }
