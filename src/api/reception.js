@@ -130,6 +130,10 @@ export function getSpecialActivityDetail(data) {
 export function specialActivityUse(data) {
   return post('/maintain/app/sp/special/activity/use', data)
 }
+// 特殊开单 取消选择-通用
+export function cancelSelect(data) {
+  return post('/maintain/app/sp/special/cancel', data)
+}
 // 接车施工单--提醒信息
 export function getRemindInfo(data) {
   return postText('/maintain/app/sp/serviceProxy/getSpRemindInfo', data)
