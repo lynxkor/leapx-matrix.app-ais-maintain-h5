@@ -401,7 +401,7 @@
                   {{ signatureData.expectFinishAt || '请选择' }}
                 </span>
                 <van-icon
-                  v-if="!signatureData.expectFinishAt"
+                  v-if="!signatureData.isDeliveryTimeFromApi"
                   name="arrow"
                   size="12"
                   color="#545454"
@@ -493,7 +493,9 @@
           @click="onInspectionSave"
           >保存</span
         >
-        <span v-if="!isPreCheckCompleted" class="complete-btn" @click="onComplete">预检完成</span>
+        <span v-if="detail.orderStatus === 100" class="complete-btn" @click="onComplete"
+          >预检完成</span
+        >
       </template>
       <template v-else-if="activeTab === 'parts'">
         <span :class="['save-btn', { disabled: isPartsSaveDisabled }]" @click="onPartsSave"
@@ -1174,7 +1176,6 @@ const computedBusinessType = computed(() => {
 
 // 施工单状态
 const isSaved = ref(false) // 是否已保存
-const isPreCheckCompleted = ref(false) // 是否预检完成
 
 // 换车相关
 const carSearchValue = ref('')
@@ -1863,6 +1864,7 @@ const signatureData = reactive({
   maintenanceCostEstimation: '',
   repairItemTypeDetailCollect: '',
   expectFinishAt: '',
+  isDeliveryTimeFromApi: false,
   isLive: false,
   signChannel: '',
   attachments: [],
@@ -2221,6 +2223,7 @@ const fetchDetail = async () => {
           data.costCountResp?.maintenanceCostEstimation || '0.00'
         signatureData.repairItemTypeDetailCollect = data.repairItemTypeDetailCollect || ''
         signatureData.expectFinishAt = data.expectFinishAt || ''
+        signatureData.isDeliveryTimeFromApi = !!data.expectFinishAt
         signatureData.isLive = data.isLive === 1
         signatureData.signChannel = getSignChannelName(data.signChannel)
 
@@ -2272,7 +2275,6 @@ const fetchDetail = async () => {
 
         // 判断状态
         isSaved.value = true
-        isPreCheckCompleted.value = data.currentSituation === 20 || data.currentSituation === 40
       }
     })
     .finally(() => {
@@ -3098,16 +3100,17 @@ const onComplete = async () => {
   })
     .then(async () => {
       try {
-        const res = await servicePreCheck(route.query.id)
-        if (res.code === 200) {
-          showToast('预检完成')
-          isPreCheckCompleted.value = true
-        } else {
-          showToast(res.msg || '预检完成失败')
-        }
+        servicePreCheck(route.query.id).then((res) => {
+          if (res.code === 200) {
+            showToast('预检完成')
+            isPreCheckCompleted.value = true
+            fetchDetail()
+          } else {
+            showToast(res.msg || '操作失败')
+          }
+        })
       } catch (error) {
-        console.error('预检完成失败:', error)
-        showToast('预检完成失败')
+        showToast('操作失败')
       }
     })
     .catch(() => {})
@@ -3196,14 +3199,12 @@ const onGoToSign = () => {
 
 // 打开预计交车时间选择器
 const onOpenDeliveryTimePicker = () => {
-  // 如果已有值，回显
-  if (signatureData.expectFinishAt) {
-    // const [date, time] = signatureData.expectFinishAt.split(' ')
-    // selectedDeliveryDate.value = date
-    // selectedDeliveryTime.value = time
+  // 如果是接口返回的交车时间，不允许点击
+  if (signatureData.isDeliveryTimeFromApi) {
     return
-  } else {
-    // 没有值时，默认选中第一个日期和第一个时间
+  }
+  // 如果没有值，默认选中第一个日期和第一个时间
+  if (!signatureData.expectFinishAt) {
     if (deliveryDateList.value.length > 0) {
       selectedDeliveryDate.value = deliveryDateList.value[0].value
     }

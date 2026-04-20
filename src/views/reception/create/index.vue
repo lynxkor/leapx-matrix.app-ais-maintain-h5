@@ -392,7 +392,7 @@
                   {{ signatureData.expectFinishAt || '请选择' }}
                 </span>
                 <van-icon
-                  v-if="!signatureData.expectFinishAt"
+                  v-if="!signatureData.isDeliveryTimeFromApi"
                   name="arrow"
                   size="12"
                   color="#545454"
@@ -1697,6 +1697,7 @@ const isInspectionSaveDisabled = computed(() => {
 const signatureData = reactive({
   repairItemTypeDetailCollect: '',
   expectFinishAt: '',
+  isDeliveryTimeFromApi: false,
   liveEnabled: false,
   signatureChannel: '',
   attachments: [],
@@ -2428,20 +2429,19 @@ const onComplete = async () => {
   })
     .then(async () => {
       try {
-        const res = await servicePreCheck({
-          id: route.query.id,
+        servicePreCheck(route.query.id).then((res) => {
+          if (res.code === 200) {
+            showToast('预检完成')
+            isPreCheckCompleted.value = true
+            // 预检完成后获取详情数据，给签字确认页面赋值
+            fetchDetailForSignature()
+            fetchDetail()
+          } else {
+            showToast(res.msg || '操作失败')
+          }
         })
-        if (res.code === 200) {
-          showToast('预检完成')
-          isPreCheckCompleted.value = true
-          // 预检完成后获取详情数据，给签字确认页面赋值
-          fetchDetailForSignature()
-        } else {
-          showToast(res.msg || '预检完成失败')
-        }
       } catch (error) {
-        console.error('预检完成失败:', error)
-        showToast('预检完成失败')
+        showToast('操作失败')
       }
     })
     .catch(() => {})
@@ -2727,6 +2727,7 @@ const fetchDetailForSignature = async () => {
       // 更新签字确认数据
       signatureData.repairItemTypeDetailCollect = data.repairItemTypeDetailCollect || ''
       signatureData.expectFinishAt = data.expectFinishAt || ''
+      signatureData.isDeliveryTimeFromApi = !!data.expectFinishAt
       // 更新项目零件数据
       if (data.costCountResp) {
         partsData.repairItemRespList = data.costCountResp.repairItemRespList || []
@@ -2772,14 +2773,12 @@ const onAddPackage = () => {
 
 // 打开预计交车时间选择器
 const onOpenDeliveryTimePicker = () => {
-  // 如果已有值，回显
-  if (signatureData.expectFinishAt) {
+  // 如果是接口返回的交车时间，不允许点击
+  if (signatureData.isDeliveryTimeFromApi) {
     return
-    // const [date, time] = signatureData.expectFinishAt.split(' ')
-    // selectedDeliveryDate.value = date
-    // selectedDeliveryTime.value = time
-  } else {
-    // 没有值时，默认选中第一个日期和第一个时间
+  }
+  // 如果没有值，默认选中第一个日期和第一个时间
+  if (!signatureData.expectFinishAt) {
     if (deliveryDateList.value.length > 0) {
       selectedDeliveryDate.value = deliveryDateList.value[0].value
     }
