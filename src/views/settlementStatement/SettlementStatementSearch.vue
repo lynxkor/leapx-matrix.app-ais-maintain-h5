@@ -1,9 +1,12 @@
 <template>
   <div class="settlement-search">
+    <!-- loading 遮罩层 -->
+    <van-loading v-if="submitLoading" color="#00AA00" class="page-loading" />
+
     <!-- 自定义搜索头部 -->
     <div class="search-header">
       <!-- 返回箭头 -->
-      <div class="back-btn" @click="handleCancel">
+      <div class="back-btn" @click="handleGoBack">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
           <path d="M15.5 19L8 12L15.5 5" stroke="#191A1B" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
@@ -112,6 +115,25 @@
               </div>
             </div>
           </template>
+
+          <template #btn-content>
+            <div class="action-btns">
+              <div
+                v-if="showCancelBtn(item)"
+                class="btn-pill btn-outline"
+                @click.stop="handleCancel(item)"
+              >
+                作废
+              </div>
+              <div
+                v-if="currentTab === 'pending' && item.isCreateStatementInfo === 0"
+                class="btn-pill btn-primary"
+                @click.stop="handleSettle(item)"
+              >
+                结算
+              </div>
+            </div>
+          </template>
         </ListItem>
 
         <!-- 空状态 -->
@@ -123,6 +145,116 @@
         </template>
       </RefreshList>
     </div>
+
+    <!-- 结算确认弹窗 -->
+    <AisPopup v-model:show="showSettlePopup" title="结算" position="bottom" round>
+      <template #content>
+        <!-- 问题卡片 -->
+        <div class="question-card">
+          <div class="question-text">客户反馈故障是否全部解决</div>
+          <div class="option-row">
+            <div
+              class="option-btn"
+              :class="settleOption === 'resolved' ? 'active resolved-active' : ''"
+              @click="settleOption = 'resolved'"
+            >
+              已解决
+            </div>
+            <div
+              class="option-btn"
+              :class="settleOption === 'unresolved' ? 'active unresolved-active' : ''"
+              @click="settleOption = 'unresolved'"
+            >
+              未解决
+            </div>
+          </div>
+        </div>
+
+        <!-- 未解决原因单选标签 -->
+        <div v-if="settleOption === 'unresolved'" class="reason-card">
+          <div class="reason-text">未解决原因</div>
+          <div class="reason-tags">
+            <div
+              v-for="reason in reasonOptions"
+              :key="reason.value"
+              class="reason-tag"
+              :class="{ active: selectedReason === reason.value }"
+              @click="selectedReason = reason.value"
+            >
+              {{ reason.label }}
+            </div>
+          </div>
+        </div>
+      </template>
+      <template #footer>
+        <!-- 底部拖动条 + 提交按钮 -->
+        <div class="settle-footer">
+          <div class="submit-btn" @click="confirmSettle">确认结算</div>
+        </div>
+      </template>
+    </AisPopup>
+
+    <!-- 二次确认弹窗 -->
+    <van-dialog
+      v-model:show="showConfirmPopup"
+      title=" "
+      :show-confirm-button="false"
+      :show-cancel-button="false"
+      class="confirm-dialog-vant"
+      close-on-click-overlay
+    >
+      <div class="confirm-dialog">
+        <div class="confirm-text">确定要生成结算单吗？</div>
+        <div class="confirm-actions">
+          <div class="confirm-btn cancel" @click="showConfirmPopup = false">取消</div>
+          <div class="confirm-divider"></div>
+          <div class="confirm-btn confirm" @click="executeSettle">确定结算</div>
+        </div>
+      </div>
+    </van-dialog>
+
+    <!-- 作废弹窗 -->
+    <AisPopup v-model:show="showCancelPopup" title="作废" position="bottom" round>
+      <template #content>
+        <div class="cancel-card">
+          <div class="cancel-text">作废原因</div>
+          <van-field
+            v-model="cancelReason"
+            rows="4"
+            autosize
+            type="textarea"
+            maxlength="500"
+            placeholder="请输入作废原因"
+            show-word-limit
+            class="cancel-textarea"
+          />
+        </div>
+      </template>
+      <template #footer>
+        <div class="cancel-footer">
+          <div class="submit-btn" @click="confirmCancel">确认作废</div>
+        </div>
+      </template>
+    </AisPopup>
+
+    <!-- 作废确认弹窗 -->
+    <van-dialog
+      v-model:show="showCancelConfirmPopup"
+      title=" "
+      :show-confirm-button="false"
+      :show-cancel-button="false"
+      class="confirm-dialog-vant"
+      close-on-click-overlay
+    >
+      <div class="confirm-dialog">
+        <div class="confirm-text">确定要作废该工单吗？</div>
+        <div class="confirm-actions">
+          <div class="confirm-btn cancel" @click="showCancelConfirmPopup = false">取消</div>
+          <div class="confirm-divider"></div>
+          <div class="confirm-btn confirm" @click="executeCancel">确定作废</div>
+        </div>
+      </div>
+    </van-dialog>
   </div>
 </template>
 
@@ -132,7 +264,8 @@ import { useRouter, useRoute } from 'vue-router'
 import { showToast } from 'vant'
 import RefreshList from '@/libs/components/RefreshList.vue'
 import ListItem from '@/components/ListItem.vue'
-import { getSettlementStatementPage } from '@/api/settlementStatement'
+import AisPopup from '@/libs/components/AisPopup.vue'
+import { getSettlementStatementPage, addServiceProxyStatement, cancelServiceProxy } from '@/api/settlementStatement'
 
 const router = useRouter()
 const route = useRoute()
@@ -140,6 +273,34 @@ const route = useRoute()
 // 搜索值
 const searchValue = ref('')
 const resultList = ref([])
+
+// 结算相关
+const showSettlePopup = ref(false)
+const showConfirmPopup = ref(false)
+const settleOption = ref('resolved')
+const selectedReason = ref('')
+const currentItem = ref(null)
+const submitLoading = ref(false)
+
+// 作废相关
+const showCancelPopup = ref(false)
+const showCancelConfirmPopup = ref(false)
+const cancelReason = ref('')
+const cancelItem = ref(null)
+
+// 未解决原因选项
+const reasonOptions = [
+  { label: '需求不明确', value: '10' },
+  { label: '技术方案待确认', value: '20' },
+  { label: '依赖第三方接口未联调', value: '30' },
+  { label: '测试环境异常', value: '40' },
+  { label: '数据缺失或错误', value: '50' },
+  { label: '优先级较低暂未处理', value: '60' },
+  { label: '涉及多部门协作未对齐', value: '70' },
+  { label: '代码修复后未验证', value: '80' },
+  { label: '硬件资源不足', value: '90' },
+  { label: '其他原因', value: '99' }
+]
 
 // 从本地存储获取搜索历史
 const searchHistory = ref([])
@@ -204,6 +365,20 @@ const getAlarmColor = (alarmLevel) => {
   return colorMap[alarmLevel] || '#009100'
 }
 
+// 作废按钮展示逻辑：排除已作废(210)、反结算(200)、已生成结算单(isCreateStatementInfo === 1)
+const showCancelBtn = (item) => {
+  const orderStatus = Number(item.orderStatus)
+  // 已作废、反结算不显示
+  if (orderStatus === 210 || orderStatus === 200) {
+    return false
+  }
+  // 已生成结算单不显示
+  if (item.isCreateStatementInfo === 1) {
+    return false
+  }
+  return true
+}
+
 // 保存搜索历史
 const saveSearchHistory = (keyword) => {
   if (!keyword) return
@@ -239,9 +414,46 @@ const handleClear = () => {
   resultList.value = []
 }
 
-// 处理取消
-const handleCancel = () => {
+// 处理取消（返回按钮）
+const handleGoBack = () => {
   router.back()
+}
+
+// 作废相关函数
+const handleCancel = (item) => {
+  cancelItem.value = item
+  cancelReason.value = ''
+  showCancelPopup.value = true
+}
+
+// 确认作废 - 显示二次确认弹窗
+const confirmCancel = () => {
+  if (!cancelReason.value.trim()) {
+    showToast('请输入作废原因')
+    return
+  }
+  showCancelPopup.value = false
+  showCancelConfirmPopup.value = true
+}
+
+// 执行作废
+const executeCancel = async() => {
+  showCancelConfirmPopup.value = false
+  try {
+    const res = await cancelServiceProxy({
+      id: cancelItem.value.id,
+      invaildDesc: cancelReason.value.trim()
+    })
+    if (res.success) {
+      showToast('作废成功')
+      // 刷新列表
+      requestData.data.pageNum = 1
+    } else {
+      showToast(res.msg || '作废失败')
+    }
+  } catch {
+    showToast('作废失败')
+  }
 }
 
 // 处理历史点击
@@ -290,6 +502,58 @@ const goToDetail = (item) => {
   })
 }
 
+// 结算相关函数
+const handleSettle = (item) => {
+  currentItem.value = item
+  settleOption.value = 'resolved'
+  selectedReason.value = ''
+  showSettlePopup.value = true
+}
+
+const confirmSettle = () => {
+  // 如果是未解决且没有选择原因，提示并阻止
+  if (settleOption.value === 'unresolved' && !selectedReason.value) {
+    showToast('请选择未解决原因')
+    return
+  }
+  showSettlePopup.value = false
+  showConfirmPopup.value = true
+}
+
+// 执行结算
+const executeSettle = async() => {
+  showConfirmPopup.value = false
+  submitLoading.value = true
+  try {
+    // 基于列表项数据，添加/修改结算相关字段
+    const res = await addServiceProxyStatement({
+      ...currentItem.value,
+      serviceProxyId: currentItem.value.serviceProxyId || currentItem.value.id,
+      faultSolve: settleOption.value === 'resolved' ? 1 : 0,
+      faultSolveLabel: settleOption.value === 'resolved' ? '已解决' : '未解决',
+      reason: settleOption.value === 'unresolved' ? selectedReason.value : ''
+    })
+    if (res.success) {
+      showToast('结算成功')
+      router.push({
+        path: '/settlement-statement/after-sales',
+        query: {
+          serviceProxyId: currentItem.value.serviceProxyId || currentItem.value.id,
+          status: currentTab.value,
+          serviceProxyCode: currentItem.value.serviceProxyCode || currentItem.value.code || '',
+          vehProfileVin: currentItem.value.vehProfileVin || ''
+        }
+      })
+    } else {
+      showToast(res.msg || '结算失败')
+    }
+  } catch {
+    showToast('结算失败')
+  } finally {
+    submitLoading.value = false
+  }
+}
+
 // 初始化
 if (route.params.initialValue) {
   searchValue.value = route.params.initialValue
@@ -301,6 +565,20 @@ if (route.params.initialValue) {
 .settlement-search {
   min-height: 100vh;
   background-color: #f5f5f5;
+
+  // 页面加载中样式
+  .page-loading {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.7);
+  }
 
   .search-header {
     display: flex;
@@ -523,6 +801,38 @@ if (route.params.initialValue) {
       }
     }
 
+    .action-btns {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 8px;
+      padding-top: 8px;
+
+      .btn-pill {
+        padding: 0 16px;
+        height: 32px;
+        font-family: 'PingFang SC';
+        font-size: 14px;
+        border-radius: 38px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+      }
+
+      .btn-outline {
+        color: #009100;
+        background: #ffffff;
+        border: 1px solid #009100;
+      }
+
+      .btn-primary {
+        color: #ffffff;
+        background: #009100;
+        border: 1px solid #009100;
+      }
+    }
+
     .empty-state {
       display: flex;
       flex-direction: column;
@@ -541,5 +851,245 @@ if (route.params.initialValue) {
       }
     }
   }
+}
+
+// 结算弹窗
+.question-card {
+  background: #ffffff;
+  border-radius: 6px;
+  padding: 12px;
+  margin-bottom: 12px;
+
+  .question-text {
+    font-family: 'PingFang SC';
+    font-size: 14px;
+    font-weight: 500;
+    color: #191a1b;
+    margin-bottom: 12px;
+  }
+
+  .option-row {
+    display: flex;
+    gap: 8px;
+
+    .option-btn {
+      padding: 0 16px;
+      height: 32px;
+      font-family: 'PingFang SC';
+      font-size: 14px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+
+      // 已解决按钮默认样式
+      &:first-child {
+        color: #191a1b;
+        background: #f8f7f7;
+        border: 1px solid transparent;
+      }
+
+      // 未解决按钮默认样式
+      &:last-child {
+        color: #191a1b;
+        background: #f8f7f7;
+        border: 1px solid transparent;
+      }
+    }
+
+    // 已解决选中状态
+    .resolved-active {
+      color: #009100 !important;
+      border-color: #009100 !important;
+      background: rgba(0, 145, 0, 0.08) !important;
+    }
+
+    // 未解决选中状态
+    .unresolved-active {
+      color: #009100 !important;
+      border-color: #009100 !important;
+      background: rgba(0, 145, 0, 0.08) !important;
+    }
+  }
+}
+
+// 未解决原因卡片
+.reason-card {
+  background: #ffffff;
+  border-radius: 6px;
+  padding: 12px;
+  margin-bottom: 12px;
+
+  .reason-text {
+    font-family: 'PingFang SC';
+    font-size: 14px;
+    font-weight: 500;
+    color: #191a1b;
+    margin-bottom: 12px;
+  }
+
+  .reason-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+
+    .reason-tag {
+      padding: 0 12px;
+      height: 32px;
+      font-family: 'PingFang SC';
+      font-size: 14px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: #191a1b;
+      background: #f8f7f7;
+      border: 1px solid transparent;
+
+      &.active {
+        color: #009100;
+        border-color: #009100;
+        background: rgba(0, 145, 0, 0.08);
+      }
+    }
+  }
+}
+
+// 结算弹窗高度
+:deep(.popup) {
+  height: 602px !important;
+}
+
+.settle-footer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+
+  .submit-btn {
+    width: 100%;
+    height: 40px;
+    background: #009100;
+    border-radius: 8px;
+    font-family: 'PingFang SC';
+    font-size: 14px;
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+  }
+}
+
+// 二次确认弹窗
+.confirm-dialog {
+  background: #ffffff;
+  border-radius: 8px;
+  overflow: hidden;
+
+  .confirm-text {
+    height: 80px;
+    display: flex;
+    justify-content: center;
+    font-family: 'PingFang SC';
+    font-size: 16px;
+    color: #222222;
+    padding: 0 24px;
+  }
+
+  .confirm-actions {
+    height: 54px;
+    display: flex;
+    align-items: center;
+    border-top: 0.5px solid #e6e6e5;
+
+    .confirm-btn {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'PingFang SC';
+      font-size: 14px;
+      cursor: pointer;
+
+      &.cancel {
+        color: #222222;
+      }
+
+      &.confirm {
+        color: #009100;
+      }
+    }
+
+    .confirm-divider {
+      width: 0.5px;
+      height: 54px;
+      background: #e6e6e5;
+    }
+  }
+}
+
+:deep(.confirm-dialog-vant) {
+  width: 295px;
+  background: #ffffff;
+  border-radius: 8px;
+  padding: 0;
+
+  .van-dialog__content {
+    padding: 0;
+  }
+}
+
+// 作废弹窗样式
+.cancel-card {
+  background: #ffffff;
+  border-radius: 6px;
+  padding: 12px;
+
+  .cancel-text {
+    font-family: 'PingFang SC';
+    font-size: 14px;
+    font-weight: 500;
+    color: #191a1b;
+    margin-bottom: 12px;
+  }
+
+  .cancel-textarea {
+    background: #f8f7f7;
+    border-radius: 6px;
+    padding: 12px;
+
+    :deep(.van-field__control) {
+      background: transparent;
+    }
+  }
+}
+
+.cancel-footer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+
+  .submit-btn {
+    width: 100%;
+    height: 40px;
+    background: #b91919;
+    border-radius: 8px;
+    font-family: 'PingFang SC';
+    font-size: 14px;
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+  }
+}
+
+// 作废弹窗高度
+:deep(.popup.cancel-popup) {
+  height: 280px !important;
 }
 </style>
