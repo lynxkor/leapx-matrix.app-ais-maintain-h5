@@ -7,6 +7,7 @@
     close-icon-position="top-left"
     title="维修套餐"
     @close="$emit('close')"
+    style="height: 50vh"
   >
     <template #content>
       <!-- 套餐信息 -->
@@ -23,11 +24,11 @@
               <div class="repair-name-row">
                 <span class="repair-name">{{ item.repairItemName }}</span>
               </div>
-              <div class="repair-code">{{ item.repairItemCode }}</div>
-              <div class="repair-category">{{ item.repairItemTypeName }}</div>
+              <div class="repair-code">{{ item.partsCode || item.repairItemCode }}</div>
+              <div class="repair-category">{{ item.partsName || item.repairItemTypeName }}</div>
             </div>
             <div class="repair-right">
-              <div class="repair-price">¥{{ item.price }}</div>
+              <div class="repair-price">¥{{ item.partsAmount || item.repairAmount }}</div>
               <div class="repair-discount">优惠 ¥{{ item.discountAmount }}</div>
             </div>
           </div>
@@ -88,12 +89,12 @@
         </div>
       </div>
     </template>
-    <template #footer>
+    <!-- <template #footer>
       <div class="detail-actions" :class="{ 'single-btn': showCancel }">
         <div v-if="showCancel" class="cancel-btn" @click="$emit('close')">取消选择</div>
         <div v-else class="confirm-btn full-btn" @click="$emit('confirm')">选择</div>
       </div>
-    </template>
+    </template> -->
   </ais-popup>
 </template>
 
