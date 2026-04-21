@@ -29,7 +29,7 @@
 
       <!-- 搜索结果列表 -->
       <div class="common-scroll-content" v-else-if="searchResults.length > 0">
-        <list-item v-for="item in searchResults" :key="item.id" @click="goToDetail(item)">
+        <ListItem v-for="item in searchResults" :key="item.id" @click="goToDetail(item)">
           <template #header>
             <div class="item-header">
               <span class="order-no">{{ item.code }}</span>
@@ -79,7 +79,7 @@
               联系创建人
             </ais-button>
           </template>
-        </list-item>
+        </ListItem>
         <!-- 没有更多了提示 -->
         <div class="no-more-tip">没有更多了</div>
       </div>
