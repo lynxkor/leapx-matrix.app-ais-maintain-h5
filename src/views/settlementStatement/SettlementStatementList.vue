@@ -1,5 +1,8 @@
 <template>
   <div class="settlement-statement-list">
+    <!-- loading 遮罩层 -->
+    <van-loading v-if="submitLoading" color="#00AA00" class="page-loading" />
+
     <!-- 固定顶部区域：标签页 + 快捷筛选 + 搜索 -->
     <div class="header-fixed">
       <!-- 标签页 -->
@@ -140,7 +143,7 @@
           <template #btn-content>
             <div class="action-btns">
               <div
-                v-if="activeTab === 'pending'"
+                v-if="showCancelBtn(item)"
                 class="btn-pill btn-outline"
                 @click.stop="handleCancel(item)"
               >
@@ -148,7 +151,7 @@
               </div>
               <div class="btn-pill btn-outline" @click.stop="handleContact(item)">联系车主</div>
               <div
-                v-if="activeTab === 'pending'"
+                v-if="activeTab === 'pending' && item.isCreateStatementInfo === 0"
                 class="btn-pill btn-primary"
                 @click.stop="handleSettle(item)"
               >
@@ -341,6 +344,7 @@ const settleOption = ref('resolved')
 const selectedReason = ref('')
 const currentItem = ref(null)
 const refreshListRef = ref(null)
+const submitLoading = ref(false)
 
 // 作废相关
 const showCancelPopup = ref(false)
@@ -501,6 +505,20 @@ const getAlarmColor = (alarmLevel) => {
   return colorMap[alarmLevel] || '#009100'
 }
 
+// 作废按钮展示逻辑：排除已作废(210)、反结算(200)、已生成结算单(isCreateStatementInfo === 1)
+const showCancelBtn = (item) => {
+  const orderStatus = Number(item.orderStatus)
+  // 已作废、反结算不显示
+  if (orderStatus === 210 || orderStatus === 200) {
+    return false
+  }
+  // 已生成结算单不显示
+  if (item.isCreateStatementInfo === 1) {
+    return false
+  }
+  return true
+}
+
 const goToDetail = (item) => {
   const serviceProxyId = item.serviceProxyId || item.id
 
@@ -584,6 +602,7 @@ const confirmSettle = () => {
 // 执行结算
 const executeSettle = async() => {
   showConfirmPopup.value = false
+  submitLoading.value = true
   try {
     // 基于列表项数据，添加/修改结算相关字段
     const res = await addServiceProxyStatement({
@@ -610,6 +629,8 @@ const executeSettle = async() => {
     }
   } catch {
     showToast('结算失败')
+  } finally {
+    submitLoading.value = false
   }
 }
 
@@ -627,6 +648,20 @@ const goToUpload = () => {
 
   &::-webkit-scrollbar {
     display: none;
+  }
+
+  // 页面加载中样式
+  .page-loading {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.7);
   }
 
   .header-fixed {
@@ -1083,7 +1118,7 @@ const goToUpload = () => {
   .submit-btn {
     width: 100%;
     height: 40px;
-    background: #b91919;
+    background: #009100;
     border-radius: 8px;
     font-family: 'PingFang SC';
     font-size: 14px;
