@@ -4,6 +4,9 @@
     <van-loading v-if="isLoading" color="#00AA00" class="page-loading" />
 
     <template v-else>
+      <!-- 操作 loading 遮罩层 -->
+      <van-loading v-if="submitLoading" color="#00AA00" class="submit-loading" />
+
       <!-- 头部信息 + Tab 切换栏 -->
       <div class="sticky-header">
         <!-- 头部信息 -->
@@ -93,9 +96,9 @@
         </div>
 
         <!-- 收款记录列表 -->
-        <div v-if="invoiceRecords.length > 0" class="payment-records-section">
+        <div v-if="groupedInvoiceRecords.length > 0" class="payment-records-section">
           <div class="section-title">收款记录</div>
-          <div v-for="(record, index) in invoiceRecords" :key="index" class="payment-record-item">
+          <div v-for="(record, index) in groupedInvoiceRecords" :key="index" class="payment-record-item">
             <div class="record-left">
               <div class="record-method">{{ getPayTypeText(record.payType) }}</div>
             </div>
@@ -113,7 +116,7 @@
               <div class="repair-left">
                 <div class="repair-name">{{ item.repairItemName }}</div>
                 <div class="repair-code">{{ item.repairItemCode }}</div>
-                <div class="repair-type">{{ item.checkoutTypeName }}-{{ item.warrantyTypeName }}</div>
+                <div class="repair-type">{{item.repairItemTypeName}}-{{ item.checkoutTypeName }}-{{ item.warrantyTypeName }}</div>
               </div>
               <div class="repair-right">
                 <div class="repair-price">¥{{ formatPrice(item.repairAmount) }}</div>
@@ -180,8 +183,8 @@
                 v-for="item in paymentMethods"
                 :key="item.value"
                 class="payment-method-item"
-                :class="{ active: paymentForm.paymentMethod === item.value }"
-                @click="selectPaymentMethod(item)"
+                :class="{ active: paymentForm.paymentMethod === item.value, disabled: item.disabled }"
+                @click="item.disabled ? null : selectPaymentMethod(item)"
               >
                 <span class="payment-method-icon" :class="`icon-${item.iconType}`">{{ item.iconText }}</span>
                 <span class="payment-method-text">{{ item.text }}</span>
@@ -320,6 +323,7 @@ const route = useRoute()
 
 // 加载状态
 const isLoading = ref(true)
+const submitLoading = ref(false)
 
 // 详情数据
 const detailData = ref({})
@@ -341,6 +345,22 @@ const isEmptyDetail = computed(() => !detailData.value.id && !detailData.value.c
 const paidAmountDisplay = computed(() => paidAmount.value)
 const remainingAmount = computed(() => {
   return Math.max(Number(detailData.value.remainAmount) || 0, 0)
+})
+
+// 收款记录按支付方式类型分组合并
+const groupedInvoiceRecords = computed(() => {
+  const grouped = {}
+  invoiceRecords.value.forEach((record) => {
+    const payType = record.payType
+    if (!grouped[payType]) {
+      grouped[payType] = {
+        payType,
+        payAmount: 0
+      }
+    }
+    grouped[payType].payAmount += Number(record.payAmount) || 0
+  })
+  return Object.values(grouped)
 })
 
 // 从路由获取来源状态：pending-待交车，completed-已交车
@@ -545,28 +565,38 @@ const isPcPaymentCompleted = computed(() => {
   return Boolean(detailData.value.receiveTime) || statementStatusText.value.includes('已收款')
 })
 const bottomActionConfig = computed(() => {
-  // 调试日志
-  console.log('=== bottomActionConfig 调试 ===')
-  console.log('isEmptyDetail:', isEmptyDetail.value)
-  console.log('isCompleted:', isCompleted.value)
-  console.log('isPcPaymentCompleted:', isPcPaymentCompleted.value)
-  console.log('isPaymentConfirmed:', isPaymentConfirmed.value)
-  console.log('isPending:', isPending.value)
-  console.log('isCheck:', detailData.value.isCheck)
-  console.log('statementTypeLabel:', statementTypeLabel.value)
-  console.log('isSelfPaySettlement:', isSelfPaySettlement.value)
-  console.log('signStatus:', signStatus.value)
-  console.log('remainingAmount:', remainingAmount.value)
-
+  // ========== 前置条件检查 ==========
+  // 详情为空、已交车状态、已确认收款 → 不显示按钮
   if (isEmptyDetail.value || isCompleted.value || isPcPaymentCompleted.value || isPaymentConfirmed.value) {
-    console.log('=> 前置条件拦截，返回 null')
     return null
   }
 
+  // 非待交车状态 → 不显示按钮
   if (!isPending.value) {
     return null
   }
 
+  // ========== 核心逻辑 ==========
+
+  // 1. isCheck === false：未提交结算，显示提交结算按钮
+  if (detailData.value.isCheck === false) {
+    // 判断是否为最后一个未提交的结算单
+    if (shouldUseSignFlow.value) {
+      return {
+        type: 'button',
+        text: '提交结算并签字',
+        action: 'submitSign'
+      }
+    }
+    return {
+      type: 'button',
+      text: '提交结算',
+      action: 'submitSettlement'
+    }
+  }
+
+  // 2. isCheck === true：已提交结算，判断签字状态
+  // 保修/合同类型特殊处理
   if (isWarrantyOrContract.value) {
     if (signStatus.value === 'signed') {
       return {
@@ -574,26 +604,18 @@ const bottomActionConfig = computed(() => {
         text: '请移步PC创建保修申请单'
       }
     }
-
-    return {
-      type: 'button',
-      text: settleButtonText.value,
-      action: shouldUseSignFlow.value ? 'submitSign' : 'submitSettlement'
-    }
+    // 未签字的保修/合同类型不显示按钮（等待签字）
+    return null
   }
 
   // 自费/保险/内部结算类型
   if (isSelfPaySettlement.value || !statementTypeLabel.value) {
-    // 未签字或待签字：显示提交结算按钮
+    // 未签字或待签字：不显示按钮，等待客户签字（签字区域会显示"请客户签字"）
     if (signStatus.value === 'not_signed' || signStatus.value === 'pending') {
-      return {
-        type: 'button',
-        text: settleButtonText.value,
-        action: shouldUseSignFlow.value ? 'submitSign' : 'submitSettlement'
-      }
+      return null
     }
 
-    // 已签字：根据剩余金额显示添加收款或确认收款按钮
+    // 已签字：根据剩余金额显示收款按钮
     if (signStatus.value === 'signed') {
       if (remainingAmount.value > 0) {
         return {
@@ -602,7 +624,6 @@ const bottomActionConfig = computed(() => {
           action: 'addPayment'
         }
       }
-
       return {
         type: 'button',
         text: '确认收款',
@@ -611,15 +632,7 @@ const bottomActionConfig = computed(() => {
     }
   }
 
-  // 其他类型：未签字显示提交结算按钮，已签字隐藏按钮
-  if (signStatus.value === 'not_signed') {
-    return {
-      type: 'button',
-      text: settleButtonText.value,
-      action: shouldUseSignFlow.value ? 'submitSign' : 'submitSettlement'
-    }
-  }
-
+  // 其他类型：已提交结算后不显示按钮
   return null
 })
 const signChannelValue = computed(() => (selectedChannel.value === 'paper' ? 40 : undefined))
@@ -639,20 +652,34 @@ const buildSettlementPayload = (includeSignChannel = false) => {
 
   return payload
 }
-const buildReceiptPayload = () => ({
-  statementId: detailData.value.id,
-  invoiceRecordList: [
-    {
-      statementId: detailData.value.id,
-      statementCode: detailData.value.code,
-      payAmount: Number(paymentForm.value.amount),
-      payType: paymentForm.value.paymentMethod,
-      rightsCode: '',
-      invoiceNumber: '',
-      invoiceType: ''
-    }
-  ]
-})
+const buildReceiptPayload = () => {
+  // 已有的收款记录
+  const existingRecords = invoiceRecords.value.map((record) => ({
+    statementId: record.statementId || detailData.value.id,
+    statementCode: record.statementCode || detailData.value.code,
+    payAmount: Number(record.payAmount),
+    payType: record.payType,
+    rightsCode: record.rightsCode || '',
+    invoiceNumber: record.invoiceNumber || '',
+    invoiceType: record.invoiceType || ''
+  }))
+
+  // 新增的收款记录
+  const newRecord = {
+    statementId: detailData.value.id,
+    statementCode: detailData.value.code,
+    payAmount: Number(paymentForm.value.amount),
+    payType: paymentForm.value.paymentMethod,
+    rightsCode: '',
+    invoiceNumber: '',
+    invoiceType: ''
+  }
+
+  return {
+    statementId: detailData.value.id,
+    invoiceRecordList: [...existingRecords, newRecord]
+  }
+}
 
 // 格式化金额
 const formatPrice = (price) => {
@@ -688,7 +715,7 @@ const paymentMethods = [
   { text: '支付宝', value: 20, iconText: '支', iconType: 'alipay' },
   { text: '银行卡', value: 10, iconText: '卡', iconType: 'card' },
   { text: '现金', value: 40, iconText: '¥', iconType: 'cash' },
-  { text: '权益抵扣', value: 50, iconText: '益', iconType: 'rights' },
+  { text: '权益抵扣', value: 50, iconText: '益', iconType: 'rights', disabled: true },
   { text: '其他', value: 60, iconText: '其', iconType: 'other' }
 ]
 
@@ -740,20 +767,16 @@ const handleSignClick = () => {
   }
 }
 
-// 提交结算并签字
+// 提交结算并签字（只有最后一个结算单才会走这里，不需要提示）
 const handleSubmitSettlement = () => {
-  // 判断是否有多个待结算单
-  if (pendingSettlementCount.value > 1) {
-    showPendingTip.value = true
-    return
-  }
   showSignChannel.value = true
 }
 
-// 提示弹窗确认后，显示签字渠道选择弹窗
+// 提示弹窗确认后，继续执行操作
 const handlePendingTipConfirm = () => {
   showPendingTip.value = false
-  showSignChannel.value = true
+  // 直接提交结算
+  doSubmitSettlement()
 }
 
 const validateSettlementPayload = (payload) => {
@@ -789,6 +812,7 @@ const handleSignSuccess = async() => {
       return
     }
 
+    submitLoading.value = true
     try {
       const res = await signSettlementStatement(payload)
       if (!isSuccessResponse(res)) {
@@ -803,6 +827,8 @@ const handleSignSuccess = async() => {
     } catch {
       showToast('提交失败')
       return
+    } finally {
+      submitLoading.value = false
     }
   }
 
@@ -826,6 +852,7 @@ const handleConfirmPayment = async() => {
     return
   }
 
+  submitLoading.value = true
   try {
     const res = await receiptCompletion(detailData.value.id)
     if (!isSuccessResponse(res)) {
@@ -838,6 +865,8 @@ const handleConfirmPayment = async() => {
     await getDetail({ preserveActiveTab: true })
   } catch {
     showToast('确认收款失败')
+  } finally {
+    submitLoading.value = false
   }
 }
 
@@ -867,12 +896,24 @@ const handleBottomAction = () => {
 }
 
 const handleDirectSubmitSettlement = async() => {
+  // 判断是否有多个待结算单
+  if (pendingSettlementCount.value > 1) {
+    showPendingTip.value = true
+    return
+  }
+
+  await doSubmitSettlement()
+}
+
+// 实际执行提交结算
+const doSubmitSettlement = async() => {
   const payload = buildSettlementPayload()
 
   if (!validateSettlementPayload(payload)) {
     return
   }
 
+  submitLoading.value = true
   try {
     const res = await submitSettlementStatement(payload)
     if (!isSuccessResponse(res)) {
@@ -884,6 +925,8 @@ const handleDirectSubmitSettlement = async() => {
     await getDetail({ preserveActiveTab: true })
   } catch {
     showToast('提交失败')
+  } finally {
+    submitLoading.value = false
   }
 }
 
@@ -914,6 +957,7 @@ const handlePaymentSubmit = async() => {
     return
   }
 
+  submitLoading.value = true
   try {
     const res = await addReceiptRecord(payload)
     if (!isSuccessResponse(res)) {
@@ -926,6 +970,8 @@ const handlePaymentSubmit = async() => {
     await getDetail({ preserveActiveTab: true })
   } catch {
     showToast('创建收款记录失败')
+  } finally {
+    submitLoading.value = false
   }
 }
 
@@ -948,6 +994,20 @@ const handlePaymentSubmit = async() => {
     align-items: center;
     justify-content: center;
     height: 80vh;
+  }
+
+  // 操作 loading 遮罩层样式
+  .submit-loading {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.7);
   }
 
   .sticky-header {
@@ -1640,9 +1700,7 @@ const handlePaymentSubmit = async() => {
 
 // 添加收款弹窗
 .payment-form {
-  background: #f7f7f7;
   min-height: 520px;
-  padding: 12px;
 
   .payment-card {
     background: #fff;
@@ -1667,8 +1725,8 @@ const handlePaymentSubmit = async() => {
   }
 
   .payment-method-item {
-    height: 76px;
-    border-radius: 8px;
+    height: 40px;
+    border-radius: 4px;
     background: #f7f7f7;
     border: 1px solid transparent;
     display: flex;
@@ -1683,6 +1741,15 @@ const handlePaymentSubmit = async() => {
 
       .payment-method-text {
         color: #00a000;
+      }
+    }
+
+    &.disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+
+      .payment-method-text {
+        color: #999;
       }
     }
   }
