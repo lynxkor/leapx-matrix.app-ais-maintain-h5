@@ -534,7 +534,7 @@ import {
   preAuthGetConstructionList,
   preAuthGetQualityFeedbackList
 } from '@/api/authorization'
-import { getAttachmentList, uploadFileByUrl } from '@/libs/api/fileConfig'
+import { getAttachmentList, uploadFileByUrl, bindFile } from '@/libs/api/fileConfig'
 import { getAppImg } from '@/libs/utils/nativeFn'
 
 const router = useRouter()
@@ -1051,14 +1051,14 @@ const fetchAttachmentListByType = async(type, businessId) => {
 
 const handleNativeImage = async(rawFileUrl) => {
   const uploadType = currentUploadType.value
-  const fileUrl = typeof rawFileUrl === 'string'
-    ? rawFileUrl
-    : rawFileUrl?.fileUrl || rawFileUrl?.url || ''
+  const fileData = typeof rawFileUrl === 'string'
+    ? { fileUrl: rawFileUrl }
+    : rawFileUrl
 
   currentUploadType.value = ''
 
   if (!uploadType) return
-  if (!fileUrl) {
+  if (!fileData.fileUrl) {
     showToast('未获取到图片地址')
     return
   }
@@ -1080,8 +1080,9 @@ const handleNativeImage = async(rawFileUrl) => {
 
     showLoadingToast({ message: '上传中...', forbidClick: true })
 
+    // 1. 上传文件
     const uploadRes = await uploadFileByUrl([{
-      fileUrl,
+      fileUrl: fileData.fileUrl,
       businessId,
       configCode: PRE_AUTH_ATTACHMENT_CONFIG_CODE,
       attachType
@@ -1090,6 +1091,32 @@ const handleNativeImage = async(rawFileUrl) => {
     if (!isSuccessResponse(uploadRes)) {
       closeToast()
       showToast(uploadRes?.msg || '上传失败')
+      return
+    }
+
+    // 2. 获取上传返回的文件信息
+    const uploadedFile = uploadRes?.data?.[0] || uploadRes?.data
+    if (!uploadedFile) {
+      closeToast()
+      showToast('上传返回数据异常')
+      return
+    }
+
+    // 3. 调用 bindFile 绑定接口
+    const bindRes = await bindFile({
+      fileId: uploadedFile.id,
+      fileName: uploadedFile.originalFilename,
+      fileUrl: uploadedFile.url,
+      fileSize: uploadedFile.size || fileData.size,
+      fileType: uploadedFile.ext || fileData.ext,
+      attachType,
+      businessId,
+      configCode: PRE_AUTH_ATTACHMENT_CONFIG_CODE
+    })
+
+    if (!isSuccessResponse(bindRes)) {
+      closeToast()
+      showToast(bindRes?.msg || '绑定文件失败')
       return
     }
 
