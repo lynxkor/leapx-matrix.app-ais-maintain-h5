@@ -534,6 +534,17 @@
     display: flex;
     align-items: center;
     justify-content: center;
+
+    &.disabled {
+      background: #cccccc;
+      cursor: not-allowed;
+    }
+  }
+
+  .save-btn.disabled {
+    background: #cccccc;
+    border-color: #cccccc;
+    cursor: not-allowed;
   }
 }
 
@@ -1086,4 +1097,7 @@
     height: 32px;
     color: #888;
   }
+}
+.van-image-preview__overlay {
+  background: rgb(197 196 196 / 90%);
 }

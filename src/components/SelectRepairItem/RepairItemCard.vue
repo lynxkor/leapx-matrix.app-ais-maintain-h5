@@ -56,6 +56,7 @@
                 v-model="tempDiscountAmount"
                 class="discount-input"
                 type="number"
+                :min="0"
                 @blur="saveDiscountAmount"
                 @keydown.enter="saveDiscountAmount"
               />

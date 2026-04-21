@@ -32,7 +32,7 @@
                 <div class="item-name">{{ item.packageName }}</div>
                 <div class="item-code">{{ item.spellCode }}</div>
               </div>
-              <div v-if="item.selected" class="item-status">已选</div>
+              <div v-if="item.used" class="item-status">已选</div>
             </div>
             <div v-if="packageList.length === 0 && !loading" class="no-data">
               <img src="@/assets/image/noList.png" alt="" />
@@ -106,6 +106,7 @@
                 <div class="item-name">{{ item.interestsGoodsName }}</div>
                 <div class="item-code">{{ item.interestsGoodsCode }}</div>
               </div>
+              <div v-if="item.used" class="item-status">已选</div>
             </div>
             <div v-if="mallList.length === 0 && !loading" class="no-data">
               <img src="@/assets/image/noList.png" alt="" />
@@ -296,9 +297,7 @@
       </template>
       <template #footer>
         <div class="detail-actions" :class="{ 'single-btn': isPackageSelected }">
-          <div v-if="isPackageSelected" class="cancel-btn" @click="showPackageDetail = false">
-            取消选择
-          </div>
+          <div v-if="isPackageSelected" class="cancel-btn" @click="onCancelPackage">取消选择</div>
           <div v-else class="confirm-btn full-btn" @click="onConfirmPackage">选择</div>
         </div>
       </template>
@@ -358,11 +357,11 @@
               <div class="repair-card-bottom">
                 <div class="repair-info-row">
                   <span class="info-item">
-                    <span class="info-label">工时费</span>
-                    <span class="info-value">¥{{ item.price || '0.00' }}</span>
+                    <span class="info-label">索赔价</span>
+                    <span class="info-value">¥{{ item.claimPrice || '0.00' }}</span>
                   </span>
                   <span class="info-item">
-                    <span class="info-label">数量</span>
+                    <span class="info-label">工时数</span>
                     <span class="info-value">x{{ item.quantity }}</span>
                   </span>
                 </div>
@@ -428,9 +427,7 @@
       </template>
       <template #footer>
         <div class="detail-actions" :class="{ 'single-btn': isServiceSelected }">
-          <div v-if="isServiceSelected" class="cancel-btn" @click="showServiceDetail = false">
-            取消选择
-          </div>
+          <div v-if="isServiceSelected" class="cancel-btn" @click="onCancelService">取消选择</div>
           <div v-else class="confirm-btn full-btn" @click="onConfirmService">选择</div>
         </div>
       </template>
@@ -483,9 +480,7 @@
       </template>
       <template #footer>
         <div class="detail-actions" :class="{ 'single-btn': isFreeSelected }">
-          <div v-if="isFreeSelected" class="cancel-btn" @click="showFreeDetail = false">
-            取消选择
-          </div>
+          <div v-if="isFreeSelected" class="cancel-btn" @click="onCancelFree">取消选择</div>
           <div v-else class="confirm-btn full-btn" @click="onConfirmFree">选择</div>
         </div>
       </template>
@@ -513,7 +508,7 @@
         <div class="package-detail">
           <!-- 商品维修项目列表 -->
           <div
-            v-for="(item, index) in selectedMall.interestsGoodsResp.goodsRepairItemList"
+            v-for="(item, index) in selectedMall.ownersEquityOrderItemList"
             :key="index"
             class="repair-card"
           >
@@ -534,23 +529,67 @@
             <div class="repair-card-bottom">
               <div class="repair-info-row">
                 <span class="info-item">
-                  <span class="info-label">工时费</span>
+                  <span class="info-label">工时数</span>
                   <span class="info-value">¥{{ item.workingHours || '0.00' }}</span>
                 </span>
                 <span class="info-item">
-                  <span class="info-label">单价</span>
+                  <span class="info-label">工时单价</span>
                   <span class="info-value">¥{{ item.unitPrice }}</span>
                 </span>
               </div>
+            </div>
+            <!-- 维修配件列表 -->
+            <div v-if="expandedMallPartsIndex === index" class="parts-list">
+              <div
+                v-for="(part, pIndex) in item.ownersEquityOrderPartsList"
+                :key="pIndex"
+                class="part-card"
+              >
+                <div class="part-card-content">
+                  <div class="part-left">
+                    <div class="part-name-row">
+                      <span class="part-name">{{ part.partsName }}</span>
+                    </div>
+                    <div class="part-code">{{ part.partsCode }}</div>
+                  </div>
+                  <div class="part-right">
+                    <div class="part-price">¥{{ part.unitPrice || '0.00' }}</div>
+                  </div>
+                </div>
+                <div class="part-card-bottom">
+                  <div class="part-info-row">
+                    <span class="info-item">
+                      <span class="info-value">¥{{ part.unitPrice || '0.00' }}</span>
+                    </span>
+                    <span class="info-item">
+                      <span class="info-label">数量</span>
+                      <span class="info-value">x{{ part.totalAmount }}</span>
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <!-- 展开/收起查看配件按钮 -->
+            <div
+              v-if="item.ownersEquityOrderPartsList && item.ownersEquityOrderPartsList.length > 0"
+              class="expand-btn"
+              @click="expandedMallPartsIndex = expandedMallPartsIndex === index ? -1 : index"
+            >
+              <span class="expand-text">{{
+                expandedMallPartsIndex === index ? '收起维修配件' : '查看维修配件'
+              }}</span>
+              <van-icon
+                :name="expandedMallPartsIndex === index ? 'arrow-up' : 'arrow-down'"
+                size="12"
+                color="#009100"
+              />
             </div>
           </div>
         </div>
       </template>
       <template #footer>
         <div class="detail-actions" :class="{ 'single-btn': isMallSelected }">
-          <div v-if="isMallSelected" class="cancel-btn" @click="showMallDetail = false">
-            取消选择
-          </div>
+          <div v-if="isMallSelected" class="cancel-btn" @click="onCancelMall">取消选择</div>
           <div v-else class="confirm-btn full-btn" @click="onConfirmMall">选择</div>
         </div>
       </template>
@@ -567,6 +606,11 @@
       @close="showEquityDetail = false"
       style="max-height: 80vh"
     >
+      <van-overlay :show="equitySubmitting" style="z-index: 100">
+        <div class="loading-wrapper">
+          <van-loading size="24px" vertical color="#009100">请稍候...</van-loading>
+        </div>
+      </van-overlay>
       <template #content>
         <!-- 套餐信息 -->
         <div class="package-info">
@@ -599,7 +643,7 @@
               <div class="repair-card-bottom">
                 <div class="repair-info-row">
                   <span class="info-item">
-                    <span class="info-label">工时费</span>
+                    <span class="info-label">工时</span>
                     <span class="info-value">¥{{ item.workHour || '0.00' }}</span>
                   </span>
                 </div>
@@ -626,7 +670,7 @@
                   <div class="repair-category">{{ part.checkoutTypeName }}</div>
                 </div>
                 <div class="repair-right">
-                  <div class="repair-price">¥{{ part.receivableAmount }}</div>
+                  <div class="repair-price">¥{{ part.partsAmount }}</div>
                   <div class="repair-discount" v-if="Number(part.discountAmount) > 0">
                     优惠 ¥{{ part.discountAmount }}
                   </div>
@@ -634,14 +678,19 @@
               </div>
               <div class="repair-card-bottom">
                 <div class="repair-info-row">
-                  <span class="info-item">
-                    <span class="info-label">单价</span>
-                    <span class="info-value">¥{{ part.unitPrice }}</span>
-                  </span>
-                  <span class="info-item">
-                    <span class="info-label">数量</span>
-                    <span class="info-value">x{{ part.quantity }}</span>
-                  </span>
+                  <div class="info-left">
+                    <span class="info-item">
+                      <span class="info-label">单价</span>
+                      <span class="info-value">¥{{ part.price }}</span>
+                    </span>
+                    <span class="info-item">
+                      <span class="info-label">数量</span>
+                      <span class="info-value">x{{ part.quantity }}</span>
+                    </span>
+                  </div>
+                  <span v-if="part.ifReplace == 1" class="replace-btn" @click="onReplacePart(part)"
+                    >替换</span
+                  >
                 </div>
               </div>
             </div>
@@ -650,7 +699,8 @@
       </template>
       <template #footer>
         <div class="detail-actions" :class="{ 'single-btn': isEquitySelected }">
-          <div class="confirm-btn full-btn" @click="onConfirmEquity">选择</div>
+          <div v-if="isEquitySelected" class="cancel-btn" @click="onCancelEquity">取消选择</div>
+          <div v-else class="confirm-btn full-btn" @click="onConfirmEquity">选择</div>
         </div>
       </template>
     </ais-popup>
@@ -677,6 +727,8 @@ import {
   specialActivityUse,
   specialFreeUse,
   specialPackageUse,
+  cancelSelect,
+  specialEquityReplace,
 } from '@/api/reception'
 import './select-package.scss'
 
@@ -717,6 +769,9 @@ const activeRepairItem = ref([])
 const expandedPartsIndex = ref(-1)
 const partsExpanded = ref(true) // 维修零件默认展开
 
+// 商城订单零件展开状态
+const expandedMallPartsIndex = ref(-1)
+
 // 当前详情是否已选
 const isPackageSelected = ref(false)
 const isServiceSelected = ref(false)
@@ -728,12 +783,14 @@ const serviceSubmitting = ref(false)
 const freeSubmitting = ref(false)
 const mallSubmitting = ref(false)
 const packageSubmitting = ref(false)
+const equitySubmitting = ref(false)
 
 // 选中的套餐
 const selectedPackage = reactive({
   id: '',
   name: '',
   code: '',
+  packageType: '10',
   totalPrice: '0.00',
   itemRespList: [],
 })
@@ -741,6 +798,7 @@ const selectedPackage = reactive({
 // 选中的服务活动
 const selectedService = reactive({
   id: '',
+  packageType: '50',
   activityResponse: {},
   itemResponseList: [],
   partResponseList: [],
@@ -749,15 +807,19 @@ const selectedService = reactive({
 // 选中的免保项目
 const selectedFree = reactive({
   data: {},
+  packageType: '40',
   partDetailList: [],
 })
 
 // 选中的商城订单
-const selectedMall = ref({})
+const selectedMall = ref({
+  packageType: '30',
+})
 
 // 选中的权益套餐
 const selectedEquity = reactive({
   data: {},
+  packageType: '20',
   repairItemList: [],
   repairPartList: [],
 })
@@ -899,7 +961,7 @@ const onPackageClick = (item) => {
       selectedPackage.itemRespList = data.itemRespList || []
       activeRepairItem.value = []
       expandedPartsIndex.value = -1
-      isPackageSelected.value = data.used
+      isPackageSelected.value = item.used
     }
   })
   showPackageDetail.value = true
@@ -908,6 +970,7 @@ const onPackageClick = (item) => {
 // 点击权益套餐
 const onEquityClick = (item) => {
   selectedEquity.data = item
+  selectedEquity.packageType = '20'
   selectedEquity.repairItemList = item.repairItemList || []
   selectedEquity.repairPartList = item.repairPartList || []
   isEquitySelected.value = !!item.selected
@@ -922,8 +985,8 @@ const onMallClick = (item) => {
   }).then((res) => {
     if (res.code === 200) {
       const data = res.data
-      selectedMall.value = data || {}
-      isMallSelected.value = !!item.selected
+      selectedMall.value = { ...data, packageType: '30' }
+      isMallSelected.value = item.used
       showMallDetail.value = true
     }
   })
@@ -938,8 +1001,9 @@ const onFreeClick = (item) => {
     if (res.code === 200) {
       const data = res.data
       selectedFree.data = data || {}
+      selectedFree.packageType = '40'
       selectedFree.partDetailList = data.partDetailList || []
-      isFreeSelected.value = data.used
+      isFreeSelected.value = item.used
     }
   })
   showFreeDetail.value = true
@@ -956,6 +1020,8 @@ const onServiceClick = (item) => {
       const data = res.data
       selectedService.id = data.id
       selectedService.activityResponse = data.activityResponse || {}
+      // 根据activityType判断packageType: 4->50, 其他->60
+      selectedService.packageType = data.activityResponse?.activityType == 4 ? '50' : '60'
       // 为每个项目和配件添加selected字段，默认false
       selectedService.itemResponseList = (data.itemResponseList || []).map((item) => ({
         ...item,
@@ -965,7 +1031,7 @@ const onServiceClick = (item) => {
         ...part,
         selected: part.allowDelete == 0, // allowDelete == 0 时默认选中
       }))
-      isServiceSelected.value = data.activityUsed
+      isServiceSelected.value = item.used
       showServiceDetail.value = true
     }
   })
@@ -1108,6 +1174,11 @@ const onConfirmMall = () => {
     })
 }
 
+// 替换零件
+const onReplacePart = (part) => {
+  console.log('替换零件:', part)
+}
+
 // 确认选择权益套餐
 const onConfirmEquity = () => {
   const params = {
@@ -1130,6 +1201,131 @@ const onConfirmEquity = () => {
     })
     .catch(() => {
       showToast(res.msg || '网络错误')
+    })
+}
+
+// 取消选择维修套餐
+const onCancelPackage = () => {
+  packageSubmitting.value = true
+  cancelSelect({
+    id: serviceProxyId.value,
+    packageId: selectedPackage.id,
+    packageType: selectedPackage.packageType,
+  })
+    .then((res) => {
+      if (res.code === 200) {
+        showToast('已取消选择')
+        showPackageDetail.value = false
+        fetchListData('repair')
+      } else {
+        showToast(res.msg || '取消失败')
+      }
+    })
+    .catch(() => {
+      showToast('网络错误')
+    })
+    .finally(() => {
+      packageSubmitting.value = false
+    })
+}
+
+// 取消选择服务活动
+const onCancelService = () => {
+  serviceSubmitting.value = true
+  cancelSelect({
+    id: serviceProxyId.value,
+    packageId: selectedService.id,
+    packageType: selectedService.packageType,
+  })
+    .then((res) => {
+      if (res.code === 200) {
+        showToast('已取消选择')
+        showServiceDetail.value = false
+        fetchListData('service')
+      } else {
+        showToast(res.msg || '取消失败')
+      }
+    })
+    .catch(() => {
+      showToast('网络错误')
+    })
+    .finally(() => {
+      serviceSubmitting.value = false
+    })
+}
+
+// 取消选择免保项目
+const onCancelFree = () => {
+  freeSubmitting.value = true
+  cancelSelect({
+    id: serviceProxyId.value,
+    packageId: selectedFree.data.id,
+    packageType: selectedFree.packageType,
+  })
+    .then((res) => {
+      if (res.code === 200) {
+        showToast('已取消选择')
+        showFreeDetail.value = false
+        fetchListData('free')
+      } else {
+        showToast(res.msg || '取消失败')
+      }
+    })
+    .catch(() => {
+      showToast('网络错误')
+    })
+    .finally(() => {
+      freeSubmitting.value = false
+    })
+}
+
+// 取消选择商城订单
+const onCancelMall = () => {
+  mallSubmitting.value = true
+  cancelSelect({
+    id: serviceProxyId.value,
+    packageId: selectedMall.value.id,
+    packageType: selectedMall.value.packageType,
+  })
+    .then((res) => {
+      if (res.code === 200) {
+        showToast('已取消选择')
+        showMallDetail.value = false
+        fetchListData('mall')
+      } else {
+        showToast(res.msg || '取消失败')
+      }
+    })
+    .catch(() => {
+      showToast('网络错误')
+    })
+    .finally(() => {
+      mallSubmitting.value = false
+    })
+}
+
+// 取消选择权益套餐
+const onCancelEquity = () => {
+  equitySubmitting.value = true
+  cancelSelect({
+    id: serviceProxyId.value,
+    packageId: selectedEquity.data.useId,
+    packageType: selectedEquity.packageType,
+  })
+    .then((res) => {
+      if (res.code === 200) {
+        showToast('已取消选择')
+        showEquityDetail.value = false
+        fetchListData('equity')
+      } else {
+        showToast(res.msg || '取消失败')
+      }
+    })
+    .catch(() => {
+      showToast('网络错误')
+    })
+    .finally(() => {
+      equitySubmitting.value = false
     })
 }
 </script>

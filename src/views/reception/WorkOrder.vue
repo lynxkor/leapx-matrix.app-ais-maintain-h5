@@ -138,6 +138,16 @@ const requestData = computed(() => {
   const data = {
     pageNum: 1,
     pageSize: 10,
+    sortColumns: [
+      {
+        column: 'order_status',
+        sort: 'ASC',
+      },
+      {
+        column: 'create_time',
+        sort: 'DESC',
+      },
+    ],
     ...searchParams.value,
   }
   console.log('data', data, activeTab.value)
@@ -148,9 +158,9 @@ const requestData = computed(() => {
     data.createTimeStart = formatDate(weekAgo)
     data.createTimeEnd = formatDate(todayEnd)
   } else if (activeTab.value === 'all') {
-    // all 不传日期参数，同时清除可能存在的旧日期值
-    data.createTimeStart = null
-    data.createTimeEnd = null
+    // all 不传日期参数，删除这两个字段
+    delete data.createTimeStart
+    delete data.createTimeEnd
   }
   return {
     api: getList,

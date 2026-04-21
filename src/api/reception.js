@@ -62,7 +62,7 @@ export function serviceAddOrUpdate(data) {
 }
 // 预检确认
 export function servicePreCheck(data) {
-  return post('/maintain/app/sp/serviceProxy/precheck', data)
+  return postText('/maintain/app/sp/serviceProxy/precheck', data)
 }
 
 // 特殊开单--维修套餐--列表查询
@@ -129,6 +129,10 @@ export function getSpecialActivityDetail(data) {
 // 特殊开单--服务活动--使用
 export function specialActivityUse(data) {
   return post('/maintain/app/sp/special/activity/use', data)
+}
+// 特殊开单 取消选择-通用
+export function cancelSelect(data) {
+  return post('/maintain/app/sp/special/cancel', data)
 }
 // 接车施工单--提醒信息
 export function getRemindInfo(data) {

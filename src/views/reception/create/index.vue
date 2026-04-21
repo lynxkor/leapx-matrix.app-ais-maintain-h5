@@ -9,7 +9,11 @@
           <span><img src="@/assets/image/car.png" alt="" /></span>
           <span>换车</span>
         </span>
-        <span class="edit-plate" @click="onEditPlate">
+        <span
+          v-if="detail.orderStatus != 180 && detail.orderStatus != 210"
+          class="edit-plate"
+          @click="onEditPlate"
+        >
           <span><img src="@/assets/image/edit.png" alt="" /></span>
           <span>修改车牌</span>
         </span>
@@ -388,10 +392,15 @@
             <div class="signature-row" @click="onOpenDeliveryTimePicker">
               <span class="label">预计交车时间</span>
               <div class="value-wrapper">
-                <span :class="['value', { placeholder: !signatureData.deliveryTime }]">
-                  {{ signatureData.deliveryTime || '请选择' }}
+                <span :class="['value', { placeholder: !signatureData.expectFinishAt }]">
+                  {{ signatureData.expectFinishAt || '请选择' }}
                 </span>
-                <van-icon name="arrow" size="12" color="#545454" />
+                <van-icon
+                  v-if="!signatureData.isDeliveryTimeFromApi"
+                  name="arrow"
+                  size="12"
+                  color="#545454"
+                />
               </div>
             </div>
             <!-- <div class="signature-row">
@@ -454,17 +463,30 @@
     <div class="bottom-bar">
       <template v-if="activeTab === 'inspection'">
         <span v-if="!isSaved" class="save-btn" @click="onSave">保存</span>
-        <template v-else-if="!isPreCheckCompleted">
-          <span class="save-btn" @click="onInspectionSave">保存</span>
-          <span class="complete-btn" @click="onComplete">预检完成</span>
+        <template v-else>
+          <span
+            :class="['save-btn', { disabled: isInspectionSaveDisabled }]"
+            @click="onInspectionSave"
+            >保存</span
+          >
+          <span v-if="!detail.previewingFinishAt" class="complete-btn" @click="onComplete"
+            >预检完成</span
+          >
         </template>
       </template>
       <template v-else-if="activeTab === 'parts'">
-        <span class="save-btn" @click="onPartsSave">保存</span>
+        <span :class="['save-btn', { disabled: isPartsSaveDisabled }]" @click="onPartsSave"
+          >保存</span
+        >
       </template>
       <template v-else-if="activeTab === 'signature'">
-        <span class="save-btn" @click="onSignatureSave">保存</span>
-        <span v-if="detail.orderStatus == 110" class="complete-btn" @click="onConfirmAndSign"
+        <!-- <span :class="['save-btn', { disabled: isPartsSaveDisabled }]" @click="onSignatureSave"
+          >保存</span
+        > -->
+        <span
+          v-if="detail.orderStatus == 110"
+          :class="['complete-btn', { disabled: isConfirmAndSignDisabled }]"
+          @click="onConfirmAndSign"
           >制单确认并签字</span
         >
       </template>
@@ -848,7 +870,15 @@
         </div>
       </template>
       <template #footer>
-        <div class="confirm-btn" @click="onConfirmCancel">确定</div>
+        <van-button
+          type="primary"
+          size="small"
+          block
+          :loading="cancelLoading"
+          @click="onConfirmCancel"
+        >
+          确定
+        </van-button>
       </template>
     </ais-popup>
 
@@ -969,73 +999,6 @@
       </div>
     </van-dialog>
 
-    <!-- 三包预警提示框 -->
-    <van-dialog
-      v-model:show="showWarrantyAlertDialog"
-      :show-confirm-button="false"
-      :show-cancel-button="false"
-      close-on-click-overlay
-      class="warranty-alert-dialog"
-    >
-      <div class="warranty-alert-content">
-        <!-- 预授权提醒 -->
-        <div class="alert-section">
-          <div class="section-title">预授权提醒</div>
-          <div class="section-message">
-            该车辆为「车辆标识名称一」「车辆标识名称二」，请注意接待。
-          </div>
-          <div class="section-action-btn" @click="onGenerateAuthorization">生成预授权</div>
-        </div>
-
-        <!-- 三包预警 -->
-        <div class="alert-section">
-          <div class="section-title">三包预警</div>
-          <div class="warranty-alerts">
-            <!-- 红色预警 -->
-            <div class="warranty-alert-card red">
-              <div class="alert-header">
-                <span class="alert-tag red">红色预警</span>
-                <span class="alert-title">累计保修次数5项预警</span>
-              </div>
-              <div class="alert-partno">80522250-BE02/低音扬声器总成</div>
-              <div class="alert-details">
-                <div class="alert-detail-item">
-                  1、广州零跑中心科学城店，2023-08-15至2023-09-05，次数1
-                </div>
-              </div>
-            </div>
-            <!-- 绿色预警 -->
-            <div class="warranty-alert-card green">
-              <div class="alert-header">
-                <span class="alert-tag green">绿色预警</span>
-                <span class="alert-title">累计保修次数5项预警</span>
-              </div>
-              <div class="alert-partno">80522250-BE02/低音扬声器总成</div>
-              <div class="alert-details">
-                <div class="alert-detail-item">
-                  1、广州零跑中心科学城店，2023-08-15至2023-09-05，次数1
-                </div>
-              </div>
-            </div>
-            <!-- 黄色预警 -->
-            <div class="warranty-alert-card yellow">
-              <div class="alert-header">
-                <span class="alert-tag yellow">黄色预警</span>
-                <span class="alert-title">累计保修次数5项预警</span>
-              </div>
-              <div class="alert-partno">80522250-BE02/低音扬声器总成</div>
-              <div class="alert-details">
-                <div class="alert-detail-item">
-                  1、广州零跑中心科学城店，2023-08-15至2023-09-05，次数1
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="alert-confirm-btn" @click="onConfirmWarrantyAlert">我知道了</div>
-      </div>
-    </van-dialog>
     <!-- 全屏Loading -->
     <van-overlay :show="savingLoading">
       <div class="loading-wrapper">
@@ -1111,6 +1074,7 @@ import {
   getDetail,
   saveSpRepairItem,
   spConfirmAndSign,
+  serviceProxyCancel,
 } from '@/api/reception'
 import './create.scss'
 
@@ -1127,6 +1091,7 @@ const repairItemContentRef = ref(null)
 // 施工单状态
 const isSaved = ref(false) // 是否已保存
 const isPreCheckCompleted = ref(false) // 是否预检完成
+const serviceProxyId = ref('') // 新建保存后返回的施工单id
 
 // 换车相关
 const carSearchValue = ref('')
@@ -1152,18 +1117,6 @@ const showConfirmDialog2 = ref(false)
 
 const onConfirmDialogClose = () => {
   showConfirmDialog2.value = false
-}
-
-// 三包预警提示框
-const showWarrantyAlertDialog = ref(false)
-
-const onGenerateAuthorization = () => {
-  // 生成预授权
-  showToast('生成预授权')
-}
-
-const onConfirmWarrantyAlert = () => {
-  showWarrantyAlertDialog.value = false
 }
 
 // 送修人类型选择
@@ -1338,9 +1291,7 @@ const onConfirmChangePlate = async () => {
 const moreActionsList = computed(() => {
   // 已作废210、反结算200、已生成结算单(isCreateStatementInfo == 1)时，作废禁用
   const isCancelDisabled =
-    detail.orderStatus == 210 ||
-    detail.orderStatus == 200 ||
-    detail.isCreateStatementInfo == 1
+    detail.orderStatus == 210 || detail.orderStatus == 200 || detail.isCreateStatementInfo == 1
 
   // 获取禁用原因文本
   let disabledReason = ''
@@ -1405,7 +1356,7 @@ const onSelectMoreAction = (action) => {
         vin: detail.vin,
         plateNo: detail.plateNo,
         vehicleModel: detail.vehicleModel,
-        id: route.query.id,
+        id: serviceProxyId.value || route.query.id,
       },
     })
   }
@@ -1418,17 +1369,31 @@ const onSelectMoreAction = (action) => {
       },
     })
   }
+  if (action.name === '实时故障') {
+    window.location.href = `https://staticres.leapmotor.com/leapx/batteryDiagnosis?vin=${detail.vin}&vehicleModel=${detail.vehSeriesName}`
+  }
 }
 // 确认作废
-const onConfirmCancel = () => {
+const onConfirmCancel = async () => {
   if (!cancelReason.value.trim()) {
     showToast('请输入作废原因')
     return
   }
-  console.log('作废原因:', cancelReason.value)
-  showToast('作废成功')
-  showCancelReason.value = false
-  cancelReason.value = ''
+  cancelLoading.value = true
+  try {
+    const res = await serviceProxyCancel({
+      id: serviceProxyId.value || route.query.id,
+      invaildDesc: cancelReason.value,
+    })
+    if (res.code === 200) {
+      showToast('作废成功')
+      showCancelReason.value = false
+      cancelReason.value = ''
+      fetchDetailForSignature()
+    }
+  } finally {
+    cancelLoading.value = false
+  }
 }
 
 // 是否存在故障变更
@@ -1648,10 +1613,43 @@ const computedTotalCost = computed(() => {
   return total.toFixed(2)
 })
 
+// 制单确认并签字按钮是否禁用：预计交车时间为空或者签字渠道为空
+const isConfirmAndSignDisabled = computed(() => {
+  return !signatureData.expectFinishAt || !signatureData.signChannel
+})
+
+// 项目零件保存按钮是否禁用：没有添加项目或者零件
+const isPartsSaveDisabled = computed(() => {
+  return false
+  // const items = repairItemContentRef.value?.selectedItems || []
+  // const parts = repairItemContentRef.value?.selectedParts || []
+  // return items.length === 0 && parts.length === 0
+})
+
+// 环检信息保存按钮是否禁用：进店里程数、进店电量、送修人信息、车内车外照片、异常描述、经理建议为空
+const isInspectionSaveDisabled = computed(() => {
+  // 进店里程数
+  if (!detail.mileage) return true
+  // 进店电量
+  if (!detail.battery) return true
+  // 送修人信息
+  if (!detail.repairPerson || !detail.repairPersonPhone) return true
+  // 车内照片（根据配置判断是否必填）
+  if (interiorConfig.value.required === '1' && detail.interiorImages.length === 0) return true
+  // 车外照片（根据配置判断是否必填）
+  if (exteriorConfig.value.required === '1' && detail.exteriorImages.length === 0) return true
+  // 异常描述
+  if (!detail.abnormalDesc) return true
+  // 经理建议
+  if (!detail.testResult) return true
+  return false
+})
+
 // 签字确认数据
 const signatureData = reactive({
   repairItemTypeDetailCollect: '',
-  deliveryTime: '',
+  expectFinishAt: '',
+  isDeliveryTimeFromApi: false,
   liveEnabled: false,
   signatureChannel: '',
   attachments: [],
@@ -1670,7 +1668,7 @@ const deliveryDateList = ref([])
 const generateDeliveryDates = () => {
   const dates = []
   const today = new Date()
-  for (let i = 0; i < 7; i++) {
+  for (let i = 0; i < 100; i++) {
     const date = new Date(today)
     date.setDate(today.getDate() + i)
     const year = date.getFullYear()
@@ -1684,21 +1682,18 @@ const generateDeliveryDates = () => {
   deliveryDateList.value = dates
 }
 
-// 预计交车时间列表
-const deliveryTimeList = ref([
-  { value: '08:00', label: '08:00' },
-  { value: '08:15', label: '08:15' },
-  { value: '08:30', label: '08:30' },
-  { value: '08:45', label: '08:45' },
-  { value: '09:00', label: '09:00' },
-  { value: '09:15', label: '09:15' },
-  { value: '09:30', label: '09:30' },
-  { value: '09:45', label: '09:45' },
-  { value: '10:00', label: '10:00' },
-  { value: '10:15', label: '10:15' },
-  { value: '10:30', label: '10:30' },
-  { value: '10:45', label: '10:45' },
-])
+// 预计交车时间列表（08:00:00 到 18:00:00，每15分钟一个）
+const deliveryTimeList = ref([])
+const generateDeliveryTimes = () => {
+  const times = []
+  for (let hour = 8; hour <= 18; hour++) {
+    for (let minute = 0; minute < 60; minute += 15) {
+      const timeStr = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}:00`
+      times.push({ value: timeStr, label: timeStr })
+    }
+  }
+  deliveryTimeList.value = times
+}
 
 // 签字渠道列表
 const signatureChannelList = ref([
@@ -1730,7 +1725,7 @@ const validateMileage = (mileage, lastMileage, netMileage) => {
 
 // 获取详情
 const fetchDetail = async () => {
-  const id = route.query.id
+  const id = serviceProxyId.value || route.query.id
   const vehicleInfoStr = route.params.vehicleInfo || route.query.vehicleInfo
 
   // 如果有车辆信息，则从车辆搜索页面跳转过来
@@ -1956,21 +1951,24 @@ const handleImageFileChange = (event) => {
 
     // 调用上传接口
     const uploadFile = async () => {
+      // 保存当前上传类型，避免异步上传完成时类型已改变
+      const uploadType = currentUploadType.value
       try {
         const params = {
           fileUrl: previewUrl,
-          businessId: route.query.id,
+          businessId: serviceProxyId.value || route.query.id,
           configCode: 'mcs_serviceproxy',
-          attachType: attachTypeMap[currentUploadType.value],
+          attachType: attachTypeMap[uploadType],
         }
 
         const res = await uploadFileByUrl([params])
 
         if (res.code === 200) {
-          const uploadData = res.data && res.data.length > 0 ? res.data[0] : {}
+          // 兼容两种返回格式：数组或对象
+          const uploadData = Array.isArray(res.data) ? res.data[0] || {} : res.data || {}
 
-          // 更新文件状态
-          const targetList = getTargetFileList(currentUploadType.value)
+          // 更新文件状态 - 使用保存的 uploadType
+          const targetList = getTargetFileList(uploadType)
           if (targetList.length > 0) {
             const lastIndex = targetList.length - 1
             targetList[lastIndex] = {
@@ -1984,8 +1982,8 @@ const handleImageFileChange = (event) => {
 
           showToast('上传成功')
         } else {
-          // 上传失败，移除临时文件
-          const targetList = getTargetFileList(currentUploadType.value)
+          // 上传失败，移除临时文件 - 使用保存的 uploadType
+          const targetList = getTargetFileList(uploadType)
           if (targetList.length > 0) {
             targetList.pop()
           }
@@ -1993,8 +1991,8 @@ const handleImageFileChange = (event) => {
         }
       } catch (e) {
         console.error('上传出错:', e)
-        // 出错时移除临时文件
-        const targetList = getTargetFileList(currentUploadType.value)
+        // 出错时移除临时文件 - 使用保存的 uploadType
+        const targetList = getTargetFileList(uploadType)
         if (targetList.length > 0) {
           targetList.pop()
         }
@@ -2010,7 +2008,7 @@ const handleImageFileChange = (event) => {
 
 // 刷新附件列表
 const refreshAttachmentList = () => {
-  getFileList({ businessId: route.query.id }).then((res) => {
+  getFileList({ businessId: serviceProxyId.value || route.query.id }).then((res) => {
     if (res.code === 200) {
       const fileList = res.data || []
       // 清空所有列表
@@ -2199,6 +2197,7 @@ const validateRepairPerson = () => {
 }
 
 const savingLoading = ref(false)
+const cancelLoading = ref(false)
 
 const onSave = async () => {
   console.log('保存:', detail, computedBusinessType.value)
@@ -2231,7 +2230,7 @@ const onSave = async () => {
       startWarrantyDate: detail.vehicleProfileServiceResp.warrantyStartdate || '',
       exclusiveServiceDealerName: detail.vehicleProfileServiceResp.serviceDealerName || '',
       exclusiveServiceDealerCode: detail.vehicleProfileServiceResp.serviceDealerCode || '',
-      expectFinishAt: signatureData.deliveryTime,
+      expectFinishAt: signatureData.expectFinishAt,
       createStatementInfoDate: '',
       remark: '',
       status: '',
@@ -2329,7 +2328,7 @@ const onSave = async () => {
       exteriorPhotoList: detail.exteriorImages.map((item) => ({
         ...item,
         fileId: item.id,
-        businessId: route.query.id,
+        businessId: serviceProxyId.value || route.query.id,
         fileUrl: item.url,
         attachType: '车外照片',
         configCode: 'mcs_serviceproxy',
@@ -2337,7 +2336,7 @@ const onSave = async () => {
       interiorPhotoList: detail.interiorImages.map((item) => ({
         ...item,
         fileId: item.id,
-        businessId: route.query.id,
+        businessId: serviceProxyId.value || route.query.id,
         fileUrl: item.url,
         attachType: '车内照片',
         configCode: 'mcs_serviceproxy',
@@ -2357,13 +2356,16 @@ const onSave = async () => {
     if (res.code === 200) {
       showToast('保存成功')
       isSaved.value = true
+      // 新建时保存返回的施工单id
+      if (res.data) {
+        serviceProxyId.value = res.data
+      }
       // 保存成功后获取详情数据更新
       fetchDetailForSignature()
     } else {
       showToast(res.msg || '保存失败')
     }
   } catch (error) {
-    console.error('保存失败:', error)
     showToast('保存失败')
   } finally {
     savingLoading.value = false
@@ -2382,28 +2384,26 @@ const onComplete = async () => {
     message: '确定预检完成吗？',
   })
     .then(async () => {
-      try {
-        const res = await servicePreCheck({
-          id: route.query.id,
-        })
-        if (res.code === 200) {
-          showToast('预检完成')
-          isPreCheckCompleted.value = true
-          // 预检完成后获取详情数据，给签字确认页面赋值
-          fetchDetailForSignature()
-        } else {
-          showToast(res.msg || '预检完成失败')
-        }
-      } catch (error) {
-        console.error('预检完成失败:', error)
-        showToast('预检完成失败')
+      savingLoading.value = true
+      const res = await servicePreCheck(serviceProxyId.value || route.query.id)
+      if (res.code === 200) {
+        showToast('预检完成')
+        isPreCheckCompleted.value = true
+        // 预检完成后获取详情数据，给签字确认页面赋值
+        fetchDetailForSignature()
+      } else {
+        showToast(res.msg || '操作失败')
       }
+      savingLoading.value = false
     })
-    .catch(() => {})
+    .catch(() => {
+      savingLoading.value = false
+    })
 }
 
 // 环检信息保存（已保存状态）
 const onInspectionSave = async () => {
+  if (isInspectionSaveDisabled.value) return
   savingLoading.value = true
   try {
     const res = await serviceAddOrUpdate({
@@ -2427,7 +2427,7 @@ const onInspectionSave = async () => {
       startWarrantyDate: detail.vehicleProfileServiceResp.warrantyStartdate || '',
       exclusiveServiceDealerName: detail.vehicleProfileServiceResp.serviceDealerName || '',
       exclusiveServiceDealerCode: detail.vehicleProfileServiceResp.serviceDealerCode || '',
-      expectFinishAt: signatureData.deliveryTime,
+      expectFinishAt: signatureData.expectFinishAt,
       createStatementInfoDate: '',
       remark: '',
       status: '',
@@ -2525,7 +2525,7 @@ const onInspectionSave = async () => {
       exteriorPhotoList: detail.exteriorImages.map((item) => ({
         ...item,
         fileId: item.id,
-        businessId: route.query.id,
+        businessId: serviceProxyId.value || route.query.id,
         fileUrl: item.url,
         attachType: '车外照片',
         configCode: 'mcs_serviceproxy',
@@ -2533,7 +2533,7 @@ const onInspectionSave = async () => {
       interiorPhotoList: detail.interiorImages.map((item) => ({
         ...item,
         fileId: item.id,
-        businessId: route.query.id,
+        businessId: serviceProxyId.value || route.query.id,
         fileUrl: item.url,
         attachType: '车内照片',
         configCode: 'mcs_serviceproxy',
@@ -2581,7 +2581,7 @@ const onPartsSave = async () => {
   try {
     // 保存项目零件
     const res = await saveSpRepairItem({
-      serviceProxyId: route.query.id,
+      serviceProxyId: serviceProxyId.value || route.query.id,
       discountId: '',
       itemList: items,
       partsList: parts,
@@ -2617,7 +2617,7 @@ const onSignatureSave = async () => {
   try {
     // 保存项目零件
     const res = await saveSpRepairItem({
-      serviceProxyId: route.query.id,
+      serviceProxyId: serviceProxyId.value || route.query.id,
       discountId: '',
       itemList: items,
       partsList: parts,
@@ -2648,49 +2648,36 @@ const onConfirmAndSign = () => {
     showToast('项目及零件不可为空，请添加项目及零件')
     return
   }
-
-  // 先显示确认弹框
-  showConfirmDialog({
-    title: '问题确认',
-    message: `您本次进店反馈的问题为："${detail.customerFaultDesc || ''}"，门店描述是否准确？\n(准确记录能帮技师精准维修，避免您重复进店哦~）`,
-    confirmButtonText: '准确',
-    cancelButtonText: '不准确',
-    confirmButtonColor: '#009100',
-  })
-    .then(() => {
-      // 点击"准确"，执行接口
-      let params = {
-        serviceProxyId: detail.id,
-        signChannel:
-          signatureData.signChannel === '纸质单据' || detail.signChannel == 40 ? '40' : '',
-        expectFinishAt: signatureData.deliveryTime,
+  // 点击"准确"，执行接口
+  savingLoading.value = true
+  let params = {
+    serviceProxyId: detail.id,
+    expectFinishAt: signatureData.expectFinishAt,
+  }
+  // 纸质单据时才传signChannel
+  if (signatureData.signChannel === '纸质单据' || detail.signChannel == 40) {
+    params.signChannel = '40'
+  }
+  spConfirmAndSign(params)
+    .then((res) => {
+      if (res.code === 200) {
+        showToast('操作成功')
+        fetchDetail()
+        // 接口成功后跳转结算页面
+        const settlementUrl = `https://staticres-sitb.leapmotor.com/leapx/biling/ais/settlement?serviceProxyId=${detail.id}`
+        window.location.href = settlementUrl
+      } else {
+        showToast(res.msg || '操作失败')
       }
-      spConfirmAndSign(params).then((res) => {
-        if (res.code === 200) {
-          showToast('操作成功')
-          fetchDetail()
-          // 接口成功后跳转签字页面
-          router.push({
-            path: '/reception/sign',
-            query: {
-              vin: detail.vin,
-              serviceProxyNo: detail.code,
-              serviceProxyId: detail.id,
-            },
-          })
-        } else {
-          showToast(res.msg || '操作失败')
-        }
-      })
     })
-    .catch(() => {
-      // 点击"不准确"，关闭弹框留在当前页
+    .finally(() => {
+      savingLoading.value = false
     })
 }
 
 // 获取详情数据给签字确认页面赋值
 const fetchDetailForSignature = async () => {
-  const id = route.query.id
+  const id = serviceProxyId.value || route.query.id
   if (!id) return
 
   try {
@@ -2699,7 +2686,8 @@ const fetchDetailForSignature = async () => {
       const data = res.data
       // 更新签字确认数据
       signatureData.repairItemTypeDetailCollect = data.repairItemTypeDetailCollect || ''
-      signatureData.deliveryTime = data.expectFinishAt || ''
+      signatureData.expectFinishAt = data.expectFinishAt || ''
+      signatureData.isDeliveryTimeFromApi = !!data.expectFinishAt
       // 更新项目零件数据
       if (data.costCountResp) {
         partsData.repairItemRespList = data.costCountResp.repairItemRespList || []
@@ -2713,6 +2701,16 @@ const fetchDetailForSignature = async () => {
       detail.orderStatus = data.orderStatus || ''
       detail.signStatus = data.signStatus || ''
       detail.signUrl = data.signUrl || ''
+      // 将故障预警记录映射到faultModules用于显示
+      if (data.faultAlertRecordRespList && data.faultAlertRecordRespList.length > 0) {
+        detail.faultModules = data.faultAlertRecordRespList.map((item) => ({
+          ...item,
+          cccCode: item.cccCode,
+          cccName: item.cccName,
+          vfgName: item.vfgName,
+          faultDesc: item.faultDescription,
+        }))
+      }
     }
   } catch (error) {
     console.error('获取详情失败:', error)
@@ -2745,13 +2743,12 @@ const onAddPackage = () => {
 
 // 打开预计交车时间选择器
 const onOpenDeliveryTimePicker = () => {
-  // 如果已有值，回显
-  if (signatureData.deliveryTime) {
-    const [date, time] = signatureData.deliveryTime.split(' ')
-    selectedDeliveryDate.value = date
-    selectedDeliveryTime.value = time
-  } else {
-    // 没有值时，默认选中第一个日期和第一个时间
+  // 如果是接口返回的交车时间，不允许点击
+  if (signatureData.isDeliveryTimeFromApi) {
+    return
+  }
+  // 如果没有值，默认选中第一个日期和第一个时间
+  if (!signatureData.expectFinishAt) {
     if (deliveryDateList.value.length > 0) {
       selectedDeliveryDate.value = deliveryDateList.value[0].value
     }
@@ -2772,7 +2769,7 @@ const onSelectDeliveryTime = (item) => {
   selectedDeliveryTime.value = item.value
   // 选中时间后直接确认
   if (selectedDeliveryDate.value && selectedDeliveryTime.value) {
-    signatureData.deliveryTime = `${selectedDeliveryDate.value} ${selectedDeliveryTime.value}`
+    signatureData.expectFinishAt = `${selectedDeliveryDate.value} ${selectedDeliveryTime.value}`
     showDeliveryTimePicker.value = false
   }
 }
@@ -2830,6 +2827,8 @@ onMounted(() => {
   repairPersonPhoneInput.value = detail.repairPersonPhone
   // 初始化预计交车日期列表
   generateDeliveryDates()
+  // 初始化预计交车时间列表
+  generateDeliveryTimes()
 
   // 获取上传配置
   getUploadConfig({
@@ -2844,6 +2843,9 @@ onMounted(() => {
   window.getImage = async (url) => {
     console.log('原生返回图片地址:', url)
     if (!url) return
+
+    // 保存当前上传类型，避免异步上传完成时类型已改变
+    const uploadType = currentUploadType.value
 
     // attachType 映射
     const attachTypeMap = {
@@ -2861,7 +2863,7 @@ onMounted(() => {
     }
 
     // 根据当前上传类型添加到对应的文件列表
-    switch (currentUploadType.value) {
+    switch (uploadType) {
       case 'interior':
         detail.interiorImages.push(fileObj)
         break
@@ -2879,16 +2881,17 @@ onMounted(() => {
         fileUrl: url,
         businessId: route.query.id,
         configCode: 'mcs_serviceproxy',
-        attachType: attachTypeMap[currentUploadType.value],
+        attachType: attachTypeMap[uploadType],
       }
 
       const res = await uploadFileByUrl([params])
 
       if (res.code === 200) {
-        const uploadData = res.data && res.data.length > 0 ? res.data[0] : {}
+        // 兼容两种返回格式：数组或对象
+        const uploadData = Array.isArray(res.data) ? res.data[0] || {} : res.data || {}
 
-        // 更新文件状态
-        const targetList = getTargetFileList(currentUploadType.value)
+        // 更新文件状态 - 使用保存的 uploadType
+        const targetList = getTargetFileList(uploadType)
         if (targetList.length > 0) {
           const lastIndex = targetList.length - 1
           targetList[lastIndex] = {
@@ -2902,8 +2905,8 @@ onMounted(() => {
 
         showToast('上传成功')
       } else {
-        // 上传失败，移除临时文件
-        const targetList = getTargetFileList(currentUploadType.value)
+        // 上传失败，移除临时文件 - 使用保存的 uploadType
+        const targetList = getTargetFileList(uploadType)
         if (targetList.length > 0) {
           targetList.pop()
         }
@@ -2911,8 +2914,8 @@ onMounted(() => {
       }
     } catch (e) {
       console.error('上传出错:', e)
-      // 出错时移除临时文件
-      const targetList = getTargetFileList(currentUploadType.value)
+      // 出错时移除临时文件 - 使用保存的 uploadType
+      const targetList = getTargetFileList(uploadType)
       if (targetList.length > 0) {
         targetList.pop()
       }
@@ -3351,150 +3354,6 @@ onMounted(() => {
   }
 
   .confirm-btn {
-    width: 100%;
-    height: 44px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 14px;
-    color: #009100;
-    border-top: 0.5px solid #e6e6e5;
-    margin-top: 24px;
-  }
-}
-
-// 三包预警提示框样式
-:deep(.warranty-alert-dialog) {
-  background: #ffffff;
-  border-radius: 8px;
-  width: 295px;
-  max-height: 80vh;
-  overflow-y: auto;
-
-  .van-dialog__content {
-    padding: 0;
-  }
-}
-
-.warranty-alert-content {
-  padding: 32px 24px 16px;
-
-  .alert-section {
-    margin-bottom: 24px;
-
-    &:last-of-type {
-      margin-bottom: 0;
-    }
-
-    .section-title {
-      font-size: 16px;
-      font-weight: 500;
-      color: #191a1b;
-      margin-bottom: 8px;
-    }
-
-    .section-message {
-      font-size: 14px;
-      color: #545454;
-      line-height: 22px;
-      margin-bottom: 12px;
-    }
-
-    .section-action-btn {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      padding: 6px 16px;
-      font-size: 14px;
-      color: #009100;
-      border: 1px solid #009100;
-      border-radius: 38px;
-      width: 100%;
-    }
-  }
-
-  .warranty-alerts {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-
-    .warranty-alert-card {
-      background: #f8e8e8;
-      border-radius: 4px;
-      padding: 8px;
-
-      .alert-header {
-        display: flex;
-        align-items: center;
-        gap: 4px;
-        margin-bottom: 4px;
-
-        .alert-tag {
-          font-size: 12px;
-          padding: 1px 4px;
-          border-radius: 4px;
-          color: #ffffff;
-
-          &.red {
-            background: #b91919;
-          }
-
-          &.green {
-            background: #009100;
-          }
-
-          &.yellow {
-            background: #c8a12b;
-          }
-        }
-
-        .alert-title {
-          font-size: 14px;
-          font-weight: 500;
-          color: #b91919;
-        }
-      }
-
-      .alert-partno {
-        font-size: 14px;
-        font-weight: 500;
-        color: #b91919;
-        margin-bottom: 8px;
-      }
-
-      .alert-details {
-        .alert-detail-item {
-          font-size: 14px;
-          color: #3b3e3b;
-          line-height: 22px;
-        }
-      }
-
-      // 根据预警级别设置标题和零部件号颜色
-      &.red {
-        .alert-title,
-        .alert-partno {
-          color: #b91919;
-        }
-      }
-
-      &.green {
-        .alert-title,
-        .alert-partno {
-          color: #009100;
-        }
-      }
-
-      &.yellow {
-        .alert-title,
-        .alert-partno {
-          color: #c8a12b;
-        }
-      }
-    }
-  }
-
-  .alert-confirm-btn {
     width: 100%;
     height: 44px;
     display: flex;

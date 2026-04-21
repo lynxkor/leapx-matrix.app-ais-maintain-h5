@@ -99,7 +99,8 @@ export default function useRepairItemBusinessRules({
                 }
                 return {
                   text: rit.name,
-                  value: rit.id,
+                  value: `${mt.code}-${ct.code}-${rit.id}`,
+                  rawValue: rit.id,
                   disabled: wtDisabled
                 }
               })
@@ -131,7 +132,7 @@ export default function useRepairItemBusinessRules({
         repairItemTypeName: level1?.text || '',
         checkoutTypeId: level2?.value || '',
         checkoutTypeName: level2?.text || '',
-        warrantyTypeId: level3?.value || '',
+        warrantyTypeId: level3?.rawValue ?? level3?.value ?? '',
         warrantyTypeName: level3?.text || ''
       })
     }
