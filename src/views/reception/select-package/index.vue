@@ -678,14 +678,19 @@
               </div>
               <div class="repair-card-bottom">
                 <div class="repair-info-row">
-                  <span class="info-item">
-                    <span class="info-label">单价</span>
-                    <span class="info-value">¥{{ part.price }}</span>
-                  </span>
-                  <span class="info-item">
-                    <span class="info-label">数量</span>
-                    <span class="info-value">x{{ part.quantity }}</span>
-                  </span>
+                  <div class="info-left">
+                    <span class="info-item">
+                      <span class="info-label">单价</span>
+                      <span class="info-value">¥{{ part.price }}</span>
+                    </span>
+                    <span class="info-item">
+                      <span class="info-label">数量</span>
+                      <span class="info-value">x{{ part.quantity }}</span>
+                    </span>
+                  </div>
+                  <span v-if="part.ifReplace == 1" class="replace-btn" @click="onReplacePart(part)"
+                    >替换</span
+                  >
                 </div>
               </div>
             </div>
@@ -723,6 +728,7 @@ import {
   specialFreeUse,
   specialPackageUse,
   cancelSelect,
+  specialEquityReplace,
 } from '@/api/reception'
 import './select-package.scss'
 
@@ -1166,6 +1172,11 @@ const onConfirmMall = () => {
     .finally(() => {
       mallSubmitting.value = false
     })
+}
+
+// 替换零件
+const onReplacePart = (part) => {
+  console.log('替换零件:', part)
 }
 
 // 确认选择权益套餐
