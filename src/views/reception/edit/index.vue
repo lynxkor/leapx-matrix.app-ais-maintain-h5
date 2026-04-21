@@ -907,7 +907,15 @@
         </div>
       </template>
       <template #footer>
-        <div class="confirm-btn" @click="onConfirmCancel">确定</div>
+        <van-button
+          type="primary"
+          size="small"
+          block
+          :loading="cancelLoading"
+          @click="onConfirmCancel"
+        >
+          确定
+        </van-button>
       </template>
     </ais-popup>
 
@@ -1136,6 +1144,7 @@ import {
   getRemindInfo,
   saveSpRepairItem,
   spConfirmAndSign,
+  serviceProxyCancel,
 } from '@/api/reception'
 import '../create/create.scss'
 
@@ -1465,6 +1474,7 @@ const fetchFaultModuleList = async () => {
     if (res.code === 200) {
       faultModuleList.value = (res.data || []).map((item) => ({
         ...item,
+        cccId: item.id,
       }))
     }
   } catch (error) {
@@ -1520,15 +1530,26 @@ const onSelectMoreAction = (action) => {
   }
 }
 // 确认作废
-const onConfirmCancel = () => {
+const onConfirmCancel = async () => {
   if (!cancelReason.value.trim()) {
     showToast('请输入作废原因')
     return
   }
-  console.log('作废原因:', cancelReason.value)
-  showToast('作废成功')
-  showCancelReason.value = false
-  cancelReason.value = ''
+  cancelLoading.value = true
+  try {
+    const res = await serviceProxyCancel({
+      id: route.query.id,
+      invaildDesc: cancelReason.value,
+    })
+    if (res.code === 200) {
+      showToast('作废成功')
+      showCancelReason.value = false
+      cancelReason.value = ''
+      await fetchDetail()
+    }
+  } finally {
+    cancelLoading.value = false
+  }
 }
 
 // 是否存在故障变更
@@ -2819,6 +2840,7 @@ const validateRepairPerson = () => {
 }
 
 const savingLoading = ref(false)
+const cancelLoading = ref(false)
 
 // 环检信息保存（新增或编辑）
 const onInspectionSave = async (type) => {
@@ -3743,6 +3765,20 @@ onMounted(() => {
   }
 }
 
+// 作废原因弹框样式
+.cancel-reason-content {
+  padding: 12px;
+}
+.confirm-btn {
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #009100;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #ffffff;
+}
 // 三包预警提示框样式
 :deep(.warranty-alert-dialog) {
   background: #ffffff;
