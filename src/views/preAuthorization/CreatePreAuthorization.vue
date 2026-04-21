@@ -534,7 +534,7 @@ import {
   preAuthGetConstructionList,
   preAuthGetQualityFeedbackList
 } from '@/api/authorization'
-import { getAttachmentList, uploadFileByUrl, bindFile } from '@/libs/api/fileConfig'
+import { getAttachmentList, uploadFileByUrl, deleteAttachmentConfig } from '@/libs/api/fileConfig'
 import { getAppImg } from '@/libs/utils/nativeFn'
 
 const router = useRouter()
@@ -1102,23 +1102,23 @@ const handleNativeImage = async(rawFileUrl) => {
       return
     }
 
-    // 3. 调用 bindFile 绑定接口
-    const bindRes = await bindFile({
-      fileId: uploadedFile.id,
-      fileName: uploadedFile.originalFilename,
-      fileUrl: uploadedFile.url,
-      fileSize: uploadedFile.size || fileData.size,
-      fileType: uploadedFile.ext || fileData.ext,
-      attachType,
-      businessId,
-      configCode: PRE_AUTH_ATTACHMENT_CONFIG_CODE
-    })
+    // // 3. 调用 bindFile 绑定接口
+    // const bindRes = await bindFile({
+    //   fileId: uploadedFile.id,
+    //   fileName: uploadedFile.originalFilename,
+    //   fileUrl: uploadedFile.url,
+    //   fileSize: uploadedFile.size || fileData.size,
+    //   fileType: uploadedFile.ext || fileData.ext,
+    //   attachType,
+    //   businessId,
+    //   configCode: PRE_AUTH_ATTACHMENT_CONFIG_CODE
+    // })
 
-    if (!isSuccessResponse(bindRes)) {
-      closeToast()
-      showToast(bindRes?.msg || '绑定文件失败')
-      return
-    }
+    // if (!isSuccessResponse(bindRes)) {
+    //   closeToast()
+    //   showToast(bindRes?.msg || '绑定文件失败')
+    //   return
+    // }
 
     await fetchAttachmentListByType(uploadType, businessId)
     closeToast()
@@ -1290,9 +1290,34 @@ const uploadAttachment = (type) => {
   hasEdited.value = true
 }
 
-const deleteAttachment = (type, index) => {
-  attachmentData[type].splice(index, 1)
-  hasEdited.value = true
+const deleteAttachment = async(type, index) => {
+  const item = attachmentData[type][index]
+  if (!item) return
+
+  try {
+    showLoadingToast({ message: '删除中...', forbidClick: true })
+
+    // 调用删除接口
+    const res = await deleteAttachmentConfig({
+      id: item.id || item.fileId
+    })
+
+    closeToast()
+
+    if (!isSuccessResponse(res)) {
+      showToast(res?.msg || '删除失败')
+      return
+    }
+
+    // 从列表中移除
+    attachmentData[type].splice(index, 1)
+    hasEdited.value = true
+    showToast('删除成功')
+  } catch (error) {
+    closeToast()
+    console.error('删除附件失败:', error)
+    showToast('删除失败，请稍后重试')
+  }
 }
 
 const onSaveConfirm = async() => {
