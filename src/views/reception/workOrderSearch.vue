@@ -7,7 +7,8 @@
         v-model="appSearchKeyWord"
         shape="round"
         :autofocus="true"
-        placeholder="输入VIN"
+        placeholder="输入VIN/车牌号"
+        @update:model-value="onInputChange"
         @search="onLocalSearch"
         class="page-search-input"
       >
@@ -89,21 +90,42 @@ const searchLoading = ref(false)
 const hasSearched = ref(false)
 
 // 页面加载时
-onMounted(async() => {
+onMounted(async () => {
   globalStore.setTitle('')
 })
 
+// 输入时触发搜索（满3个字符自动执行一次）
+const autoSearchTriggered = ref(false)
+const onInputChange = (val) => {
+  const trimmedVal = val?.trim() || ''
+  // 少于3个字符时重置标志
+  if (trimmedVal.length < 3) {
+    autoSearchTriggered.value = false
+    return
+  }
+  // 满3个字符时自动触发一次
+  if (trimmedVal.length >= 3 && !autoSearchTriggered.value) {
+    autoSearchTriggered.value = true
+    handleSearch(trimmedVal)
+  }
+}
+
 // 本地搜索框触发搜索
 const onLocalSearch = (val) => {
-  if (!val || !val.trim()) {
+  const trimmedVal = val?.trim() || ''
+  if (!trimmedVal) {
     showToast('请输入搜索关键词')
     return
   }
-  handleSearch(val.trim())
+  if (trimmedVal.length < 3) {
+    return
+  }
+  autoSearchTriggered.value = true
+  handleSearch(trimmedVal)
 }
 
 // 搜索处理
-const handleSearch = async(keyword) => {
+const handleSearch = async (keyword) => {
   if (!keyword) return
 
   searchLoading.value = true
@@ -112,7 +134,7 @@ const handleSearch = async(keyword) => {
 
   try {
     const res = await getVehicleInfo({
-      searchVin: keyword
+      searchVin: keyword,
     })
     if (res.code === 200) {
       searchResults.value = res.data || []
@@ -133,11 +155,11 @@ const onCardClick = (item) => {
   router.push({
     name: 'workOrderCreate',
     query: {
-      id: item.id
+      id: item.id,
     },
     params: {
-      vehicleInfo: JSON.stringify(item)
-    }
+      vehicleInfo: JSON.stringify(item),
+    },
   })
 }
 </script>

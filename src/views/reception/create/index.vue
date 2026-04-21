@@ -9,7 +9,11 @@
           <span><img src="@/assets/image/car.png" alt="" /></span>
           <span>换车</span>
         </span>
-        <span class="edit-plate" @click="onEditPlate">
+        <span
+          v-if="detail.orderStatus != 180 && detail.orderStatus != 210"
+          class="edit-plate"
+          @click="onEditPlate"
+        >
           <span><img src="@/assets/image/edit.png" alt="" /></span>
           <span>修改车牌</span>
         </span>
@@ -866,7 +870,15 @@
         </div>
       </template>
       <template #footer>
-        <div class="confirm-btn" @click="onConfirmCancel">确定</div>
+        <van-button
+            type="primary"
+            size="small"
+            block
+            :loading="cancelLoading"
+            @click="onConfirmCancel"
+          >
+            确定
+          </van-button>
       </template>
     </ais-popup>
 
@@ -1129,6 +1141,7 @@ import {
   getDetail,
   saveSpRepairItem,
   spConfirmAndSign,
+  serviceProxyCancel,
 } from '@/api/reception'
 import './create.scss'
 
@@ -1440,15 +1453,26 @@ const onSelectMoreAction = (action) => {
   }
 }
 // 确认作废
-const onConfirmCancel = () => {
+const onConfirmCancel = async () => {
   if (!cancelReason.value.trim()) {
     showToast('请输入作废原因')
     return
   }
-  console.log('作废原因:', cancelReason.value)
-  showToast('作废成功')
-  showCancelReason.value = false
-  cancelReason.value = ''
+  cancelLoading.value = true
+  try {
+    const res = await serviceProxyCancel({
+      id: serviceProxyId.value || route.query.id,
+      invaildDesc: cancelReason.value,
+    })
+    if (res.code === 200) {
+      showToast('作废成功')
+      showCancelReason.value = false
+      cancelReason.value = ''
+      fetchDetailForSignature()
+    }
+  } finally {
+    cancelLoading.value = false
+  }
 }
 
 // 是否存在故障变更
@@ -2251,6 +2275,7 @@ const validateRepairPerson = () => {
 }
 
 const savingLoading = ref(false)
+const cancelLoading = ref(false)
 
 const onSave = async () => {
   console.log('保存:', detail, computedBusinessType.value)
