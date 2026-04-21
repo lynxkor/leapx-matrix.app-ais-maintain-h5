@@ -480,9 +480,9 @@
         >
       </template>
       <template v-else-if="activeTab === 'signature'">
-        <span :class="['save-btn', { disabled: isPartsSaveDisabled }]" @click="onSignatureSave"
+        <!-- <span :class="['save-btn', { disabled: isPartsSaveDisabled }]" @click="onSignatureSave"
           >保存</span
-        >
+        > -->
         <span
           v-if="detail.orderStatus == 110"
           :class="['complete-btn', { disabled: isConfirmAndSignDisabled }]"
@@ -999,73 +999,6 @@
       </div>
     </van-dialog>
 
-    <!-- 三包预警提示框 -->
-    <van-dialog
-      v-model:show="showWarrantyAlertDialog"
-      :show-confirm-button="false"
-      :show-cancel-button="false"
-      close-on-click-overlay
-      class="warranty-alert-dialog"
-    >
-      <div class="warranty-alert-content">
-        <!-- 预授权提醒 -->
-        <div class="alert-section">
-          <div class="section-title">预授权提醒</div>
-          <div class="section-message">
-            该车辆为「车辆标识名称一」「车辆标识名称二」，请注意接待。
-          </div>
-          <div class="section-action-btn" @click="onGenerateAuthorization">生成预授权</div>
-        </div>
-
-        <!-- 三包预警 -->
-        <div class="alert-section">
-          <div class="section-title">三包预警</div>
-          <div class="warranty-alerts">
-            <!-- 红色预警 -->
-            <div class="warranty-alert-card red">
-              <div class="alert-header">
-                <span class="alert-tag red">红色预警</span>
-                <span class="alert-title">累计保修次数5项预警</span>
-              </div>
-              <div class="alert-partno">80522250-BE02/低音扬声器总成</div>
-              <div class="alert-details">
-                <div class="alert-detail-item">
-                  1、广州零跑中心科学城店，2023-08-15至2023-09-05，次数1
-                </div>
-              </div>
-            </div>
-            <!-- 绿色预警 -->
-            <div class="warranty-alert-card green">
-              <div class="alert-header">
-                <span class="alert-tag green">绿色预警</span>
-                <span class="alert-title">累计保修次数5项预警</span>
-              </div>
-              <div class="alert-partno">80522250-BE02/低音扬声器总成</div>
-              <div class="alert-details">
-                <div class="alert-detail-item">
-                  1、广州零跑中心科学城店，2023-08-15至2023-09-05，次数1
-                </div>
-              </div>
-            </div>
-            <!-- 黄色预警 -->
-            <div class="warranty-alert-card yellow">
-              <div class="alert-header">
-                <span class="alert-tag yellow">黄色预警</span>
-                <span class="alert-title">累计保修次数5项预警</span>
-              </div>
-              <div class="alert-partno">80522250-BE02/低音扬声器总成</div>
-              <div class="alert-details">
-                <div class="alert-detail-item">
-                  1、广州零跑中心科学城店，2023-08-15至2023-09-05，次数1
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="alert-confirm-btn" @click="onConfirmWarrantyAlert">我知道了</div>
-      </div>
-    </van-dialog>
     <!-- 全屏Loading -->
     <van-overlay :show="savingLoading">
       <div class="loading-wrapper">
@@ -1184,18 +1117,6 @@ const showConfirmDialog2 = ref(false)
 
 const onConfirmDialogClose = () => {
   showConfirmDialog2.value = false
-}
-
-// 三包预警提示框
-const showWarrantyAlertDialog = ref(false)
-
-const onGenerateAuthorization = () => {
-  // 生成预授权
-  showToast('生成预授权')
-}
-
-const onConfirmWarrantyAlert = () => {
-  showWarrantyAlertDialog.value = false
 }
 
 // 送修人类型选择
@@ -2780,6 +2701,16 @@ const fetchDetailForSignature = async () => {
       detail.orderStatus = data.orderStatus || ''
       detail.signStatus = data.signStatus || ''
       detail.signUrl = data.signUrl || ''
+      // 将故障预警记录映射到faultModules用于显示
+      if (data.faultAlertRecordRespList && data.faultAlertRecordRespList.length > 0) {
+        detail.faultModules = data.faultAlertRecordRespList.map((item) => ({
+          ...item,
+          cccCode: item.cccCode,
+          cccName: item.cccName,
+          vfgName: item.vfgName,
+          faultDesc: item.faultDescription,
+        }))
+      }
     }
   } catch (error) {
     console.error('获取详情失败:', error)
@@ -3423,150 +3354,6 @@ onMounted(() => {
   }
 
   .confirm-btn {
-    width: 100%;
-    height: 44px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 14px;
-    color: #009100;
-    border-top: 0.5px solid #e6e6e5;
-    margin-top: 24px;
-  }
-}
-
-// 三包预警提示框样式
-:deep(.warranty-alert-dialog) {
-  background: #ffffff;
-  border-radius: 8px;
-  width: 295px;
-  max-height: 80vh;
-  overflow-y: auto;
-
-  .van-dialog__content {
-    padding: 0;
-  }
-}
-
-.warranty-alert-content {
-  padding: 32px 24px 16px;
-
-  .alert-section {
-    margin-bottom: 24px;
-
-    &:last-of-type {
-      margin-bottom: 0;
-    }
-
-    .section-title {
-      font-size: 16px;
-      font-weight: 500;
-      color: #191a1b;
-      margin-bottom: 8px;
-    }
-
-    .section-message {
-      font-size: 14px;
-      color: #545454;
-      line-height: 22px;
-      margin-bottom: 12px;
-    }
-
-    .section-action-btn {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      padding: 6px 16px;
-      font-size: 14px;
-      color: #009100;
-      border: 1px solid #009100;
-      border-radius: 38px;
-      width: 100%;
-    }
-  }
-
-  .warranty-alerts {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-
-    .warranty-alert-card {
-      background: #f8e8e8;
-      border-radius: 4px;
-      padding: 8px;
-
-      .alert-header {
-        display: flex;
-        align-items: center;
-        gap: 4px;
-        margin-bottom: 4px;
-
-        .alert-tag {
-          font-size: 12px;
-          padding: 1px 4px;
-          border-radius: 4px;
-          color: #ffffff;
-
-          &.red {
-            background: #b91919;
-          }
-
-          &.green {
-            background: #009100;
-          }
-
-          &.yellow {
-            background: #c8a12b;
-          }
-        }
-
-        .alert-title {
-          font-size: 14px;
-          font-weight: 500;
-          color: #b91919;
-        }
-      }
-
-      .alert-partno {
-        font-size: 14px;
-        font-weight: 500;
-        color: #b91919;
-        margin-bottom: 8px;
-      }
-
-      .alert-details {
-        .alert-detail-item {
-          font-size: 14px;
-          color: #3b3e3b;
-          line-height: 22px;
-        }
-      }
-
-      // 根据预警级别设置标题和零部件号颜色
-      &.red {
-        .alert-title,
-        .alert-partno {
-          color: #b91919;
-        }
-      }
-
-      &.green {
-        .alert-title,
-        .alert-partno {
-          color: #009100;
-        }
-      }
-
-      &.yellow {
-        .alert-title,
-        .alert-partno {
-          color: #c8a12b;
-        }
-      }
-    }
-  }
-
-  .alert-confirm-btn {
     width: 100%;
     height: 44px;
     display: flex;

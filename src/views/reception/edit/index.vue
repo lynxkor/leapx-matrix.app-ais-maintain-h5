@@ -439,9 +439,9 @@
                 <span class="value unsigned">未签字</span>
               </div>
             </div>
-            <div class="signature-action-row" v-if="detail.signStatus != 20">
+            <!-- <div class="signature-action-row" v-if="detail.signStatus != 20">
               <van-button type="primary" size="small" @click="onGoToSign">客户签字</van-button>
-            </div>
+            </div> -->
           </div>
 
           <!-- 附件资料 -->
@@ -503,9 +503,9 @@
         >
       </template>
       <template v-else-if="activeTab === 'signature'">
-        <span :class="['save-btn', { disabled: isSignatureSaveDisabled }]" @click="onSignatureSave"
+        <!-- <span :class="['save-btn', { disabled: isSignatureSaveDisabled }]" @click="onSignatureSave"
           >保存</span
-        >
+        > -->
         <span
           v-if="detail.orderStatus == 110"
           :class="['complete-btn', { disabled: isConfirmAndSignDisabled }]"
@@ -1023,60 +1023,49 @@
       class="warranty-alert-dialog"
     >
       <div class="warranty-alert-content">
-        <!-- 预授权提醒 -->
-        <div class="alert-section">
-          <div class="section-title">预授权提醒</div>
-          <div class="section-message">
-            该车辆为「车辆标识名称一」「车辆标识名称二」，请注意接待。
+        <template v-for="item in remindList" :key="item.type">
+          <!-- 预授权提醒 -->
+          <div v-if="item.type === RemindInfoTypeEnum.PRE_AUTH" class="alert-section">
+            <div class="section-title">{{ item.typeLabel }}</div>
+            <div class="section-message">{{ item.content || '暂无提醒信息' }}</div>
+            <div class="section-action-btn" @click="onGenerateAuthorization">生成预授权</div>
           </div>
-          <div class="section-action-btn" @click="onGenerateAuthorization">生成预授权</div>
-        </div>
 
-        <!-- 三包预警 -->
-        <div class="alert-section">
-          <div class="section-title">三包预警</div>
-          <div class="warranty-alerts">
-            <!-- 红色预警 -->
-            <div class="warranty-alert-card red">
-              <div class="alert-header">
-                <span class="alert-tag red">红色预警</span>
-                <span class="alert-title">累计保修次数5项预警</span>
-              </div>
-              <div class="alert-partno">80522250-BE02/低音扬声器总成</div>
-              <div class="alert-details">
-                <div class="alert-detail-item">
-                  1、广州零跑中心科学城店，2023-08-15至2023-09-05，次数1
+          <!-- 三包预警 -->
+          <div v-if="item.type === RemindInfoTypeEnum.THREE_GUARANTEES" class="alert-section">
+            <div class="section-title">{{ item.typeLabel }}</div>
+            <div class="warranty-alerts">
+              <div
+                v-for="(alarm, alarmIndex) in item.content"
+                :key="alarmIndex"
+                :class="['warranty-alert-card', getAlarmColor(alarm.alarmLevel)]"
+              >
+                <div class="alert-header">
+                  <span :class="['alert-tag', getAlarmColor(alarm.alarmLevel)]">
+                    {{ getAlarmLabel(alarm.alarmLevel) }}
+                  </span>
+                  <span class="alert-title">{{ alarm.title }}</span>
+                </div>
+                <div class="alert-partno">{{ alarm.partNo }}</div>
+                <div class="alert-details">
+                  <div
+                    v-for="(detail, dIndex) in alarm.details"
+                    :key="dIndex"
+                    class="alert-detail-item"
+                  >
+                    {{ detail }}
+                  </div>
                 </div>
               </div>
-            </div>
-            <!-- 绿色预警 -->
-            <div class="warranty-alert-card green">
-              <div class="alert-header">
-                <span class="alert-tag green">绿色预警</span>
-                <span class="alert-title">累计保修次数5项预警</span>
-              </div>
-              <div class="alert-partno">80522250-BE02/低音扬声器总成</div>
-              <div class="alert-details">
-                <div class="alert-detail-item">
-                  1、广州零跑中心科学城店，2023-08-15至2023-09-05，次数1
-                </div>
-              </div>
-            </div>
-            <!-- 黄色预警 -->
-            <div class="warranty-alert-card yellow">
-              <div class="alert-header">
-                <span class="alert-tag yellow">黄色预警</span>
-                <span class="alert-title">累计保修次数5项预警</span>
-              </div>
-              <div class="alert-partno">80522250-BE02/低音扬声器总成</div>
-              <div class="alert-details">
-                <div class="alert-detail-item">
-                  1、广州零跑中心科学城店，2023-08-15至2023-09-05，次数1
-                </div>
-              </div>
+              <p v-if="!item.content || item.content.length === 0">暂无提醒信息</p>
             </div>
           </div>
-        </div>
+          <!-- 服务活动提醒 -->
+          <template v-else-if="item.type === RemindInfoTypeEnum.SERVICE_ACTIVITY">
+            <div class="info-title">{{ item.typeLabel }}</div>
+            <div class="info-content">{{ item.content || '暂无提醒信息' }}</div>
+          </template>
+        </template>
 
         <div class="alert-confirm-btn" @click="onConfirmWarrantyAlert">我知道了</div>
       </div>
@@ -1134,6 +1123,7 @@ import {
   getFileList,
 } from '@/libs/api/fileConfig'
 import { getAppImgLimit } from '@/libs/utils/nativeFn'
+import { RemindInfoTypeEnum, AlarmLevelEnum } from '@/views/repairWork/constant'
 import {
   getDetail,
   getVehicleInfo,
@@ -1214,6 +1204,7 @@ const onConfirmDialogClose = () => {
 
 // 三包预警提示框
 const showWarrantyAlertDialog = ref(false)
+const remindList = ref([])
 
 const onGenerateAuthorization = () => {
   // 生成预授权
@@ -1222,6 +1213,38 @@ const onGenerateAuthorization = () => {
 
 const onConfirmWarrantyAlert = () => {
   showWarrantyAlertDialog.value = false
+}
+
+// 获取预警等级颜色
+const getAlarmColor = (level) => {
+  switch (level) {
+    case AlarmLevelEnum.CRITICAL:
+      return 'red'
+    case AlarmLevelEnum.WARNING:
+      return 'yellow'
+    case AlarmLevelEnum.NORMAL:
+      return 'green'
+    case AlarmLevelEnum.EXPIRED:
+      return 'gray'
+    default:
+      return 'gray'
+  }
+}
+
+// 获取预警等级标签
+const getAlarmLabel = (level) => {
+  switch (level) {
+    case AlarmLevelEnum.CRITICAL:
+      return '红色预警'
+    case AlarmLevelEnum.WARNING:
+      return '黄色预警'
+    case AlarmLevelEnum.NORMAL:
+      return '绿色预警'
+    case AlarmLevelEnum.EXPIRED:
+      return '灰色预警'
+    default:
+      return '未知预警'
+  }
 }
 
 // 点击类别区域，打开弹窗
@@ -2134,6 +2157,16 @@ const fetchDetail = async () => {
         detail.hasFault = data.currentFault === 1 ? '1' : '2'
         detail.customerFaultDesc = data.customerContent || ''
         detail.faultAlertRecordRespList = data.faultAlertRecordRespList || []
+        // 将故障预警记录映射到faultModules用于显示
+        if (data.faultAlertRecordRespList && data.faultAlertRecordRespList.length > 0) {
+          detail.faultModules = data.faultAlertRecordRespList.map((item) => ({
+            ...item,
+            cccCode: item.cccCode,
+            cccName: item.cccName,
+            vfgName: item.vfgName,
+            faultDesc: item.faultDescription,
+          }))
+        }
         detail.vehicleProfileServiceResp = data.vehicleProfileServiceResp || {}
 
         // 获取附件列表并分类回显
@@ -3091,10 +3124,10 @@ const onSignatureSave = async () => {
   const parts = repairItemContentRef.value?.selectedParts || []
 
   // 校验项目及零件不可为空
-  if (items.length === 0 && parts.length === 0) {
-    showToast('项目及零件不可为空，请添加项目及零件')
-    return
-  }
+  // if (items.length === 0 && parts.length === 0) {
+  //   showToast('项目及零件不可为空，请添加项目及零件')
+  //   return
+  // }
 
   savingLoading.value = true
   try {
@@ -3177,10 +3210,10 @@ const onConfirmAndSign = () => {
   const parts = repairItemContentRef.value?.selectedParts || []
 
   // 校验维修项目或者维修零件有值
-  if (items.length === 0 && parts.length === 0) {
-    showToast('项目及零件不可为空，请添加项目及零件')
-    return
-  }
+  // if (items.length === 0 && parts.length === 0) {
+  //   showToast('项目及零件不可为空，请添加项目及零件')
+  //   return
+  // }
   // 点击"准确"，执行接口
   let params = {
     serviceProxyId: detail.id,
@@ -3322,7 +3355,16 @@ onMounted(() => {
   generateDeliveryTimes()
   // 获取提醒信息
   if (route.query.id) {
-    getRemindInfo(route.query.id)
+    setTimeout(() => {
+      getRemindInfo(route.query.id).then((res) => {
+        if (res.code === 200) {
+          remindList.value = res.data || []
+          if (remindList.value.length > 0) {
+            showWarrantyAlertDialog.value = true
+          }
+        }
+      })
+    }, 1000)
   }
   // 获取上传配置
   if (route.query.id) {
@@ -3931,6 +3973,16 @@ onMounted(() => {
     color: #009100;
     border-top: 0.5px solid #e6e6e5;
     margin-top: 24px;
+  }
+  .info-title,
+  .section-title {
+    color: #191a1b;
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+  .info-content,
+  .section-message {
+    color: #545454;
   }
 }
 

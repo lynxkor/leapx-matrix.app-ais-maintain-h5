@@ -261,8 +261,14 @@
 
       .repair-info-row {
         display: flex;
-        gap: 16px;
+        justify-content: space-between;
+        align-items: center;
         margin-bottom: 8px;
+
+        .info-left {
+          display: flex;
+          gap: 16px;
+        }
 
         .info-item {
           display: flex;
@@ -278,6 +284,14 @@
             font-size: 12px;
             color: #191a1b;
           }
+        }
+
+        .replace-btn {
+          padding: 2px 12px;
+          background: #009100;
+          color: #fff;
+          border-radius: 4px;
+          font-size: 12px;
         }
       }
     }
