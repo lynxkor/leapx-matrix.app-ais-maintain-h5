@@ -100,7 +100,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, onActivated, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { showToast } from 'vant'
 import FilterHeader from '@/libs/components/FilterHeader.vue'
@@ -179,6 +179,22 @@ const getStoreAreaOptions = async() => {
 
 onMounted(() => {
   getStoreAreaOptions()
+})
+
+// 当从其他页面返回时（keepAlive），滚动到顶部并刷新列表
+onActivated(() => {
+  nextTick(() => {
+    // 滚动到顶部
+    const container = document.querySelector('.layout-content')
+    if (container) {
+      container.scrollTo({ top: 0, behavior: 'instant' })
+    }
+    // 刷新列表数据
+    if (refreshListRef.value) {
+      requestData.data.pageNum = 1
+      refreshListRef.value.search(requestData.data)
+    }
+  })
 })
 
 // requestData 配置
@@ -289,16 +305,14 @@ const createAuthorization = () => {
   padding-bottom: 89px;
   min-height: 100vh;
   background-color: #f5f5f5;
-  overflow-y: auto;
 
   &::-webkit-scrollbar {
     display: none;
   }
 
   .filter-fixed {
-    position: fixed;
-    left: 0;
-    right: 0;
+    position: sticky;
+    top: 0;
     z-index: 100;
     background: #fff;
   }
@@ -312,9 +326,7 @@ const createAuthorization = () => {
   }
 
   .list-container {
-    padding: 0 12px;
-    padding-bottom: 77px;
-    margin-top: 56px;
+    padding: 12px 12px 77px 12px;
   }
 
   .empty-state {
