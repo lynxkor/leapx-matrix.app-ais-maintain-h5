@@ -503,7 +503,7 @@
         >
       </template>
       <template v-else-if="activeTab === 'signature'">
-        <span :class="['save-btn', { disabled: isPartsSaveDisabled }]" @click="onSignatureSave"
+        <span :class="['save-btn', { disabled: isSignatureSaveDisabled }]" @click="onSignatureSave"
           >保存</span
         >
         <span
@@ -1932,6 +1932,14 @@ const isPartsSaveDisabled = computed(() => {
   // return items.length === 0 && parts.length === 0
 })
 
+// 签名保存按钮是否禁用：同项目零件保存条件
+const isSignatureSaveDisabled = computed(() => {
+  return false
+  // const items = repairItemContentRef.value?.selectedItems || []
+  // const parts = repairItemContentRef.value?.selectedParts || []
+  // return items.length === 0 && parts.length === 0
+})
+
 // 环检信息保存按钮是否禁用：进店里程数、进店电量、送修人信息、车内车外照片、异常描述、经理建议为空
 const isInspectionSaveDisabled = computed(() => {
   // 进店里程数
@@ -2844,6 +2852,7 @@ const cancelLoading = ref(false)
 
 // 环检信息保存（新增或编辑）
 const onInspectionSave = async (type) => {
+  if (isInspectionSaveDisabled.value) return
   // 如果是项目零件或签字确认页，且数据没改动，则跳过校验直接返回
   if (type === 1 && !hasInspectionDataChanged()) {
     return { code: 200 }
@@ -3036,6 +3045,7 @@ const onInspectionSave = async (type) => {
 
 // 项目零件保存
 const onPartsSave = async () => {
+  if (isPartsSaveDisabled.value) return
   // 从 RepairItemContent 组件获取数据
   const items = repairItemContentRef.value?.selectedItems || []
   const parts = repairItemContentRef.value?.selectedParts || []
@@ -3075,6 +3085,7 @@ const onPartsSave = async () => {
 
 // 签字确认保存
 const onSignatureSave = async () => {
+  if (isSignatureSaveDisabled.value) return
   // 从 RepairItemContent 组件获取数据
   const items = repairItemContentRef.value?.selectedItems || []
   const parts = repairItemContentRef.value?.selectedParts || []

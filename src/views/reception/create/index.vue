@@ -871,14 +871,14 @@
       </template>
       <template #footer>
         <van-button
-            type="primary"
-            size="small"
-            block
-            :loading="cancelLoading"
-            @click="onConfirmCancel"
-          >
-            确定
-          </van-button>
+          type="primary"
+          size="small"
+          block
+          :loading="cancelLoading"
+          @click="onConfirmCancel"
+        >
+          确定
+        </van-button>
       </template>
     </ais-popup>
 
@@ -1699,9 +1699,10 @@ const isConfirmAndSignDisabled = computed(() => {
 
 // 项目零件保存按钮是否禁用：没有添加项目或者零件
 const isPartsSaveDisabled = computed(() => {
-  const items = repairItemContentRef.value?.selectedItems || []
-  const parts = repairItemContentRef.value?.selectedParts || []
-  return items.length === 0 && parts.length === 0
+  return false
+  // const items = repairItemContentRef.value?.selectedItems || []
+  // const parts = repairItemContentRef.value?.selectedParts || []
+  // return items.length === 0 && parts.length === 0
 })
 
 // 环检信息保存按钮是否禁用：进店里程数、进店电量、送修人信息、车内车外照片、异常描述、经理建议为空
@@ -2481,6 +2482,7 @@ const onComplete = async () => {
 
 // 环检信息保存（已保存状态）
 const onInspectionSave = async () => {
+  if (isInspectionSaveDisabled.value) return
   savingLoading.value = true
   try {
     const res = await serviceAddOrUpdate({

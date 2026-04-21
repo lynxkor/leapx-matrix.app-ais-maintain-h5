@@ -81,17 +81,24 @@
 <script setup>
 import { ref, computed } from 'vue'
 import RepairItemCard from './RepairItemCard.vue'
-import { isWorkHourEditable, isQuantityEditable, isDiscountEditable, isNameEditable, isItemDeletable, isPartDeletable } from './hooks/repairItemRules'
+import {
+  isWorkHourEditable,
+  isQuantityEditable,
+  isDiscountEditable,
+  isNameEditable,
+  isItemDeletable,
+  isPartDeletable,
+} from './hooks/repairItemRules'
 
 defineProps({
   placeholder: {
     type: String,
-    default: '输入代码、名称、拼音简码'
+    default: '输入代码、名称、拼音简码',
   },
   disabled: {
     type: Boolean,
-    default: false
-  }
+    default: false,
+  },
 })
 
 const emit = defineEmits(['search', 'add-item-with-parts', 'update-item', 'delete-item', 'done'])
@@ -111,13 +118,16 @@ const activePartCards = computed(() => activeCards.value.filter((c) => !!c.parts
 
 const onDeleteItem = (card, type) => {
   emit('delete-item', card, type)
-  activeCards.value = activeCards.value.filter(c => c !== card)
+  activeCards.value = activeCards.value.filter((c) => c !== card)
 }
 
 const onInput = () => {
   clearTimeout(debounceTimer)
   debounceTimer = setTimeout(() => {
     const kw = keyword.value.trim()
+    if (kw.length < 3) {
+      return
+    }
     if (kw) {
       emit('search', kw)
     } else {
@@ -132,12 +142,15 @@ const onFocus = () => {
 }
 
 const onBlur = () => {
-  setTimeout(() => { isFocused.value = false }, 200)
+  setTimeout(() => {
+    isFocused.value = false
+  }, 200)
 }
 
 const onSearch = () => {
   clearTimeout(debounceTimer)
   const kw = keyword.value.trim()
+  if (kw.length < 3) return
   if (kw) emit('search', kw)
 }
 
