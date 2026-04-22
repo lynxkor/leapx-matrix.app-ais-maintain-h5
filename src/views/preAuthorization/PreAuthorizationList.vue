@@ -394,7 +394,7 @@ const createAuthorization = () => {
 
       .card-info-title {
         color: #545454;
-        width: 56px;
+        width: 85px;
         flex-shrink: 0;
       }
 
@@ -402,6 +402,7 @@ const createAuthorization = () => {
         color: #191a1b;
         flex: 1;
         word-break: break-all;
+        margin-left: 12px;
       }
     }
   }
