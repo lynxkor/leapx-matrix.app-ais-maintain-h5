@@ -5,7 +5,11 @@
       <div class="plate-row">
         <span class="plate-no">{{ detail.plateNo }}</span>
         <span class="appointment-tag">{{ detail.custTypeLabel || '随到客户' }}</span>
-        <span class="edit-plate edit-plate-after" @click="onChangeCar">
+        <span
+          v-if="detail.orderStatus == 100"
+          class="edit-plate edit-plate-after"
+          @click="onChangeCar"
+        >
           <span><img src="@/assets/image/car.png" alt="" /></span>
           <span>换车</span>
         </span>
@@ -142,7 +146,9 @@
                 </div>
               </div>
               <div class="sub-info">车联网里程数(总)：{{ detail.networkMileageTotal }} km</div>
-              <div class="sub-info">车联网里程数(增)：{{ detail.networkMileageAdd }} km</div>
+              <div v-if="detail.networkMileageAdd" class="sub-info">
+                车联网里程数(增)：{{ detail.networkMileageAdd }} km
+              </div>
             </div>
 
             <!-- 进店电量 -->
@@ -296,7 +302,7 @@
                     class="fault-module-item"
                   >
                     <span class="module-name">{{ module.vfgName }}-{{ module.cccName }}</span>
-                    <van-icon name="delete-o" @click="onDeleteFaultModule(module)" />
+                    <van-icon v-if="detail.isCreateStatementInfo != 1" name="delete-o" @click="onDeleteFaultModule(module)" />
                   </div>
                 </div>
 
@@ -332,7 +338,7 @@
         </div>
       </van-tab>
 
-      <van-tab v-if="isSaved" title="项目零件" name="parts">
+      <van-tab v-if="isSaved && detail.orderStatus != 100" title="项目零件" name="parts">
         <div
           class="tab-content parts-tab"
           style="max-height: calc(100vh - 130px); min-height: 54vh"
@@ -382,7 +388,7 @@
         </div>
       </van-tab>
 
-      <van-tab v-if="isSaved" title="签字确认" name="signature">
+      <van-tab v-if="isSaved && detail.orderStatus != 100" title="签字确认" name="signature">
         <div class="tab-content signature-tab">
           <!-- 费用合计 -->
           <div class="signature-section">
@@ -1136,6 +1142,7 @@ import {
   spConfirmAndSign,
   serviceProxyCancel,
 } from '@/api/reception'
+import { preAuthAddOrUpdate } from '@/api/authorization'
 import '../create/create.scss'
 
 const route = useRoute()
@@ -1206,9 +1213,17 @@ const onConfirmDialogClose = () => {
 const showWarrantyAlertDialog = ref(false)
 const remindList = ref([])
 
-const onGenerateAuthorization = () => {
+const onGenerateAuthorization = async () => {
   // 生成预授权
-  showToast('生成预授权')
+  try {
+    const res = await preAuthAddOrUpdate({ serviceProxyId: detail.id })
+    if (res.code === 0 || res.code === '0') {
+      showToast('生成预授权成功')
+      fetchDetail()
+    }
+  } catch (error) {
+    console.error(error)
+  }
 }
 
 const onConfirmWarrantyAlert = () => {
@@ -1670,7 +1685,7 @@ const detail = reactive({
   abnormalDesc: '',
   currentFault: '',
   faultAlertRecordRespList: [],
-  hasFault: '1',
+  hasFault: '2',
   faultModules: [],
   customerFaultDesc: '',
   testResult: '',
@@ -1782,7 +1797,9 @@ const hasInspectionDataChanged = () => {
     initial.vin !== current.vin ||
     initial.vehicleModel !== current.vehicleModel ||
     // 送修人信息
-    initial.repairPersonTag !== current.repairPersonTag
+    initial.repairPersonTag !== current.repairPersonTag ||
+    // 经理建议
+    initial.testResult !== current.testResult
   )
 }
 
@@ -2800,10 +2817,24 @@ const onAddFaultModuleItem = (item) => {
 }
 
 // 删除故障模块
-const onDeleteFaultModule = (module) => {
-  const index = detail.faultModules.findIndex((m) => m.cccCode === module.cccCode)
-  if (index > -1) {
-    detail.faultModules.splice(index, 1)
+const onDeleteFaultModule = async (module) => {
+  try {
+    await showConfirmDialog({
+      title: '提示',
+      message: '是否要删除此接车施工单-故障模块？您无法撤销此操作。',
+    })
+    const index = detail.faultModules.findIndex((m) => m.cccCode === module.cccCode)
+    if (index > -1) {
+      detail.faultModules.splice(index, 1)
+    }
+    if (detail.faultModules.length === 0) {
+      showConfirmDialog({
+        title: '提示',
+        message: '全部故障模块已删除，请重新确认【本次进店是否存在故障】？',
+      })
+    }
+  } catch (error) {
+    // 取消操作
   }
 }
 
@@ -2897,6 +2928,25 @@ const onInspectionSave = async (type) => {
     showToast('请输入客户故障描述')
     return { code: -1 }
   }
+  // 照片校验（根据配置判断是否必填）
+  if (interiorConfig.value.required === '1' && detail.interiorImages.length === 0) {
+    showToast('请上传车内照片')
+    return { code: -1 }
+  }
+  if (exteriorConfig.value.required === '1' && detail.exteriorImages.length === 0) {
+    showToast('请上传车外照片')
+    return { code: -1 }
+  }
+  // 异常描述
+  if (!detail.abnormalDesc) {
+    showToast('请输入异常描述')
+    return { code: -1 }
+  }
+  // 经理建议
+  if (!detail.testResult) {
+    showToast('请输入客户经理建议')
+    return { code: -1 }
+  }
 
   // 检查数据是否有改动
   if (!hasInspectionDataChanged()) {
@@ -2919,6 +2969,8 @@ const onInspectionSave = async (type) => {
       vehicleModel: detail.vehicleModel,
       // 送修人信息
       repairPersonTag: detail.repairPersonTag,
+      // 经理建议
+      testResult: detail.testResult,
     }
     return { code: 200 }
   }
@@ -3230,9 +3282,11 @@ const onConfirmAndSign = () => {
     if (res.code === 200) {
       showToast('操作成功')
       fetchDetail()
-      // 接口成功后跳转结算页面
-      const settlementUrl = `https://staticres-sitb.leapmotor.com/leapx/biling/ais/constructionOrder?serviceProxyId=${detail.id}`
-      window.location.href = settlementUrl
+      if (!params.signChannel) {
+        // 接口成功后跳转结算页面
+        const settlementUrl = `https://staticres-sitb.leapmotor.com/leapx/biling/ais/constructionOrder?serviceProxyId=${detail.id}`
+        window.location.href = settlementUrl
+      }
     } else {
       showToast(res.msg || '操作失败')
     }

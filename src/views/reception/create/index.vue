@@ -5,7 +5,11 @@
       <div class="plate-row">
         <span class="plate-no">{{ detail.plateNo }}</span>
         <span class="appointment-tag" style="opacity: 0">预约客户</span>
-        <span class="edit-plate edit-plate-after" @click="onChangeCar">
+        <span
+          v-if="detail.orderStatus == 100"
+          class="edit-plate edit-plate-after"
+          @click="onChangeCar"
+        >
           <span><img src="@/assets/image/car.png" alt="" /></span>
           <span>换车</span>
         </span>
@@ -142,7 +146,9 @@
                 </div>
               </div>
               <div class="sub-info">车联网里程数(总)：{{ detail.networkMileageTotal }} km</div>
-              <div class="sub-info">车联网里程数(增)：{{ detail.networkMileageAdd }} km</div>
+              <div v-if="detail.networkMileageAdd" class="sub-info">
+                车联网里程数(增)：{{ detail.networkMileageAdd }} km
+              </div>
             </div>
 
             <!-- 进店电量 -->
@@ -1488,7 +1494,7 @@ const detail = reactive({
   abnormalDesc: '',
   currentFault: '',
   faultAlertRecordRespList: [],
-  hasFault: '1',
+  hasFault: '2',
   faultModules: [],
   customerFaultDesc: '',
   testResult: '',
@@ -2116,10 +2122,24 @@ const onAddFaultModuleItem = (item) => {
 }
 
 // 删除故障模块
-const onDeleteFaultModule = (module) => {
-  const index = detail.faultModules.findIndex((m) => m.cccCode === module.cccCode)
-  if (index > -1) {
-    detail.faultModules.splice(index, 1)
+const onDeleteFaultModule = async (module) => {
+  try {
+    await showConfirmDialog({
+      title: '提示',
+      message: '是否要删除此接车施工单-故障模块？您无法撤销此操作。',
+    })
+    const index = detail.faultModules.findIndex((m) => m.cccCode === module.cccCode)
+    if (index > -1) {
+      detail.faultModules.splice(index, 1)
+    }
+    if (detail.faultModules.length === 0) {
+      showConfirmDialog({
+        title: '提示',
+        message: '全部故障模块已删除，请重新确认【本次进店是否存在故障】？',
+      })
+    }
+  } catch (error) {
+    // 取消操作
   }
 }
 
@@ -2205,6 +2225,25 @@ const onSave = async () => {
   // 如果选择"是"，客户故障描述必填
   if (detail.hasFault === '1' && !detail.customerFaultDesc.trim()) {
     showToast('请输入客户故障描述')
+    return
+  }
+  // 照片校验（根据配置判断是否必填）
+  if (interiorConfig.value.required === '1' && detail.interiorImages.length === 0) {
+    showToast('请上传车内照片')
+    return
+  }
+  if (exteriorConfig.value.required === '1' && detail.exteriorImages.length === 0) {
+    showToast('请上传车外照片')
+    return
+  }
+  // 异常描述
+  if (!detail.abnormalDesc) {
+    showToast('请输入异常描述')
+    return
+  }
+  // 经理建议
+  if (!detail.testResult) {
+    showToast('请输入客户经理建议')
     return
   }
   savingLoading.value = true
@@ -2663,9 +2702,11 @@ const onConfirmAndSign = () => {
       if (res.code === 200) {
         showToast('操作成功')
         fetchDetail()
-        // 接口成功后跳转结算页面
-        const settlementUrl = `https://staticres-sitb.leapmotor.com/leapx/biling/ais/settlement?serviceProxyId=${detail.id}`
-        window.location.href = settlementUrl
+        if (!params.signChannel) {
+          // 接口成功后跳转结算页面
+          const settlementUrl = `https://staticres-sitb.leapmotor.com/leapx/biling/ais/settlement?serviceProxyId=${detail.id}`
+          window.location.href = settlementUrl
+        }
       } else {
         showToast(res.msg || '操作失败')
       }
