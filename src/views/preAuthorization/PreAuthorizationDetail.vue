@@ -390,7 +390,7 @@ import { useRoute } from 'vue-router'
 import { showToast, showLoadingToast, closeToast } from 'vant'
 import AisPopup from '@/components/AisPopup.vue'
 import { preAuthGet, preAuthAudit, preAuthGetErrorCodeList } from '@/api/authorization'
-import { getAttachmentList, uploadFileByUrl } from '@/libs/api/fileConfig'
+import { getAttachmentList, uploadFileByUrl, deleteAttachmentConfig } from '@/libs/api/fileConfig'
 import { getAppImg } from '@/libs/utils/nativeFn'
 
 const route = useRoute()
@@ -872,8 +872,33 @@ const handleNativeImage = async(rawFileUrl) => {
 }
 
 // 删除附件
-const removeAttachment = (index) => {
-  attachmentList.value.splice(index, 1)
+const removeAttachment = async(index) => {
+  const item = attachmentList.value[index]
+  if (!item) return
+
+  try {
+    showLoadingToast({ message: '删除中...', forbidClick: true })
+
+    // 调用删除接口
+    const res = await deleteAttachmentConfig({
+      id: item.id || item.fileId
+    })
+
+    closeToast()
+
+    if (res?.code !== 0 && res?.code !== 200) {
+      showToast(res?.msg || '删除失败')
+      return
+    }
+
+    // 从列表中移除
+    attachmentList.value.splice(index, 1)
+    showToast('删除成功')
+  } catch (error) {
+    closeToast()
+    console.error('删除附件失败:', error)
+    showToast('删除失败，请稍后重试')
+  }
 }
 
 // 获取错误代码列表
