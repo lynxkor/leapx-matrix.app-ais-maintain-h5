@@ -1043,7 +1043,7 @@ const getAttachmentTypeLabel = (type) => attachmentTypeMap[type] || ''
 
 const normalizeAttachmentItem = (item) => ({
   ...item,
-  url: item.fileUrl || item.url || '',
+  url: item.authFileUrl || item.fileUrl || item.url || '',
   name: item.fileName || item.name || ''
 })
 
