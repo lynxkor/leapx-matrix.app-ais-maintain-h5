@@ -149,7 +149,7 @@
             <div class="repair-item-left">
               <div class="repair-name">{{ item.name }}</div>
               <div class="repair-part-no">{{ item.partNo }}</div>
-              <div class="repair-type">{{ item.type }}</div>
+              <div class="repair-type">{{item.repairItemTypeName}}-{{ item.checkoutTypeName }}-{{ item.warrantyTypeName }}</div>
             </div>
             <div class="repair-item-right">
               <div class="repair-price">¥{{ item.price }}</div>
@@ -180,7 +180,7 @@
                 <span v-if="item.tag" class="parts-tag">{{ item.tag }}</span>
               </div>
               <div class="repair-part-no">{{ item.partNo }}</div>
-              <div class="repair-type">{{ item.type }}</div>
+              <div class="repair-type">{{item.repairItemTypeName}}-{{ item.checkoutTypeName }}-{{ item.warrantyTypeName }}</div>
             </div>
             <div class="repair-item-right">
               <div class="repair-price">¥{{ item.price }}</div>
@@ -1044,7 +1044,9 @@ const formatDetailData = (data) => {
     repairItems: (preAuthData.spRepairItemResps || []).map(item => ({
       name: item.repairItemName || '',
       partNo: item.repairItemCode || '',
-      type: item.repairItemTypeName || '',
+      repairItemTypeName: item.repairItemTypeName || '',
+      checkoutTypeName: item.checkoutTypeName || '',
+      warrantyTypeName: item.warrantyTypeName || '',
       price: item.price || '0',
       discount: item.discountAmount || '0',
       subtotal: item.repairAmount || '0',
@@ -1055,7 +1057,9 @@ const formatDetailData = (data) => {
     partsItems: (preAuthData.spSparePartResps || []).map(item => ({
       name: item.partsName || '',
       partNo: item.partsCode || '',
-      type: item.repairItemTypeName || '',
+      repairItemTypeName: item.repairItemTypeName || '',
+      checkoutTypeName: item.checkoutTypeName || '',
+      warrantyTypeName: item.warrantyTypeName || '',
       tag: item.isOemPartLabel || '',
       price: item.price || '0',
       discount: item.discountAmount || '0',

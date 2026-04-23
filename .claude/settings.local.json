@@ -69,7 +69,9 @@
       "Bash(type C:\\\\Users\\\\990900\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\D--leapmotor-app-ais-maintenance-h5\\\\958ce6d9-e14e-4621-9397-907467467d426\\\\tasks\\\\b1lgtimex.output)",
       "Skill(update-config)",
       "Bash(gh auth *)",
-      "Bash(where gh *)"
+      "Bash(where gh *)",
+      "Bash(where bun *)",
+      "Bash(C:\\\\bun\\\\bun.exe *)"
     ]
   },
   "statusLine": {
