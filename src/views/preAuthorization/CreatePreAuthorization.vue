@@ -534,7 +534,7 @@ import {
   preAuthGetConstructionList,
   preAuthGetQualityFeedbackList
 } from '@/api/authorization'
-import { getAttachmentList, uploadFileByUrl, bindFile } from '@/libs/api/fileConfig'
+import { uploadFileByUrl, deleteAttachmentConfig } from '@/libs/api/fileConfig'
 import { getAppImg } from '@/libs/utils/nativeFn'
 
 const router = useRouter()
@@ -954,12 +954,29 @@ const validatePreAuthForm = () => {
   return true
 }
 
+const getAttachmentListByType = () =>
+  Object.keys(attachmentTypeMap).flatMap((type) => attachmentData[type] || [])
+
+const buildAttachmentsPayload = () =>
+  getAttachmentListByType().map((item) => ({
+    ...(item.rawUploadData || {}),
+    id: item.id || item.fileId || '',
+    fileId: item.fileId || item.id || '',
+    fileName: item.fileName || item.originalFilename || item.name || '',
+    fileUrl: item.fileUrl || item.url || '',
+    fileSize: item.fileSize || item.size || '',
+    fileType: item.fileType || item.ext || '',
+    attachType: item.attachType || '',
+    configCode: item.configCode || PRE_AUTH_ATTACHMENT_CONFIG_CODE
+  }))
+
 const buildPreAuthPayload = (saveOrSubmit) => {
   const payload = {
     serviceProxyId: constructionId.value,
     qualityOrderReportId: feedbackId.value,
     reason: applyReason.value,
-    saveOrSubmit
+    saveOrSubmit,
+    attachments: buildAttachmentsPayload()
   }
   if (currentBusinessId.value) {
     payload.id = currentBusinessId.value
@@ -1026,28 +1043,24 @@ const getAttachmentTypeLabel = (type) => attachmentTypeMap[type] || ''
 
 const normalizeAttachmentItem = (item) => ({
   ...item,
-  url: item.fileUrl || item.url || '',
+  url: item.authFileUrl || item.fileUrl || item.url || '',
   name: item.fileName || item.name || ''
 })
 
-const fetchAttachmentListByType = async(type, businessId) => {
-  const attachType = getAttachmentTypeLabel(type)
-  const id = businessId || currentBusinessId.value
-  if (!id || !attachType) return
-
-  const res = await getAttachmentList({
-    businessId: id,
-    attachType
+const normalizeUploadResult = (item, attachType) =>
+  normalizeAttachmentItem({
+    ...item,
+    rawUploadData: item,
+    id: item.id || item.fileId || '',
+    fileId: item.fileId || item.id || '',
+    fileName: item.fileName || item.originalFilename || item.name || '',
+    fileUrl: item.fileUrl || item.url || '',
+    fileSize: item.fileSize || item.size || '',
+    fileType: item.fileType || item.ext || '',
+    attachType,
+    configCode: item.configCode || PRE_AUTH_ATTACHMENT_CONFIG_CODE,
+    _localUploaded: true
   })
-
-  if (!isSuccessResponse(res)) {
-    throw new Error(res?.msg || '获取附件列表失败')
-  }
-
-  const data = res?.data
-  const list = Array.isArray(data) ? data : (data?.records || data?.list || [])
-  attachmentData[type] = list.map(normalizeAttachmentItem)
-}
 
 const handleNativeImage = async(rawFileUrl) => {
   const uploadType = currentUploadType.value
@@ -1076,14 +1089,12 @@ const handleNativeImage = async(rawFileUrl) => {
 
   try {
     isUploadingAttachment.value = true
-    const businessId = constructionId.value
 
     showLoadingToast({ message: '上传中...', forbidClick: true })
 
     // 1. 上传文件
     const uploadRes = await uploadFileByUrl([{
       fileUrl: fileData.fileUrl,
-      businessId,
       configCode: PRE_AUTH_ATTACHMENT_CONFIG_CODE,
       attachType
     }])
@@ -1094,35 +1105,18 @@ const handleNativeImage = async(rawFileUrl) => {
       return
     }
 
-    // 2. 获取上传返回的文件信息
-    const uploadedFile = uploadRes?.data?.[0] || uploadRes?.data
-    if (!uploadedFile) {
+    // 2. 获取上传返回的文件信息，并更新本地附件列表（提交时平铺传 attachments）
+    const uploadData = uploadRes?.data
+    const uploadedFiles = Array.isArray(uploadData) ? uploadData : (uploadData ? [uploadData] : [])
+    if (!uploadedFiles.length) {
       closeToast()
       showToast('上传返回数据异常')
       return
     }
 
-    // 3. 调用 bindFile 绑定接口
-    const bindRes = await bindFile({
-      fileId: uploadedFile.id,
-      fileName: uploadedFile.originalFilename,
-      fileUrl: uploadedFile.url,
-      fileSize: uploadedFile.size || fileData.size,
-      fileType: uploadedFile.ext || fileData.ext,
-      attachType,
-      businessId,
-      configCode: PRE_AUTH_ATTACHMENT_CONFIG_CODE
-    })
-
-    if (!isSuccessResponse(bindRes)) {
-      closeToast()
-      showToast(bindRes?.msg || '绑定文件失败')
-      return
-    }
-
-    await fetchAttachmentListByType(uploadType, businessId)
+    attachmentData[uploadType].push(...uploadedFiles.map((item) => normalizeUploadResult(item, attachType)))
     closeToast()
-    hasEdited.value = false
+    hasEdited.value = true
     showToast('上传成功')
   } catch (error) {
     closeToast()
@@ -1187,7 +1181,6 @@ const onAuthTypeChange = (type) => {
 }
 
 const onConstructionSelect = async(item) => {
-  console.log('施工单选中项:', item)
   constructionNo.value = item.code
   constructionId.value = item.id || item.serviceProxyId
   showConstructionPicker.value = false
@@ -1270,7 +1263,6 @@ const onConstructionSelect = async(item) => {
 }
 
 const onFeedbackSelect = (item) => {
-  console.log('质量反馈选中项:', item)
   feedbackNo.value = item.code
   feedbackId.value = item.id || item.qualityOrderReportId || ''
   feedbackDesc.value = item.customerContent || ''
@@ -1290,9 +1282,41 @@ const uploadAttachment = (type) => {
   hasEdited.value = true
 }
 
-const deleteAttachment = (type, index) => {
-  attachmentData[type].splice(index, 1)
-  hasEdited.value = true
+const deleteAttachment = async(type, index) => {
+  const item = attachmentData[type][index]
+  if (!item) return
+
+  if (item._localUploaded || (!item.id && !item.fileId)) {
+    attachmentData[type].splice(index, 1)
+    hasEdited.value = true
+    showToast('删除成功')
+    return
+  }
+
+  try {
+    showLoadingToast({ message: '删除中...', forbidClick: true })
+
+    // 调用删除接口
+    const res = await deleteAttachmentConfig({
+      id: item.id || item.fileId
+    })
+
+    closeToast()
+
+    if (!isSuccessResponse(res)) {
+      showToast(res?.msg || '删除失败')
+      return
+    }
+
+    // 从列表中移除
+    attachmentData[type].splice(index, 1)
+    hasEdited.value = true
+    showToast('删除成功')
+  } catch (error) {
+    closeToast()
+    console.error('删除附件失败:', error)
+    showToast('删除失败，请稍后重试')
+  }
 }
 
 const onSaveConfirm = async() => {
