@@ -970,13 +970,13 @@ const buildAttachmentsPayload = () =>
     configCode: item.configCode || PRE_AUTH_ATTACHMENT_CONFIG_CODE
   }))
 
-const buildPreAuthPayload = (saveOrSubmit) => {
+const buildPreAuthPayload = (saveOrSubmit, attachments = buildAttachmentsPayload()) => {
   const payload = {
     serviceProxyId: constructionId.value,
     qualityOrderReportId: feedbackId.value,
     reason: applyReason.value,
     saveOrSubmit,
-    attachments: buildAttachmentsPayload()
+    attachments
   }
   if (currentBusinessId.value) {
     payload.id = currentBusinessId.value
@@ -999,6 +999,7 @@ const syncBusinessId = (res) => {
 
 const savePreAuth = async({
   saveOrSubmit,
+  attachments = buildAttachmentsPayload(),
   loadingMessage,
   successMessage = '',
   failureMessage,
@@ -1012,7 +1013,7 @@ const savePreAuth = async({
   try {
     showLoadingToast({ message: loadingMessage, forbidClick: true })
 
-    const res = await preAuthAddOrUpdate(buildPreAuthPayload(saveOrSubmit))
+    const res = await preAuthAddOrUpdate(buildPreAuthPayload(saveOrSubmit, attachments))
     closeToast()
 
     if (isSuccessResponse(res)) {
@@ -1129,8 +1130,10 @@ const handleNativeImage = async(rawFileUrl) => {
 
 // 提交申请
 const handleSubmit = async() => {
+  const attachments = buildAttachmentsPayload()
   await savePreAuth({
     saveOrSubmit: true,
+    attachments,
     loadingMessage: '提交中...',
     successMessage: '提交成功',
     failureMessage: '提交失败',
@@ -1321,9 +1324,11 @@ const deleteAttachment = async(type, index) => {
 
 const onSaveConfirm = async() => {
   showSaveConfirmDialog.value = false
+  const attachments = buildAttachmentsPayload()
 
   await savePreAuth({
     saveOrSubmit: false,
+    attachments,
     loadingMessage: '保存中...',
     successMessage: '保存成功',
     failureMessage: '保存失败',
