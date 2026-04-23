@@ -1362,7 +1362,7 @@ const onSelectMoreAction = (action) => {
         vin: detail.vin,
         plateNo: detail.plateNo,
         vehicleModel: detail.vehicleModel,
-        id: serviceProxyId.value || route.query.id,
+        id: serviceProxyId.value || detail.id || route.query.id,
       },
     })
   }
@@ -1962,7 +1962,7 @@ const handleImageFileChange = (event) => {
       try {
         const params = {
           fileUrl: previewUrl,
-          businessId: serviceProxyId.value || route.query.id,
+          businessId: serviceProxyId.value || '',
           configCode: 'mcs_serviceproxy',
           attachType: attachTypeMap[uploadType],
         }
@@ -2428,6 +2428,10 @@ const onComplete = async () => {
       if (res.code === 200) {
         showToast('预检完成')
         isPreCheckCompleted.value = true
+        // 预检完成后更新route.query.id
+        if (serviceProxyId.value) {
+          router.replace({ query: { ...route.query, id: serviceProxyId.value } })
+        }
         // 预检完成后获取详情数据，给签字确认页面赋值
         fetchDetailForSignature()
       } else {
@@ -2767,7 +2771,7 @@ const onAddParts = () => {
   router.push({
     path: '/reception/add-parts',
     query: {
-      serviceProxyId: serviceProxyId.value || route.query.id,
+      serviceProxyId: serviceProxyId.value || detail.id || route.query.id,
     },
   })
 }
