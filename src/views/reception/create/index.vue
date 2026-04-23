@@ -2690,7 +2690,7 @@ const onConfirmAndSign = () => {
   // 点击"准确"，执行接口
   savingLoading.value = true
   let params = {
-    serviceProxyId: serviceProxyId.value || detail.id,
+    serviceProxyId: detail.id,
     expectFinishAt: signatureData.expectFinishAt,
   }
   // 纸质单据时才传signChannel
@@ -2704,7 +2704,7 @@ const onConfirmAndSign = () => {
         fetchDetail()
         if (!params.signChannel) {
           // 接口成功后跳转结算页面
-          const settlementUrl = `https://staticres-sitb.leapmotor.com/leapx/biling/ais/settlement?serviceProxyId=${serviceProxyId.value || detail.id}`
+          const settlementUrl = `https://staticres-sitb.leapmotor.com/leapx/biling/ais/settlement?serviceProxyId=${detail.id}`
           window.location.href = settlementUrl
         }
       } else {
