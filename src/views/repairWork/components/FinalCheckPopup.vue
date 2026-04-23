@@ -317,7 +317,7 @@ const handleSubmit = () => {
     finalCheckAt: formatDateTime(new Date()),
     finalCheckerId: userStore.userId,
     finalChecker: userStore.userName,
-    faultAlertRecordParams: detailData.value.faultAlertRecordResps || [],
+    // faultAlertRecordParams: detailData.value.faultAlertRecordResps || [],
     repairWorkRecordResps: detailData.value.repairWorkRecordResps || [],
     currentFault: detailData.value.faultFlag === 1 ? 0 : 1
   }
