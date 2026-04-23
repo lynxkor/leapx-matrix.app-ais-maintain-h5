@@ -2690,7 +2690,7 @@ const onConfirmAndSign = () => {
   // 点击"准确"，执行接口
   savingLoading.value = true
   let params = {
-    serviceProxyId: detail.id,
+    serviceProxyId: serviceProxyId.value || detail.id,
     expectFinishAt: signatureData.expectFinishAt,
   }
   // 纸质单据时才传signChannel
@@ -2704,7 +2704,7 @@ const onConfirmAndSign = () => {
         fetchDetail()
         if (!params.signChannel) {
           // 接口成功后跳转结算页面
-          const settlementUrl = `https://staticres-sitb.leapmotor.com/leapx/biling/ais/settlement?serviceProxyId=${detail.id}`
+          const settlementUrl = `https://staticres-sitb.leapmotor.com/leapx/biling/ais/settlement?serviceProxyId=${serviceProxyId.value || detail.id}`
           window.location.href = settlementUrl
         }
       } else {
@@ -2767,7 +2767,7 @@ const onAddParts = () => {
   router.push({
     path: '/reception/add-parts',
     query: {
-      serviceProxyId: route.query.id,
+      serviceProxyId: serviceProxyId.value || route.query.id,
     },
   })
 }
@@ -2777,7 +2777,7 @@ const onAddPackage = () => {
   router.push({
     path: '/reception/select-package',
     query: {
-      serviceProxyId: route.query.id,
+      serviceProxyId: serviceProxyId.value || route.query.id,
     },
   })
 }
