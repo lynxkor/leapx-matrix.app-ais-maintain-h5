@@ -80,7 +80,7 @@
             <span class="info-label">门店所属区域</span>
             <span class="info-value">{{ detail.storeArea || '--' }}</span>
           </div>
-          <div class="info-row" @click="showWarningInfo">
+          <div class="info-row">
             <span class="info-label">预警信息</span>
             <span class="info-value warning">
               {{ detail.warningInfo || '--' }}
@@ -663,11 +663,6 @@ const switchTab = async(tabName) => {
   scrollToPosition(finalScrollTop, 'smooth')
 }
 
-// 查看预警信息
-const showWarningInfo = () => {
-  showToast('查看预警信息')
-}
-
 // 审核操作
 const handleAudit = () => {
   showAuditPopup.value = true
@@ -754,13 +749,10 @@ const openErrorCodePopup = () => {
 
 // 上传附件
 const handleUploadAttachment = () => {
-  // TODO: 调用图片上传接口
-  // 限制：最大30M，最多5个
   if (attachmentList.value.length >= 5) {
     showToast('最多上传5个附件')
     return
   }
-  showToast('上传附件')
 }
 
 const isSuccessResponse = (res) => res?.code === 0 || res?.code === 200

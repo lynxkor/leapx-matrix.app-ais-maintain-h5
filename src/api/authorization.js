@@ -40,11 +40,6 @@ export function preAuthAudit(data) {
   return post('maintain/app/sp/preAuth/audit', data)
 }
 
-// 提交
-export function preAuthSubmit(data) {
-  return post('maintain/app/sp/preAuth/submit', data)
-}
-
 // 作废
 export function preAuthCancel(data) {
   return post('maintain/app/sp/preAuth/cancel', data)
