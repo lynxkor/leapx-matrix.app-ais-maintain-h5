@@ -5,7 +5,11 @@
       <div class="plate-row">
         <span class="plate-no">{{ detail.plateNo }}</span>
         <span class="appointment-tag" style="opacity: 0">预约客户</span>
-        <span class="edit-plate edit-plate-after" @click="onChangeCar">
+        <span
+          v-if="detail.orderStatus == 100"
+          class="edit-plate edit-plate-after"
+          @click="onChangeCar"
+        >
           <span><img src="@/assets/image/car.png" alt="" /></span>
           <span>换车</span>
         </span>
@@ -142,7 +146,9 @@
                 </div>
               </div>
               <div class="sub-info">车联网里程数(总)：{{ detail.networkMileageTotal }} km</div>
-              <div class="sub-info">车联网里程数(增)：{{ detail.networkMileageAdd }} km</div>
+              <div v-if="detail.networkMileageAdd" class="sub-info">
+                车联网里程数(增)：{{ detail.networkMileageAdd }} km
+              </div>
             </div>
 
             <!-- 进店电量 -->
@@ -1356,7 +1362,7 @@ const onSelectMoreAction = (action) => {
         vin: detail.vin,
         plateNo: detail.plateNo,
         vehicleModel: detail.vehicleModel,
-        id: serviceProxyId.value || route.query.id,
+        id: serviceProxyId.value || detail.id || route.query.id,
       },
     })
   }
@@ -1488,7 +1494,7 @@ const detail = reactive({
   abnormalDesc: '',
   currentFault: '',
   faultAlertRecordRespList: [],
-  hasFault: '1',
+  hasFault: '2',
   faultModules: [],
   customerFaultDesc: '',
   testResult: '',
@@ -1956,7 +1962,7 @@ const handleImageFileChange = (event) => {
       try {
         const params = {
           fileUrl: previewUrl,
-          businessId: serviceProxyId.value || route.query.id,
+          businessId: serviceProxyId.value || detail.id || null,
           configCode: 'mcs_serviceproxy',
           attachType: attachTypeMap[uploadType],
         }
@@ -2116,10 +2122,24 @@ const onAddFaultModuleItem = (item) => {
 }
 
 // 删除故障模块
-const onDeleteFaultModule = (module) => {
-  const index = detail.faultModules.findIndex((m) => m.cccCode === module.cccCode)
-  if (index > -1) {
-    detail.faultModules.splice(index, 1)
+const onDeleteFaultModule = async (module) => {
+  try {
+    await showConfirmDialog({
+      title: '提示',
+      message: '是否要删除此接车施工单-故障模块？您无法撤销此操作。',
+    })
+    const index = detail.faultModules.findIndex((m) => m.cccCode === module.cccCode)
+    if (index > -1) {
+      detail.faultModules.splice(index, 1)
+    }
+    if (detail.faultModules.length === 0) {
+      showConfirmDialog({
+        title: '提示',
+        message: '全部故障模块已删除，请重新确认【本次进店是否存在故障】？',
+      })
+    }
+  } catch (error) {
+    // 取消操作
   }
 }
 
@@ -2207,6 +2227,25 @@ const onSave = async () => {
     showToast('请输入客户故障描述')
     return
   }
+  // 照片校验（根据配置判断是否必填）
+  if (interiorConfig.value.required === '1' && detail.interiorImages.length === 0) {
+    showToast('请上传车内照片')
+    return
+  }
+  if (exteriorConfig.value.required === '1' && detail.exteriorImages.length === 0) {
+    showToast('请上传车外照片')
+    return
+  }
+  // 异常描述
+  if (!detail.abnormalDesc) {
+    showToast('请输入异常描述')
+    return
+  }
+  // 经理建议
+  if (!detail.testResult) {
+    showToast('请输入客户经理建议')
+    return
+  }
   savingLoading.value = true
   try {
     const res = await serviceAddOrUpdate({
@@ -2328,7 +2367,7 @@ const onSave = async () => {
       exteriorPhotoList: detail.exteriorImages.map((item) => ({
         ...item,
         fileId: item.id,
-        businessId: serviceProxyId.value || route.query.id,
+        businessId: serviceProxyId.value || null,
         fileUrl: item.url,
         attachType: '车外照片',
         configCode: 'mcs_serviceproxy',
@@ -2336,7 +2375,7 @@ const onSave = async () => {
       interiorPhotoList: detail.interiorImages.map((item) => ({
         ...item,
         fileId: item.id,
-        businessId: serviceProxyId.value || route.query.id,
+        businessId: serviceProxyId.value || null,
         fileUrl: item.url,
         attachType: '车内照片',
         configCode: 'mcs_serviceproxy',
@@ -2389,6 +2428,10 @@ const onComplete = async () => {
       if (res.code === 200) {
         showToast('预检完成')
         isPreCheckCompleted.value = true
+        // 预检完成后更新route.query.id
+        if (serviceProxyId.value) {
+          router.replace({ query: { ...route.query, id: serviceProxyId.value } })
+        }
         // 预检完成后获取详情数据，给签字确认页面赋值
         fetchDetailForSignature()
       } else {
@@ -2407,66 +2450,67 @@ const onInspectionSave = async () => {
   savingLoading.value = true
   try {
     const res = await serviceAddOrUpdate({
-      code: '',
-      dataSource: '',
-      orderStatus: '',
-      warrantyTypeCollect: '',
+      id: detail.id,
+      code: detail.code,
+      dataSource: detail.dataSource,
+      orderStatus: detail.orderStatus,
+      warrantyTypeCollect: detail.warrantyTypeCollect,
       customerName: detail.owner,
       customerPhone: detail.ownerPhone,
-      custType: '',
+      custType: detail.custType,
       vehModelName: detail.vehicleModelName,
       bindingPhone: detail.binderPhone,
       bindingUser: detail.bindingUser,
-      bindingUserId: '',
+      bindingUserId: detail.bindingUserId,
       carPlate: detail.plateNo,
       dealerName: detail.salesDealerName,
       dealerCode: detail.salesDealerCode,
-      appointmentNo: '',
+      appointmentNo: detail.appointmentNo,
       mileage: detail.mileage,
       lastMileage: null,
       startWarrantyDate: detail.vehicleProfileServiceResp.warrantyStartdate || '',
       exclusiveServiceDealerName: detail.vehicleProfileServiceResp.serviceDealerName || '',
       exclusiveServiceDealerCode: detail.vehicleProfileServiceResp.serviceDealerCode || '',
       expectFinishAt: signatureData.expectFinishAt,
-      createStatementInfoDate: '',
-      remark: '',
-      status: '',
-      statusDesc: '',
-      pickStatus: '',
+      createStatementInfoDate: detail.createStatementInfoDate,
+      remark: detail.remark,
+      status: detail.status,
+      statusDesc: detail.statusDesc,
+      pickStatus: detail.pickStatus,
       shuttleName: detail.repairPerson,
       shuttlePhone: detail.repairPersonPhone,
-      payType: '',
-      warrantyCompany: '',
+      payType: detail.payType,
+      warrantyCompany: detail.warrantyCompany,
       signChannel: signatureData.signatureChannel === '纸质单据' ? '40' : '',
-      signCompletedOn: '',
-      signGeneratedOn: '',
-      signStatus: '',
-      signUrlExpiredOn: '',
-      appointmentType: '',
-      preAuthType: '',
-      isLockLive: '',
-      isCreateWarranty: '',
-      isOutboundOrder: '',
-      isVehRetentionRemind: '',
-      isCancelStorage: '',
-      discountId: '',
-      finalCheckAt: '',
-      finalCheckerId: '',
-      finalChecker: '',
-      ticketStep: '',
-      warrantyStatus: '',
-      claimItemAmount: '',
-      claimOtherAmount: '',
-      claimPartsAmount: '',
-      departureMileage: '',
+      signCompletedOn: detail.signCompletedOn,
+      signGeneratedOn: detail.signGeneratedOn,
+      signStatus: detail.signStatus,
+      signUrlExpiredOn: detail.signUrlExpiredOn,
+      appointmentType: detail.appointmentType,
+      preAuthType: detail.preAuthType,
+      isLockLive: detail.isLockLive,
+      isCreateWarranty: detail.isCreateWarranty,
+      isOutboundOrder: detail.isOutboundOrder,
+      isVehRetentionRemind: detail.isVehRetentionRemind,
+      isCancelStorage: detail.isCancelStorage,
+      discountId: detail.discountId,
+      finalCheckAt: detail.finalCheckAt,
+      finalCheckerId: detail.finalCheckerId,
+      finalChecker: detail.finalChecker,
+      ticketStep: detail.ticketStep,
+      warrantyStatus: detail.warrantyStatus,
+      claimItemAmount: detail.claimItemAmount,
+      claimOtherAmount: detail.claimOtherAmount,
+      claimPartsAmount: detail.claimPartsAmount,
+      departureMileage: detail.departureMileage,
       inPower: detail.battery,
-      outPower: '',
+      outPower: detail.outPower,
       netMileage: detail.networkMileageTotal,
-      departureNetMileage: '',
+      departureNetMileage: detail.departureNetMileage,
       inNetPower: detail.networkBattery,
-      outNetPower: '',
-      departureNetMileageElectricity: '',
-      departureNetMileageExtend: '',
+      outNetPower: detail.outNetPower,
+      departureNetMileageElectricity: detail.departureNetMileageElectricity,
+      departureNetMileageExtend: detail.departureNetMileageExtend,
       netMileageElectricity: detail.electricalMileage,
       netMileageExtend: detail.networkMileageAdd,
       vehProfileId: detail.id,
@@ -2485,47 +2529,47 @@ const onInspectionSave = async () => {
       batteryModel: detail.batteryModel,
       batterySerialNumber: detail.batterySerialNumber,
       engineNumber: detail.enginenNumber,
-      repairItemTypeDetailCollect: '',
+      repairItemTypeDetailCollect: detail.repairItemTypeDetailCollect,
       businessType: computedBusinessType.value,
-      alarmLevel: '',
-      isLive: '',
+      alarmLevel: detail.alarmLevel,
+      isLive: detail.isLive,
       haveRework: 0,
       isCarWash: 0,
       isRetainOldParts: 0,
-      inCustomerContent: '',
-      customerComment: '',
+      inCustomerContent: detail.inCustomerContent,
+      customerComment: detail.customerComment,
       testResult: detail.testResult,
       currentFault: detail.hasFault === '1' ? 1 : 0,
       customerContent: detail.customerFaultDesc,
-      invaildDesc: '',
+      invaildDesc: detail.invaildDesc,
       anomalyDescription: detail.abnormalDesc,
-      previewingFinishAt: '',
-      confirmedOn: '',
-      expectStartAt: '',
-      startAt: '',
-      finishAt: '',
-      faultSolve: '',
+      previewingFinishAt: detail.previewingFinishAt,
+      confirmedOn: detail.confirmedOn,
+      expectStartAt: detail.expectStartAt,
+      startAt: detail.startAt,
+      finishAt: detail.finishAt,
+      faultSolve: detail.faultSolve,
       currentSituation: detail.hasFault === '1' ? 20 : 10,
-      faultAlert: '',
-      faultPeriod: '',
-      earliestfaultServiceProxy: '',
-      recentlyfaultServiceProxy: '',
+      faultAlert: detail.faultAlert,
+      faultPeriod: detail.faultPeriod,
+      earliestfaultServiceProxy: detail.earliestfaultServiceProxy,
+      recentlyfaultServiceProxy: detail.recentlyfaultServiceProxy,
       faultModule: detail.faultModules.map((m) => m.cccCode).join(','),
       isCreateStatementInfo: 0,
-      isPreAuth: '',
-      isCreatePreAuth: '',
-      preAuthRuleId: '',
-      unresolvedReason: '',
-      faultDesc: '',
-      batteryUnitId: '',
-      batteryUnitName: '',
-      targetUnitCode: '',
-      beforeChangeCode: '',
-      afterChangeCode: '',
+      isPreAuth: detail.isPreAuth,
+      isCreatePreAuth: detail.isCreatePreAuth,
+      preAuthRuleId: detail.preAuthRuleId,
+      unresolvedReason: detail.unresolvedReason,
+      faultDesc: detail.faultDesc,
+      batteryUnitId: detail.batteryUnitId,
+      batteryUnitName: detail.batteryUnitName,
+      targetUnitCode: detail.targetUnitCode,
+      beforeChangeCode: detail.beforeChangeCode,
+      afterChangeCode: detail.afterChangeCode,
       exteriorPhotoList: detail.exteriorImages.map((item) => ({
         ...item,
         fileId: item.id,
-        businessId: serviceProxyId.value || route.query.id,
+        businessId: serviceProxyId.value || detail.id,
         fileUrl: item.url,
         attachType: '车外照片',
         configCode: 'mcs_serviceproxy',
@@ -2533,12 +2577,12 @@ const onInspectionSave = async () => {
       interiorPhotoList: detail.interiorImages.map((item) => ({
         ...item,
         fileId: item.id,
-        businessId: serviceProxyId.value || route.query.id,
+        businessId: serviceProxyId.value || detail.id,
         fileUrl: item.url,
         attachType: '车内照片',
         configCode: 'mcs_serviceproxy',
       })),
-      isStoreLive: '',
+      isStoreLive: detail.isStoreLive,
       faultAlertRecordParams: detail.faultModules.map((m) => ({
         cccId: m.cccCode || '',
         cccName: m.cccName || '',
@@ -2547,8 +2591,8 @@ const onInspectionSave = async () => {
         vrtId: m.vrtCode || '',
         vrtName: m.vrtName || '',
       })),
-      latelyServiceProxy: '',
-      earlyServiceProxy: '',
+      latelyServiceProxy: detail.latelyServiceProxy,
+      earlyServiceProxy: detail.earlyServiceProxy,
     })
     if (res.code === 200) {
       showToast('保存成功')
@@ -2663,9 +2707,11 @@ const onConfirmAndSign = () => {
       if (res.code === 200) {
         showToast('操作成功')
         fetchDetail()
-        // 接口成功后跳转结算页面
-        const settlementUrl = `https://staticres-sitb.leapmotor.com/leapx/biling/ais/settlement?serviceProxyId=${detail.id}`
-        window.location.href = settlementUrl
+        if (!params.signChannel) {
+          // 接口成功后跳转结算页面
+          const settlementUrl = `https://staticres-sitb.leapmotor.com/leapx/biling/ais/settlement?serviceProxyId=${detail.id}`
+          window.location.href = settlementUrl
+        }
       } else {
         showToast(res.msg || '操作失败')
       }
@@ -2726,7 +2772,7 @@ const onAddParts = () => {
   router.push({
     path: '/reception/add-parts',
     query: {
-      serviceProxyId: route.query.id,
+      serviceProxyId: serviceProxyId.value || detail.id || route.query.id,
     },
   })
 }
@@ -2736,7 +2782,7 @@ const onAddPackage = () => {
   router.push({
     path: '/reception/select-package',
     query: {
-      serviceProxyId: route.query.id,
+      serviceProxyId: serviceProxyId.value || route.query.id,
     },
   })
 }
@@ -2879,7 +2925,7 @@ onMounted(() => {
     try {
       const params = {
         fileUrl: url,
-        businessId: route.query.id,
+        businessId: serviceProxyId.value || null,
         configCode: 'mcs_serviceproxy',
         attachType: attachTypeMap[uploadType],
       }
