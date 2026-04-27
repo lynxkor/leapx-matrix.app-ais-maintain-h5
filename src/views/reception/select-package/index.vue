@@ -688,9 +688,6 @@
                       <span class="info-value">x{{ part.quantity }}</span>
                     </span>
                   </div>
-                  <span v-if="part.ifReplace == 1" class="replace-btn" @click="onReplacePart(part)"
-                    >替换</span
-                  >
                 </div>
               </div>
             </div>
@@ -728,7 +725,6 @@ import {
   specialFreeUse,
   specialPackageUse,
   cancelSelect,
-  specialEquityReplace,
 } from '@/api/reception'
 import './select-package.scss'
 
@@ -1175,10 +1171,6 @@ const onConfirmMall = () => {
 }
 
 // 替换零件
-const onReplacePart = (part) => {
-  console.log('替换零件:', part)
-}
-
 // 确认选择权益套餐
 const onConfirmEquity = () => {
   const params = {

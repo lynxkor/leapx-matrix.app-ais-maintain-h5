@@ -24,6 +24,12 @@
               alt=""
               @click="openNameEditPopup"
             />
+            <span
+              v-if="item.ifReplace == 1 && isReplace"
+              class="replace-tag"
+              @click="onReplaceTagClick(item)"
+              >替<van-icon name="exchange" size="13px"
+            /></span>
           </div>
           <div class="code-row">
             <span class="card-code">{{ item.code }}</span>
@@ -100,42 +106,104 @@
         </div>
       </div>
     </van-popup>
+
+    <!-- 替换件弹窗 -->
+    <ais-popup
+      :show="showReplacePopup"
+      position="bottom"
+      closeable
+      close-icon="cross"
+      close-icon-position="top-left"
+      title="请选择替换件"
+      @close="showReplacePopup = false"
+      style="max-height: 70vh"
+    >
+      <template #content>
+        <div class="replace-list">
+          <!-- 当前零件 -->
+          <div class="current-part">
+            <div class="current-part-info">
+              <span class="current-part-name">{{ item.name }}</span>
+              <span class="original-tag" v-if="item.isOemPart == 1">原厂件</span>
+            </div>
+            <div class="check-icon">
+              <van-icon name="success" size="16" color="#009100" />
+            </div>
+          </div>
+          <!-- 替换件列表 -->
+          <div class="replace-scroll-list">
+            <div
+              v-for="(part, index) in replaceSparePartRespList"
+              :key="index"
+              class="replace-item"
+              :class="{
+                selected: selectedReplacePart?.partsCode === part.partsCode,
+                disabled: part.isOutstock == 1,
+              }"
+              @click="onSelectReplacePart(part)"
+            >
+              <div class="replace-item-content">
+                <div class="replace-info">
+                  <div class="replace-name">
+                    {{ part.partsName }}-{{ part.quantity }}-¥{{ part.price }}
+                  </div>
+                  <div class="replace-code">{{ part.partsCode }}</div>
+                </div>
+              </div>
+              <!-- 选中状态图标 -->
+              <div v-if="selectedReplacePart?.partsCode === part.partsCode" class="check-icon">
+                <van-icon name="success" size="16" color="#009100" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </template>
+      <template #footer>
+        <div class="confirm-btn" @click="onConfirmReplace">确定</div>
+      </template>
+    </ais-popup>
   </div>
 </template>
 
 <script setup>
 import { ref, nextTick, computed } from 'vue'
+import { showToast } from 'vant'
 import icon_delete from '@/assets/images/icon_delete.svg'
 import icon_edit from '@/assets/images/icon_edit.svg'
+import AisPopup from '@/libs/components/AisPopup.vue'
 
 const props = defineProps({
   item: {
     type: Object,
-    required: true
+    required: true,
   },
   stepperDisabled: {
     type: Boolean,
-    default: false
+    default: false,
   },
   discountDisabled: {
     type: Boolean,
-    default: false
+    default: false,
   },
   nameEditable: {
     type: Boolean,
-    default: false
+    default: false,
   },
   deletable: {
     type: Boolean,
-    default: true
+    default: true,
   },
   disabled: {
     type: Boolean,
-    default: false
-  }
+    default: false,
+  },
+  isReplace: {
+    type: Boolean,
+    default: false,
+  },
 })
 
-const emit = defineEmits(['delete', 'update-item'])
+const emit = defineEmits(['delete', 'update-item', 'replace'])
 
 // 名称编辑
 const showNameEditPopup = ref(false)
@@ -146,6 +214,43 @@ const editingDiscount = ref(false)
 const tempDiscountAmount = ref('0')
 const discountInputRef = ref(null)
 const nameInputRef = ref(null)
+
+// 替换件弹窗
+const showReplacePopup = ref(false)
+const selectedReplacePart = ref(null)
+const replaceSparePartRespList = ref([])
+
+const onReplaceTagClick = (item) => {
+  const list = item.replaceSparePartRespList
+  if (!list || list.length === 0) {
+    showToast('当前无替换件')
+    return
+  }
+  replaceSparePartRespList.value = list
+  console.log('替换件:', replaceSparePartRespList.value)
+  selectedReplacePart.value = null
+  showReplacePopup.value = true
+}
+
+const onSelectReplacePart = (part) => {
+  if (part.isOutstock == 1) {
+    showToast('该零件已出库')
+    return
+  }
+  selectedReplacePart.value = part
+}
+
+const onConfirmReplace = () => {
+  if (!selectedReplacePart.value) {
+    showToast('请选择替换件')
+    return
+  }
+  emit('replace', {
+    oldPart: props.item,
+    newPart: selectedReplacePart.value,
+  })
+  showReplacePopup.value = false
+}
 
 // 打开名称编辑弹窗并初始化数据
 const openNameEditPopup = () => {
@@ -292,6 +397,15 @@ const openCascaderPopup = () => {
           .edit-icon {
             flex-shrink: 0;
             cursor: pointer;
+          }
+
+          .replace-tag {
+            flex-shrink: 0;
+            font-size: 11px;
+            color: #191a1b;
+            background: #f2f2f2;
+            padding: 1px 3px;
+            border-radius: 4px;
           }
         }
 
@@ -508,5 +622,129 @@ const openCascaderPopup = () => {
       margin: 0 16px;
     }
   }
+}
+
+// 替换件列表
+.replace-list {
+  background: #fff;
+  border-radius: 8px;
+  overflow: hidden;
+
+  // 当前零件行
+  .current-part {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px;
+    border-bottom: 0.5px solid #e6e6e5;
+
+    .current-part-info {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+
+      .current-part-name {
+        font-size: 14px;
+        color: #191a1b;
+      }
+
+      .original-tag {
+        font-size: 12px;
+        color: #191a1b;
+        background: rgba(25, 26, 27, 0.06);
+        padding: 1px 4px;
+        border-radius: 4px;
+      }
+    }
+
+    .check-icon {
+      display: flex;
+      align-items: center;
+    }
+  }
+
+  // 可滚动替换件列表
+  .replace-scroll-list {
+    max-height: 40vh;
+    overflow-y: auto;
+    padding: 4px 12px;
+  }
+
+  .replace-item {
+    position: relative;
+    display: flex;
+    align-items: center;
+    height: 60px;
+    padding: 10px 0;
+    border-bottom: 0.5px solid #e6e6e5;
+
+    &:last-child {
+      border-bottom: none;
+    }
+
+    &.disabled {
+      opacity: 0.5;
+    }
+
+    .replace-item-content {
+      flex: 1;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+
+      .replace-info {
+        .replace-name {
+          font-size: 14px;
+          color: #191a1b;
+          margin-bottom: 4px;
+        }
+
+        .replace-code {
+          font-size: 12px;
+          color: rgba(25, 26, 27, 0.4);
+        }
+      }
+
+      .replace-meta {
+        text-align: right;
+
+        .replace-price {
+          font-size: 14px;
+          font-weight: 500;
+          color: #191a1b;
+          margin-bottom: 4px;
+        }
+
+        .replace-stock {
+          font-size: 12px;
+          color: rgba(25, 26, 27, 0.4);
+
+          &.out {
+            color: #ff6600;
+          }
+        }
+      }
+    }
+
+    .check-icon {
+      position: absolute;
+      right: 0;
+      top: 50%;
+      transform: translateY(-50%);
+    }
+  }
+}
+// 确认按钮
+.confirm-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 40px;
+  background: #009100;
+  color: #fff;
+  font-size: 14px;
+  border-radius: 8px;
+  margin: 12px;
+  cursor: pointer;
 }
 </style>
