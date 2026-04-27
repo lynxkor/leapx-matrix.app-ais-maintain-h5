@@ -1,4 +1,4 @@
-import { get, post, postJson } from './request'
+import { post, postJson } from './request'
 
 /**
  * 预授权申请 - 移动端接口
