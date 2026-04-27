@@ -797,7 +797,7 @@ const handleSignSuccess = async() => {
   if (selectedChannel.value === 'app') {
     showSignChannel.value = false
     // 跳转到外部页面，不再处理后续逻辑
-    const targetUrl = `https://staticres-sitb.leapmotor.com/leapx/biling/ais/settlement?serviceProxyId=${serviceProxyId.value}&signChannel=2`
+    const targetUrl = `https://staticres-sitb.leapmotor.com/leapx/biling/ais/settlement?serviceProxyId=${serviceProxyId.value}&signChannel=3`
     window.location.href = targetUrl
     return
   }
