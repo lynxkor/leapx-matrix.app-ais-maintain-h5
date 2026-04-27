@@ -2413,6 +2413,15 @@ const onSave = async () => {
 
 const onComplete = async () => {
   if (!validateRepairPerson()) return
+  // 照片校验（根据配置判断是否必填）
+  if (interiorConfig.value.required === '1' && detail.interiorImages.length === 0) {
+    showToast('请上传车内照片')
+    return
+  }
+  if (exteriorConfig.value.required === '1' && detail.exteriorImages.length === 0) {
+    showToast('请上传车外照片')
+    return
+  }
   // 如果选择"是"，客户故障描述必填
   if (detail.hasFault === '1' && !detail.customerFaultDesc.trim()) {
     showToast('请输入客户故障描述')
@@ -2430,7 +2439,13 @@ const onComplete = async () => {
         isPreCheckCompleted.value = true
         // 预检完成后更新route.query.id
         if (serviceProxyId.value) {
-          router.replace({ query: { ...route.query, id: serviceProxyId.value } })
+          router.replace({
+            query: {
+              ...route.query,
+              id: serviceProxyId.value,
+              serviceProxyId: serviceProxyId.value,
+            },
+          })
         }
         // 预检完成后获取详情数据，给签字确认页面赋值
         fetchDetailForSignature()
@@ -2868,6 +2883,10 @@ const onConfirmBattery = () => {
 
 onMounted(() => {
   fetchDetail()
+  if (route.query.serviceProxyId) {
+    // 保存之后生成施工单，点击项目或者其他的页面跳转，返回回来之后请求detail
+    fetchDetailForSignature()
+  }
   // 初始化送修人输入框
   repairPersonNameInput.value = detail.repairPerson
   repairPersonPhoneInput.value = detail.repairPersonPhone

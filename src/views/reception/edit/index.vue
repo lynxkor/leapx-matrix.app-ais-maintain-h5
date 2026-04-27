@@ -302,7 +302,11 @@
                     class="fault-module-item"
                   >
                     <span class="module-name">{{ module.vfgName }}-{{ module.cccName }}</span>
-                    <van-icon v-if="detail.isCreateStatementInfo != 1" name="delete-o" @click="onDeleteFaultModule(module)" />
+                    <van-icon
+                      v-if="detail.isCreateStatementInfo != 1"
+                      name="delete-o"
+                      @click="onDeleteFaultModule(module)"
+                    />
                   </div>
                 </div>
 
@@ -371,6 +375,8 @@
               :initial-items="partsData.repairItemRespList"
               :initial-parts="partsData.sparePartRespList"
               isComponent
+              isReplace
+              @replace="handlePartsReplace"
             />
           </div>
 
@@ -3128,6 +3134,19 @@ const onInspectionSave = async (type) => {
   return res
 }
 
+// 处理零件替换事件
+const handlePartsReplace = (data) => {
+  console.log('handlePartsReplace 收到数据:', data)
+  // 更新 partsData 中的数据源，确保页面跳转后再回来时显示的是替换后的数据
+  partsData.repairItemRespList = data.selectedItems || []
+  partsData.sparePartRespList = data.selectedParts || []
+  
+  // 重新计算费用
+  recalculateCosts()
+  
+  console.log('更新后的 partsData:', partsData)
+}
+
 // 项目零件保存
 const onPartsSave = async () => {
   if (isPartsSaveDisabled.value) return
@@ -3210,6 +3229,15 @@ const onSignatureSave = async () => {
 
 const onComplete = async () => {
   if (!validateRepairPerson()) return
+  // 照片校验（根据配置判断是否必填）
+  if (interiorConfig.value.required === '1' && detail.interiorImages.length === 0) {
+    showToast('请上传车内照片')
+    return
+  }
+  if (exteriorConfig.value.required === '1' && detail.exteriorImages.length === 0) {
+    showToast('请上传车外照片')
+    return
+  }
   // 如果选择"是"，客户故障描述必填
   if (detail.hasFault === '1' && !detail.customerFaultDesc.trim()) {
     showToast('请输入客户故障描述')
@@ -3234,7 +3262,6 @@ const onComplete = async () => {
       savingLoading.value = false
     })
 }
-
 // 添加项目/零件
 const onAddParts = () => {
   router.push({
