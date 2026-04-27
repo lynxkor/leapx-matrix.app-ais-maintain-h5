@@ -341,12 +341,6 @@ watch(searchValue, (newVal) => {
   }
 })
 
-// 格式化金额
-const formatPrice = (price) => {
-  if (typeof price !== 'number' || !price) return '0.00'
-  return price.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',')
-}
-
 // 获取状态样式类
 const getStatusClass = (status) => {
   // 根据orderStatus返回对应样式
@@ -408,12 +402,6 @@ const handleSearch = () => {
   requestData.data.pageNum = 1
 }
 
-// 处理清除
-const handleClear = () => {
-  searchValue.value = ''
-  resultList.value = []
-}
-
 // 处理取消（返回按钮）
 const handleGoBack = () => {
   router.back()
@@ -444,7 +432,7 @@ const executeCancel = async() => {
       id: cancelItem.value.id,
       invaildDesc: cancelReason.value.trim()
     })
-    if (res.success) {
+    if (res.code === 200) {
       showToast('作废成功')
       // 刷新列表
       requestData.data.pageNum = 1
@@ -533,7 +521,7 @@ const executeSettle = async() => {
       faultSolveLabel: settleOption.value === 'resolved' ? '已解决' : '未解决',
       reason: settleOption.value === 'unresolved' ? selectedReason.value : ''
     })
-    if (res.success) {
+    if (res.code === 200) {
       showToast('结算成功')
       router.push({
         path: '/settlement-statement/after-sales',

@@ -562,7 +562,7 @@ const executeCancel = async() => {
       id: cancelItem.value.id,
       invaildDesc: cancelReason.value.trim()
     })
-    if (res.success) {
+    if (res.code === 200) {
       showToast('作废成功')
       refreshList()
     } else {
@@ -612,7 +612,7 @@ const executeSettle = async() => {
       faultSolveLabel: settleOption.value === 'resolved' ? '已解决' : '未解决',
       reason: settleOption.value === 'unresolved' ? selectedReason.value : ''
     })
-    if (res.success) {
+    if (res.code === 200) {
       showToast('结算成功')
       refreshList()
       router.push({

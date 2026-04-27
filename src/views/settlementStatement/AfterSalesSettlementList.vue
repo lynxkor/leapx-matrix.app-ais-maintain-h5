@@ -307,7 +307,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { showToast } from 'vant'
-import { useRouter, useRoute } from 'vue-router'
+import { useRoute } from 'vue-router'
 import AisPopup from '@/libs/components/AisPopup.vue'
 import {
   getServiceStatementDetail,
@@ -318,7 +318,6 @@ import {
   receiptCompletion
 } from '@/api/settlementStatement'
 
-const router = useRouter()
 const route = useRoute()
 
 // 加载状态
@@ -532,7 +531,6 @@ const isCurrentLastSettlement = computed(() => {
   return uncheckedCount.value === 1
 })
 const shouldUseSignFlow = computed(() => isSingleSettlement.value || isCurrentLastSettlement.value)
-const settleButtonText = computed(() => (shouldUseSignFlow.value ? '提交结算并签字' : '提交结算'))
 const statementTypeLabel = computed(() => detailData.value.statementTypeLabel || '')
 const statementStatusText = computed(() => detailData.value.statementStatusLabel || detailData.value.statementStatusDesc || '')
 const isWarrantyOrContract = computed(() => ['保修', '合同'].some((item) => statementTypeLabel.value.includes(item)))
