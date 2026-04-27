@@ -6,7 +6,7 @@ import { outWebview } from '@/libs/utils/app'
 
 // 创建axios实例
 const service = axios.create({
-  baseURL: import.meta.env.VITE_FILE_SERVICE_URL || 'https://aisfile-sit.leapmotor.com', // 从环境变量读取基础URL
+  baseURL: import.meta.env.VITE_API_BASE_URL || 'https://aisfile-sit.leapmotor.com', // 从环境变量读取基础URL
   timeout: 10000 // 超时时间
 
   // headers: {
