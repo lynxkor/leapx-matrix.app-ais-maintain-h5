@@ -150,7 +150,15 @@
                 车联网里程数(增)：{{ detail.networkMileageAdd }} km
               </div>
             </div>
-
+            <div class="section-card borderB">
+              <div class="section-title">
+                <div>离店里程数</div>
+                <div class="editable-value">
+                  <span class="number">{{ detail.departureMileage }}</span>
+                  <span class="unit">km</span>
+                </div>
+              </div>
+            </div>
             <!-- 进店电量 -->
             <div class="section-card borderB">
               <div class="section-title">
@@ -255,6 +263,19 @@
               />
             </div>
             <div class="section-card">
+              <div class="section-title" style="justify-content: flex-start">客户诉求</div>
+              <van-field
+                v-model="detail.customerComment"
+                type="textarea"
+                placeholder="请输入客户诉求"
+                rows="3"
+                autosize
+                show-word-limit
+                maxlength="500"
+                style="background: #f5f5f5; border-radius: 6px"
+              />
+            </div>
+            <div class="section-card">
               <div class="section-title" style="justify-content: flex-start">
                 <span class="required">*</span>客户经理建议
               </div>
@@ -325,7 +346,7 @@
             <!-- 客户故障描述 -->
             <div class="section-card">
               <div class="section-title" style="justify-content: flex-start">
-                <span v-if="detail.hasFault === '1'" class="required">*</span>客户故障描述
+                <span class="required">*</span>客户故障描述
               </div>
               <van-field
                 v-model="detail.customerFaultDesc"
@@ -1682,6 +1703,7 @@ const detail = reactive({
   repairPersonTag: '车主',
   businessType: null, // 初始为null，后续根据isAppointment计算
   mileage: '',
+  departureMileage: '',
   networkMileageTotal: '',
   networkMileageAdd: '',
   battery: '',
@@ -1689,9 +1711,10 @@ const detail = reactive({
   interiorImages: [],
   exteriorImages: [],
   abnormalDesc: '',
+  customerComment: '',
   currentFault: '',
   faultAlertRecordRespList: [],
-  hasFault: '2',
+  hasFault: '1',
   faultModules: [],
   customerFaultDesc: '',
   testResult: '',
@@ -1792,6 +1815,7 @@ const hasInspectionDataChanged = () => {
     JSON.stringify(initial.interiorImages) !== JSON.stringify(current.interiorImages) ||
     JSON.stringify(initial.exteriorImages) !== JSON.stringify(current.exteriorImages) ||
     initial.abnormalDesc !== current.abnormalDesc ||
+    initial.customerComment !== current.customerComment ||
     initial.hasFault !== current.hasFault ||
     initial.customerFaultDesc !== current.customerFaultDesc ||
     initial.businessType !== current.businessType ||
@@ -1939,7 +1963,7 @@ const signatureData = reactive({
 
 // 从组件数据计算费用（computed 实现联动）
 const computedWorkCost = computed(() => {
-  const items = repairItemContentRef.value?.selectedItems || []
+  const items = partsData.repairItemRespList || []
   return items
     .reduce((sum, item) => {
       return (
@@ -1952,7 +1976,7 @@ const computedWorkCost = computed(() => {
 })
 
 const computedPartsCost = computed(() => {
-  const parts = repairItemContentRef.value?.selectedParts || []
+  const parts = partsData.sparePartRespList || []
   return parts
     .reduce((sum, item) => {
       return sum + (Number(item.price) * Number(item.quantity) - Number(item.discountAmount || 0))
@@ -2171,11 +2195,13 @@ const fetchDetail = async () => {
         // 预约客户默认预约到店，否则默认自然到店
         detail.businessType = data.businessType || (detail.isAppointment ? 50 : 10)
         detail.mileage = data.mileage || ''
+        detail.departureMileage = data.departureMileage || ''
         detail.networkMileageTotal = data.netMileage || ''
         detail.networkMileageAdd = data.netMileageExtend || ''
         detail.battery = data.inPower || ''
         detail.networkBattery = data.inNetPower || ''
         detail.abnormalDesc = data.anomalyDescription || ''
+        detail.customerComment = data.customerComment || ''
         detail.currentFault = String(data.currentFault || '')
         detail.hasFault = data.currentFault === 1 ? '1' : '2'
         detail.customerFaultDesc = data.customerContent || ''
@@ -2344,6 +2370,7 @@ const fetchDetail = async () => {
           interiorImages: [...detail.interiorImages],
           exteriorImages: [...detail.exteriorImages],
           abnormalDesc: detail.abnormalDesc,
+          customerComment: detail.customerComment,
           hasFault: detail.hasFault,
           customerFaultDesc: detail.customerFaultDesc,
           businessType: computedBusinessType.value,
@@ -2930,7 +2957,7 @@ const onInspectionSave = async (type) => {
 
   // 环检信息页需要校验
   if (!validateRepairPerson()) return { code: -1 }
-  if (detail.hasFault === '1' && !detail.customerFaultDesc.trim()) {
+  if (!detail.customerFaultDesc.trim()) {
     showToast('请输入客户故障描述')
     return { code: -1 }
   }
@@ -2963,6 +2990,7 @@ const onInspectionSave = async (type) => {
       interiorImages: [...detail.interiorImages],
       exteriorImages: [...detail.exteriorImages],
       abnormalDesc: detail.abnormalDesc,
+      customerComment: detail.customerComment,
       hasFault: detail.hasFault,
       customerFaultDesc: detail.customerFaultDesc,
       businessType: computedBusinessType.value,
@@ -2980,6 +3008,7 @@ const onInspectionSave = async (type) => {
     }
     return { code: 200 }
   }
+  savingLoading.value = true
   let params = {
     id: detail.id,
     code: detail.code,
@@ -3090,6 +3119,7 @@ const onInspectionSave = async (type) => {
     customerContent: detail.customerFaultDesc,
     invaildDesc: detail.invaildDesc,
     anomalyDescription: detail.abnormalDesc,
+    customerComment: detail.customerComment,
     previewingFinishAt: detail.previewingFinishAt,
     confirmedOn: detail.confirmedOn,
     expectStartAt: detail.expectStartAt,
@@ -3125,11 +3155,16 @@ const onInspectionSave = async (type) => {
     latelyServiceProxy: detail.latelyServiceProxy,
     earlyServiceProxy: detail.earlyServiceProxy,
   }
-  const res = await serviceAddOrUpdate(params)
-  if (res.code === 200) {
-    showToast('保存成功')
-  } else {
-    showToast(res.msg || '保存失败')
+  try {
+    const res = await serviceAddOrUpdate(params)
+    savingLoading.value = false
+    if (res.code === 200) {
+      showToast('保存成功')
+    } else {
+      showToast(res.msg || '保存失败')
+    }
+  } catch (err) {
+    savingLoading.value = false
   }
   return res
 }
@@ -3140,10 +3175,10 @@ const handlePartsReplace = (data) => {
   // 更新 partsData 中的数据源，确保页面跳转后再回来时显示的是替换后的数据
   partsData.repairItemRespList = data.selectedItems || []
   partsData.sparePartRespList = data.selectedParts || []
-  
+
   // 重新计算费用
   recalculateCosts()
-  
+
   console.log('更新后的 partsData:', partsData)
 }
 
@@ -3239,7 +3274,7 @@ const onComplete = async () => {
     return
   }
   // 如果选择"是"，客户故障描述必填
-  if (detail.hasFault === '1' && !detail.customerFaultDesc.trim()) {
+  if (!detail.customerFaultDesc.trim()) {
     showToast('请输入客户故障描述')
     return
   }

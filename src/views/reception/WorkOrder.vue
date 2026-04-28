@@ -67,7 +67,9 @@ import ListItem from '@/components/ListItem.vue'
 import RefreshList from '@/libs/components/RefreshList.vue'
 import WorkOrderCard from '@/components/WorkOrderCard.vue'
 import { getList, getEquityList } from '@/api/reception'
-
+defineOptions({
+  name: 'receptionWorkOrder',
+})
 const router = useRouter()
 const globalStore = useGlobalStore()
 globalStore.getEnumData()

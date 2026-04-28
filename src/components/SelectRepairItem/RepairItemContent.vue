@@ -164,7 +164,7 @@
 
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
-import { showToast } from 'vant'
+import { showToast, closeToast, showLoadingToast } from 'vant'
 import Empty from '@/views/repairWork/components/Empty.vue'
 import SearchBar from './SearchBar.vue'
 import RepairItemCard from './RepairItemCard.vue'
@@ -328,10 +328,16 @@ const onSaveSuccess = (data) => {
 
 const onSave = async () => {
   if (isAuditComplete.value) return
-  const success = await handleSave(onSaveSuccess)
-  if (success) {
-    searchBarRef.value?.reset()
-    emit('close')
+  showLoadingToast('请稍候...')
+  try {
+    const success = await handleSave(onSaveSuccess)
+    closeToast()
+    if (success) {
+      searchBarRef.value?.reset()
+      emit('close')
+    }
+  } catch (error) {
+    closeToast()
   }
 }
 
