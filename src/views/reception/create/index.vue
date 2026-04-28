@@ -2387,6 +2387,7 @@ const onSave = async () => {
         fileUrl: item.url,
         attachType: '车外照片',
         configCode: 'mcs_serviceproxy',
+        id: null,
       })),
       interiorPhotoList: detail.interiorImages.map((item) => ({
         ...item,
@@ -2395,6 +2396,7 @@ const onSave = async () => {
         fileUrl: item.url,
         attachType: '车内照片',
         configCode: 'mcs_serviceproxy',
+        id: null,
       })),
       isStoreLive: '',
       faultAlertRecordParams: detail.faultModules.map((m) => ({
