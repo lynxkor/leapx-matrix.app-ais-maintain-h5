@@ -71,7 +71,13 @@
       "Bash(gh auth *)",
       "Bash(where gh *)",
       "Bash(where bun *)",
-      "Bash(C:\\\\bun\\\\bun.exe *)"
+      "Bash(C:\\\\bun\\\\bun.exe *)",
+      "Bash(where python *)",
+      "Bash(where python3 *)",
+      "Bash(py *)",
+      "Bash(C:\\\\Users\\\\990900\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python312\\\\python.exe *)",
+      "Bash(powershell *)",
+      "Bash(cmd.exe *)"
     ]
   },
   "statusLine": {

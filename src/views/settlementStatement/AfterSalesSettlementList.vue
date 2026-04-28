@@ -487,7 +487,6 @@ const getDetail = async(options = {}) => {
         statementList.value = []
         tabs.value = []
         applyStatementDetail()
-        showToast(res?.msg || '未查询到对应结算单')
         return
       }
     }
