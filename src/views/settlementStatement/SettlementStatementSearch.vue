@@ -432,7 +432,7 @@ const executeCancel = async() => {
       id: cancelItem.value.id,
       invaildDesc: cancelReason.value.trim()
     })
-    if (res.code === 200) {
+    if (res.success) {
       showToast('作废成功')
       // 刷新列表
       requestData.data.pageNum = 1
@@ -521,7 +521,7 @@ const executeSettle = async() => {
       faultSolveLabel: settleOption.value === 'resolved' ? '已解决' : '未解决',
       reason: settleOption.value === 'unresolved' ? selectedReason.value : ''
     })
-    if (res.code === 200) {
+    if (res.success) {
       showToast('结算成功')
       router.push({
         path: '/settlement-statement/after-sales',
