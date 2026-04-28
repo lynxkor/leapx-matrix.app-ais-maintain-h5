@@ -6,7 +6,6 @@
       <div class="order-header">
         <div class="order-number-wrapper">
           <span class="order-number">{{ workOrder.serviceProxyCode }}</span>
-          <span class="order-tag">{{ workOrder.haveRework === '1' ? '内返' : '外返' }}</span>
         </div>
         <span class="order-status" :class="getStatusClass(workOrder.orderStatus)">{{
           workOrder.orderStatusLabel

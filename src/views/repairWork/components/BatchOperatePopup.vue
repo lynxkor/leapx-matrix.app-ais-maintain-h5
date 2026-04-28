@@ -32,7 +32,6 @@
         </div>
         <div class="header-center">
           <span class="order-number">{{ workOrder.serviceProxyCode }}</span>
-          <span class="order-tag">{{ workOrder.haveRework === '1' ? '内返' : '外返' }}</span>
         </div>
         <div class="header-right"></div>
       </div>
@@ -96,7 +95,10 @@
                 </div>
               </div>
               <div class="item-content">
-                <div class="item-name">{{ item.repairItemName }}</div>
+                <div class="item-name">
+                  <span class="order-tag" v-if="item.reworkTypeLabel">{{ item.reworkTypeLabel }}</span>
+                  {{ item.repairItemName }}
+                </div>
                 <div class="item-info">
                   <span v-if="item.dealerStationName" class="info-text">工位：{{
                     item.dealerStationName
@@ -738,6 +740,15 @@ const handleClose = () => {
           -webkit-box-orient: vertical;
           overflow: hidden;
         }
+
+          .order-tag {
+            background-color: rgba(25, 26, 27, 0.06);
+            color: var(--leap-color-default);
+            font-size: 12px;
+            font-weight: 400;
+            padding: 1px 4px;
+            border-radius: 4px;
+          }
 
         .item-info {
           display: flex;
