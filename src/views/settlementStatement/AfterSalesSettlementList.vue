@@ -487,7 +487,6 @@ const getDetail = async(options = {}) => {
         statementList.value = []
         tabs.value = []
         applyStatementDetail()
-        showToast(res?.msg || '未查询到对应结算单')
         return
       }
     }
@@ -793,16 +792,7 @@ const validateSettlementPayload = (payload) => {
 
 // 签字成功后的回调
 const handleSignSuccess = async() => {
-  // APP/短信/零小跑：跳转到外部施工单页面
-  if (selectedChannel.value === 'app') {
-    showSignChannel.value = false
-    // 跳转到外部页面，不再处理后续逻辑
-    const targetUrl = `https://staticres-sitb.leapmotor.com/leapx/biling/ais/settlement?serviceProxyId=${serviceProxyId.value}&signChannel=3`
-    window.location.href = targetUrl
-    return
-  }
-
-  // 纸质单据：直接按已签字处理并调接口
+  // 纸质单据和APP/短信/零小跑都需要先调用接口
   if (shouldUseSignFlow.value) {
     const payload = buildSettlementPayload(true)
 
@@ -820,6 +810,15 @@ const handleSignSuccess = async() => {
 
       showSignChannel.value = false
       showToast('提交成功')
+
+      // APP/短信/零小跑：接口成功后跳转到外部页面
+      if (selectedChannel.value === 'app') {
+        const targetUrl = `https://staticres-sitb.leapmotor.com/leapx/biling/ais/settlement?serviceProxyId=${serviceProxyId.value}&signChannel=3`
+        window.location.href = targetUrl
+        return
+      }
+
+      // 纸质单据：刷新当前页面
       await getDetail({ preserveActiveTab: true })
       return
     } catch {
