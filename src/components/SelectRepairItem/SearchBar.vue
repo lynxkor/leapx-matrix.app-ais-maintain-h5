@@ -150,7 +150,6 @@ const onBlur = () => {
 const onSearch = () => {
   clearTimeout(debounceTimer)
   const kw = keyword.value.trim()
-  if (kw.length < 3) return
   if (kw) emit('search', kw)
 }
 

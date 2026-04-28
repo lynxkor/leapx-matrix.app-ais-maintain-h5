@@ -671,9 +671,8 @@ const goToUpload = () => {
   }
 
   .header-fixed {
-    position: fixed;
-    left: 0;
-    right: 0;
+    position: sticky;
+    top: 0;
     z-index: 100;
     background: #ffffff;
   }
@@ -768,8 +767,7 @@ const goToUpload = () => {
   }
 
   .list-container {
-    padding: 0 12px 20px;
-    margin-top: 100px;
+    padding: 12px 12px 20px;
   }
 
   .empty-state {

@@ -94,20 +94,9 @@ onMounted(async () => {
   globalStore.setTitle('')
 })
 
-// 输入时触发搜索（满3个字符自动执行一次）
-const autoSearchTriggered = ref(false)
 const onInputChange = (val) => {
   const trimmedVal = val?.trim() || ''
-  // 少于3个字符时重置标志
-  if (trimmedVal.length < 3) {
-    autoSearchTriggered.value = false
-    return
-  }
-  // 满3个字符时自动触发一次
-  if (trimmedVal.length >= 3 && !autoSearchTriggered.value) {
-    autoSearchTriggered.value = true
-    handleSearch(trimmedVal)
-  }
+  handleSearch(trimmedVal)
 }
 
 // 本地搜索框触发搜索
@@ -117,10 +106,6 @@ const onLocalSearch = (val) => {
     showToast('请输入搜索关键词')
     return
   }
-  if (trimmedVal.length < 3) {
-    return
-  }
-  autoSearchTriggered.value = true
   handleSearch(trimmedVal)
 }
 
