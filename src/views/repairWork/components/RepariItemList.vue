@@ -20,7 +20,10 @@
         <div v-for="(item, index) in displayItems" :key="index" class="repair-item-card">
           <div class="item-content">
             <div class="item-left">
-              <div class="item-name">{{ item.repairItemName }}</div>
+              <div class="item-name">
+                <span class="order-tag" v-if="item.reworkTypeLabel">{{ item.reworkTypeLabel }}</span>
+                {{ item.repairItemName }}
+              </div>
               <div class="item-meta">
                 <span v-if="item.repairItemTypeName" class="meta-text">{{
                   item.repairItemTypeName
@@ -178,6 +181,14 @@ const handleDispatchSubmit = async() => {
       font-size: 16px;
       color: var(--leap-color-default-light-2);
     }
+  }
+  .order-tag {
+    background-color: rgba(25, 26, 27, 0.06);
+    color: var(--leap-color-default);
+    font-size: 12px;
+    font-weight: 400;
+    padding: 1px 4px;
+    border-radius: 4px;
   }
 
   .item-list-wrapper {

@@ -149,7 +149,10 @@ const hasPendingDispatch = computed(() => hasItem(0))
 const hasNotStarted = computed(() => hasItem(1))
 const hasInProgress = computed(() => hasItem(2))
 const hasPendingQuality = computed(() => hasItem(3))
-const hasPendingFinal = computed(() => hasItem(4))
+const hasPendingFinal = computed(() => {
+  const list = recordList.value
+  return list.length > 0 && list.every(item => filterByTag(item, 4))
+})
 
 // 批量操作按钮 → 打开 BatchOperate 弹窗
 const handleDelete = () => {
