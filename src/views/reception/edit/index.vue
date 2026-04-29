@@ -322,7 +322,9 @@
                     :key="index"
                     class="fault-module-item"
                   >
-                    <span class="module-name">{{ module.vfgName }}-{{ module.cccName }}</span>
+                    <span class="module-name">{{
+                      module.vrtName + '-' + module.vfgName + '-' + module.cccName
+                    }}</span>
                     <van-icon
                       v-if="detail.isCreateStatementInfo != 1"
                       name="delete-o"
@@ -903,13 +905,13 @@
           <div class="fault-list">
             <div
               v-for="item in faultModuleList"
-              :key="item.vrtCode"
+              :key="item.cccId"
               class="fault-item"
               @click="onAddFaultModuleItem(item)"
             >
               <van-highlight
                 :keywords="faultSearchValue"
-                :source-string="item.vfgName + '-' + item.cccName"
+                :source-string="item.vrtName + '-' + item.vfgName + '-' + item.cccName"
               />
             </div>
             <!-- 无结果 -->
@@ -1646,7 +1648,6 @@ const onConfirmFaultChange = () => {
   showFaultConfirm.value = false
   // 清空故障模块和客户故障描述
   detail.faultModules = []
-  detail.customerFaultDesc = ''
   detail.hasFault = '2'
   showToast('已更改')
 }
@@ -2851,7 +2852,8 @@ const onFaultSearchClear = () => {
 // 添加故障模块项
 const onAddFaultModuleItem = (item) => {
   // 检查是否已存在（根据cccCode匹配）
-  const exists = detail.faultModules.some((m) => m.cccCode === item.cccCode)
+  console.log('item22', item, detail.faultModules)
+  const exists = detail.faultModules.some((m) => m.cccId === item.cccId)
   if (exists) {
     showToast('该故障模块已添加')
     return
@@ -3157,7 +3159,7 @@ const onInspectionSave = async (type) => {
     afterChangeCode: detail.afterChangeCode,
     isStoreLive: detail.isStoreLive,
     faultAlertRecordParams: detail.faultModules.map((m) => ({
-      cccId: m.cccCode || '',
+      cccId: m.id || '',
       cccName: m.cccName || '',
       vfgId: m.vfgCode || '',
       vfgName: m.vfgName || '',
@@ -3198,11 +3200,11 @@ const handlePartsReplace = (data) => {
 const onPartsSave = async () => {
   if (isPartsSaveDisabled.value) return
   // 从 RepairItemContent 组件获取数据
-  const items = repairItemContentRef.value?.selectedItems || []
-  const parts = repairItemContentRef.value?.selectedParts || []
+  const items = partsData.repairItemRespList || []
+  const parts = partsData.sparePartRespList || []
 
   // 校验项目及零件不可为空
-  if (items.length === 0 || parts.length === 0) {
+  if (items.length === 0 && parts.length === 0) {
     showToast('项目及零件不可为空，请添加项目或者零件')
     return
   }
@@ -3335,11 +3337,11 @@ const onConfirmAndSign = () => {
     return
   }
   // 从 RepairItemContent 组件获取数据
-  const items = repairItemContentRef.value?.selectedItems || []
-  const parts = repairItemContentRef.value?.selectedParts || []
-
+  const items = partsData.repairItemRespList || []
+  const parts = partsData.sparePartRespList || []
+  console.log('items', items, parts)
   // 校验维修项目或者维修零件有值
-  if (items.length === 0 || parts.length === 0) {
+  if (items.length === 0 && parts.length === 0) {
     showToast('项目及零件不可为空，请添加项目或者零件')
     return
   }
@@ -3350,24 +3352,30 @@ const onConfirmAndSign = () => {
   }
   // 纸质单据时才传signChannel
   console.log('signatureData.signChannel', signatureData, detail)
+  savingLoading.value = true
   if (signatureData.signChannel === '纸质单据' || detail.signChannel == 40) {
     params.signChannel = '40'
   } else {
     params.signChannel = null
   }
-  spConfirmAndSign(params).then((res) => {
-    if (res.code === 200) {
-      showToast('操作成功')
-      fetchDetail()
-      if (!params.signChannel) {
-        // 接口成功后跳转结算页面
-        const settlementUrl = `https://staticres-sitb.leapmotor.com/leapx/biling/ais/constructionOrder?serviceProxyId=${detail.id}`
-        window.location.href = settlementUrl
+  spConfirmAndSign(params)
+    .then((res) => {
+      savingLoading.value = false
+      if (res.code === 200) {
+        showToast('操作成功')
+        fetchDetail()
+        if (!params.signChannel) {
+          // 接口成功后跳转结算页面
+          const settlementUrl = `https://staticres-sitb.leapmotor.com/leapx/biling/ais/constructionOrder?serviceProxyId=${detail.id}`
+          window.location.href = settlementUrl
+        }
+      } else {
+        showToast(res.msg || '操作失败')
       }
-    } else {
-      showToast(res.msg || '操作失败')
-    }
-  })
+    })
+    .catch(() => {
+      savingLoading.value = false
+    })
 }
 
 // 查看签字
@@ -4400,7 +4408,7 @@ onMounted(() => {
     .label {
       font-size: 14px;
       color: #545454;
-      width: 200px;
+      width: 160px;
     }
 
     .value {
