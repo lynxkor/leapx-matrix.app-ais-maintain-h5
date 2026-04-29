@@ -81,7 +81,7 @@
           class="card-stepper"
           input-width="32px"
           button-size="32px"
-          @change="(val) => emit('update-item', item, { quantity: val })"
+          @change="(val) => emit('update-item', item, { quantity: val, workHour: val })"
         />
         <span v-else class="static-quantity">{{ item.quantity }}</span>
       </div>
