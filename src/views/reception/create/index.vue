@@ -1463,7 +1463,6 @@ const onConfirmFaultChange = () => {
   showFaultConfirm.value = false
   // 清空故障模块和客户故障描述
   detail.faultModules = []
-  detail.customerFaultDesc = ''
   detail.hasFault = '2'
   showToast('已更改')
 }
