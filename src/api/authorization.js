@@ -1,4 +1,4 @@
-import { get, post, postJson } from './request'
+import { post, postJson } from './request'
 
 /**
  * 预授权申请 - 移动端接口
@@ -38,11 +38,6 @@ export function preAuthEnableOrDisable(data) {
 // 预授权审批
 export function preAuthAudit(data) {
   return post('maintain/app/sp/preAuth/audit', data)
-}
-
-// 提交
-export function preAuthSubmit(data) {
-  return post('maintain/app/sp/preAuth/submit', data)
 }
 
 // 作废

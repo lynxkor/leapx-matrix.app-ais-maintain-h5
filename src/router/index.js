@@ -228,6 +228,14 @@ const router = createRouter({
             title: '售后结算单',
             keepAlive: true
           }
+        },
+        {
+          path: '/placeholder',
+          name: 'placeholder',
+          component: () => import('../views/placeholder/index.vue'),
+          meta: {
+            title: '功能建设中'
+          }
         }
       ]
     }

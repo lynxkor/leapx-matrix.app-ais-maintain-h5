@@ -80,7 +80,7 @@
             <span class="info-label">门店所属区域</span>
             <span class="info-value">{{ detail.storeArea || '--' }}</span>
           </div>
-          <div class="info-row" @click="showWarningInfo">
+          <div class="info-row">
             <span class="info-label">预警信息</span>
             <span class="info-value warning">
               {{ detail.warningInfo || '--' }}
@@ -149,7 +149,7 @@
             <div class="repair-item-left">
               <div class="repair-name">{{ item.name }}</div>
               <div class="repair-part-no">{{ item.partNo }}</div>
-              <div class="repair-type">{{ item.type }}</div>
+              <div class="repair-type">{{item.repairItemTypeName}}-{{ item.checkoutTypeName }}-{{ item.warrantyTypeName }}</div>
             </div>
             <div class="repair-item-right">
               <div class="repair-price">¥{{ item.price }}</div>
@@ -180,7 +180,7 @@
                 <span v-if="item.tag" class="parts-tag">{{ item.tag }}</span>
               </div>
               <div class="repair-part-no">{{ item.partNo }}</div>
-              <div class="repair-type">{{ item.type }}</div>
+              <div class="repair-type">{{item.repairItemTypeName}}-{{ item.checkoutTypeName }}-{{ item.warrantyTypeName }}</div>
             </div>
             <div class="repair-item-right">
               <div class="repair-price">¥{{ item.price }}</div>
@@ -663,11 +663,6 @@ const switchTab = async(tabName) => {
   scrollToPosition(finalScrollTop, 'smooth')
 }
 
-// 查看预警信息
-const showWarningInfo = () => {
-  showToast('查看预警信息')
-}
-
 // 审核操作
 const handleAudit = () => {
   showAuditPopup.value = true
@@ -754,13 +749,10 @@ const openErrorCodePopup = () => {
 
 // 上传附件
 const handleUploadAttachment = () => {
-  // TODO: 调用图片上传接口
-  // 限制：最大30M，最多5个
   if (attachmentList.value.length >= 5) {
     showToast('最多上传5个附件')
     return
   }
-  showToast('上传附件')
 }
 
 const isSuccessResponse = (res) => res?.code === 0 || res?.code === 200
@@ -1044,7 +1036,9 @@ const formatDetailData = (data) => {
     repairItems: (preAuthData.spRepairItemResps || []).map(item => ({
       name: item.repairItemName || '',
       partNo: item.repairItemCode || '',
-      type: item.repairItemTypeName || '',
+      repairItemTypeName: item.repairItemTypeName || '',
+      checkoutTypeName: item.checkoutTypeName || '',
+      warrantyTypeName: item.warrantyTypeName || '',
       price: item.price || '0',
       discount: item.discountAmount || '0',
       subtotal: item.repairAmount || '0',
@@ -1055,7 +1049,9 @@ const formatDetailData = (data) => {
     partsItems: (preAuthData.spSparePartResps || []).map(item => ({
       name: item.partsName || '',
       partNo: item.partsCode || '',
-      type: item.repairItemTypeName || '',
+      repairItemTypeName: item.repairItemTypeName || '',
+      checkoutTypeName: item.checkoutTypeName || '',
+      warrantyTypeName: item.warrantyTypeName || '',
       tag: item.isOemPartLabel || '',
       price: item.price || '0',
       discount: item.discountAmount || '0',

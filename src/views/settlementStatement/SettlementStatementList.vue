@@ -520,6 +520,12 @@ const showCancelBtn = (item) => {
 }
 
 const goToDetail = (item) => {
+  // 待交车且未生成结算单时，不能进入详情页
+  if (activeTab.value === 'pending' && item.isCreateStatementInfo === 0) {
+    showToast('请先完成结算')
+    return
+  }
+
   const serviceProxyId = item.serviceProxyId || item.id
 
   if (!serviceProxyId) {
@@ -665,9 +671,8 @@ const goToUpload = () => {
   }
 
   .header-fixed {
-    position: fixed;
-    left: 0;
-    right: 0;
+    position: sticky;
+    top: 0;
     z-index: 100;
     background: #ffffff;
   }
@@ -762,8 +767,7 @@ const goToUpload = () => {
   }
 
   .list-container {
-    padding: 0 12px 20px;
-    margin-top: 100px;
+    padding: 12px 12px 20px;
   }
 
   .empty-state {

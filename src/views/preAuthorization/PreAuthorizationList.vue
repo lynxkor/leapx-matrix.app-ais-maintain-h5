@@ -77,7 +77,7 @@
                 <span class="card-info-des">{{ item.creatorName }}</span>
               </van-col>
               <van-col span="24" class="card-info-col">
-                <span class="card-info-title">预计交车时间</span>
+                <span class="card-info-title">预交时间</span>
                 <span class="card-info-des">{{ item.estimateDeliverTime }}</span>
               </van-col>
             </van-row>
@@ -394,7 +394,7 @@ const createAuthorization = () => {
 
       .card-info-title {
         color: #545454;
-        width: 85px;
+        width: 58px;
         flex-shrink: 0;
       }
 

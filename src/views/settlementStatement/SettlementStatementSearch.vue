@@ -341,12 +341,6 @@ watch(searchValue, (newVal) => {
   }
 })
 
-// 格式化金额
-const formatPrice = (price) => {
-  if (typeof price !== 'number' || !price) return '0.00'
-  return price.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',')
-}
-
 // 获取状态样式类
 const getStatusClass = (status) => {
   // 根据orderStatus返回对应样式
@@ -406,12 +400,6 @@ const handleSearch = () => {
   saveSearchHistory(searchValue.value.trim())
   requestData.data.appSearchKeyWord = searchValue.value.trim()
   requestData.data.pageNum = 1
-}
-
-// 处理清除
-const handleClear = () => {
-  searchValue.value = ''
-  resultList.value = []
 }
 
 // 处理取消（返回按钮）

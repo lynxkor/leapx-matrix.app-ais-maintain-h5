@@ -32,7 +32,7 @@
       </div>
       <div class="info-row">
         <span class="label">车主：</span>
-        <span class="value">{{ detail.owner }} {{ detail.ownerPhone }}</span>
+        <span class="value">{{ detail.customerName }} {{ detail.customerPhone }}</span>
       </div>
       <div class="info-row">
         <span class="label">绑车人：</span>
@@ -48,7 +48,7 @@
             <div class="select-row">
               <span class="label">送修人</span>
               <div class="value-wrapper">
-                <span class="tag">[{{ detail.repairPersonTag }}]</span>
+                <!-- <span class="tag">[{{ detail.repairPersonTag }}]</span> -->
                 <span class="value">{{ detail.repairPerson }} {{ detail.repairPersonPhone }}</span>
               </div>
             </div>
@@ -150,7 +150,15 @@
                 车联网里程数(增)：{{ detail.networkMileageAdd }} km
               </div>
             </div>
-
+            <div class="section-card borderB">
+              <div class="section-title">
+                <div>离店里程数</div>
+                <div class="editable-value">
+                  <span class="number">{{ detail.departureMileage }}</span>
+                  <span class="unit">km</span>
+                </div>
+              </div>
+            </div>
             <!-- 进店电量 -->
             <div class="section-card borderB">
               <div class="section-title">
@@ -255,6 +263,19 @@
               />
             </div>
             <div class="section-card">
+              <div class="section-title" style="justify-content: flex-start">客户诉求</div>
+              <van-field
+                v-model="detail.customerComment"
+                type="textarea"
+                placeholder="请输入客户诉求"
+                rows="3"
+                autosize
+                show-word-limit
+                maxlength="500"
+                style="background: #f5f5f5; border-radius: 6px"
+              />
+            </div>
+            <div class="section-card">
               <div class="section-title" style="justify-content: flex-start">
                 <span class="required">*</span>客户经理建议
               </div>
@@ -302,7 +323,11 @@
                     class="fault-module-item"
                   >
                     <span class="module-name">{{ module.vfgName }}-{{ module.cccName }}</span>
-                    <van-icon v-if="detail.isCreateStatementInfo != 1" name="delete-o" @click="onDeleteFaultModule(module)" />
+                    <van-icon
+                      v-if="detail.isCreateStatementInfo != 1"
+                      name="delete-o"
+                      @click="onDeleteFaultModule(module)"
+                    />
                   </div>
                 </div>
 
@@ -321,7 +346,7 @@
             <!-- 客户故障描述 -->
             <div class="section-card">
               <div class="section-title" style="justify-content: flex-start">
-                <span v-if="detail.hasFault === '1'" class="required">*</span>客户故障描述
+                <span class="required">*</span>客户故障描述
               </div>
               <van-field
                 v-model="detail.customerFaultDesc"
@@ -371,6 +396,8 @@
               :initial-items="partsData.repairItemRespList"
               :initial-parts="partsData.sparePartRespList"
               isComponent
+              isReplace
+              @replace="handlePartsReplace"
             />
           </div>
 
@@ -418,14 +445,14 @@
               <span class="label">开启维修直播</span>
               <van-switch v-model="signatureData.liveEnabled" size="20" active-color="#009100" />
             </div> -->
-            <div class="signature-row" @click="showSignatureChannelPicker = true">
+            <div class="signature-row" @click="showSignatureChannelPickerHandle">
               <span class="label">签字渠道</span>
 
               <div class="value-wrapper">
                 <span :class="['value', { placeholder: !signatureData.signChannel }]">
                   {{ signatureData.signChannel || '请选择' }}
                 </span>
-                <van-icon name="arrow" size="12" color="#545454" />
+                <van-icon v-if="detail.signStatus != 20" name="arrow" size="12" color="#545454" />
               </div>
             </div>
             <!-- 已签字状态显示 -->
@@ -435,7 +462,10 @@
                 <span class="value signed">已签字</span>
               </div>
             </div>
-            <div class="signature-action-row" v-if="detail.signStatus == 20">
+            <div
+              class="signature-action-row"
+              v-if="detail.signStatus == 20 && detail.signChannel != 40"
+            >
               <van-button type="primary" size="small" @click="onViewSignature">查看签字</van-button>
             </div>
             <!-- 未签字状态显示 -->
@@ -1666,16 +1696,19 @@ const detail = reactive({
   vin: '',
   vehicleModelId: '',
   warrantyDate: '',
-  owner: '',
-  ownerPhone: '',
+  customerName: '',
+  customerPhone: '',
   bindingUser: '',
   binderPhone: '',
+  shuttleName: '',
+  shuttlePhone: '',
   bindingUserId: '',
   repairPerson: '',
   repairPersonPhone: '',
   repairPersonTag: '车主',
   businessType: null, // 初始为null，后续根据isAppointment计算
   mileage: '',
+  departureMileage: '',
   networkMileageTotal: '',
   networkMileageAdd: '',
   battery: '',
@@ -1683,9 +1716,10 @@ const detail = reactive({
   interiorImages: [],
   exteriorImages: [],
   abnormalDesc: '',
+  customerComment: '',
   currentFault: '',
   faultAlertRecordRespList: [],
-  hasFault: '2',
+  hasFault: '1',
   faultModules: [],
   customerFaultDesc: '',
   testResult: '',
@@ -1786,6 +1820,7 @@ const hasInspectionDataChanged = () => {
     JSON.stringify(initial.interiorImages) !== JSON.stringify(current.interiorImages) ||
     JSON.stringify(initial.exteriorImages) !== JSON.stringify(current.exteriorImages) ||
     initial.abnormalDesc !== current.abnormalDesc ||
+    initial.customerComment !== current.customerComment ||
     initial.hasFault !== current.hasFault ||
     initial.customerFaultDesc !== current.customerFaultDesc ||
     initial.businessType !== current.businessType ||
@@ -1933,7 +1968,7 @@ const signatureData = reactive({
 
 // 从组件数据计算费用（computed 实现联动）
 const computedWorkCost = computed(() => {
-  const items = repairItemContentRef.value?.selectedItems || []
+  const items = partsData.repairItemRespList || []
   return items
     .reduce((sum, item) => {
       return (
@@ -1946,7 +1981,7 @@ const computedWorkCost = computed(() => {
 })
 
 const computedPartsCost = computed(() => {
-  const parts = repairItemContentRef.value?.selectedParts || []
+  const parts = partsData.sparePartRespList || []
   return parts
     .reduce((sum, item) => {
       return sum + (Number(item.price) * Number(item.quantity) - Number(item.discountAmount || 0))
@@ -2146,13 +2181,15 @@ const fetchDetail = async () => {
         detail.vehicleModelName = data.vehModelName || ''
         detail.vehicleModelId = data.vehicleModelId || ''
         detail.vin = data.vehProfileVin || ''
-        detail.owner = data.customerName || ''
-        detail.ownerPhone = data.customerPhone || ''
+        detail.customerName = data.customerName || ''
+        detail.customerPhone = data.customerPhone || ''
         detail.bindingUser = data.bindingUser || ''
         detail.binderPhone = data.bindingPhone || ''
         detail.bindingUserId = data.bindingUserId || ''
-        detail.repairPerson = data.shuttleName || ''
-        detail.repairPersonPhone = data.shuttlePhone || ''
+        detail.shuttleName = data.shuttleName || ''
+        detail.shuttlePhone = data.shuttlePhone || ''
+        detail.repairPerson = data.shuttleName || data.customerName || ''
+        detail.repairPersonPhone = data.shuttlePhone || data.customerPhone || ''
         // 计算送修人类型
         detail.repairPersonTag =
           detail.repairPerson === data.customerName
@@ -2165,11 +2202,13 @@ const fetchDetail = async () => {
         // 预约客户默认预约到店，否则默认自然到店
         detail.businessType = data.businessType || (detail.isAppointment ? 50 : 10)
         detail.mileage = data.mileage || ''
+        detail.departureMileage = data.departureMileage || ''
         detail.networkMileageTotal = data.netMileage || ''
         detail.networkMileageAdd = data.netMileageExtend || ''
         detail.battery = data.inPower || ''
         detail.networkBattery = data.inNetPower || ''
         detail.abnormalDesc = data.anomalyDescription || ''
+        detail.customerComment = data.customerComment || ''
         detail.currentFault = String(data.currentFault || '')
         detail.hasFault = data.currentFault === 1 ? '1' : '2'
         detail.customerFaultDesc = data.customerContent || ''
@@ -2320,13 +2359,19 @@ const fetchDetail = async () => {
         // 设置送修人类型
         if (detail.repairPersonTag === '车主') {
           repairPersonType.value = 'owner'
+          repairPersonNameInput.value = detail.customerName
+          repairPersonPhoneInput.value = detail.customerPhone
         } else if (detail.repairPersonTag === '绑车人') {
           repairPersonType.value = 'bindingUser'
+
+          repairPersonNameInput.value = detail.bindingUser
+          repairPersonPhoneInput.value = detail.binderPhone
         } else {
           repairPersonType.value = 'other'
+
+          repairPersonNameInput.value = detail.repairPerson
+          repairPersonPhoneInput.value = detail.repairPersonPhone
         }
-        repairPersonNameInput.value = detail.repairPerson
-        repairPersonPhoneInput.value = detail.repairPersonPhone
 
         // 里程校验
         validateMileage(data.mileage, data.lastMileage, data.netMileage)
@@ -2338,6 +2383,7 @@ const fetchDetail = async () => {
           interiorImages: [...detail.interiorImages],
           exteriorImages: [...detail.exteriorImages],
           abnormalDesc: detail.abnormalDesc,
+          customerComment: detail.customerComment,
           hasFault: detail.hasFault,
           customerFaultDesc: detail.customerFaultDesc,
           businessType: computedBusinessType.value,
@@ -2437,19 +2483,19 @@ const onConfirmChangeCar = () => {
   detail.vehicleModel =
     selectedCarInfo.value.vehicleModelName || selectedCarInfo.value.vehicleModel || ''
   detail.warrantyDate = selectedCarInfo.value.warrantyDate || ''
-  detail.owner = selectedCarInfo.value.vehicleProfileOwnerResp?.ownerName || ''
-  detail.ownerPhone = selectedCarInfo.value.vehicleProfileOwnerResp?.mobilephone || ''
+  detail.customerName = selectedCarInfo.value.vehicleProfileOwnerResp?.ownerName || ''
+  detail.customerPhone = selectedCarInfo.value.vehicleProfileOwnerResp?.mobilephone || ''
   detail.bindingUser = selectedCarInfo.value.vehicleProfileOwnerResp?.bindingUser || ''
   detail.binderPhone = selectedCarInfo.value.vehicleProfileOwnerResp?.bindingPhone || ''
   detail.vehicleProfileServiceResp = selectedCarInfo.value.vehicleProfileServiceResp || {}
 
   // 更新送修人信息为当前车主
-  detail.repairPerson = detail.owner
-  detail.repairPersonPhone = detail.ownerPhone
+  detail.repairPerson = detail.customerName
+  detail.repairPersonPhone = detail.customerPhone
   detail.repairPersonTag = '车主'
   repairPersonType.value = 'owner'
-  repairPersonNameInput.value = detail.owner
-  repairPersonPhoneInput.value = detail.ownerPhone
+  repairPersonNameInput.value = detail.customerName
+  repairPersonPhoneInput.value = detail.customerPhone
 
   // 获取车联网里程数
   if (detail.vin) {
@@ -2851,8 +2897,8 @@ const onSelectRepairPersonType = (type) => {
   repairPersonType.value = type
   // 根据类型更新输入框的值
   if (type === 'owner') {
-    repairPersonNameInput.value = detail.owner
-    repairPersonPhoneInput.value = detail.ownerPhone
+    repairPersonNameInput.value = detail.customerName
+    repairPersonPhoneInput.value = detail.customerPhone
     detail.repairPersonTag = '车主'
   } else if (type === 'bindingUser') {
     repairPersonNameInput.value = detail.bindingUser
@@ -2860,8 +2906,8 @@ const onSelectRepairPersonType = (type) => {
     detail.repairPersonTag = '绑车人'
   } else {
     // 其他：带出车主信息，支持编辑
-    repairPersonNameInput.value = detail.owner
-    repairPersonPhoneInput.value = detail.ownerPhone
+    repairPersonNameInput.value = detail.shuttleName || detail.customerName
+    repairPersonPhoneInput.value = detail.shuttlePhone || detail.customerPhone
     detail.repairPersonTag = '其他'
   }
   // 同步更新送修人信息
@@ -2924,7 +2970,7 @@ const onInspectionSave = async (type) => {
 
   // 环检信息页需要校验
   if (!validateRepairPerson()) return { code: -1 }
-  if (detail.hasFault === '1' && !detail.customerFaultDesc.trim()) {
+  if (!detail.customerFaultDesc.trim()) {
     showToast('请输入客户故障描述')
     return { code: -1 }
   }
@@ -2957,6 +3003,7 @@ const onInspectionSave = async (type) => {
       interiorImages: [...detail.interiorImages],
       exteriorImages: [...detail.exteriorImages],
       abnormalDesc: detail.abnormalDesc,
+      customerComment: detail.customerComment,
       hasFault: detail.hasFault,
       customerFaultDesc: detail.customerFaultDesc,
       businessType: computedBusinessType.value,
@@ -2974,14 +3021,15 @@ const onInspectionSave = async (type) => {
     }
     return { code: 200 }
   }
+  savingLoading.value = true
   let params = {
     id: detail.id,
     code: detail.code,
     dataSource: detail.dataSource,
     orderStatus: detail.orderStatus,
     warrantyTypeCollect: detail.warrantyTypeCollect,
-    customerName: detail.owner,
-    customerPhone: detail.ownerPhone,
+    customerName: detail.customerName,
+    customerPhone: detail.customerPhone,
     custType: detail.custType,
     vehModelName: detail.vehicleModelName,
     bindingPhone: detail.binderPhone,
@@ -3054,7 +3102,6 @@ const onInspectionSave = async (type) => {
     departureNetMileageExtend: detail.departureNetMileageExtend,
     netMileageElectricity: detail.electricalMileage,
     netMileageExtend: detail.networkMileageAdd,
-    vehProfileId: detail.id,
     vehProfileVin: detail.vin,
     maintenanceMileage: detail.vehicleProfileServiceResp.nextMaintainMileages,
     maintenanceTime: detail.vehicleProfileServiceResp.nextMaintainDate,
@@ -3084,6 +3131,7 @@ const onInspectionSave = async (type) => {
     customerContent: detail.customerFaultDesc,
     invaildDesc: detail.invaildDesc,
     anomalyDescription: detail.abnormalDesc,
+    customerComment: detail.customerComment,
     previewingFinishAt: detail.previewingFinishAt,
     confirmedOn: detail.confirmedOn,
     expectStartAt: detail.expectStartAt,
@@ -3119,13 +3167,31 @@ const onInspectionSave = async (type) => {
     latelyServiceProxy: detail.latelyServiceProxy,
     earlyServiceProxy: detail.earlyServiceProxy,
   }
-  const res = await serviceAddOrUpdate(params)
-  if (res.code === 200) {
-    showToast('保存成功')
-  } else {
-    showToast(res.msg || '保存失败')
+  try {
+    const res = await serviceAddOrUpdate(params)
+    savingLoading.value = false
+    if (res.code === 200) {
+      showToast('保存成功')
+    } else {
+      showToast(res.msg || '保存失败')
+    }
+  } catch (err) {
+    showToast(err.msg || '保存失败')
+    savingLoading.value = false
   }
-  return res
+}
+
+// 处理零件替换事件
+const handlePartsReplace = (data) => {
+  console.log('handlePartsReplace 收到数据:', data)
+  // 更新 partsData 中的数据源，确保页面跳转后再回来时显示的是替换后的数据
+  partsData.repairItemRespList = data.selectedItems || []
+  partsData.sparePartRespList = data.selectedParts || []
+
+  // 重新计算费用
+  recalculateCosts()
+
+  console.log('更新后的 partsData:', partsData)
 }
 
 // 项目零件保存
@@ -3137,7 +3203,7 @@ const onPartsSave = async () => {
 
   // 校验项目及零件不可为空
   if (items.length === 0 && parts.length === 0) {
-    showToast('项目及零件不可为空，请添加项目及零件')
+    showToast('项目及零件不可为空，请添加项目或者零件')
     return
   }
 
@@ -3177,7 +3243,7 @@ const onSignatureSave = async () => {
 
   // 校验项目及零件不可为空
   // if (items.length === 0 && parts.length === 0) {
-  //   showToast('项目及零件不可为空，请添加项目及零件')
+  //   showToast('项目及零件不可为空，请添加项目或者零件')
   //   return
   // }
 
@@ -3210,8 +3276,17 @@ const onSignatureSave = async () => {
 
 const onComplete = async () => {
   if (!validateRepairPerson()) return
+  // 照片校验（根据配置判断是否必填）
+  if (interiorConfig.value.required === '1' && detail.interiorImages.length === 0) {
+    showToast('请上传车内照片')
+    return
+  }
+  if (exteriorConfig.value.required === '1' && detail.exteriorImages.length === 0) {
+    showToast('请上传车外照片')
+    return
+  }
   // 如果选择"是"，客户故障描述必填
-  if (detail.hasFault === '1' && !detail.customerFaultDesc.trim()) {
+  if (!detail.customerFaultDesc.trim()) {
     showToast('请输入客户故障描述')
     return
   }
@@ -3234,7 +3309,6 @@ const onComplete = async () => {
       savingLoading.value = false
     })
 }
-
 // 添加项目/零件
 const onAddParts = () => {
   router.push({
@@ -3257,15 +3331,18 @@ const onAddPackage = () => {
 
 // 制单确认并签字
 const onConfirmAndSign = () => {
+  if (isConfirmAndSignDisabled.value) {
+    return
+  }
   // 从 RepairItemContent 组件获取数据
   const items = repairItemContentRef.value?.selectedItems || []
   const parts = repairItemContentRef.value?.selectedParts || []
 
   // 校验维修项目或者维修零件有值
-  // if (items.length === 0 && parts.length === 0) {
-  //   showToast('项目及零件不可为空，请添加项目及零件')
-  //   return
-  // }
+  if (items.length === 0 && parts.length === 0) {
+    showToast('项目及零件不可为空，请添加项目或者零件')
+    return
+  }
   // 点击"准确"，执行接口
   let params = {
     serviceProxyId: detail.id,
@@ -3355,7 +3432,12 @@ const onSelectDeliveryTime = (item) => {
 const onCloseDeliveryTimePicker = () => {
   showDeliveryTimePicker.value = false
 }
-
+const showSignatureChannelPickerHandle = () => {
+  if (detail.signStatus == 20) {
+    return
+  }
+  showSignatureChannelPicker.value = true
+}
 // 选择签字渠道
 const onSelectSignatureChannel = (item) => {
   signatureData.signChannel = item.label
@@ -4318,7 +4400,7 @@ onMounted(() => {
     .label {
       font-size: 14px;
       color: #545454;
-      width: 200px;
+      width: 160px;
     }
 
     .value {

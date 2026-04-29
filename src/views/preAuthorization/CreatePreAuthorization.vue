@@ -203,153 +203,16 @@
       <div class="attachments-card">
         <div class="attachments-card-header">附件信息</div>
 
-        <!-- 车辆信息 -->
-        <div class="attachment-section">
-          <div class="attachment-section-title">车辆信息</div>
+        <div v-for="(title, key) in attachmentTypeMap" :key="key" class="attachment-section">
+          <div class="attachment-section-title">{{ title }}</div>
           <div class="attachment-list">
-            <div v-for="(img, index) in attachmentData.vehicle" :key="index" class="attachment-item">
+            <div v-for="(img, index) in attachmentData[key]" :key="index" class="attachment-item">
               <img :src="img.url" class="attachment-img" />
-              <div class="attachment-delete" @click="deleteAttachment('vehicle', index)">
+              <div class="attachment-delete" @click="deleteAttachment(key, index)">
                 <van-icon name="cross" size="12" color="#ffffff" />
               </div>
             </div>
-            <div class="attachment-upload" @click="uploadAttachment('vehicle')" v-if="attachmentData.vehicle.length < 3">
-              <van-icon name="photograph" size="24" color="#d8d8d8" />
-              <span class="upload-text">上传</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- 行驶证 -->
-        <div class="attachment-section">
-          <div class="attachment-section-title">行驶证</div>
-          <div class="attachment-list">
-            <div v-for="(img, index) in attachmentData.license" :key="index" class="attachment-item">
-              <img :src="img.url" class="attachment-img" />
-              <div class="attachment-delete" @click="deleteAttachment('license', index)">
-                <van-icon name="cross" size="12" color="#ffffff" />
-              </div>
-            </div>
-            <div class="attachment-upload" @click="uploadAttachment('license')" v-if="attachmentData.license.length < 3">
-              <van-icon name="photograph" size="24" color="#d8d8d8" />
-              <span class="upload-text">上传</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- 故障信息 -->
-        <div class="attachment-section">
-          <div class="attachment-section-title">故障信息</div>
-          <div class="attachment-list">
-            <div v-for="(img, index) in attachmentData.fault" :key="index" class="attachment-item">
-              <img :src="img.url" class="attachment-img" />
-              <div class="attachment-delete" @click="deleteAttachment('fault', index)">
-                <van-icon name="cross" size="12" color="#ffffff" />
-              </div>
-            </div>
-            <div class="attachment-upload" @click="uploadAttachment('fault')" v-if="attachmentData.fault.length < 3">
-              <van-icon name="photograph" size="24" color="#d8d8d8" />
-              <span class="upload-text">上传</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- 终审权益 -->
-        <div class="attachment-section">
-          <div class="attachment-section-title">终审权益</div>
-          <div class="attachment-list">
-            <div v-for="(img, index) in attachmentData.finalRight" :key="index" class="attachment-item">
-              <img :src="img.url" class="attachment-img" />
-              <div class="attachment-delete" @click="deleteAttachment('finalRight', index)">
-                <van-icon name="cross" size="12" color="#ffffff" />
-              </div>
-            </div>
-            <div class="attachment-upload" @click="uploadAttachment('finalRight')" v-if="attachmentData.finalRight.length < 3">
-              <van-icon name="photograph" size="24" color="#d8d8d8" />
-              <span class="upload-text">上传</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- 首保凭证 -->
-        <div class="attachment-section">
-          <div class="attachment-section-title">首保凭证</div>
-          <div class="attachment-list">
-            <div v-for="(img, index) in attachmentData.firstMaintain" :key="index" class="attachment-item">
-              <img :src="img.url" class="attachment-img" />
-              <div class="attachment-delete" @click="deleteAttachment('firstMaintain', index)">
-                <van-icon name="cross" size="12" color="#ffffff" />
-              </div>
-            </div>
-            <div class="attachment-upload" @click="uploadAttachment('firstMaintain')" v-if="attachmentData.firstMaintain.length < 3">
-              <van-icon name="photograph" size="24" color="#d8d8d8" />
-              <span class="upload-text">上传</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- 保养质检 -->
-        <div class="attachment-section">
-          <div class="attachment-section-title">保养质检</div>
-          <div class="attachment-list">
-            <div v-for="(img, index) in attachmentData.maintainQuality" :key="index" class="attachment-item">
-              <img :src="img.url" class="attachment-img" />
-              <div class="attachment-delete" @click="deleteAttachment('maintainQuality', index)">
-                <van-icon name="cross" size="12" color="#ffffff" />
-              </div>
-            </div>
-            <div class="attachment-upload" @click="uploadAttachment('maintainQuality')" v-if="attachmentData.maintainQuality.length < 3">
-              <van-icon name="photograph" size="24" color="#d8d8d8" />
-              <span class="upload-text">上传</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- 施工旧件 -->
-        <div class="attachment-section">
-          <div class="attachment-section-title">施工旧件</div>
-          <div class="attachment-list">
-            <div v-for="(img, index) in attachmentData.oldParts" :key="index" class="attachment-item">
-              <img :src="img.url" class="attachment-img" />
-              <div class="attachment-delete" @click="deleteAttachment('oldParts', index)">
-                <van-icon name="cross" size="12" color="#ffffff" />
-              </div>
-            </div>
-            <div class="attachment-upload" @click="uploadAttachment('oldParts')" v-if="attachmentData.oldParts.length < 3">
-              <van-icon name="photograph" size="24" color="#d8d8d8" />
-              <span class="upload-text">上传</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- 旧件信息 -->
-        <div class="attachment-section">
-          <div class="attachment-section-title">旧件信息</div>
-          <div class="attachment-list">
-            <div v-for="(img, index) in attachmentData.oldPartInfo" :key="index" class="attachment-item">
-              <img :src="img.url" class="attachment-img" />
-              <div class="attachment-delete" @click="deleteAttachment('oldPartInfo', index)">
-                <van-icon name="cross" size="12" color="#ffffff" />
-              </div>
-            </div>
-            <div class="attachment-upload" @click="uploadAttachment('oldPartInfo')" v-if="attachmentData.oldPartInfo.length < 3">
-              <van-icon name="photograph" size="24" color="#d8d8d8" />
-              <span class="upload-text">上传</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- 其他 -->
-        <div class="attachment-section">
-          <div class="attachment-section-title">其他</div>
-          <div class="attachment-list">
-            <div v-for="(img, index) in attachmentData.other" :key="index" class="attachment-item">
-              <img :src="img.url" class="attachment-img" />
-              <div class="attachment-delete" @click="deleteAttachment('other', index)">
-                <van-icon name="cross" size="12" color="#ffffff" />
-              </div>
-            </div>
-            <div class="attachment-upload" @click="uploadAttachment('other')" v-if="attachmentData.other.length < 3">
+            <div class="attachment-upload" @click="uploadAttachment(key)" v-if="attachmentData[key].length < 3">
               <van-icon name="photograph" size="24" color="#d8d8d8" />
               <span class="upload-text">上传</span>
             </div>
@@ -970,13 +833,13 @@ const buildAttachmentsPayload = () =>
     configCode: item.configCode || PRE_AUTH_ATTACHMENT_CONFIG_CODE
   }))
 
-const buildPreAuthPayload = (saveOrSubmit) => {
+const buildPreAuthPayload = (saveOrSubmit, attachments = buildAttachmentsPayload()) => {
   const payload = {
     serviceProxyId: constructionId.value,
     qualityOrderReportId: feedbackId.value,
     reason: applyReason.value,
     saveOrSubmit,
-    attachments: buildAttachmentsPayload()
+    attachments
   }
   if (currentBusinessId.value) {
     payload.id = currentBusinessId.value
@@ -999,6 +862,7 @@ const syncBusinessId = (res) => {
 
 const savePreAuth = async({
   saveOrSubmit,
+  attachments = buildAttachmentsPayload(),
   loadingMessage,
   successMessage = '',
   failureMessage,
@@ -1012,7 +876,7 @@ const savePreAuth = async({
   try {
     showLoadingToast({ message: loadingMessage, forbidClick: true })
 
-    const res = await preAuthAddOrUpdate(buildPreAuthPayload(saveOrSubmit))
+    const res = await preAuthAddOrUpdate(buildPreAuthPayload(saveOrSubmit, attachments))
     closeToast()
 
     if (isSuccessResponse(res)) {
@@ -1129,8 +993,10 @@ const handleNativeImage = async(rawFileUrl) => {
 
 // 提交申请
 const handleSubmit = async() => {
+  const attachments = buildAttachmentsPayload()
   await savePreAuth({
     saveOrSubmit: true,
+    attachments,
     loadingMessage: '提交中...',
     successMessage: '提交成功',
     failureMessage: '提交失败',
@@ -1321,9 +1187,11 @@ const deleteAttachment = async(type, index) => {
 
 const onSaveConfirm = async() => {
   showSaveConfirmDialog.value = false
+  const attachments = buildAttachmentsPayload()
 
   await savePreAuth({
     saveOrSubmit: false,
+    attachments,
     loadingMessage: '保存中...',
     successMessage: '保存成功',
     failureMessage: '保存失败',
@@ -1346,7 +1214,6 @@ defineExpose({
       showSaveConfirmDialog.value = true
       return false // 阻止默认返回行为
     }
-    // 没有编辑时返回 true，允许默认返回
     return true
   }
 })

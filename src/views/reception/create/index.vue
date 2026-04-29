@@ -255,6 +255,19 @@
               />
             </div>
             <div class="section-card">
+              <div class="section-title" style="justify-content: flex-start">客户诉求</div>
+              <van-field
+                v-model="detail.customerComment"
+                type="textarea"
+                placeholder="请输入客户诉求"
+                rows="3"
+                autosize
+                show-word-limit
+                maxlength="500"
+                style="background: #f5f5f5; border-radius: 6px"
+              />
+            </div>
+            <div class="section-card">
               <div class="section-title" style="justify-content: flex-start">
                 <span class="required">*</span>客户经理建议
               </div>
@@ -321,7 +334,7 @@
             <!-- 客户故障描述 -->
             <div class="section-card">
               <div class="section-title" style="justify-content: flex-start">
-                <span v-if="detail.hasFault === '1'" class="required">*</span>客户故障描述
+                <span class="required">*</span>客户故障描述
               </div>
               <van-field
                 v-model="detail.customerFaultDesc"
@@ -413,14 +426,34 @@
               <span class="label">开启维修直播</span>
               <van-switch v-model="signatureData.liveEnabled" size="20" active-color="#009100" />
             </div> -->
-            <div class="signature-row" @click="showSignatureChannelPicker = true">
+            <div class="signature-row" @click="showSignatureChannelPickerHandle">
               <span class="label">签字渠道</span>
 
               <div class="value-wrapper">
                 <span :class="['value', { placeholder: !signatureData.signatureChannel }]">
                   {{ signatureData.signatureChannel || '请选择' }}
                 </span>
-                <van-icon name="arrow" size="12" color="#545454" />
+                <van-icon v-if="detail.signStatus != 20" name="arrow" size="12" color="#545454" />
+              </div>
+            </div>
+            <!-- 已签字状态显示 -->
+            <div class="signature-row" v-if="detail.signStatus == 20">
+              <span class="label">签字状态</span>
+              <div class="value-wrapper">
+                <span class="value signed">已签字</span>
+              </div>
+            </div>
+            <div
+              class="signature-action-row"
+              v-if="detail.signStatus == 20 && detail.signChannel != 40"
+            >
+              <van-button type="primary" size="small" @click="onViewSignature">查看签字</van-button>
+            </div>
+            <!-- 未签字状态显示 -->
+            <div class="signature-row" v-if="detail.signStatus != 20">
+              <span class="label">签字状态</span>
+              <div class="value-wrapper">
+                <span class="value unsigned">未签字</span>
               </div>
             </div>
           </div>
@@ -1362,7 +1395,7 @@ const onSelectMoreAction = (action) => {
         vin: detail.vin,
         plateNo: detail.plateNo,
         vehicleModel: detail.vehicleModel,
-        id: serviceProxyId.value || route.query.id,
+        id: serviceProxyId.value || detail.id || route.query.id,
       },
     })
   }
@@ -1492,6 +1525,7 @@ const detail = reactive({
   interiorImages: [],
   exteriorImages: [],
   abnormalDesc: '',
+  customerComment: '',
   currentFault: '',
   faultAlertRecordRespList: [],
   hasFault: '2',
@@ -1669,7 +1703,7 @@ const showSignatureChannelPicker = ref(false)
 const selectedDeliveryDate = ref('')
 const selectedDeliveryTime = ref('')
 
-// 预计交车日期列表（生成未来7天）
+// 预计交车日期列表
 const deliveryDateList = ref([])
 const generateDeliveryDates = () => {
   const dates = []
@@ -1735,7 +1769,7 @@ const fetchDetail = async () => {
   const vehicleInfoStr = route.params.vehicleInfo || route.query.vehicleInfo
 
   // 如果有车辆信息，则从车辆搜索页面跳转过来
-  if (vehicleInfoStr) {
+  if (vehicleInfoStr && !route.query.serviceProxyId) {
     try {
       const item = JSON.parse(vehicleInfoStr)
       // 直接拷贝 item 所有值到 detail
@@ -1853,6 +1887,8 @@ const fetchVehicleMileage = async (vin) => {
       detail.networkMileageAdd = res.data.oilMileage || ''
       detail.networkBattery = res.data.electricity || ''
       detail.electricalMileage = res.data.electricMileage || ''
+      detail.mileage = res.data.mileage || ''
+      detail.battery = res.data.electricity || ''
       // 获取车联网里程后进行校验
       validateMileage(detail.mileage, detail.lastMileage, detail.networkMileageTotal)
     }
@@ -1962,7 +1998,7 @@ const handleImageFileChange = (event) => {
       try {
         const params = {
           fileUrl: previewUrl,
-          businessId: serviceProxyId.value || route.query.id,
+          businessId: serviceProxyId.value || detail.id || null,
           configCode: 'mcs_serviceproxy',
           attachType: attachTypeMap[uploadType],
         }
@@ -2223,7 +2259,7 @@ const onSave = async () => {
   console.log('保存:', detail, computedBusinessType.value)
   if (!validateRepairPerson()) return
   // 如果选择"是"，客户故障描述必填
-  if (detail.hasFault === '1' && !detail.customerFaultDesc.trim()) {
+  if (!detail.customerFaultDesc.trim()) {
     showToast('请输入客户故障描述')
     return
   }
@@ -2311,7 +2347,6 @@ const onSave = async () => {
       departureNetMileageExtend: '',
       netMileageElectricity: detail.electricalMileage,
       netMileageExtend: detail.networkMileageAdd,
-      vehProfileId: detail.id,
       vehProfileVin: detail.vin,
       maintenanceMileage: detail.vehicleProfileServiceResp.nextMaintainMileages,
       maintenanceTime: detail.vehicleProfileServiceResp.nextMaintainDate,
@@ -2367,18 +2402,20 @@ const onSave = async () => {
       exteriorPhotoList: detail.exteriorImages.map((item) => ({
         ...item,
         fileId: item.id,
-        businessId: serviceProxyId.value || route.query.id,
+        businessId: serviceProxyId.value || null,
         fileUrl: item.url,
         attachType: '车外照片',
         configCode: 'mcs_serviceproxy',
+        id: null,
       })),
       interiorPhotoList: detail.interiorImages.map((item) => ({
         ...item,
         fileId: item.id,
-        businessId: serviceProxyId.value || route.query.id,
+        businessId: serviceProxyId.value || null,
         fileUrl: item.url,
         attachType: '车内照片',
         configCode: 'mcs_serviceproxy',
+        id: null,
       })),
       isStoreLive: '',
       faultAlertRecordParams: detail.faultModules.map((m) => ({
@@ -2413,8 +2450,17 @@ const onSave = async () => {
 
 const onComplete = async () => {
   if (!validateRepairPerson()) return
+  // 照片校验（根据配置判断是否必填）
+  if (interiorConfig.value.required === '1' && detail.interiorImages.length === 0) {
+    showToast('请上传车内照片')
+    return
+  }
+  if (exteriorConfig.value.required === '1' && detail.exteriorImages.length === 0) {
+    showToast('请上传车外照片')
+    return
+  }
   // 如果选择"是"，客户故障描述必填
-  if (detail.hasFault === '1' && !detail.customerFaultDesc.trim()) {
+  if (!detail.customerFaultDesc.trim()) {
     showToast('请输入客户故障描述')
     return
   }
@@ -2428,6 +2474,16 @@ const onComplete = async () => {
       if (res.code === 200) {
         showToast('预检完成')
         isPreCheckCompleted.value = true
+        // 预检完成后更新route.query.id
+        if (serviceProxyId.value) {
+          router.replace({
+            query: {
+              ...route.query,
+              id: serviceProxyId.value,
+              serviceProxyId: serviceProxyId.value,
+            },
+          })
+        }
         // 预检完成后获取详情数据，给签字确认页面赋值
         fetchDetailForSignature()
       } else {
@@ -2446,69 +2502,69 @@ const onInspectionSave = async () => {
   savingLoading.value = true
   try {
     const res = await serviceAddOrUpdate({
-      code: '',
-      dataSource: '',
-      orderStatus: '',
-      warrantyTypeCollect: '',
+      id: detail.id,
+      code: detail.code,
+      dataSource: detail.dataSource,
+      orderStatus: detail.orderStatus,
+      warrantyTypeCollect: detail.warrantyTypeCollect,
       customerName: detail.owner,
       customerPhone: detail.ownerPhone,
-      custType: '',
+      custType: detail.custType,
       vehModelName: detail.vehicleModelName,
       bindingPhone: detail.binderPhone,
       bindingUser: detail.bindingUser,
-      bindingUserId: '',
+      bindingUserId: detail.bindingUserId,
       carPlate: detail.plateNo,
       dealerName: detail.salesDealerName,
       dealerCode: detail.salesDealerCode,
-      appointmentNo: '',
+      appointmentNo: detail.appointmentNo,
       mileage: detail.mileage,
       lastMileage: null,
       startWarrantyDate: detail.vehicleProfileServiceResp.warrantyStartdate || '',
       exclusiveServiceDealerName: detail.vehicleProfileServiceResp.serviceDealerName || '',
       exclusiveServiceDealerCode: detail.vehicleProfileServiceResp.serviceDealerCode || '',
       expectFinishAt: signatureData.expectFinishAt,
-      createStatementInfoDate: '',
-      remark: '',
-      status: '',
-      statusDesc: '',
-      pickStatus: '',
+      createStatementInfoDate: detail.createStatementInfoDate,
+      remark: detail.remark,
+      status: detail.status,
+      statusDesc: detail.statusDesc,
+      pickStatus: detail.pickStatus,
       shuttleName: detail.repairPerson,
       shuttlePhone: detail.repairPersonPhone,
-      payType: '',
-      warrantyCompany: '',
+      payType: detail.payType,
+      warrantyCompany: detail.warrantyCompany,
       signChannel: signatureData.signatureChannel === '纸质单据' ? '40' : '',
-      signCompletedOn: '',
-      signGeneratedOn: '',
-      signStatus: '',
-      signUrlExpiredOn: '',
-      appointmentType: '',
-      preAuthType: '',
-      isLockLive: '',
-      isCreateWarranty: '',
-      isOutboundOrder: '',
-      isVehRetentionRemind: '',
-      isCancelStorage: '',
-      discountId: '',
-      finalCheckAt: '',
-      finalCheckerId: '',
-      finalChecker: '',
-      ticketStep: '',
-      warrantyStatus: '',
-      claimItemAmount: '',
-      claimOtherAmount: '',
-      claimPartsAmount: '',
-      departureMileage: '',
+      signCompletedOn: detail.signCompletedOn,
+      signGeneratedOn: detail.signGeneratedOn,
+      signStatus: detail.signStatus,
+      signUrlExpiredOn: detail.signUrlExpiredOn,
+      appointmentType: detail.appointmentType,
+      preAuthType: detail.preAuthType,
+      isLockLive: detail.isLockLive,
+      isCreateWarranty: detail.isCreateWarranty,
+      isOutboundOrder: detail.isOutboundOrder,
+      isVehRetentionRemind: detail.isVehRetentionRemind,
+      isCancelStorage: detail.isCancelStorage,
+      discountId: detail.discountId,
+      finalCheckAt: detail.finalCheckAt,
+      finalCheckerId: detail.finalCheckerId,
+      finalChecker: detail.finalChecker,
+      ticketStep: detail.ticketStep,
+      warrantyStatus: detail.warrantyStatus,
+      claimItemAmount: detail.claimItemAmount,
+      claimOtherAmount: detail.claimOtherAmount,
+      claimPartsAmount: detail.claimPartsAmount,
+      departureMileage: detail.departureMileage,
       inPower: detail.battery,
-      outPower: '',
+      outPower: detail.outPower,
       netMileage: detail.networkMileageTotal,
-      departureNetMileage: '',
+      departureNetMileage: detail.departureNetMileage,
       inNetPower: detail.networkBattery,
-      outNetPower: '',
-      departureNetMileageElectricity: '',
-      departureNetMileageExtend: '',
+      outNetPower: detail.outNetPower,
+      departureNetMileageElectricity: detail.departureNetMileageElectricity,
+      departureNetMileageExtend: detail.departureNetMileageExtend,
       netMileageElectricity: detail.electricalMileage,
       netMileageExtend: detail.networkMileageAdd,
-      vehProfileId: detail.id,
       vehProfileVin: detail.vin,
       maintenanceMileage: detail.vehicleProfileServiceResp.nextMaintainMileages,
       maintenanceTime: detail.vehicleProfileServiceResp.nextMaintainDate,
@@ -2524,47 +2580,48 @@ const onInspectionSave = async () => {
       batteryModel: detail.batteryModel,
       batterySerialNumber: detail.batterySerialNumber,
       engineNumber: detail.enginenNumber,
-      repairItemTypeDetailCollect: '',
+      repairItemTypeDetailCollect: detail.repairItemTypeDetailCollect,
       businessType: computedBusinessType.value,
-      alarmLevel: '',
-      isLive: '',
+      alarmLevel: detail.alarmLevel,
+      isLive: detail.isLive,
       haveRework: 0,
       isCarWash: 0,
       isRetainOldParts: 0,
-      inCustomerContent: '',
-      customerComment: '',
+      inCustomerContent: detail.inCustomerContent,
+      customerComment: detail.customerComment,
       testResult: detail.testResult,
       currentFault: detail.hasFault === '1' ? 1 : 0,
       customerContent: detail.customerFaultDesc,
-      invaildDesc: '',
+      invaildDesc: detail.invaildDesc,
       anomalyDescription: detail.abnormalDesc,
-      previewingFinishAt: '',
-      confirmedOn: '',
-      expectStartAt: '',
-      startAt: '',
-      finishAt: '',
-      faultSolve: '',
+      customerComment: detail.customerComment,
+      previewingFinishAt: detail.previewingFinishAt,
+      confirmedOn: detail.confirmedOn,
+      expectStartAt: detail.expectStartAt,
+      startAt: detail.startAt,
+      finishAt: detail.finishAt,
+      faultSolve: detail.faultSolve,
       currentSituation: detail.hasFault === '1' ? 20 : 10,
-      faultAlert: '',
-      faultPeriod: '',
-      earliestfaultServiceProxy: '',
-      recentlyfaultServiceProxy: '',
+      faultAlert: detail.faultAlert,
+      faultPeriod: detail.faultPeriod,
+      earliestfaultServiceProxy: detail.earliestfaultServiceProxy,
+      recentlyfaultServiceProxy: detail.recentlyfaultServiceProxy,
       faultModule: detail.faultModules.map((m) => m.cccCode).join(','),
       isCreateStatementInfo: 0,
-      isPreAuth: '',
-      isCreatePreAuth: '',
-      preAuthRuleId: '',
-      unresolvedReason: '',
-      faultDesc: '',
-      batteryUnitId: '',
-      batteryUnitName: '',
-      targetUnitCode: '',
-      beforeChangeCode: '',
-      afterChangeCode: '',
+      isPreAuth: detail.isPreAuth,
+      isCreatePreAuth: detail.isCreatePreAuth,
+      preAuthRuleId: detail.preAuthRuleId,
+      unresolvedReason: detail.unresolvedReason,
+      faultDesc: detail.faultDesc,
+      batteryUnitId: detail.batteryUnitId,
+      batteryUnitName: detail.batteryUnitName,
+      targetUnitCode: detail.targetUnitCode,
+      beforeChangeCode: detail.beforeChangeCode,
+      afterChangeCode: detail.afterChangeCode,
       exteriorPhotoList: detail.exteriorImages.map((item) => ({
         ...item,
         fileId: item.id,
-        businessId: serviceProxyId.value || route.query.id,
+        businessId: serviceProxyId.value || detail.id,
         fileUrl: item.url,
         attachType: '车外照片',
         configCode: 'mcs_serviceproxy',
@@ -2572,12 +2629,12 @@ const onInspectionSave = async () => {
       interiorPhotoList: detail.interiorImages.map((item) => ({
         ...item,
         fileId: item.id,
-        businessId: serviceProxyId.value || route.query.id,
+        businessId: serviceProxyId.value || detail.id,
         fileUrl: item.url,
         attachType: '车内照片',
         configCode: 'mcs_serviceproxy',
       })),
-      isStoreLive: '',
+      isStoreLive: detail.isStoreLive,
       faultAlertRecordParams: detail.faultModules.map((m) => ({
         cccId: m.cccCode || '',
         cccName: m.cccName || '',
@@ -2586,8 +2643,8 @@ const onInspectionSave = async () => {
         vrtId: m.vrtCode || '',
         vrtName: m.vrtName || '',
       })),
-      latelyServiceProxy: '',
-      earlyServiceProxy: '',
+      latelyServiceProxy: detail.latelyServiceProxy,
+      earlyServiceProxy: detail.earlyServiceProxy,
     })
     if (res.code === 200) {
       showToast('保存成功')
@@ -2612,7 +2669,7 @@ const onPartsSave = async () => {
 
   // 校验项目及零件不可为空
   if (items.length === 0 && parts.length === 0) {
-    showToast('项目及零件不可为空，请添加项目及零件')
+    showToast('项目及零件不可为空，请添加项目或者零件')
     return
   }
 
@@ -2648,7 +2705,7 @@ const onSignatureSave = async () => {
 
   // 校验项目及零件不可为空
   if (items.length === 0 && parts.length === 0) {
-    showToast('项目及零件不可为空，请添加项目及零件')
+    showToast('项目及零件不可为空，请添加项目或者零件')
     return
   }
 
@@ -2678,13 +2735,16 @@ const onSignatureSave = async () => {
 
 // 制单确认并签字
 const onConfirmAndSign = () => {
+  if (isConfirmAndSignDisabled.value) {
+    return
+  }
   // 从 RepairItemContent 组件获取数据
   const items = repairItemContentRef.value?.selectedItems || []
   const parts = repairItemContentRef.value?.selectedParts || []
 
   // 校验维修项目或者维修零件有值
   if (items.length === 0 && parts.length === 0) {
-    showToast('项目及零件不可为空，请添加项目及零件')
+    showToast('项目及零件不可为空，请添加项目或者零件')
     return
   }
   // 点击"准确"，执行接口
@@ -2722,8 +2782,11 @@ const fetchDetailForSignature = async () => {
   if (!id) return
 
   try {
+    savingLoading.value = true
     const res = await getDetail(id)
+    savingLoading.value = false
     if (res.code === 200) {
+      console.log('获取详情成功:', res)
       const data = res.data
       // 更新签字确认数据
       signatureData.repairItemTypeDetailCollect = data.repairItemTypeDetailCollect || ''
@@ -2734,9 +2797,44 @@ const fetchDetailForSignature = async () => {
         partsData.repairItemRespList = data.costCountResp.repairItemRespList || []
         partsData.sparePartRespList = data.costCountResp.sparePartRespList || []
       }
-      // 更新施工单状态
-      detail.orderStatus = data.orderStatus || ''
       // 更新其他详情字段
+      // 填充详情数据
+      detail.plateNo = data.carPlate || ''
+      detail.isAppointment = !!data.appointmentNo // 有预约单号即为预约客户
+      detail.custTypeLabel = data.custTypeLabel || ''
+      detail.vehicleModel = data.vehModelName || ''
+      detail.vehicleModelName = data.vehModelName || ''
+      detail.vehicleModelId = data.vehicleModelId || ''
+      detail.vin = data.vehProfileVin || ''
+      detail.owner = data.customerName || ''
+      detail.ownerPhone = data.customerPhone || ''
+      detail.bindingUser = data.bindingUser || ''
+      detail.binderPhone = data.bindingPhone || ''
+      detail.bindingUserId = data.bindingUserId || ''
+      detail.repairPerson = data.customerName || ''
+      detail.repairPersonPhone = data.customerPhone || ''
+      // 计算送修人类型
+      detail.repairPersonTag =
+        detail.repairPerson === data.customerName
+          ? '车主'
+          : detail.repairPerson === data.bindingUser
+            ? '绑车人'
+            : '其他'
+      detail.testResult = data.testResult || ''
+      // 预约客户默认预约到店，否则默认自然到店
+      detail.businessType = data.businessType || (detail.isAppointment ? 50 : 10)
+      detail.mileage = data.mileage || ''
+      detail.networkMileageTotal = data.netMileage || ''
+      detail.networkMileageAdd = data.netMileageExtend || ''
+      detail.battery = data.inPower || ''
+      detail.networkBattery = data.inNetPower || ''
+      detail.abnormalDesc = data.anomalyDescription || ''
+      detail.customerComment = data.customerComment || ''
+      detail.currentFault = String(data.currentFault || '')
+      detail.hasFault = data.currentFault === 1 ? '1' : '2'
+      detail.customerFaultDesc = data.customerContent || ''
+      detail.faultAlertRecordRespList = data.faultAlertRecordRespList || []
+      detail.vehicleProfileServiceResp = data.vehicleProfileServiceResp || {}
       detail.id = data.id || ''
       detail.code = data.code || ''
       detail.orderStatus = data.orderStatus || ''
@@ -2754,6 +2852,7 @@ const fetchDetailForSignature = async () => {
       }
     }
   } catch (error) {
+    savingLoading.value = false
     console.error('获取详情失败:', error)
   }
 }
@@ -2767,7 +2866,7 @@ const onAddParts = () => {
   router.push({
     path: '/reception/add-parts',
     query: {
-      serviceProxyId: route.query.id,
+      serviceProxyId: serviceProxyId.value || detail.id || route.query.id,
     },
   })
 }
@@ -2777,7 +2876,7 @@ const onAddPackage = () => {
   router.push({
     path: '/reception/select-package',
     query: {
-      serviceProxyId: route.query.id,
+      serviceProxyId: serviceProxyId.value || route.query.id,
     },
   })
 }
@@ -2820,6 +2919,24 @@ const onCloseDeliveryTimePicker = () => {
   showDeliveryTimePicker.value = false
 }
 
+const showSignatureChannelPickerHandle = () => {
+  if (detail.signStatus == 20) {
+    return
+  }
+  showSignatureChannelPicker = true
+}
+// 查看签字
+const onViewSignature = () => {
+  if (detail.signUrl) {
+    showImagePreview({
+      images: [detail.signUrl],
+      startPosition: 0,
+      showIndex: false,
+    })
+  } else {
+    showToast('暂无签字图片')
+  }
+}
 // 选择签字渠道
 const onSelectSignatureChannel = (item) => {
   signatureData.signatureChannel = item.label
@@ -2863,6 +2980,12 @@ const onConfirmBattery = () => {
 
 onMounted(() => {
   fetchDetail()
+  if (route.query.serviceProxyId) {
+    // 保存之后生成施工单，点击项目或者其他的页面跳转，返回回来之后请求detail
+    isPreCheckCompleted.value = true
+    fetchDetailForSignature()
+    refreshAttachmentList()
+  }
   // 初始化送修人输入框
   repairPersonNameInput.value = detail.repairPerson
   repairPersonPhoneInput.value = detail.repairPersonPhone
@@ -2920,7 +3043,7 @@ onMounted(() => {
     try {
       const params = {
         fileUrl: url,
-        businessId: route.query.id,
+        businessId: serviceProxyId.value || null,
         configCode: 'mcs_serviceproxy',
         attachType: attachTypeMap[uploadType],
       }
