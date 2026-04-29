@@ -426,14 +426,34 @@
               <span class="label">开启维修直播</span>
               <van-switch v-model="signatureData.liveEnabled" size="20" active-color="#009100" />
             </div> -->
-            <div class="signature-row" @click="showSignatureChannelPicker = true">
+            <div class="signature-row" @click="showSignatureChannelPickerHandle">
               <span class="label">签字渠道</span>
 
               <div class="value-wrapper">
                 <span :class="['value', { placeholder: !signatureData.signatureChannel }]">
                   {{ signatureData.signatureChannel || '请选择' }}
                 </span>
-                <van-icon name="arrow" size="12" color="#545454" />
+                <van-icon v-if="detail.signStatus != 20" name="arrow" size="12" color="#545454" />
+              </div>
+            </div>
+            <!-- 已签字状态显示 -->
+            <div class="signature-row" v-if="detail.signStatus == 20">
+              <span class="label">签字状态</span>
+              <div class="value-wrapper">
+                <span class="value signed">已签字</span>
+              </div>
+            </div>
+            <div
+              class="signature-action-row"
+              v-if="detail.signStatus == 20 && detail.signChannel != 40"
+            >
+              <van-button type="primary" size="small" @click="onViewSignature">查看签字</van-button>
+            </div>
+            <!-- 未签字状态显示 -->
+            <div class="signature-row" v-if="detail.signStatus != 20">
+              <span class="label">签字状态</span>
+              <div class="value-wrapper">
+                <span class="value unsigned">未签字</span>
               </div>
             </div>
           </div>
@@ -2327,7 +2347,6 @@ const onSave = async () => {
       departureNetMileageExtend: '',
       netMileageElectricity: detail.electricalMileage,
       netMileageExtend: detail.networkMileageAdd,
-      vehProfileId: detail.id,
       vehProfileVin: detail.vin,
       maintenanceMileage: detail.vehicleProfileServiceResp.nextMaintainMileages,
       maintenanceTime: detail.vehicleProfileServiceResp.nextMaintainDate,
@@ -2546,7 +2565,6 @@ const onInspectionSave = async () => {
       departureNetMileageExtend: detail.departureNetMileageExtend,
       netMileageElectricity: detail.electricalMileage,
       netMileageExtend: detail.networkMileageAdd,
-      vehProfileId: detail.id,
       vehProfileVin: detail.vin,
       maintenanceMileage: detail.vehicleProfileServiceResp.nextMaintainMileages,
       maintenanceTime: detail.vehicleProfileServiceResp.nextMaintainDate,
@@ -2650,8 +2668,8 @@ const onPartsSave = async () => {
   const parts = repairItemContentRef.value?.selectedParts || []
 
   // 校验项目及零件不可为空
-  if (items.length === 0 && parts.length === 0) {
-    showToast('项目及零件不可为空，请添加项目及零件')
+  if (items.length === 0 || parts.length === 0) {
+    showToast('项目及零件不可为空，请添加项目或者零件')
     return
   }
 
@@ -2687,7 +2705,7 @@ const onSignatureSave = async () => {
 
   // 校验项目及零件不可为空
   if (items.length === 0 && parts.length === 0) {
-    showToast('项目及零件不可为空，请添加项目及零件')
+    showToast('项目及零件不可为空，请添加项目或者零件')
     return
   }
 
@@ -2717,13 +2735,16 @@ const onSignatureSave = async () => {
 
 // 制单确认并签字
 const onConfirmAndSign = () => {
+  if (isConfirmAndSignDisabled.value) {
+    return
+  }
   // 从 RepairItemContent 组件获取数据
   const items = repairItemContentRef.value?.selectedItems || []
   const parts = repairItemContentRef.value?.selectedParts || []
 
   // 校验维修项目或者维修零件有值
-  if (items.length === 0 && parts.length === 0) {
-    showToast('项目及零件不可为空，请添加项目及零件')
+  if (items.length === 0 || parts.length === 0) {
+    showToast('项目及零件不可为空，请添加项目或者零件')
     return
   }
   // 点击"准确"，执行接口
@@ -2790,8 +2811,8 @@ const fetchDetailForSignature = async () => {
       detail.bindingUser = data.bindingUser || ''
       detail.binderPhone = data.bindingPhone || ''
       detail.bindingUserId = data.bindingUserId || ''
-      detail.repairPerson = data.shuttleName || ''
-      detail.repairPersonPhone = data.shuttlePhone || ''
+      detail.repairPerson = data.customerName || ''
+      detail.repairPersonPhone = data.customerPhone || ''
       // 计算送修人类型
       detail.repairPersonTag =
         detail.repairPerson === data.customerName
@@ -2898,6 +2919,24 @@ const onCloseDeliveryTimePicker = () => {
   showDeliveryTimePicker.value = false
 }
 
+const showSignatureChannelPickerHandle = () => {
+  if (detail.signStatus == 20) {
+    return
+  }
+  showSignatureChannelPicker = true
+}
+// 查看签字
+const onViewSignature = () => {
+  if (detail.signUrl) {
+    showImagePreview({
+      images: [detail.signUrl],
+      startPosition: 0,
+      showIndex: false,
+    })
+  } else {
+    showToast('暂无签字图片')
+  }
+}
 // 选择签字渠道
 const onSelectSignatureChannel = (item) => {
   signatureData.signatureChannel = item.label
