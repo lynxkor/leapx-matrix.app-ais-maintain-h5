@@ -1,21 +1,23 @@
 <template>
   <div class="reception-work-order">
-    <!-- 筛选搜索头部 -->
-    <FilterHeader
-      placeholder="输入工单号/车牌号/VIN/车主"
-      :showScan="true"
-      :showSort="false"
-      :filterList="filterList"
-      @filterSearch="onFilterSearch"
-      @search="onSearch"
-    />
+    <div class="sticky-header">
+      <!-- 筛选搜索头部 -->
+      <FilterHeader
+        placeholder="输入工单号/车牌号/VIN/车主"
+        :showScan="true"
+        :showSort="false"
+        :filterList="filterList"
+        @filterSearch="onFilterSearch"
+        @search="onSearch"
+      />
 
-    <!-- Tab导航 -->
-    <van-tabs v-model:active="activeTab" sticky offset-top="46px" @change="onTabChange">
-      <van-tab title="当天" name="today"></van-tab>
-      <van-tab title="7天内" name="week"></van-tab>
-      <van-tab title="全部" name="all"></van-tab>
-    </van-tabs>
+      <!-- Tab导航 -->
+      <van-tabs v-model:active="activeTab" @change="onTabChange">
+        <van-tab title="当天" name="today"></van-tab>
+        <van-tab title="7天内" name="week"></van-tab>
+        <van-tab title="全部" name="all"></van-tab>
+      </van-tabs>
+    </div>
 
     <!-- 列表内容 -->
     <div class="common-scroll-content" ref="scrollEle">
@@ -58,7 +60,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { showToast } from 'vant'
 import FilterHeader from '@/libs/components/FilterHeader.vue'
@@ -68,7 +70,7 @@ import RefreshList from '@/libs/components/RefreshList.vue'
 import WorkOrderCard from '@/components/WorkOrderCard.vue'
 import { getList, getEquityList } from '@/api/reception'
 defineOptions({
-  name: 'receptionWorkOrder',
+  name: 'receptionWorkOrder'
 })
 const router = useRouter()
 const globalStore = useGlobalStore()
@@ -101,9 +103,9 @@ const filterList = ref([
       { label: '待交车', value: 160 },
       { label: '已交车', value: 180 },
       { label: '反结算', value: 200 },
-      { label: '已作废', value: 210 },
-    ],
-  },
+      { label: '已作废', value: 210 }
+    ]
+  }
   // {
   //   title: '维修类型',
   //   key: 'repairItemTypeDetailCollect',
@@ -143,14 +145,14 @@ const requestData = computed(() => {
     sortColumns: [
       {
         column: 'order_status',
-        sort: 'ASC',
+        sort: 'ASC'
       },
       {
         column: 'create_time',
-        sort: 'DESC',
-      },
+        sort: 'DESC'
+      }
     ],
-    ...searchParams.value,
+    ...searchParams.value
   }
   console.log('data', data, activeTab.value)
   if (activeTab.value === 'today') {
@@ -166,7 +168,7 @@ const requestData = computed(() => {
   }
   return {
     api: getList,
-    data,
+    data
   }
 })
 
@@ -180,7 +182,7 @@ const onFilterSearch = (params) => {
 const onSearch = (e) => {
   searchParams.value = {
     ...searchParams.value,
-    appSearchKeyWord: e.searchValue,
+    appSearchKeyWord: e.searchValue
   }
   loading.value = true
   isExplicitRefresh.value = true
@@ -218,12 +220,12 @@ const onListError = (msg) => {
 const onCardClick = (item) => {
   // 已交车(180)或已作废(210), 已生成结算单(1)跳转到详情页，其他跳转到编辑页
   const path =
-    item.orderStatus === 180 || item.orderStatus === 210 || item.isCreateStatementInfo == 1
+    item.orderStatus === 180 || item.orderStatus === 210 || item.isCreateStatementInfo === 1
       ? '/reception/work-order/detail'
       : '/reception/work-order/edit'
   router.push({
     path,
-    query: { id: item.id },
+    query: { id: item.id }
   })
 }
 
@@ -246,6 +248,14 @@ onMounted(() => {
   height: 100%;
   background: #f7f7f7;
 
+  .sticky-header {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: #ffffff;
+    flex-shrink: 0;
+  }
+
   :deep(.van-tabs) {
     flex-shrink: 0;
   }
@@ -253,9 +263,12 @@ onMounted(() => {
   :deep(.van-tabs__nav) {
     background: #ffffff;
   }
+
   .common-scroll-content {
+    flex: 1;
+    min-height: 0;
     overflow-y: auto;
-    height: calc(90% - 36px);
+    padding-bottom: 12px;
   }
 }
 
@@ -379,11 +392,10 @@ onMounted(() => {
 }
 .bottom-bar {
   flex-shrink: 0;
-  height: 80px;
   background: #ffffff;
   display: flex;
   justify-content: center;
-  padding: 7px 12px 0;
+  padding: 7px 12px calc(12px + env(safe-area-inset-bottom));
 
   .create-btn {
     width: 100%;
