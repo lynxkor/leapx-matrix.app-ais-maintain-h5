@@ -314,7 +314,9 @@
                     :key="index"
                     class="fault-module-item"
                   >
-                    <span class="module-name">{{ module.vfgName }}-{{ module.cccName }}</span>
+                    <span class="module-name">{{
+                      module.vrtName + '-' + module.vfgName + '-' + module.cccName
+                    }}</span>
                     <van-icon name="delete-o" @click="onDeleteFaultModule(module)" />
                   </div>
                 </div>
@@ -875,7 +877,7 @@
             >
               <van-highlight
                 :keywords="faultSearchValue"
-                :source-string="item.vfgName + '-' + item.cccName"
+                :source-string="item.vrtName + '-' + item.vfgName + '-' + item.cccName"
               />
             </div>
             <!-- 无结果 -->
@@ -2146,7 +2148,7 @@ const onFaultSearchClear = () => {
 // 添加故障模块项
 const onAddFaultModuleItem = (item) => {
   // 检查是否已存在（根据cccCode匹配）
-  const exists = detail.faultModules.some((m) => m.cccCode === item.cccCode)
+  const exists = detail.faultModules.some((m) => m.cccId === item.cccId)
   if (exists) {
     showToast('该故障模块已添加')
     return
@@ -2419,7 +2421,7 @@ const onSave = async () => {
       })),
       isStoreLive: '',
       faultAlertRecordParams: detail.faultModules.map((m) => ({
-        cccId: m.cccCode || '',
+        cccId: m.id || '',
         cccName: m.cccName || '',
         vfgId: m.vfgCode || '',
         vfgName: m.vfgName || '',
@@ -2636,7 +2638,7 @@ const onInspectionSave = async () => {
       })),
       isStoreLive: detail.isStoreLive,
       faultAlertRecordParams: detail.faultModules.map((m) => ({
-        cccId: m.cccCode || '',
+        cccId: m.id || '',
         cccName: m.cccName || '',
         vfgId: m.vfgCode || '',
         vfgName: m.vfgName || '',
