@@ -32,7 +32,7 @@
       </div>
       <div class="info-row">
         <span class="label">车主：</span>
-        <span class="value">{{ detail.owner }} {{ detail.ownerPhone }}</span>
+        <span class="value">{{ detail.customerName }} {{ detail.customerPhone }}</span>
       </div>
       <div class="info-row">
         <span class="label">绑车人：</span>
@@ -48,7 +48,7 @@
             <div class="select-row">
               <span class="label">送修人</span>
               <div class="value-wrapper">
-                <span class="tag">[{{ detail.repairPersonTag }}]</span>
+                <!-- <span class="tag">[{{ detail.repairPersonTag }}]</span> -->
                 <span class="value">{{ detail.repairPerson }} {{ detail.repairPersonPhone }}</span>
               </div>
             </div>
@@ -445,14 +445,14 @@
               <span class="label">开启维修直播</span>
               <van-switch v-model="signatureData.liveEnabled" size="20" active-color="#009100" />
             </div> -->
-            <div class="signature-row" @click="showSignatureChannelPicker = true">
+            <div class="signature-row" @click="showSignatureChannelPickerHandle">
               <span class="label">签字渠道</span>
 
               <div class="value-wrapper">
                 <span :class="['value', { placeholder: !signatureData.signChannel }]">
                   {{ signatureData.signChannel || '请选择' }}
                 </span>
-                <van-icon name="arrow" size="12" color="#545454" />
+                <van-icon v-if="detail.signStatus != 20" name="arrow" size="12" color="#545454" />
               </div>
             </div>
             <!-- 已签字状态显示 -->
@@ -462,7 +462,10 @@
                 <span class="value signed">已签字</span>
               </div>
             </div>
-            <div class="signature-action-row" v-if="detail.signStatus == 20">
+            <div
+              class="signature-action-row"
+              v-if="detail.signStatus == 20 && detail.signChannel != 40"
+            >
               <van-button type="primary" size="small" @click="onViewSignature">查看签字</van-button>
             </div>
             <!-- 未签字状态显示 -->
@@ -1693,10 +1696,12 @@ const detail = reactive({
   vin: '',
   vehicleModelId: '',
   warrantyDate: '',
-  owner: '',
-  ownerPhone: '',
+  customerName: '',
+  customerPhone: '',
   bindingUser: '',
   binderPhone: '',
+  shuttleName: '',
+  shuttlePhone: '',
   bindingUserId: '',
   repairPerson: '',
   repairPersonPhone: '',
@@ -2176,13 +2181,15 @@ const fetchDetail = async () => {
         detail.vehicleModelName = data.vehModelName || ''
         detail.vehicleModelId = data.vehicleModelId || ''
         detail.vin = data.vehProfileVin || ''
-        detail.owner = data.customerName || ''
-        detail.ownerPhone = data.customerPhone || ''
+        detail.customerName = data.customerName || ''
+        detail.customerPhone = data.customerPhone || ''
         detail.bindingUser = data.bindingUser || ''
         detail.binderPhone = data.bindingPhone || ''
         detail.bindingUserId = data.bindingUserId || ''
-        detail.repairPerson = data.shuttleName || ''
-        detail.repairPersonPhone = data.shuttlePhone || ''
+        detail.shuttleName = data.shuttleName || ''
+        detail.shuttlePhone = data.shuttlePhone || ''
+        detail.repairPerson = data.shuttleName || data.customerName || ''
+        detail.repairPersonPhone = data.shuttlePhone || data.customerPhone || ''
         // 计算送修人类型
         detail.repairPersonTag =
           detail.repairPerson === data.customerName
@@ -2352,13 +2359,19 @@ const fetchDetail = async () => {
         // 设置送修人类型
         if (detail.repairPersonTag === '车主') {
           repairPersonType.value = 'owner'
+          repairPersonNameInput.value = detail.customerName
+          repairPersonPhoneInput.value = detail.customerPhone
         } else if (detail.repairPersonTag === '绑车人') {
           repairPersonType.value = 'bindingUser'
+
+          repairPersonNameInput.value = detail.bindingUser
+          repairPersonPhoneInput.value = detail.binderPhone
         } else {
           repairPersonType.value = 'other'
+
+          repairPersonNameInput.value = detail.repairPerson
+          repairPersonPhoneInput.value = detail.repairPersonPhone
         }
-        repairPersonNameInput.value = detail.repairPerson
-        repairPersonPhoneInput.value = detail.repairPersonPhone
 
         // 里程校验
         validateMileage(data.mileage, data.lastMileage, data.netMileage)
@@ -2470,19 +2483,19 @@ const onConfirmChangeCar = () => {
   detail.vehicleModel =
     selectedCarInfo.value.vehicleModelName || selectedCarInfo.value.vehicleModel || ''
   detail.warrantyDate = selectedCarInfo.value.warrantyDate || ''
-  detail.owner = selectedCarInfo.value.vehicleProfileOwnerResp?.ownerName || ''
-  detail.ownerPhone = selectedCarInfo.value.vehicleProfileOwnerResp?.mobilephone || ''
+  detail.customerName = selectedCarInfo.value.vehicleProfileOwnerResp?.ownerName || ''
+  detail.customerPhone = selectedCarInfo.value.vehicleProfileOwnerResp?.mobilephone || ''
   detail.bindingUser = selectedCarInfo.value.vehicleProfileOwnerResp?.bindingUser || ''
   detail.binderPhone = selectedCarInfo.value.vehicleProfileOwnerResp?.bindingPhone || ''
   detail.vehicleProfileServiceResp = selectedCarInfo.value.vehicleProfileServiceResp || {}
 
   // 更新送修人信息为当前车主
-  detail.repairPerson = detail.owner
-  detail.repairPersonPhone = detail.ownerPhone
+  detail.repairPerson = detail.customerName
+  detail.repairPersonPhone = detail.customerPhone
   detail.repairPersonTag = '车主'
   repairPersonType.value = 'owner'
-  repairPersonNameInput.value = detail.owner
-  repairPersonPhoneInput.value = detail.ownerPhone
+  repairPersonNameInput.value = detail.customerName
+  repairPersonPhoneInput.value = detail.customerPhone
 
   // 获取车联网里程数
   if (detail.vin) {
@@ -2884,8 +2897,8 @@ const onSelectRepairPersonType = (type) => {
   repairPersonType.value = type
   // 根据类型更新输入框的值
   if (type === 'owner') {
-    repairPersonNameInput.value = detail.owner
-    repairPersonPhoneInput.value = detail.ownerPhone
+    repairPersonNameInput.value = detail.customerName
+    repairPersonPhoneInput.value = detail.customerPhone
     detail.repairPersonTag = '车主'
   } else if (type === 'bindingUser') {
     repairPersonNameInput.value = detail.bindingUser
@@ -2893,8 +2906,8 @@ const onSelectRepairPersonType = (type) => {
     detail.repairPersonTag = '绑车人'
   } else {
     // 其他：带出车主信息，支持编辑
-    repairPersonNameInput.value = detail.owner
-    repairPersonPhoneInput.value = detail.ownerPhone
+    repairPersonNameInput.value = detail.shuttleName || detail.customerName
+    repairPersonPhoneInput.value = detail.shuttlePhone || detail.customerPhone
     detail.repairPersonTag = '其他'
   }
   // 同步更新送修人信息
@@ -3015,8 +3028,8 @@ const onInspectionSave = async (type) => {
     dataSource: detail.dataSource,
     orderStatus: detail.orderStatus,
     warrantyTypeCollect: detail.warrantyTypeCollect,
-    customerName: detail.owner,
-    customerPhone: detail.ownerPhone,
+    customerName: detail.customerName,
+    customerPhone: detail.customerPhone,
     custType: detail.custType,
     vehModelName: detail.vehicleModelName,
     bindingPhone: detail.binderPhone,
@@ -3089,7 +3102,6 @@ const onInspectionSave = async (type) => {
     departureNetMileageExtend: detail.departureNetMileageExtend,
     netMileageElectricity: detail.electricalMileage,
     netMileageExtend: detail.networkMileageAdd,
-    vehProfileId: detail.id,
     vehProfileVin: detail.vin,
     maintenanceMileage: detail.vehicleProfileServiceResp.nextMaintainMileages,
     maintenanceTime: detail.vehicleProfileServiceResp.nextMaintainDate,
@@ -3164,9 +3176,9 @@ const onInspectionSave = async (type) => {
       showToast(res.msg || '保存失败')
     }
   } catch (err) {
+    showToast(err.msg || '保存失败')
     savingLoading.value = false
   }
-  return res
 }
 
 // 处理零件替换事件
@@ -3190,8 +3202,8 @@ const onPartsSave = async () => {
   const parts = repairItemContentRef.value?.selectedParts || []
 
   // 校验项目及零件不可为空
-  if (items.length === 0 && parts.length === 0) {
-    showToast('项目及零件不可为空，请添加项目及零件')
+  if (items.length === 0 || parts.length === 0) {
+    showToast('项目及零件不可为空，请添加项目或者零件')
     return
   }
 
@@ -3231,7 +3243,7 @@ const onSignatureSave = async () => {
 
   // 校验项目及零件不可为空
   // if (items.length === 0 && parts.length === 0) {
-  //   showToast('项目及零件不可为空，请添加项目及零件')
+  //   showToast('项目及零件不可为空，请添加项目或者零件')
   //   return
   // }
 
@@ -3319,15 +3331,18 @@ const onAddPackage = () => {
 
 // 制单确认并签字
 const onConfirmAndSign = () => {
+  if (isConfirmAndSignDisabled.value) {
+    return
+  }
   // 从 RepairItemContent 组件获取数据
   const items = repairItemContentRef.value?.selectedItems || []
   const parts = repairItemContentRef.value?.selectedParts || []
 
   // 校验维修项目或者维修零件有值
-  // if (items.length === 0 && parts.length === 0) {
-  //   showToast('项目及零件不可为空，请添加项目及零件')
-  //   return
-  // }
+  if (items.length === 0 || parts.length === 0) {
+    showToast('项目及零件不可为空，请添加项目或者零件')
+    return
+  }
   // 点击"准确"，执行接口
   let params = {
     serviceProxyId: detail.id,
@@ -3417,7 +3432,12 @@ const onSelectDeliveryTime = (item) => {
 const onCloseDeliveryTimePicker = () => {
   showDeliveryTimePicker.value = false
 }
-
+const showSignatureChannelPickerHandle = () => {
+  if (detail.signStatus == 20) {
+    return
+  }
+  showSignatureChannelPicker.value = true
+}
 // 选择签字渠道
 const onSelectSignatureChannel = (item) => {
   signatureData.signChannel = item.label
