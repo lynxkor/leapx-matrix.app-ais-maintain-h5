@@ -2668,7 +2668,7 @@ const onPartsSave = async () => {
   const parts = repairItemContentRef.value?.selectedParts || []
 
   // 校验项目及零件不可为空
-  if (items.length === 0 || parts.length === 0) {
+  if (items.length === 0 && parts.length === 0) {
     showToast('项目及零件不可为空，请添加项目或者零件')
     return
   }
@@ -2743,7 +2743,7 @@ const onConfirmAndSign = () => {
   const parts = repairItemContentRef.value?.selectedParts || []
 
   // 校验维修项目或者维修零件有值
-  if (items.length === 0 || parts.length === 0) {
+  if (items.length === 0 && parts.length === 0) {
     showToast('项目及零件不可为空，请添加项目或者零件')
     return
   }
