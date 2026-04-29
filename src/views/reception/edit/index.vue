@@ -3198,8 +3198,8 @@ const handlePartsReplace = (data) => {
 const onPartsSave = async () => {
   if (isPartsSaveDisabled.value) return
   // 从 RepairItemContent 组件获取数据
-  const items = repairItemContentRef.value?.selectedItems || []
-  const parts = repairItemContentRef.value?.selectedParts || []
+  const items = partsData.repairItemRespList || []
+  const parts = partsData.sparePartRespList || []
 
   // 校验项目及零件不可为空
   if (items.length === 0 && parts.length === 0) {
@@ -3335,9 +3335,9 @@ const onConfirmAndSign = () => {
     return
   }
   // 从 RepairItemContent 组件获取数据
-  const items = repairItemContentRef.value?.selectedItems || []
-  const parts = repairItemContentRef.value?.selectedParts || []
-
+  const items = partsData.repairItemRespList || []
+  const parts = partsData.sparePartRespList || []
+  console.log('items', items, parts)
   // 校验维修项目或者维修零件有值
   if (items.length === 0 && parts.length === 0) {
     showToast('项目及零件不可为空，请添加项目或者零件')
