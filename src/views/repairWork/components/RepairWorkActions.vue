@@ -156,7 +156,7 @@ const hasPendingFinal = computed(() => {
 
 // 批量操作按钮 → 打开 BatchOperate 弹窗
 const handleDelete = () => {
-  defaultTagIndex.value = 2
+  defaultTagIndex.value = hasInProgress.value ? 2 : 1
   showBatchOperate.value = true
 }
 

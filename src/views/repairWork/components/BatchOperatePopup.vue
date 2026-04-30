@@ -71,8 +71,8 @@
           <!-- 状态标签栏 -->
           <div class="status-tags">
             <div
-              v-for="(tag, index) in statusTags"
-              :key="index"
+              v-for="tag in statusTags"
+              :key="tag.index"
               class="status-tag-item"
               :class="{ active: activeTagIndex === tag.index }"
               @click="handleTagClick(tag.index)"
