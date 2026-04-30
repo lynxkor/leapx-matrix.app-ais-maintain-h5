@@ -197,7 +197,8 @@ const router = createRouter({
           name: 'preAuthorizationSearch',
           component: () => import('../views/preAuthorization/PreAuthorizationSearchPage.vue'),
           meta: {
-            title: ''
+            title: '',
+            hideHeader: true
           }
         },
         // 结算报表模块路由

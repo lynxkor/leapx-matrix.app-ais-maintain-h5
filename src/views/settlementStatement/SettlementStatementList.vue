@@ -51,17 +51,7 @@
 
     <!-- 列表区域 -->
     <div class="list-container">
-      <!-- 空状态（筛选导致） -->
-      <div v-if="showEmpty" class="empty-state">
-        <img class="empty-image" src="@/libs/assets/image/no-data.png" alt="没有数据" />
-        <p class="empty-text">没有找到相关内容</p>
-        <van-button plain type="primary" size="normal" class="reset-btn" @click="resetAll">
-          重置筛选
-        </van-button>
-      </div>
-
       <RefreshList
-        v-else
         ref="refreshListRef"
         :requestData="requestData"
         :has-no-data="dataList.length === 0"
@@ -652,7 +642,10 @@ const goToUpload = () => {
   display: flex;
   flex-direction: column;
   background-color: #f5f5f5;
-  overflow-y: auto;
+  overflow: hidden;
+  height: 100%;
+  min-height: 0;
+  overscroll-behavior: contain;
 
   &::-webkit-scrollbar {
     display: none;
@@ -673,9 +666,7 @@ const goToUpload = () => {
   }
 
   .header-fixed {
-    position: sticky;
-    top: 0;
-    z-index: 100;
+    flex-shrink: 0;
     background: #ffffff;
   }
 
@@ -769,36 +760,16 @@ const goToUpload = () => {
   }
 
   .list-container {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
     padding: 12px 12px 20px;
+    overscroll-behavior-y: contain;
+    -webkit-overflow-scrolling: touch;
   }
 
-  .empty-state {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 66px 0;
-
-    .empty-image {
-      width: 230px;
-      height: 142px;
-      margin-bottom: 16px;
-    }
-
-    .empty-text {
-      font-family: 'PingFang SC';
-      font-size: 14px;
-      color: #6c6e6c;
-      margin: 0 0 20px 0;
-    }
-
-    .reset-btn {
-      width: 88px;
-      height: 32px;
-      font-size: 14px;
-      color: #009100 !important;
-      border: 1px solid #009100 !important;
-      border-radius: 4px;
-    }
+  :deep(.pull-refresh-content) {
+    min-height: 100%;
   }
 
   .list-item-container {

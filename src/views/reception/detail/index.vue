@@ -80,7 +80,7 @@
                   :key="'interior-' + index"
                   class="image-item"
                 >
-                  <van-image :src="img" fit="cover" />
+                  <van-image :src="getInspectionPhotoUrl(img)" fit="cover" />
                 </div>
               </div>
             </div>
@@ -94,7 +94,7 @@
                   :key="'exterior-' + index"
                   class="image-item"
                 >
-                  <van-image :src="img" fit="cover" />
+                  <van-image :src="getInspectionPhotoUrl(img)" fit="cover" />
                 </div>
               </div>
             </div>
@@ -441,8 +441,8 @@ const moreActionsList = computed(() => {
       tag: '4',
       color: isCancelDisabled ? '#888888' : '#191a1b',
       disabled: isCancelDisabled,
-      disabledReason: disabledReason,
-    },
+      disabledReason: disabledReason
+    }
   ]
 })
 // 作废原因弹框状态
@@ -466,8 +466,8 @@ const onSelectMoreAction = (action) => {
       path: '/reception/maintenance-history',
       query: {
         id: route.query.id,
-        vin: detail.value.vehProfileVin,
-      },
+        vin: detail.value.vehProfileVin
+      }
     })
   }
   if (action.name === '权益查询') {
@@ -475,8 +475,8 @@ const onSelectMoreAction = (action) => {
       path: '/reception/rights-query',
       query: {
         id: route.query.id,
-        vin: detail.value.vehProfileVin,
-      },
+        vin: detail.value.vehProfileVin
+      }
     })
   }
   if (action.name === '实时故障') {
@@ -498,7 +498,7 @@ const onConfirmCancel = () => {
   cancelLoading.value = true
   serviceProxyCancel({
     id: detail.value.id,
-    invaildDesc: cancelReason.value,
+    invaildDesc: cancelReason.value
   })
     .then((res) => {
       if (res.code === 200) {
@@ -563,7 +563,7 @@ const detail = ref({
   anomalyDescription: '',
   currentFault: '',
   faultAlertRecordRespList: [],
-  customerContent: '',
+  customerContent: ''
 })
 // 项目零件数据
 const partsData = reactive({
@@ -572,7 +572,7 @@ const partsData = reactive({
   maintenanceCostEstimation: '',
   repairItemRespList: [],
   packageRespList: [],
-  sparePartRespList: [],
+  sparePartRespList: []
 })
 
 // 签字确认数据
@@ -583,15 +583,22 @@ const signatureData = reactive({
   isLive: false,
   signChannel: '',
   signStatusLabel: '',
-  attachments: [],
+  attachments: []
 })
 
+const getInspectionPhotoUrl = (file) => {
+  if (typeof file === 'string') {
+    return file
+  }
+  return file?.fileUrl || ''
+}
+
 // 获取详情
-const fetchDetail = async () => {
+const fetchDetail = async() => {
   const id = route.query.id
   if (!id) return
   loading.value = true
-  getDetail(id)
+  return getDetail(id)
     .then((res) => {
       console.log('获取详情成功:', res)
       if (res.code === 200) {
@@ -653,17 +660,19 @@ const getSignChannelName = (channel) => {
     40: '纸质单据',
     10: 'APP/短信/零小跑',
     20: 'APP/短信/零小跑',
-    30: 'APP/短信/零小跑',
+    30: 'APP/短信/零小跑'
   }
   return channelMap[channel] || ''
 }
 
 // 加载附件列表
-const loadAttachmentList = async () => {
+const loadAttachmentList = async() => {
   if (!route.query.id) return
   try {
     const res = await getFileList({ businessId: route.query.id, attachType: '' })
     if (res.code === 200 && res.data) {
+      detail.value.interiorPhotos = res.data.filter((file) => file.attachType === '车内照片')
+      detail.value.exteriorPhotos = res.data.filter((file) => file.attachType === '车外照片')
       signatureData.attachments = res.data.map((file) => ({
         ...file,
         isImage: isFileType(file, 'image'),
@@ -672,7 +681,7 @@ const loadAttachmentList = async () => {
         isWord: isFileType(file, 'word'),
         isPpt: isFileType(file, 'ppt'),
         isVideo: isFileType(file, 'video'),
-        isZip: isFileType(file, 'zip') || isFileType(file, 'rar'),
+        isZip: isFileType(file, 'zip') || isFileType(file, 'rar')
       }))
     }
   } catch (error) {
@@ -711,7 +720,7 @@ const onPreviewFile = (file) => {
     showImagePreview({
       images: [file.fileUrl],
       startPosition: 0,
-      showIndex: false,
+      showIndex: false
     })
   }
 }
@@ -721,8 +730,9 @@ const onMore = () => {
   showMoreActions.value = !showMoreActions.value
 }
 
-onMounted(() => {
-  fetchDetail()
+onMounted(async() => {
+  await fetchDetail()
+  await loadAttachmentList()
   nextTick(() => {
     const el = document.querySelector('.expandable-text')
     if (el) {
@@ -731,8 +741,6 @@ onMounted(() => {
       abnormalDescNeedExpand.value = el.scrollHeight > lineHeight * 3
     }
   })
-  // 加载附件列表
-  loadAttachmentList()
 })
 </script>
 <style lang="scss" scoped>

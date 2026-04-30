@@ -1,7 +1,7 @@
 <template>
   <div class="repair-work-page">
     <!-- 顶部标签页 -->
-    <van-sticky offset-top="44">
+    <van-sticky offset-top="46">
       <van-tabs v-model:active="activeTab" class="work-tabs">
         <van-tab title="派工" name="dispatch" />
         <van-tab title="施工" name="working" />
@@ -201,7 +201,12 @@ watch(activeTab, () => {
 
 <style lang="scss" scoped>
 .repair-work-page {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
   background-color: #f5f5f5;
+  overflow: hidden;
+  height: 100%;
 
   :deep(.work-tabs) {
     .van-tab {
@@ -230,9 +235,7 @@ watch(activeTab, () => {
     align-items: center;
     padding: 12px;
     background-color: #fff;
-    position: sticky;
-    top: 44px;
-    z-index: 99;
+    flex-shrink: 0;
 
     .filter-tabs {
       display: flex;
