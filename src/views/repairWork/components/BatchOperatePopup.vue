@@ -280,7 +280,7 @@ const statusTags = computed(() => {
 const loadRepairWorkRecord = async() => {
   loading.value = true
   try {
-    const res = await repairWorkRecord({ serviceProxyId: props.workOrder.serviceProxyId })
+    const res = await repairWorkRecord({ serviceProxyId: props.workOrder.serviceProxyId, pageSize: 1000 })
     if (res.code === 200) {
       internalRepairItems.value = (res?.data || []).map((item) => ({
         ...item,

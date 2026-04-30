@@ -174,36 +174,36 @@ import {
   useRepairItemData,
   useRepairItemBusinessRules,
   useRepairItemOperations,
-  useRepairItemList,
+  useRepairItemList
 } from './hooks'
 
 const props = defineProps({
   serviceProxyId: {
     type: String,
-    default: '',
+    default: ''
   },
   showHeader: {
     type: Boolean,
-    default: false,
+    default: false
   },
   isComponent: {
     type: Boolean,
-    default: false,
+    default: false
   },
   // 外部传入的维修项目数据
   initialItems: {
     type: Array,
-    default: null,
+    default: null
   },
   // 外部传入的维修零件数据
   initialParts: {
     type: Array,
-    default: null,
+    default: null
   },
   isReplace: {
     type: Boolean,
-    default: false,
-  },
+    default: false
+  }
 })
 
 const emit = defineEmits(['close', 'confirm', 'replace'])
@@ -226,7 +226,7 @@ const {
   normalizePart,
   getPermFilteredDefaults,
   loadInitialData,
-  resetData,
+  resetData
 } = useRepairItemData({ serviceProxyId: props.serviceProxyId })
 
 // 业务规则 Hook
@@ -241,14 +241,14 @@ const {
   editingItem,
   showCheckoutPicker,
   openCheckoutPicker,
-  onCheckoutConfirm,
+  onCheckoutConfirm
 } = useRepairItemBusinessRules({
   dealerPermission,
   rawMaintenanceTypes,
   rawCheckoutTypes,
   rawRepairItemTypes,
   selectedItems,
-  selectedParts,
+  selectedParts
 })
 
 // 操作 Hook
@@ -261,7 +261,7 @@ const { performSearch, handleAddItemWithParts, handleItemUpdate, removeItem, han
     normalizePart,
     getPermFilteredDefaults,
     activeTab,
-    searchBarRef,
+    searchBarRef
   })
 
 // 列表分组 Hook
@@ -283,7 +283,7 @@ const repairItemContentReplace = (content) => {
 
   // 在 selectedParts 中查找并替换
   const index = selectedParts.value.findIndex(
-    (part) => part.partsId === oldPart.partsId || part.partsCode === oldPart.partsCode,
+    (part) => part.partsId === oldPart.partsId || part.partsCode === oldPart.partsCode
   )
 
   console.log('找到索引:', index, '原零件:', oldPart)
@@ -310,7 +310,7 @@ const repairItemContentReplace = (content) => {
     // 通知父组件发生了替换操作，传递更新后的零件列表
     emit('replace', {
       selectedItems: selectedItems.value,
-      selectedParts: selectedParts.value,
+      selectedParts: selectedParts.value
     })
 
     showToast({ message: '替换成功', 'z-index': 5100 })
@@ -326,7 +326,7 @@ const onSaveSuccess = (data) => {
   emit('confirm', data)
 }
 
-const onSave = async () => {
+const onSave = async() => {
   if (isAuditComplete.value) return
   showLoadingToast('请稍候...')
   try {
@@ -336,7 +336,7 @@ const onSave = async () => {
       searchBarRef.value?.reset()
       emit('close')
     }
-  } catch (error) {
+  } catch {
     closeToast()
   }
 }
@@ -346,7 +346,7 @@ const showPackageDetail = ref(false)
 const selectedPackageDetail = ref({
   name: '',
   code: '',
-  itemRespList: [],
+  itemRespList: []
 })
 const currentPackageGroup = ref(null)
 
@@ -355,7 +355,7 @@ const openPackageDetail = (group) => {
   selectedPackageDetail.value = {
     name: group.title || '',
     code: group.key || '',
-    itemRespList: group.items || [],
+    itemRespList: group.items || []
   }
   showPackageDetail.value = true
 }
@@ -373,7 +373,7 @@ watch(
       selectedItems.value = newItems.map(normalizeItem)
     }
   },
-  { immediate: true },
+  { immediate: true }
 )
 
 watch(
@@ -383,11 +383,11 @@ watch(
       selectedParts.value = newParts.map(normalizePart)
     }
   },
-  { immediate: true },
+  { immediate: true }
 )
 
 // 组件挂载时，如果有外部数据则使用外部数据，否则加载枚举数据
-onMounted(async () => {
+onMounted(async() => {
   if (props.isComponent && (props.initialItems || props.initialParts)) {
     // 有外部数据时，只加载枚举数据（用于分类选择器）
     await loadInitialData()
@@ -404,7 +404,7 @@ defineExpose({
   searchBarRef,
   selectedItems,
   selectedParts,
-  onSave,
+  onSave
 })
 </script>
 

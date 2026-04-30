@@ -193,6 +193,8 @@ const handleDispatchSubmit = async() => {
 
   .item-list-wrapper {
     margin-top: 8px;
+    max-height: 360px;
+    overflow: auto;
 
     .item-list {
       display: flex;
