@@ -3339,11 +3339,9 @@ const onConfirmAndSign = () => {
   }
   // 从 RepairItemContent 组件获取数据
   const items = partsData.repairItemRespList || []
-  const parts = partsData.sparePartRespList || []
-  console.log('items', items, parts)
-  // 校验维修项目或者维修零件有值
-  if (items.length === 0 && parts.length === 0) {
-    showToast('项目及零件不可为空，请添加项目或者零件')
+  // 校验维修项目有值
+  if (items.length === 0) {
+    showToast('项目不可为空，请先添加维修项目')
     return
   }
   // 点击"准确"，执行接口

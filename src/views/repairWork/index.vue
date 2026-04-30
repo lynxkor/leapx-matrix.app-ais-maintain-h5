@@ -67,6 +67,28 @@ const router = useRouter()
 // 标签页
 const activeTab = ref('dispatch')
 
+// 定义 onBeforeBack，点击返回时直接退出 WebView
+const onBeforeBack = () => {
+  // 调用原生方法退出 WebView
+  const navigatorType = navigator.userAgent.toLowerCase()
+  if (navigatorType.includes('android')) {
+    if (window.Android && window.Android.goback) {
+      window.Android.goback()
+    }
+  } else if (navigatorType.includes('iphone') || navigatorType.includes('ipad')) {
+    if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.revert) {
+      window.webkit.messageHandlers.revert.postMessage(null)
+    }
+  } else {
+    window.close()
+  }
+}
+
+// 暴露给 baseLayout
+defineExpose({
+  onBeforeBack
+})
+
 // 筛选条件
 const filters = [
   { label: '全部', value: 'all' },
