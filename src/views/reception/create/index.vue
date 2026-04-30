@@ -1790,6 +1790,7 @@ const fetchDetail = async () => {
       // 初始化输入框
       repairPersonNameInput.value = item.vehicleProfileOwnerResp?.ownerName || ''
       repairPersonPhoneInput.value = item.vehicleProfileOwnerResp?.mobilephone || ''
+      detail.vehicleProfileServiceResp = item.vehicleProfileServiceResp || {}
       // 获取车联网里程数
       if (detail.vin) {
         fetchVehicleMileage(detail.vin)
