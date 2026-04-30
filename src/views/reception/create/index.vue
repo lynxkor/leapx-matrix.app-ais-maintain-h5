@@ -314,7 +314,9 @@
                     :key="index"
                     class="fault-module-item"
                   >
-                    <span class="module-name">{{ module.vfgName }}-{{ module.cccName }}</span>
+                    <span class="module-name">{{
+                      module.vrtName + '-' + module.vfgName + '-' + module.cccName
+                    }}</span>
                     <van-icon name="delete-o" @click="onDeleteFaultModule(module)" />
                   </div>
                 </div>
@@ -426,14 +428,34 @@
               <span class="label">开启维修直播</span>
               <van-switch v-model="signatureData.liveEnabled" size="20" active-color="#009100" />
             </div> -->
-            <div class="signature-row" @click="showSignatureChannelPicker = true">
+            <div class="signature-row" @click="showSignatureChannelPickerHandle">
               <span class="label">签字渠道</span>
 
               <div class="value-wrapper">
                 <span :class="['value', { placeholder: !signatureData.signatureChannel }]">
                   {{ signatureData.signatureChannel || '请选择' }}
                 </span>
-                <van-icon name="arrow" size="12" color="#545454" />
+                <van-icon v-if="detail.signStatus != 20" name="arrow" size="12" color="#545454" />
+              </div>
+            </div>
+            <!-- 已签字状态显示 -->
+            <div class="signature-row" v-if="detail.signStatus == 20">
+              <span class="label">签字状态</span>
+              <div class="value-wrapper">
+                <span class="value signed">已签字</span>
+              </div>
+            </div>
+            <div
+              class="signature-action-row"
+              v-if="detail.signStatus == 20 && detail.signChannel != 40"
+            >
+              <van-button type="primary" size="small" @click="onViewSignature">查看签字</van-button>
+            </div>
+            <!-- 未签字状态显示 -->
+            <div class="signature-row" v-if="detail.signStatus != 20">
+              <span class="label">签字状态</span>
+              <div class="value-wrapper">
+                <span class="value unsigned">未签字</span>
               </div>
             </div>
           </div>
@@ -855,7 +877,7 @@
             >
               <van-highlight
                 :keywords="faultSearchValue"
-                :source-string="item.vfgName + '-' + item.cccName"
+                :source-string="item.vrtName + '-' + item.vfgName + '-' + item.cccName"
               />
             </div>
             <!-- 无结果 -->
@@ -1441,7 +1463,6 @@ const onConfirmFaultChange = () => {
   showFaultConfirm.value = false
   // 清空故障模块和客户故障描述
   detail.faultModules = []
-  detail.customerFaultDesc = ''
   detail.hasFault = '2'
   showToast('已更改')
 }
@@ -2126,7 +2147,7 @@ const onFaultSearchClear = () => {
 // 添加故障模块项
 const onAddFaultModuleItem = (item) => {
   // 检查是否已存在（根据cccCode匹配）
-  const exists = detail.faultModules.some((m) => m.cccCode === item.cccCode)
+  const exists = detail.faultModules.some((m) => m.cccId === item.cccId)
   if (exists) {
     showToast('该故障模块已添加')
     return
@@ -2265,69 +2286,28 @@ const onSave = async () => {
   savingLoading.value = true
   try {
     const res = await serviceAddOrUpdate({
-      code: '',
-      dataSource: '',
-      orderStatus: '',
-      warrantyTypeCollect: '',
       customerName: detail.owner,
       customerPhone: detail.ownerPhone,
-      custType: '',
       vehModelName: detail.vehicleModelName,
       bindingPhone: detail.binderPhone,
       bindingUser: detail.bindingUser,
-      bindingUserId: '',
       carPlate: detail.plateNo,
       dealerName: detail.salesDealerName,
       dealerCode: detail.salesDealerCode,
-      appointmentNo: '',
       mileage: detail.mileage,
       lastMileage: null,
       startWarrantyDate: detail.vehicleProfileServiceResp.warrantyStartdate || '',
       exclusiveServiceDealerName: detail.vehicleProfileServiceResp.serviceDealerName || '',
       exclusiveServiceDealerCode: detail.vehicleProfileServiceResp.serviceDealerCode || '',
       expectFinishAt: signatureData.expectFinishAt,
-      createStatementInfoDate: '',
-      remark: '',
-      status: '',
-      statusDesc: '',
-      pickStatus: '',
       shuttleName: detail.repairPerson,
       shuttlePhone: detail.repairPersonPhone,
-      payType: '',
-      warrantyCompany: '',
       signChannel: signatureData.signatureChannel === '纸质单据' ? '40' : '',
-      signCompletedOn: '',
-      signGeneratedOn: '',
-      signStatus: '',
-      signUrlExpiredOn: '',
-      appointmentType: '',
-      preAuthType: '',
-      isLockLive: '',
-      isCreateWarranty: '',
-      isOutboundOrder: '',
-      isVehRetentionRemind: '',
-      isCancelStorage: '',
-      discountId: '',
-      finalCheckAt: '',
-      finalCheckerId: '',
-      finalChecker: '',
-      ticketStep: '',
-      warrantyStatus: '',
-      claimItemAmount: '',
-      claimOtherAmount: '',
-      claimPartsAmount: '',
-      departureMileage: '',
       inPower: detail.battery,
-      outPower: '',
       netMileage: detail.networkMileageTotal,
-      departureNetMileage: '',
       inNetPower: detail.networkBattery,
-      outNetPower: '',
-      departureNetMileageElectricity: '',
-      departureNetMileageExtend: '',
       netMileageElectricity: detail.electricalMileage,
       netMileageExtend: detail.networkMileageAdd,
-      vehProfileId: detail.id,
       vehProfileVin: detail.vin,
       maintenanceMileage: detail.vehicleProfileServiceResp.nextMaintainMileages,
       maintenanceTime: detail.vehicleProfileServiceResp.nextMaintainDate,
@@ -2343,43 +2323,17 @@ const onSave = async () => {
       batteryModel: detail.batteryModel,
       batterySerialNumber: detail.batterySerialNumber,
       engineNumber: detail.enginenNumber,
-      repairItemTypeDetailCollect: '',
       businessType: computedBusinessType.value,
-      alarmLevel: '',
-      isLive: '',
       haveRework: 0,
       isCarWash: 0,
       isRetainOldParts: 0,
-      inCustomerContent: '',
-      customerComment: '',
       testResult: detail.testResult,
       currentFault: detail.hasFault === '1' ? 1 : 0,
       customerContent: detail.customerFaultDesc,
-      invaildDesc: '',
       anomalyDescription: detail.abnormalDesc,
-      previewingFinishAt: '',
-      confirmedOn: '',
-      expectStartAt: '',
-      startAt: '',
-      finishAt: '',
-      faultSolve: '',
       currentSituation: detail.hasFault === '1' ? 20 : 10,
-      faultAlert: '',
-      faultPeriod: '',
-      earliestfaultServiceProxy: '',
-      recentlyfaultServiceProxy: '',
       faultModule: detail.faultModules.map((m) => m.cccCode).join(','),
       isCreateStatementInfo: 0,
-      isPreAuth: '',
-      isCreatePreAuth: '',
-      preAuthRuleId: '',
-      unresolvedReason: '',
-      faultDesc: '',
-      batteryUnitId: '',
-      batteryUnitName: '',
-      targetUnitCode: '',
-      beforeChangeCode: '',
-      afterChangeCode: '',
       exteriorPhotoList: detail.exteriorImages.map((item) => ({
         ...item,
         fileId: item.id,
@@ -2387,6 +2341,7 @@ const onSave = async () => {
         fileUrl: item.url,
         attachType: '车外照片',
         configCode: 'mcs_serviceproxy',
+        id: null,
       })),
       interiorPhotoList: detail.interiorImages.map((item) => ({
         ...item,
@@ -2395,18 +2350,16 @@ const onSave = async () => {
         fileUrl: item.url,
         attachType: '车内照片',
         configCode: 'mcs_serviceproxy',
+        id: null,
       })),
-      isStoreLive: '',
       faultAlertRecordParams: detail.faultModules.map((m) => ({
-        cccId: m.cccCode || '',
+        cccId: m.id || '',
         cccName: m.cccName || '',
         vfgId: m.vfgCode || '',
         vfgName: m.vfgName || '',
         vrtId: m.vrtCode || '',
         vrtName: m.vrtName || '',
       })),
-      latelyServiceProxy: '',
-      earlyServiceProxy: '',
     })
     if (res.code === 200) {
       showToast('保存成功')
@@ -2544,7 +2497,6 @@ const onInspectionSave = async () => {
       departureNetMileageExtend: detail.departureNetMileageExtend,
       netMileageElectricity: detail.electricalMileage,
       netMileageExtend: detail.networkMileageAdd,
-      vehProfileId: detail.id,
       vehProfileVin: detail.vin,
       maintenanceMileage: detail.vehicleProfileServiceResp.nextMaintainMileages,
       maintenanceTime: detail.vehicleProfileServiceResp.nextMaintainDate,
@@ -2574,7 +2526,6 @@ const onInspectionSave = async () => {
       customerContent: detail.customerFaultDesc,
       invaildDesc: detail.invaildDesc,
       anomalyDescription: detail.abnormalDesc,
-      customerComment: detail.customerComment,
       previewingFinishAt: detail.previewingFinishAt,
       confirmedOn: detail.confirmedOn,
       expectStartAt: detail.expectStartAt,
@@ -2616,7 +2567,7 @@ const onInspectionSave = async () => {
       })),
       isStoreLive: detail.isStoreLive,
       faultAlertRecordParams: detail.faultModules.map((m) => ({
-        cccId: m.cccCode || '',
+        cccId: m.id || '',
         cccName: m.cccName || '',
         vfgId: m.vfgCode || '',
         vfgName: m.vfgName || '',
@@ -2649,7 +2600,7 @@ const onPartsSave = async () => {
 
   // 校验项目及零件不可为空
   if (items.length === 0 && parts.length === 0) {
-    showToast('项目及零件不可为空，请添加项目及零件')
+    showToast('项目及零件不可为空，请添加项目或者零件')
     return
   }
 
@@ -2685,7 +2636,7 @@ const onSignatureSave = async () => {
 
   // 校验项目及零件不可为空
   if (items.length === 0 && parts.length === 0) {
-    showToast('项目及零件不可为空，请添加项目及零件')
+    showToast('项目及零件不可为空，请添加项目或者零件')
     return
   }
 
@@ -2715,13 +2666,16 @@ const onSignatureSave = async () => {
 
 // 制单确认并签字
 const onConfirmAndSign = () => {
+  if (isConfirmAndSignDisabled.value) {
+    return
+  }
   // 从 RepairItemContent 组件获取数据
   const items = repairItemContentRef.value?.selectedItems || []
   const parts = repairItemContentRef.value?.selectedParts || []
 
   // 校验维修项目或者维修零件有值
   if (items.length === 0 && parts.length === 0) {
-    showToast('项目及零件不可为空，请添加项目及零件')
+    showToast('项目及零件不可为空，请添加项目或者零件')
     return
   }
   // 点击"准确"，执行接口
@@ -2788,8 +2742,8 @@ const fetchDetailForSignature = async () => {
       detail.bindingUser = data.bindingUser || ''
       detail.binderPhone = data.bindingPhone || ''
       detail.bindingUserId = data.bindingUserId || ''
-      detail.repairPerson = data.shuttleName || ''
-      detail.repairPersonPhone = data.shuttlePhone || ''
+      detail.repairPerson = data.customerName || ''
+      detail.repairPersonPhone = data.customerPhone || ''
       // 计算送修人类型
       detail.repairPersonTag =
         detail.repairPerson === data.customerName
@@ -2896,6 +2850,24 @@ const onCloseDeliveryTimePicker = () => {
   showDeliveryTimePicker.value = false
 }
 
+const showSignatureChannelPickerHandle = () => {
+  if (detail.signStatus == 20) {
+    return
+  }
+  showSignatureChannelPicker = true
+}
+// 查看签字
+const onViewSignature = () => {
+  if (detail.signUrl) {
+    showImagePreview({
+      images: [detail.signUrl],
+      startPosition: 0,
+      showIndex: false,
+    })
+  } else {
+    showToast('暂无签字图片')
+  }
+}
 // 选择签字渠道
 const onSelectSignatureChannel = (item) => {
   signatureData.signatureChannel = item.label
