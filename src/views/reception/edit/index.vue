@@ -3198,42 +3198,43 @@ const handlePartsReplace = (data) => {
 
 // 项目零件保存
 const onPartsSave = async () => {
-  if (isPartsSaveDisabled.value) return
-  // 从 RepairItemContent 组件获取数据
-  const items = partsData.repairItemRespList || []
-  const parts = partsData.sparePartRespList || []
+  // if (isPartsSaveDisabled.value) return
+  // // 从 RepairItemContent 组件获取数据
+  // const items = partsData.repairItemRespList || []
+  // const parts = partsData.sparePartRespList || []
 
-  // 校验项目及零件不可为空
-  if (items.length === 0 && parts.length === 0) {
-    showToast('项目及零件不可为空，请添加项目或者零件')
-    return
-  }
+  // // 校验项目及零件不可为空
+  // if (items.length === 0 && parts.length === 0) {
+  //   showToast('项目及零件不可为空，请添加项目或者零件')
+  //   return
+  // }
 
-  savingLoading.value = true
-  try {
-    // 保存项目零件
-    const res = await saveSpRepairItem({
-      serviceProxyId: route.query.id,
-      discountId: '',
-      itemList: items,
-      partsList: parts,
-    })
-    if (res.code !== 200) {
-      showToast(res.msg || '保存失败')
-      return
-    }
-    showToast('保存成功')
-    // 执行inspection保存（带id编辑）
-    const inspectionRes = await onInspectionSave(1)
-    if (inspectionRes?.code === 200) {
-      isSaved.value = true
-    }
-  } catch (error) {
-    console.error('保存失败:', error)
-    showToast('保存失败')
-  } finally {
-    savingLoading.value = false
-  }
+  // savingLoading.value = true
+  // try {
+  //   // 保存项目零件
+  //   const res = await saveSpRepairItem({
+  //     serviceProxyId: route.query.id,
+  //     discountId: '',
+  //     itemList: items,
+  //     partsList: parts,
+  //   })
+  //   if (res.code !== 200) {
+  //     showToast(res.msg || '保存失败')
+  //     return
+  //   }
+  //   showToast('保存成功')
+  //   // 执行inspection保存（带id编辑）
+  //   const inspectionRes = await onInspectionSave(1)
+  //   if (inspectionRes?.code === 200) {
+  //     isSaved.value = true
+  //   }
+  // } catch (error) {
+  //   console.error('保存失败:', error)
+  //   showToast('保存失败')
+  // } finally {
+  //   savingLoading.value = false
+  // }
+  repairItemContentRef.value?.onSave()
 }
 
 // 签字确认保存
