@@ -145,7 +145,7 @@
     <div class="popup-footer" v-if="!isComponent">
       <div
         class="save-btn"
-        :class="{ disabled: !hasAnySelectedItems || isAuditComplete }"
+        :class="{ disabled: isAuditComplete }"
         @click="onSave"
       >
         保存
@@ -265,7 +265,7 @@ const { performSearch, handleAddItemWithParts, handleItemUpdate, removeItem, han
   })
 
 // 列表分组 Hook
-const { hasAnySelectedItems, regularItems, packageItemGroups, regularParts, packagePartGroups } =
+const { regularItems, packageItemGroups, regularParts, packagePartGroups } =
   useRepairItemList({ selectedItems, selectedParts })
 
 // 事件处理
