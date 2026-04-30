@@ -3024,6 +3024,7 @@ const onInspectionSave = async (type) => {
     return { code: 200 }
   }
   savingLoading.value = true
+  // TODO: 待修复，不需要提交这么多字段
   let params = {
     id: detail.id,
     code: detail.code,
@@ -3038,14 +3039,14 @@ const onInspectionSave = async (type) => {
     bindingUser: detail.bindingUser,
     bindingUserId: detail.bindingUserId,
     carPlate: detail.plateNo,
-    dealerName: detail.salesDealerName,
-    dealerCode: detail.salesDealerCode,
+    // dealerName: detail.salesDealerName,
+    // dealerCode: detail.salesDealerCode,
     appointmentNo: detail.appointmentNo,
     mileage: detail.mileage,
     lastMileage: detail.lastMileage,
     startWarrantyDate: detail.vehicleProfileServiceResp.warrantyStartdate,
-    exclusiveServiceDealerName: detail.vehicleProfileServiceResp.serviceDealerName,
-    exclusiveServiceDealerCode: detail.vehicleProfileServiceResp.serviceDealerCode,
+    // exclusiveServiceDealerName: detail.vehicleProfileServiceResp.serviceDealerName,
+    // exclusiveServiceDealerCode: detail.vehicleProfileServiceResp.serviceDealerCode,
     expectFinishAt: signatureData.expectFinishAt,
     createStatementInfoDate: detail.createStatementInfoDate,
     remark: detail.remark,
