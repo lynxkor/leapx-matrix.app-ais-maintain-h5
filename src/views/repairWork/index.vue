@@ -38,7 +38,7 @@
         <div class="card-list">
           <RepairWorkCard
             v-for="item in workOrderList"
-            :key="item.id"
+            :key="item.serviceProxyId"
             :work-order="item"
             :active-tab="activeTab"
             @refresh="onRefresh"
