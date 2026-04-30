@@ -319,7 +319,7 @@ const handleSubmit = () => {
     finalChecker: userStore.userName,
     // faultAlertRecordParams: detailData.value.faultAlertRecordResps || [],
     repairWorkRecordResps: detailData.value.repairWorkRecordResps || [],
-    currentFault: detailData.value.faultFlag === 1 ? 0 : 1
+    currentFault: detailData.value.faultFlag ? 1 : 0
   }
 
   // 电池信息
