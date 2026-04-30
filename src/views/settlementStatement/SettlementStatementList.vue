@@ -648,7 +648,9 @@ const goToUpload = () => {
 
 <style lang="scss" scoped>
 .settlement-statement-list {
-  min-height: 100vh;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
   background-color: #f5f5f5;
   overflow-y: auto;
 

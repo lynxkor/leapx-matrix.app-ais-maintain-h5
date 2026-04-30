@@ -289,7 +289,8 @@ watch(activeTab, () => {
   }
 
   .refresh-container {
-    min-height: calc(100vh - 140px);
+    flex: 1;
+    overflow-y: auto;
     padding: 12px;
 
     .card-list {

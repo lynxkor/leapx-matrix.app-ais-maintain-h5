@@ -1101,7 +1101,9 @@ onUnmounted(() => {
 
 <style lang="scss" scoped>
 .pre-auth-detail {
-  min-height: 100vh;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
   background: #f5f5f5;
   padding-bottom: calc(76px + env(safe-area-inset-bottom));
   padding-top: 84px;
