@@ -53,8 +53,8 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { useGlobalStore } from '@/stores/global'
 import { getVehicleInfo } from '@/api/reception'
 import { showToast } from 'vant'
@@ -74,7 +74,6 @@ const highlightKeyword = (text) => {
   return text.replace(regex, '<span style="color:#009100">$1</span>')
 }
 
-const route = useRoute()
 const router = useRouter()
 const globalStore = useGlobalStore()
 
@@ -90,7 +89,7 @@ const searchLoading = ref(false)
 const hasSearched = ref(false)
 
 // 页面加载时
-onMounted(async () => {
+onMounted(async() => {
   globalStore.setTitle('')
 })
 
@@ -110,7 +109,7 @@ const onLocalSearch = (val) => {
 }
 
 // 搜索处理
-const handleSearch = async (keyword) => {
+const handleSearch = async(keyword) => {
   if (!keyword) return
 
   searchLoading.value = true
@@ -119,7 +118,7 @@ const handleSearch = async (keyword) => {
 
   try {
     const res = await getVehicleInfo({
-      searchVin: keyword,
+      searchVin: keyword
     })
     if (res.code === 200) {
       searchResults.value = res.data || []
@@ -140,28 +139,34 @@ const onCardClick = (item) => {
   router.push({
     name: 'workOrderCreate',
     query: {
-      id: item.id,
+      id: item.id
     },
     params: {
-      vehicleInfo: JSON.stringify(item),
-    },
+      vehicleInfo: JSON.stringify(item)
+    }
   })
 }
 </script>
 
 <style lang="scss" scoped>
+.search-page-wrapper {
+  --search-safe-area-top: var(--safe-area-top, env(safe-area-inset-top, 0px));
+  --search-header-height: calc(44px + var(--search-safe-area-top));
+  min-height: 100%;
+}
+
 // 自定义搜索头部样式
 .search-header {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
-  height: 44px;
+  height: var(--search-header-height);
   background-color: #fff;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 7px 12px;
+  padding: calc(7px + var(--search-safe-area-top)) 12px 7px;
   box-sizing: border-box;
   z-index: 6000;
 
@@ -225,7 +230,8 @@ const onCardClick = (item) => {
   // background-color: #ffffff;
   display: flex;
   flex-direction: column;
-  padding-top: 44px;
+  box-sizing: border-box;
+  padding-top: var(--search-header-height);
 }
 
 // 搜索加载状态

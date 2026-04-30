@@ -188,8 +188,8 @@
                 >
                   <img
                     style="width: 100%; height: 100%; margin-bottom: 0"
-                    :src="file.url"
-                    @click="showImg(file.url)"
+                    :src="getFilePreviewUrl(file)"
+                    @click="showImg(getFilePreviewUrl(file))"
                   />
                   <img
                     class="delete_icon"
@@ -225,8 +225,8 @@
                 >
                   <img
                     style="width: 100%; height: 100%; margin-bottom: 0"
-                    :src="file.url"
-                    @click="showImg(file.url)"
+                    :src="getFilePreviewUrl(file)"
+                    @click="showImg(getFilePreviewUrl(file))"
                   />
                   <img
                     class="delete_icon"
@@ -1158,7 +1158,7 @@ import {
   uploadFileByUrl,
   getUploadConfig,
   deleteAttachmentConfig,
-  getFileList,
+  getFileList
 } from '@/libs/api/fileConfig'
 import { getAppImgLimit } from '@/libs/utils/nativeFn'
 import { RemindInfoTypeEnum, AlarmLevelEnum } from '@/views/repairWork/constant'
@@ -1172,7 +1172,7 @@ import {
   getRemindInfo,
   saveSpRepairItem,
   spConfirmAndSign,
-  serviceProxyCancel,
+  serviceProxyCancel
 } from '@/api/reception'
 import { preAuthAddOrUpdate } from '@/api/authorization'
 import '../create/create.scss'
@@ -1212,6 +1212,14 @@ const computedBusinessType = computed(() => {
   return detail.businessType || (detail.isAppointment ? 50 : 10)
 })
 
+const getFilePreviewUrl = (file) => {
+  return file?.fileUrl || file?.url || file?.authFileUrl || ''
+}
+
+const getFileSaveUrl = (file) => {
+  return file?.url || file?.fileUrl || file?.authFileUrl || ''
+}
+
 // 施工单状态
 const isSaved = ref(false) // 是否已保存
 
@@ -1245,7 +1253,7 @@ const onConfirmDialogClose = () => {
 const showWarrantyAlertDialog = ref(false)
 const remindList = ref([])
 
-const onGenerateAuthorization = async () => {
+const onGenerateAuthorization = async() => {
   // 生成预授权
   try {
     const res = await preAuthAddOrUpdate({ serviceProxyId: detail.id })
@@ -1313,7 +1321,7 @@ const {
   selectedItems,
   selectedParts,
   dealerPermission,
-  loadInitialData,
+  loadInitialData
 } = useRepairItemData({ serviceProxyId: route.query.id })
 
 // 业务规则 Hook
@@ -1323,14 +1331,14 @@ const {
   editingItem,
   openCheckoutPicker,
   onCheckoutConfirm,
-  closeCheckoutPicker,
+  closeCheckoutPicker
 } = useRepairItemBusinessRules({
   dealerPermission,
   rawMaintenanceTypes,
   rawCheckoutTypes,
   rawRepairItemTypes,
   selectedItems,
-  selectedParts,
+  selectedParts
 })
 
 // 初始化数据
@@ -1397,7 +1405,7 @@ const numberLetterRows = computed(() => {
     ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'P', '港', '澳'],
     ['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', '学'],
     ['Z', 'X', 'C', 'V', 'B', 'N', 'M', '警', '领', ''],
-    ['删除', '', '', '', '', '', '', '', '', '完成'],
+    ['删除', '', '', '', '', '', '', '', '', '完成']
   ]
 })
 
@@ -1462,7 +1470,7 @@ const onKeyboardKeyClick = (key) => {
 }
 
 // 确认更换车牌
-const onConfirmChangePlate = async () => {
+const onConfirmChangePlate = async() => {
   const newPlate = plateInputChars.value.join('')
   if (newPlate.length < 7) {
     showToast('请输入完整的车牌号')
@@ -1483,7 +1491,7 @@ const onConfirmChangePlate = async () => {
       const vehicleList = res.data || []
       // 检查是否存在其他车辆使用该车牌号（排除当前车辆）
       const existingVehicle = vehicleList.find(
-        (v) => v.vehiclePlateNo === newPlate && v.vin !== detail.vin,
+        (v) => v.vehiclePlateNo === newPlate && v.vin !== detail.vin
       )
 
       if (existingVehicle) {
@@ -1531,20 +1539,20 @@ const moreActionsList = computed(() => {
       tag: '4',
       color: isCancelDisabled ? '#888888' : '#191a1b',
       disabled: isCancelDisabled,
-      disabledReason: disabledReason,
-    },
+      disabledReason: disabledReason
+    }
   ]
 })
 const faultModuleList = ref([])
 
 // 获取故障模块列表
-const fetchFaultModuleList = async () => {
+const fetchFaultModuleList = async() => {
   try {
     const res = await getFaultModule(faultSearchValue.value.trim())
     if (res.code === 200) {
       faultModuleList.value = (res.data || []).map((item) => ({
         ...item,
-        cccId: item.id,
+        cccId: item.id
       }))
     }
   } catch (error) {
@@ -1576,8 +1584,8 @@ const onSelectMoreAction = (action) => {
         vin: detail.vin,
         plateNo: detail.plateNo,
         vehicleModel: detail.vehicleModel,
-        id: route.query.id,
-      },
+        id: route.query.id
+      }
     })
   }
   if (action.name === '权益查询') {
@@ -1585,8 +1593,8 @@ const onSelectMoreAction = (action) => {
       path: '/reception/rights-query',
       query: {
         id: detail.id,
-        vin: detail.vin,
-      },
+        vin: detail.vin
+      }
     })
   }
   if (action.name === '实时故障') {
@@ -1600,7 +1608,7 @@ const onSelectMoreAction = (action) => {
   }
 }
 // 确认作废
-const onConfirmCancel = async () => {
+const onConfirmCancel = async() => {
   if (!cancelReason.value.trim()) {
     showToast('请输入作废原因')
     return
@@ -1609,7 +1617,7 @@ const onConfirmCancel = async () => {
   try {
     const res = await serviceProxyCancel({
       id: route.query.id,
-      invaildDesc: cancelReason.value,
+      invaildDesc: cancelReason.value
     })
     if (res.code === 200) {
       showToast('作废成功')
@@ -1674,7 +1682,7 @@ const displayModules = computed(() => {
 // 选择器显示状态
 const showMoreActions = ref(false)
 
-let currentEditItem = null // 当前编辑的项目
+const currentEditItem = null // 当前编辑的项目
 
 // 业务类型列表
 const businessTypeList = ref([
@@ -1682,7 +1690,7 @@ const businessTypeList = ref([
   { value: 20, label: '取送车到店' },
   { value: 30, label: '上门服务' },
   { value: 40, label: '外出驻点服务' },
-  { value: 50, label: '预约到店' },
+  { value: 50, label: '预约到店' }
 ])
 
 // 详情数据
@@ -1804,7 +1812,7 @@ const detail = reactive({
   afterChangeCode: '',
   isStoreLive: '',
   latelyServiceProxy: '',
-  earlyServiceProxy: '',
+  earlyServiceProxy: ''
 })
 
 // 初始环检数据快照
@@ -1846,7 +1854,7 @@ const partsData = reactive({
   maintenanceCostEstimation: '',
   repairItemRespList: [],
   packageRespList: [],
-  sparePartRespList: [],
+  sparePartRespList: []
 })
 
 // 是否存在套餐
@@ -1859,7 +1867,7 @@ const showPackageDetail = ref(false)
 const selectedPackageDetail = ref({
   name: '',
   code: '',
-  itemRespList: [],
+  itemRespList: []
 })
 
 // 点击套餐分组查看详情
@@ -1870,13 +1878,13 @@ const onPackageGroupClick = (group) => {
     selectedPackageDetail.value = {
       name: pkg.packageTypeLabel || '',
       code: pkg.packageCode || group.packageCode || '',
-      itemRespList: group.items || [],
+      itemRespList: group.items || []
     }
   } else {
     selectedPackageDetail.value = {
       name: group.packageTypeLabel || '',
       code: group.packageCode || '',
-      itemRespList: group.items || [],
+      itemRespList: group.items || []
     }
   }
   showPackageDetail.value = true
@@ -1894,7 +1902,7 @@ const groupedRepairItems = computed(() => {
   // 按套餐分组
   partsData.packageRespList.forEach((pkg) => {
     const matchedItems = partsData.repairItemRespList.filter(
-      (item) => item.packageType === pkg.packageType,
+      (item) => item.packageType === pkg.packageType
     )
     if (matchedItems.length > 0) {
       groups.push({
@@ -1902,7 +1910,7 @@ const groupedRepairItems = computed(() => {
         packageCode: matchedItems[0]?.packageCode,
         packageType: pkg.packageType,
         items: matchedItems,
-        isPackage: true,
+        isPackage: true
       })
       usedPackages.add(pkg.packageType)
     }
@@ -1910,7 +1918,7 @@ const groupedRepairItems = computed(() => {
 
   // 未分组的项目（不属于任何套餐）
   const ungroupedItems = partsData.repairItemRespList.filter(
-    (item) => !usedPackages.has(item.packageType),
+    (item) => !usedPackages.has(item.packageType)
   )
   if (ungroupedItems.length > 0) {
     groups.push({ items: ungroupedItems, isPackage: false })
@@ -1931,7 +1939,7 @@ const groupedSpareParts = computed(() => {
   // 按套餐分组
   partsData.packageRespList.forEach((pkg) => {
     const matchedItems = partsData.sparePartRespList.filter(
-      (item) => item.packageType === pkg.packageType,
+      (item) => item.packageType === pkg.packageType
     )
     if (matchedItems.length > 0) {
       groups.push({
@@ -1939,7 +1947,7 @@ const groupedSpareParts = computed(() => {
         packageCode: matchedItems[0]?.packageCode,
         packageType: pkg.packageType,
         items: matchedItems,
-        isPackage: true,
+        isPackage: true
       })
       usedPackages.add(pkg.packageType)
     }
@@ -1947,7 +1955,7 @@ const groupedSpareParts = computed(() => {
 
   // 未分组的配件
   const ungroupedItems = partsData.sparePartRespList.filter(
-    (item) => !usedPackages.has(item.packageType),
+    (item) => !usedPackages.has(item.packageType)
   )
   if (ungroupedItems.length > 0) {
     groups.push({ items: ungroupedItems, isPackage: false })
@@ -1964,7 +1972,7 @@ const signatureData = reactive({
   isDeliveryTimeFromApi: false,
   isLive: false,
   signChannel: '',
-  attachments: [],
+  attachments: []
 })
 
 // 从组件数据计算费用（computed 实现联动）
@@ -2061,7 +2069,7 @@ watch(
   () => {
     recalculateCosts()
   },
-  { deep: true },
+  { deep: true }
 )
 
 // 监听维修配件数量变化
@@ -2070,7 +2078,7 @@ watch(
   () => {
     recalculateCosts()
   },
-  { deep: true },
+  { deep: true }
 )
 
 // 删除维修项目（本地移除）
@@ -2106,7 +2114,7 @@ const generateDeliveryDates = () => {
     const day = String(date.getDate()).padStart(2, '0')
     dates.push({
       value: `${year}-${month}-${day}`,
-      label: `${year}-${month}-${day}`,
+      label: `${year}-${month}-${day}`
     })
   }
   deliveryDateList.value = dates
@@ -2128,7 +2136,7 @@ const generateDeliveryTimes = () => {
 // 签字渠道列表
 const signatureChannelList = ref([
   { value: 40, label: '纸质单据' },
-  { value: 30, label: 'APP/短信/零小跑' },
+  { value: 30, label: 'APP/短信/零小跑' }
 ])
 
 // 签字渠道转换
@@ -2137,7 +2145,7 @@ const getSignChannelName = (channel) => {
     40: '纸质单据',
     10: 'APP/短信/零小跑',
     20: 'APP/短信/零小跑',
-    30: 'APP/短信/零小跑',
+    30: 'APP/短信/零小跑'
   }
   return channelMap[channel] || ''
 }
@@ -2165,7 +2173,7 @@ const validateMileage = (mileage, lastMileage, netMileage) => {
 }
 
 // 获取详情
-const fetchDetail = async () => {
+const fetchDetail = async() => {
   const id = route.query.id
   if (!id) return
 
@@ -2221,7 +2229,7 @@ const fetchDetail = async () => {
             cccCode: item.cccCode,
             cccName: item.cccName,
             vfgName: item.vfgName,
-            faultDesc: item.faultDescription,
+            faultDesc: item.faultDescription
           }))
         }
         detail.vehicleProfileServiceResp = data.vehicleProfileServiceResp || {}
@@ -2236,7 +2244,7 @@ const fetchDetail = async () => {
             signatureData.attachments = []
             // 根据 attachType 分类回显文件
             fileList.forEach((item) => {
-              const fileObj = { ...item, url: item.fileUrl }
+              const fileObj = { ...item, url: item.fileUrl, fileUrl: item.fileUrl }
               switch (item.attachType) {
                 case '车内照片':
                   detail.interiorImages.push(fileObj)
@@ -2396,7 +2404,7 @@ const fetchDetail = async () => {
           vin: detail.vin,
           vehicleModel: detail.vehicleModel,
           // 送修人信息
-          repairPersonTag: detail.repairPersonTag,
+          repairPersonTag: detail.repairPersonTag
         }
 
         // 判断状态
@@ -2426,7 +2434,7 @@ const onChangeCarClose = () => {
 }
 
 // 搜索车辆
-const onCarSearch = async (value) => {
+const onCarSearch = async(value) => {
   console.log('搜索车辆:', value)
   // 重置选中车辆信息，展示搜索结果列表
   selectedCarInfo.value = null
@@ -2456,7 +2464,7 @@ const onSelectCar = (item) => {
 }
 
 // 获取车联网里程数
-const fetchVehicleMileage = async (vin) => {
+const fetchVehicleMileage = async(vin) => {
   if (!vin) return
   try {
     const res = await getVehicleMileage(vin)
@@ -2512,7 +2520,7 @@ const onEditPlate = () => {
 }
 
 // 删除车内照片图片
-const handleInteriorDelete = async (file) => {
+const handleInteriorDelete = async(file) => {
   if (file.id) {
     await deleteAttachmentConfig([file.id])
     refreshAttachmentList()
@@ -2525,7 +2533,7 @@ const handleInteriorDelete = async (file) => {
 }
 
 // 删除车外照片图片
-const handleExteriorDelete = async (file) => {
+const handleExteriorDelete = async(file) => {
   if (file.id) {
     await deleteAttachmentConfig([file.id])
     refreshAttachmentList()
@@ -2538,7 +2546,7 @@ const handleExteriorDelete = async (file) => {
 }
 
 // 删除附件资料
-const handleAttachmentDelete = async (file) => {
+const handleAttachmentDelete = async(file) => {
   if (file.id) {
     await deleteAttachmentConfig([file.id])
     refreshAttachmentList()
@@ -2561,7 +2569,7 @@ const refreshAttachmentList = () => {
       signatureData.attachments = []
       // 根据 attachType 分类回显文件
       fileList.forEach((item) => {
-        const fileObj = { ...item, url: item.fileUrl }
+        const fileObj = { ...item, url: item.fileUrl, fileUrl: item.fileUrl }
         switch (item.attachType) {
           case '车内照片':
             detail.interiorImages.push(fileObj)
@@ -2581,11 +2589,11 @@ const refreshAttachmentList = () => {
 // 预览图片
 const onPreviewImage = (type, index) => {
   const imageArray = type === 'interior' ? detail.interiorImages : detail.exteriorImages
-  const images = imageArray.map((item) => item.url)
+  const images = imageArray.map((item) => getFilePreviewUrl(item))
   showImagePreview({
     images: images,
     startPosition: index,
-    showIndex: true,
+    showIndex: true
   })
 }
 
@@ -2594,7 +2602,7 @@ const showImg = (url) => {
   showImagePreview({
     images: [url],
     startPosition: 0,
-    showIndex: false,
+    showIndex: false
   })
 }
 
@@ -2602,9 +2610,9 @@ const showImg = (url) => {
 const onPreviewFile = (file) => {
   if (file.isImage) {
     showImagePreview({
-      images: [file.url],
+      images: [getFilePreviewUrl(file)],
       startPosition: 0,
-      showIndex: false,
+      showIndex: false
     })
   }
 }
@@ -2616,7 +2624,7 @@ const uploadGeneric = (type) => {
   const attachTypeMap = {
     interior: '车内照片',
     exterior: '车外照片',
-    attachment: '附件资料',
+    attachment: '附件资料'
   }
   const config = getAttachConfig(attachTypeMap[type] || '车内照片')
   const maxSize = config.maxSize || 10
@@ -2660,7 +2668,7 @@ const handleImageFileChange = (event) => {
     const attachTypeMap = {
       interior: '车内照片',
       exterior: '车外照片',
-      attachment: '附件资料',
+      attachment: '附件资料'
     }
 
     // 先添加临时预览
@@ -2668,7 +2676,7 @@ const handleImageFileChange = (event) => {
       url: previewUrl,
       status: 'uploading',
       message: '上传中...',
-      id: null,
+      id: null
     }
 
     // 根据当前上传类型添加到对应的文件列表
@@ -2685,7 +2693,7 @@ const handleImageFileChange = (event) => {
     }
 
     // 调用上传接口
-    const uploadFile = async () => {
+    const uploadFile = async() => {
       // 保存当前上传类型，避免异步上传完成时类型已改变
       const uploadType = currentUploadType.value
       try {
@@ -2693,7 +2701,7 @@ const handleImageFileChange = (event) => {
           fileUrl: previewUrl,
           businessId: route.query.id,
           configCode: 'mcs_serviceproxy',
-          attachType: attachTypeMap[uploadType],
+          attachType: attachTypeMap[uploadType]
         }
 
         const res = await uploadFileByUrl([params])
@@ -2701,6 +2709,8 @@ const handleImageFileChange = (event) => {
         if (res.code === 200) {
           // 兼容两种返回格式：数组或对象
           const uploadData = Array.isArray(res.data) ? res.data[0] || {} : res.data || {}
+          const rawUrl = uploadData.url || uploadData.fileUrl || previewUrl
+          const authFileUrl = uploadData.authFileUrl || rawUrl
 
           // 更新文件状态 - 使用保存的 uploadType
           const targetList = getTargetFileList(uploadType)
@@ -2711,7 +2721,9 @@ const handleImageFileChange = (event) => {
               status: 'done',
               message: '',
               id: uploadData.id || null,
-              url: uploadData.authFileUrl || previewUrl,
+              url: rawUrl,
+              fileUrl: rawUrl,
+              authFileUrl
             }
           }
 
@@ -2743,7 +2755,7 @@ const handleImageFileChange = (event) => {
 
 // 注册原生图片回调
 onMounted(() => {
-  window.getImage = async (url) => {
+  window.getImage = async(url) => {
     if (!url) return
 
     // 保存当前上传类型，避免异步上传完成时类型已改变
@@ -2753,7 +2765,7 @@ onMounted(() => {
     const attachTypeMap = {
       interior: '车内照片',
       exterior: '车外照片',
-      attachment: '附件资料',
+      attachment: '附件资料'
     }
 
     // 先添加临时预览
@@ -2761,7 +2773,7 @@ onMounted(() => {
       url: url,
       status: 'uploading',
       message: '上传中...',
-      id: null,
+      id: null
     }
 
     // 根据当前上传类型添加到对应的文件列表
@@ -2783,7 +2795,7 @@ onMounted(() => {
         fileUrl: url,
         businessId: route.query.id,
         configCode: 'mcs_serviceproxy',
-        attachType: attachTypeMap[uploadType],
+        attachType: attachTypeMap[uploadType]
       }
 
       const res = await uploadFileByUrl([params])
@@ -2791,6 +2803,8 @@ onMounted(() => {
       if (res.code === 200) {
         // 兼容两种返回格式：数组或对象
         const uploadData = Array.isArray(res.data) ? res.data[0] || {} : res.data || {}
+        const rawUrl = uploadData.url || uploadData.fileUrl || url
+        const authFileUrl = uploadData.authFileUrl || rawUrl
 
         // 更新文件状态 - 使用保存的 uploadType
         const targetList = getTargetFileList(uploadType)
@@ -2801,7 +2815,9 @@ onMounted(() => {
             status: 'done',
             message: '',
             id: uploadData.id || null,
-            url: uploadData.authFileUrl || url,
+            url: rawUrl,
+            fileUrl: rawUrl,
+            authFileUrl
           }
         }
 
@@ -2839,7 +2855,7 @@ const onCloseFaultModulePopup = () => {
 }
 
 // 故障模块搜索
-const onFaultSearch = async (value) => {
+const onFaultSearch = async(value) => {
   faultSearchValue.value = value
   await fetchFaultModuleList()
 }
@@ -2865,11 +2881,11 @@ const onAddFaultModuleItem = (item) => {
 }
 
 // 删除故障模块
-const onDeleteFaultModule = async (module) => {
+const onDeleteFaultModule = async(module) => {
   try {
     await showConfirmDialog({
       title: '提示',
-      message: '是否要删除此接车施工单-故障模块？您无法撤销此操作。',
+      message: '是否要删除此接车施工单-故障模块？您无法撤销此操作。'
     })
     const index = detail.faultModules.findIndex((m) => m.cccCode === module.cccCode)
     if (index > -1) {
@@ -2878,7 +2894,7 @@ const onDeleteFaultModule = async (module) => {
     if (detail.faultModules.length === 0) {
       showConfirmDialog({
         title: '提示',
-        message: '全部故障模块已删除，请重新确认【本次进店是否存在故障】？',
+        message: '全部故障模块已删除，请重新确认【本次进店是否存在故障】？'
       })
     }
   } catch (error) {
@@ -2963,7 +2979,7 @@ const savingLoading = ref(false)
 const cancelLoading = ref(false)
 
 // 环检信息保存（新增或编辑）
-const onInspectionSave = async (type) => {
+const onInspectionSave = async(type) => {
   if (isInspectionSaveDisabled.value) return
   // 如果是项目零件或签字确认页，且数据没改动，则跳过校验直接返回
   if (type === 1 && !hasInspectionDataChanged()) {
@@ -3019,13 +3035,13 @@ const onInspectionSave = async (type) => {
       // 送修人信息
       repairPersonTag: detail.repairPersonTag,
       // 经理建议
-      testResult: detail.testResult,
+      testResult: detail.testResult
     }
     return { code: 200 }
   }
   savingLoading.value = true
   // TODO: 待修复，不需要提交这么多字段
-  let params = {
+  const params = {
     id: detail.id,
     code: detail.code,
     dataSource: detail.dataSource,
@@ -3078,17 +3094,17 @@ const onInspectionSave = async (type) => {
       ...item,
       fileId: item.id,
       businessId: route.query.id,
-      fileUrl: item.url,
+      fileUrl: getFileSaveUrl(item),
       attachType: '车外照片',
-      configCode: 'mcs_serviceproxy',
+      configCode: 'mcs_serviceproxy'
     })),
     interiorPhotoList: detail.interiorImages.map((item) => ({
       ...item,
       fileId: item.id,
       businessId: route.query.id,
-      fileUrl: item.url,
+      fileUrl: getFileSaveUrl(item),
       attachType: '车内照片',
-      configCode: 'mcs_serviceproxy',
+      configCode: 'mcs_serviceproxy'
     })),
     warrantyStatus: detail.warrantyStatus,
     claimItemAmount: detail.claimItemAmount,
@@ -3165,10 +3181,10 @@ const onInspectionSave = async (type) => {
       vfgId: m.vfgCode || '',
       vfgName: m.vfgName || '',
       vrtId: m.vrtCode || '',
-      vrtName: m.vrtName || '',
+      vrtName: m.vrtName || ''
     })),
     latelyServiceProxy: detail.latelyServiceProxy,
-    earlyServiceProxy: detail.earlyServiceProxy,
+    earlyServiceProxy: detail.earlyServiceProxy
   }
   try {
     const res = await serviceAddOrUpdate(params)
@@ -3198,48 +3214,42 @@ const handlePartsReplace = (data) => {
 }
 
 // 项目零件保存
-const onPartsSave = async () => {
-  // if (isPartsSaveDisabled.value) return
-  // // 从 RepairItemContent 组件获取数据
-  // const items = partsData.repairItemRespList || []
-  // const parts = partsData.sparePartRespList || []
+const onPartsSave = async() => {
+  if (isPartsSaveDisabled.value) return
+  // 从 RepairItemContent 组件获取数据
+  const items = partsData.repairItemRespList || []
+  const parts = partsData.sparePartRespList || []
 
-  // // 校验项目及零件不可为空
-  // if (items.length === 0 && parts.length === 0) {
-  //   showToast('项目及零件不可为空，请添加项目或者零件')
-  //   return
-  // }
-
-  // savingLoading.value = true
-  // try {
-  //   // 保存项目零件
-  //   const res = await saveSpRepairItem({
-  //     serviceProxyId: route.query.id,
-  //     discountId: '',
-  //     itemList: items,
-  //     partsList: parts,
-  //   })
-  //   if (res.code !== 200) {
-  //     showToast(res.msg || '保存失败')
-  //     return
-  //   }
-  //   showToast('保存成功')
-  //   // 执行inspection保存（带id编辑）
-  //   const inspectionRes = await onInspectionSave(1)
-  //   if (inspectionRes?.code === 200) {
-  //     isSaved.value = true
-  //   }
-  // } catch (error) {
-  //   console.error('保存失败:', error)
-  //   showToast('保存失败')
-  // } finally {
-  //   savingLoading.value = false
-  // }
+  savingLoading.value = true
+  try {
+    // 保存项目零件
+    const res = await saveSpRepairItem({
+      serviceProxyId: route.query.id,
+      discountId: '',
+      itemList: items,
+      partsList: parts
+    })
+    if (res.code !== 200) {
+      showToast(res.msg || '保存失败')
+      return
+    }
+    showToast('保存成功')
+    // 执行inspection保存（带id编辑）
+    const inspectionRes = await onInspectionSave(1)
+    if (inspectionRes?.code === 200) {
+      isSaved.value = true
+    }
+  } catch (error) {
+    console.error('保存失败:', error)
+    showToast('保存失败')
+  } finally {
+    savingLoading.value = false
+  }
   repairItemContentRef.value?.onSave()
 }
 
 // 签字确认保存
-const onSignatureSave = async () => {
+const onSignatureSave = async() => {
   if (isSignatureSaveDisabled.value) return
   // 从 RepairItemContent 组件获取数据
   const items = repairItemContentRef.value?.selectedItems || []
@@ -3258,7 +3268,7 @@ const onSignatureSave = async () => {
       serviceProxyId: route.query.id,
       discountId: '',
       itemList: items,
-      partsList: parts,
+      partsList: parts
     })
     if (res.code !== 200) {
       showToast(res.msg || '保存失败')
@@ -3278,7 +3288,7 @@ const onSignatureSave = async () => {
   }
 }
 
-const onComplete = async () => {
+const onComplete = async() => {
   if (!validateRepairPerson()) return
   // 照片校验（根据配置判断是否必填）
   if (interiorConfig.value.required === '1' && detail.interiorImages.length === 0) {
@@ -3296,9 +3306,9 @@ const onComplete = async () => {
   }
   showConfirmDialog({
     title: '提示',
-    message: '确定预检完成吗？',
+    message: '确定预检完成吗？'
   })
-    .then(async () => {
+    .then(async() => {
       savingLoading.value = true
       const res = await servicePreCheck(route.query.id)
       if (res.code === 200) {
@@ -3318,8 +3328,8 @@ const onAddParts = () => {
   router.push({
     path: '/reception/add-parts',
     query: {
-      serviceProxyId: route.query.id,
-    },
+      serviceProxyId: route.query.id
+    }
   })
 }
 
@@ -3328,8 +3338,8 @@ const onAddPackage = () => {
   router.push({
     path: '/reception/select-package',
     query: {
-      serviceProxyId: route.query.id,
-    },
+      serviceProxyId: route.query.id
+    }
   })
 }
 
@@ -3346,9 +3356,9 @@ const onConfirmAndSign = () => {
     return
   }
   // 点击"准确"，执行接口
-  let params = {
+  const params = {
     serviceProxyId: detail.id,
-    expectFinishAt: signatureData.expectFinishAt,
+    expectFinishAt: signatureData.expectFinishAt
   }
   // 纸质单据时才传signChannel
   console.log('signatureData.signChannel', signatureData, detail)
@@ -3384,7 +3394,7 @@ const onViewSignature = () => {
     showImagePreview({
       images: [detail.signUrl],
       startPosition: 0,
-      showIndex: false,
+      showIndex: false
     })
   } else {
     showToast('暂无签字图片')
@@ -3398,8 +3408,8 @@ const onGoToSign = () => {
     query: {
       vin: detail.vin,
       serviceProxyNo: detail.code,
-      serviceProxyId: detail.id,
-    },
+      serviceProxyId: detail.id
+    }
   })
 }
 

@@ -175,17 +175,23 @@ const goToDetail = (item) => {
 </script>
 
 <style lang="scss" scoped>
+.search-page-wrapper {
+  --search-safe-area-top: var(--safe-area-top, env(safe-area-inset-top, 0px));
+  --search-header-height: calc(44px + var(--search-safe-area-top));
+  min-height: 100%;
+}
+
 // 自定义搜索头部样式
 .search-header {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
-  height: 44px;
+  height: var(--search-header-height);
   background-color: #fff;
   display: flex;
   align-items: center;
-  padding: 7px 12px;
+  padding: calc(7px + var(--search-safe-area-top)) 12px 7px;
   box-sizing: border-box;
   z-index: 6000;
 
@@ -247,6 +253,8 @@ const goToDetail = (item) => {
   background-color: #f7f7f7;
   display: flex;
   flex-direction: column;
+  box-sizing: border-box;
+  padding-top: var(--search-header-height);
 }
 
 // 搜索加载状态
