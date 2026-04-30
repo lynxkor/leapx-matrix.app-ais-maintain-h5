@@ -12,7 +12,7 @@
       </div>
     </div>
     <!-- 基础信息区域 -->
-    <div id="tab-basic" class="tab-content-section">
+    <div id="tab-basic" :ref="setTabSectionRef('basic')" class="tab-content-section">
       <!-- 接车施工单卡片 -->
       <div class="main-card">
         <!-- 施工单 -->
@@ -142,7 +142,7 @@
     </div>
 
     <!-- 项目零件区域 -->
-    <div id="tab-parts" class="tab-content-section">
+    <div id="tab-parts" :ref="setTabSectionRef('parts')" class="tab-content-section">
       <!-- 维修项目卡片 -->
       <div class="repair-card">
         <div class="repair-card-header">维修项目</div>
@@ -199,7 +199,7 @@
     </div>
 
     <!-- 附件信息区域 -->
-    <div id="tab-attachments" class="tab-content-section">
+    <div id="tab-attachments" :ref="setTabSectionRef('attachments')" class="tab-content-section">
       <div class="attachments-card">
         <div class="attachments-card-header">附件信息</div>
 
@@ -415,11 +415,13 @@ const attachmentTypeMap = {
 }
 
 const activeTab = ref('basic')
-const isHeaderVisible = ref(true)
-const navBarHeight = ref(43)
 const currentBusinessId = ref('')
 const currentUploadType = ref('')
 const isUploadingAttachment = ref(false)
+const isClickScrolling = ref(false)
+const TAB_SYNC_TOLERANCE = 24
+const tabsNavRef = ref(null)
+const tabSectionRefs = {}
 
 // Tab 配置
 const tabs = [
@@ -429,8 +431,20 @@ const tabs = [
 ]
 
 // IntersectionObserver 实例
-let headerObserver = null
 let scrollContainer = null
+let clickScrollCleanup = null
+
+const setTabSectionRef = (tabName) => (el) => {
+  if (el) {
+    tabSectionRefs[tabName] = el
+  } else {
+    delete tabSectionRefs[tabName]
+  }
+}
+
+const getTabSectionEl = (tabName) => {
+  return tabSectionRefs[tabName] || null
+}
 
 /**
  * 获取滚动容器
@@ -474,15 +488,21 @@ const scrollToPosition = (targetScrollTop, behavior = 'smooth') => {
   }
 }
 
+const getElementScrollTop = (element) => {
+  const container = getScrollContainer()
+  if (container === window) {
+    return element.getBoundingClientRect().top + (window.scrollY || document.documentElement.scrollTop)
+  }
+  return element.getBoundingClientRect().top - container.getBoundingClientRect().top + container.scrollTop
+}
+
+const getTabsNavHeight = () => {
+  return tabsNavRef.value?.offsetHeight || 44
+}
+
 onMounted(async() => {
   window.getImage = handleNativeImage
   await nextTick()
-  // 获取 nav-bar 的真实高度
-  const navBarEl = document.querySelector('.base-container header')
-  if (navBarEl) {
-    navBarHeight.value = navBarEl.getBoundingClientRect().height
-  }
-  setupHeaderObserver()
   setupScrollListener()
 })
 
@@ -490,8 +510,9 @@ onUnmounted(() => {
   if (window.getImage === handleNativeImage) {
     window.getImage = null
   }
-  if (headerObserver) {
-    headerObserver.disconnect()
+  if (clickScrollCleanup) {
+    clickScrollCleanup()
+    clickScrollCleanup = null
   }
   const container = getScrollContainer()
   if (container === window) {
@@ -512,29 +533,16 @@ const setupScrollListener = () => {
 }
 
 const handleScroll = () => {
-  const tabsNavEl = document.querySelector('.detail-tabs-nav')
-  if (!tabsNavEl) return
-
-  const currentScrollTop = getScrollTop()
-  // 当滚动到顶部时，恢复 tab 导航栏初始样式
-  if (currentScrollTop <= 0) {
-    tabsNavEl.style.position = ''
-    tabsNavEl.style.top = ''
-    tabsNavEl.style.left = ''
-    tabsNavEl.style.right = ''
-    isHeaderVisible.value = true
+  if (!isClickScrolling.value) {
+    syncTabByScroll()
   }
-
-  // 根据滚动位置同步切换 tab
-  syncTabByScroll()
 }
 
 // 根据滚动位置同步切换 tab
 const scrollSyncTimeout = null
 const syncTabByScroll = () => {
   const scrollTop = getScrollTop()
-  const tabNavHeight = document.querySelector('.detail-tabs-nav')?.offsetHeight || 50
-  const offset = navBarHeight.value + tabNavHeight + 20
+  const offset = getTabsNavHeight() + 12 + TAB_SYNC_TOLERANCE
 
   // 清除之前的定时器
   if (scrollSyncTimeout) {
@@ -544,10 +552,10 @@ const syncTabByScroll = () => {
   // 找到当前应该激活的 tab
   let targetTab = null
   for (let i = tabs.length - 1; i >= 0; i--) {
-    const tabEl = document.getElementById(`tab-${tabs[i].name}`)
+    const tabEl = getTabSectionEl(tabs[i].name)
     if (!tabEl) continue
 
-    const tabTop = tabEl.offsetTop
+    const tabTop = getElementScrollTop(tabEl)
     if (scrollTop + offset >= tabTop) {
       targetTab = tabs[i].name
       break
@@ -563,7 +571,7 @@ const syncTabByScroll = () => {
 
 // 滚动指定 tab 到可视区域
 const scrollTabIntoView = (tabName) => {
-  const tabsNavEl = document.querySelector('.detail-tabs-nav')
+  const tabsNavEl = tabsNavRef.value
   if (!tabsNavEl) return
 
   const tabIndex = tabs.findIndex((tab) => tab.name === tabName)
@@ -589,56 +597,43 @@ const scrollTabIntoView = (tabName) => {
   }
 }
 
-// 监听 header 可见性，控制 tab 导航栏是否 fixed
-const setupHeaderObserver = () => {
-  // 监听第一个内容区域的可见性
-  const firstTabEl = document.getElementById('tab-basic')
-  const tabsNavEl = document.querySelector('.detail-tabs-nav')
-  if (!firstTabEl || !tabsNavEl) return
-
-  headerObserver = new IntersectionObserver(
-    (entries) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting) {
-          // 第一个tab可见，tab导航栏在原位
-          if (!isHeaderVisible.value) {
-            tabsNavEl.style.position = ''
-            tabsNavEl.style.top = ''
-            tabsNavEl.style.left = ''
-            tabsNavEl.style.right = ''
-            isHeaderVisible.value = true
-          }
-        } else {
-          // 第一个tab不可见，tab导航栏 fixed
-          if (isHeaderVisible.value) {
-            tabsNavEl.style.position = 'fixed'
-            tabsNavEl.style.top = `${navBarHeight.value}px`
-            tabsNavEl.style.left = '0'
-            tabsNavEl.style.right = '0'
-            isHeaderVisible.value = false
-          }
-        }
-      })
-    },
-    {
-      root: getScrollContainer(),
-      threshold: 0
-    }
-  )
-
-  headerObserver.observe(firstTabEl)
-}
-
 // 切换 Tab
-const switchTab = async(tabName) => {
+const switchTab = (tabName) => {
   activeTab.value = tabName
-  const targetEl = document.getElementById(`tab-${tabName}`)
+  const targetEl = getTabSectionEl(tabName)
   if (!targetEl) return
 
-  // Tab 导航栏始终是 fixed，直接滚动到目标位置
-  const targetOffsetTop = targetEl.offsetTop
-  const tabNavHeight = 42
-  scrollToPosition(targetOffsetTop - navBarHeight.value - tabNavHeight, 'smooth')
+  const finalScrollTop = Math.max(0, getElementScrollTop(targetEl) - getTabsNavHeight() - 12)
+  const container = getScrollContainer()
+  let scrollEndTimer = null
+
+  if (clickScrollCleanup) {
+    clickScrollCleanup()
+    clickScrollCleanup = null
+  }
+
+  isClickScrolling.value = true
+
+  const onScrollEnd = () => {
+    if (scrollEndTimer) {
+      clearTimeout(scrollEndTimer)
+    }
+    scrollEndTimer = setTimeout(() => {
+      container.removeEventListener('scroll', onScrollEnd)
+      isClickScrolling.value = false
+      clickScrollCleanup = null
+    }, 150)
+  }
+
+  container.addEventListener('scroll', onScrollEnd)
+  clickScrollCleanup = () => {
+    if (scrollEndTimer) {
+      clearTimeout(scrollEndTimer)
+    }
+    container.removeEventListener('scroll', onScrollEnd)
+    isClickScrolling.value = false
+  }
+  scrollToPosition(finalScrollTop, 'smooth')
 }
 
 // 表单数据
@@ -1144,7 +1139,12 @@ const uploadAttachment = (type) => {
     return
   }
   currentUploadType.value = type
-  getAppImg()
+  const started = getAppImg()
+  if (!started) {
+    currentUploadType.value = ''
+    showToast('当前环境暂不支持获取图片')
+    return
+  }
   hasEdited.value = true
 }
 
@@ -1225,27 +1225,26 @@ defineExpose({
   display: flex;
   flex-direction: column;
   background: #f5f5f5;
-  padding-top: 56px;
   padding-left: 12px;
   padding-right: 12px;
   padding-bottom: 100px;
 }
 
-// Tab 导航 - 固定在顶部
+// Tab 导航 - 在页面滚动容器内吸顶
 .detail-tabs-nav {
   background: #fff;
   display: flex;
   justify-content: space-around;
   border-bottom: 1px solid #eee;
-  position: fixed;
-  top: 43px;
-  left: 0;
-  right: 0;
+  position: sticky;
+  top: 0;
   z-index: 100;
   overflow-x: auto;
   white-space: nowrap;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
+  margin: 0 -12px 12px;
+  padding: 0 12px;
   &::-webkit-scrollbar {
     display: none;
   }

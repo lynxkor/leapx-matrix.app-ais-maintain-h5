@@ -1,31 +1,31 @@
 <template>
   <div class="repair-work-page">
     <!-- 顶部标签页 -->
-     <van-sticky offset-top="44">
-       <van-tabs v-model:active="activeTab" class="work-tabs">
-         <van-tab title="派工" name="dispatch" />
-         <van-tab title="施工" name="working" />
-         <van-tab title="终检" name="inspection" />
-       </van-tabs>
-       <!-- 筛选条件 + 搜索 -->
-       <div class="filter-bar">
-         <div class="filter-tabs">
-           <div
-             v-for="filter in filters"
-             :key="filter.value"
-             class="filter-tab"
-             :class="{ active: activeFilter === filter.value }"
-             @click="handleFilterChange(filter.value)"
-           >
-             {{ filter.label }}
-           </div>
-         </div>
-         <div class="search-box" @click="handleSearch">
-           <van-icon name="search" size="16" color="#191A1B" />
-           <span class="search-text">搜索</span>
-         </div>
-       </div>
-     </van-sticky>
+    <van-sticky offset-top="44">
+      <van-tabs v-model:active="activeTab" class="work-tabs">
+        <van-tab title="派工" name="dispatch" />
+        <van-tab title="施工" name="working" />
+        <van-tab title="终检" name="inspection" />
+      </van-tabs>
+      <!-- 筛选条件 + 搜索 -->
+      <div class="filter-bar">
+        <div class="filter-tabs">
+          <div
+            v-for="filter in filters"
+            :key="filter.value"
+            class="filter-tab"
+            :class="{ active: activeFilter === filter.value }"
+            @click="handleFilterChange(filter.value)"
+          >
+            {{ filter.label }}
+          </div>
+        </div>
+        <div class="search-box" @click="handleSearch">
+          <van-icon name="search" size="16" color="#191A1B" />
+          <span class="search-text">搜索</span>
+        </div>
+      </div>
+    </van-sticky>
 
     <!-- 下拉刷新 + 列表 -->
     <van-pull-refresh v-model="refreshing" @refresh="onRefresh" class="refresh-container">
@@ -127,12 +127,12 @@ const loadData = async(isRefresh = false) => {
       itemFlag: 1,
       sortColumns: [
         {
-          'column': 'order_status',
-          'sort': 'ASC'
+          column: 'order_status',
+          sort: 'ASC'
         },
         {
-          'column': 'create_time',
-          'sort': 'DESC'
+          column: 'create_time',
+          sort: 'DESC'
         }
       ],
       ...getFilterParams(activeFilter.value)
