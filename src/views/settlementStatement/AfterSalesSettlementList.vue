@@ -976,7 +976,9 @@ const handlePaymentSubmit = async() => {
 
 <style lang="scss" scoped>
 .after-sales-settlement-list {
-  min-height: 100vh;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
   background-color: #f5f5f5;
   padding-bottom: 88px;
   overflow-y: auto;

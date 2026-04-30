@@ -1221,8 +1221,10 @@ defineExpose({
 
 <style lang="scss" scoped>
 .create-pre-auth {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
   background: #f5f5f5;
-  min-height: calc(100vh - 46px);
   padding-top: 56px;
   padding-left: 12px;
   padding-right: 12px;

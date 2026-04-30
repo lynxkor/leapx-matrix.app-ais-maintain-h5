@@ -551,7 +551,9 @@ if (route.params.initialValue) {
 
 <style lang="scss" scoped>
 .settlement-search {
-  min-height: 100vh;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
   background-color: #f5f5f5;
 
   // 页面加载中样式
