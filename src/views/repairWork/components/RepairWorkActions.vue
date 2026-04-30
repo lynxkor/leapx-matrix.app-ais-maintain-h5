@@ -59,7 +59,7 @@
         作业开始
       </van-button>
       <van-button
-        v-if="(hasPendingQuality || hasPendingFinal) && activeTab === 'inspection'"
+        v-if="hasQualityed"
         class="action-btn rework-btn"
         plain
         type="primary"
@@ -70,7 +70,7 @@
         返修
       </van-button>
       <van-button
-        v-if="hasPendingQuality && activeTab === 'inspection'"
+        v-if="hasPendingQuality"
         class="action-btn"
         plain
         type="primary"
@@ -149,6 +149,7 @@ const hasPendingDispatch = computed(() => hasItem(0))
 const hasNotStarted = computed(() => hasItem(1))
 const hasInProgress = computed(() => hasItem(2))
 const hasPendingQuality = computed(() => hasItem(3))
+const hasQualityed = computed(() => hasItem(4))
 const hasPendingFinal = computed(() => {
   const list = recordList.value
   return list.length > 0 && list.every(item => filterByTag(item, 4))

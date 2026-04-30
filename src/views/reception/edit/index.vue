@@ -1682,7 +1682,7 @@ const displayModules = computed(() => {
 // 选择器显示状态
 const showMoreActions = ref(false)
 
-let currentEditItem = null // 当前编辑的项目
+const currentEditItem = null // 当前编辑的项目
 
 // 业务类型列表
 const businessTypeList = ref([
@@ -3218,12 +3218,17 @@ const onPartsSave = async() => {
   // 从 RepairItemContent 组件获取数据
   const items = partsData.repairItemRespList || []
   const parts = partsData.sparePartRespList || []
+const onPartsSave = async () => {
+  // if (isPartsSaveDisabled.value) return
+  // // 从 RepairItemContent 组件获取数据
+  // const items = partsData.repairItemRespList || []
+  // const parts = partsData.sparePartRespList || []
 
-  // 校验项目及零件不可为空
-  if (items.length === 0 && parts.length === 0) {
-    showToast('项目及零件不可为空，请添加项目或者零件')
-    return
-  }
+  // // 校验项目及零件不可为空
+  // if (items.length === 0 && parts.length === 0) {
+  //   showToast('项目及零件不可为空，请添加项目或者零件')
+  //   return
+  // }
 
   savingLoading.value = true
   try {
@@ -3250,6 +3255,32 @@ const onPartsSave = async() => {
   } finally {
     savingLoading.value = false
   }
+  // savingLoading.value = true
+  // try {
+  //   // 保存项目零件
+  //   const res = await saveSpRepairItem({
+  //     serviceProxyId: route.query.id,
+  //     discountId: '',
+  //     itemList: items,
+  //     partsList: parts,
+  //   })
+  //   if (res.code !== 200) {
+  //     showToast(res.msg || '保存失败')
+  //     return
+  //   }
+  //   showToast('保存成功')
+  //   // 执行inspection保存（带id编辑）
+  //   const inspectionRes = await onInspectionSave(1)
+  //   if (inspectionRes?.code === 200) {
+  //     isSaved.value = true
+  //   }
+  // } catch (error) {
+  //   console.error('保存失败:', error)
+  //   showToast('保存失败')
+  // } finally {
+  //   savingLoading.value = false
+  // }
+  repairItemContentRef.value?.onSave()
 }
 
 // 签字确认保存
@@ -3354,11 +3385,9 @@ const onConfirmAndSign = () => {
   }
   // 从 RepairItemContent 组件获取数据
   const items = partsData.repairItemRespList || []
-  const parts = partsData.sparePartRespList || []
-  console.log('items', items, parts)
-  // 校验维修项目或者维修零件有值
-  if (items.length === 0 && parts.length === 0) {
-    showToast('项目及零件不可为空，请添加项目或者零件')
+  // 校验维修项目有值
+  if (items.length === 0) {
+    showToast('项目不可为空，请先添加维修项目')
     return
   }
   // 点击"准确"，执行接口

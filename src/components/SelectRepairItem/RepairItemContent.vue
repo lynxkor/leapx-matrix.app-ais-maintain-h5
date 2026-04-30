@@ -5,7 +5,7 @@
     isComponent
   />
   初始化数据：contentRef.value?.loadInitialData()
-  保存方法： contentRef.value?.save()
+  保存方法： contentRef.value?.onSave()
   数据： contentRef.value?.selectedItems、contentRef.value?.selectedParts
 -->
 <template>
@@ -145,7 +145,7 @@
     <div class="popup-footer" v-if="!isComponent">
       <div
         class="save-btn"
-        :class="{ disabled: !hasAnySelectedItems || isAuditComplete }"
+        :class="{ disabled: isAuditComplete }"
         @click="onSave"
       >
         保存
@@ -163,7 +163,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, computed, watch, onMounted, nextTick } from 'vue'
 import { showToast, closeToast, showLoadingToast } from 'vant'
 import Empty from '@/views/repairWork/components/Empty.vue'
 import SearchBar from './SearchBar.vue'
@@ -265,7 +265,7 @@ const { performSearch, handleAddItemWithParts, handleItemUpdate, removeItem, han
   })
 
 // 列表分组 Hook
-const { hasAnySelectedItems, regularItems, packageItemGroups, regularParts, packagePartGroups } =
+const { regularItems, packageItemGroups, regularParts, packagePartGroups } =
   useRepairItemList({ selectedItems, selectedParts })
 
 // 事件处理
@@ -275,6 +275,12 @@ const handleItemUpdateWrapper = (item, updates) => {
     return
   }
   handleItemUpdate(item, updates)
+  nextTick(() => {
+    emit('replace', {
+      selectedItems: selectedItems.value,
+      selectedParts: selectedParts.value
+    })
+  })
 }
 
 const repairItemContentReplace = (content) => {
