@@ -1157,7 +1157,7 @@ import {
   deleteAttachmentConfig,
   getFileList
 } from '@/libs/api/fileConfig'
-import { getAppImgLimit, batchUploadImageLimit } from '@/libs/utils/nativeFn'
+import { batchUploadImageLimit } from '@/libs/utils/nativeFn'
 import { RemindInfoTypeEnum, AlarmLevelEnum } from '@/views/repairWork/constant'
 import {
   getDetail,
@@ -1299,17 +1299,6 @@ const getAlarmLabel = (level) => {
   }
 }
 
-// 点击类别区域，打开弹窗
-const onCategoryClick = (item) => {
-  // 套餐内的项目不可编辑类型
-  if (item.packageType) {
-    return
-  }
-  openCheckoutPicker(item)
-}
-
-// 维修类型级联选择器 Hook
-const emptySelectedItems = ref([])
 // 维修项目数据 Hook
 const {
   rawCheckoutTypes,
@@ -1325,10 +1314,7 @@ const {
 const {
   cascaderOptions: categoryCascaderOptions,
   showCheckoutPicker,
-  editingItem,
-  openCheckoutPicker,
-  onCheckoutConfirm,
-  closeCheckoutPicker
+  onCheckoutConfirm
 } = useRepairItemBusinessRules({
   dealerPermission,
   rawMaintenanceTypes,
@@ -1350,7 +1336,7 @@ const repairPersonPhoneInput = ref('')
 
 // 折叠面板状态
 const repairPersonCollapse = ref([])
-const businessTypeCollapse = ref([])
+// const businessTypeCollapse = ref([])
 
 // 车牌输入相关
 const plateInputChars = ref(['', '', '', '', '', '', '', ''])
@@ -1515,15 +1501,15 @@ const onConfirmChangePlate = async() => {
 const moreActionsList = computed(() => {
   // 已作废210、反结算200、已生成结算单(isCreateStatementInfo == 1)时，作废禁用
   const isCancelDisabled =
-    detail.orderStatus == 210 || detail.orderStatus == 200 || detail.isCreateStatementInfo == 1
+    detail.orderStatus === 210 || detail.orderStatus === 200 || detail.isCreateStatementInfo === 1
 
   // 获取禁用原因文本
   let disabledReason = ''
-  if (detail.orderStatus == 210) {
+  if (detail.orderStatus === 210) {
     disabledReason = '已作废'
-  } else if (detail.orderStatus == 200) {
+  } else if (detail.orderStatus === 200) {
     disabledReason = '反结算'
-  } else if (detail.isCreateStatementInfo == 1) {
+  } else if (detail.isCreateStatementInfo === 1) {
     disabledReason = '已生成结算单'
   }
 
@@ -1854,111 +1840,12 @@ const partsData = reactive({
   sparePartRespList: []
 })
 
-// 是否存在套餐
-const hasPackages = computed(() => {
-  return partsData.packageRespList && partsData.packageRespList.length > 0
-})
-
 // 套餐详情弹窗
 const showPackageDetail = ref(false)
 const selectedPackageDetail = ref({
   name: '',
   code: '',
   itemRespList: []
-})
-
-// 点击套餐分组查看详情
-const onPackageGroupClick = (group) => {
-  // 查找对应的套餐信息
-  const pkg = partsData.packageRespList.find((p) => p.packageType === group.packageType)
-  if (pkg) {
-    selectedPackageDetail.value = {
-      name: pkg.packageTypeLabel || '',
-      code: pkg.packageCode || group.packageCode || '',
-      itemRespList: group.items || []
-    }
-  } else {
-    selectedPackageDetail.value = {
-      name: group.packageTypeLabel || '',
-      code: group.packageCode || '',
-      itemRespList: group.items || []
-    }
-  }
-  showPackageDetail.value = true
-}
-
-// 按套餐分组的维修项目
-const groupedRepairItems = computed(() => {
-  if (!hasPackages.value) {
-    return [{ items: partsData.repairItemRespList, isPackage: false }]
-  }
-
-  const groups = []
-  const usedPackages = new Set()
-
-  // 按套餐分组
-  partsData.packageRespList.forEach((pkg) => {
-    const matchedItems = partsData.repairItemRespList.filter(
-      (item) => item.packageType === pkg.packageType
-    )
-    if (matchedItems.length > 0) {
-      groups.push({
-        packageTypeLabel: pkg.packageTypeLabel,
-        packageCode: matchedItems[0]?.packageCode,
-        packageType: pkg.packageType,
-        items: matchedItems,
-        isPackage: true
-      })
-      usedPackages.add(pkg.packageType)
-    }
-  })
-
-  // 未分组的项目（不属于任何套餐）
-  const ungroupedItems = partsData.repairItemRespList.filter(
-    (item) => !usedPackages.has(item.packageType)
-  )
-  if (ungroupedItems.length > 0) {
-    groups.push({ items: ungroupedItems, isPackage: false })
-  }
-
-  return groups
-})
-
-// 按套餐分组的维修配件
-const groupedSpareParts = computed(() => {
-  if (!hasPackages.value) {
-    return [{ items: partsData.sparePartRespList, isPackage: false }]
-  }
-
-  const groups = []
-  const usedPackages = new Set()
-
-  // 按套餐分组
-  partsData.packageRespList.forEach((pkg) => {
-    const matchedItems = partsData.sparePartRespList.filter(
-      (item) => item.packageType === pkg.packageType
-    )
-    if (matchedItems.length > 0) {
-      groups.push({
-        packageTypeLabel: pkg.packageTypeLabel,
-        packageCode: matchedItems[0]?.packageCode,
-        packageType: pkg.packageType,
-        items: matchedItems,
-        isPackage: true
-      })
-      usedPackages.add(pkg.packageType)
-    }
-  })
-
-  // 未分组的配件
-  const ungroupedItems = partsData.sparePartRespList.filter(
-    (item) => !usedPackages.has(item.packageType)
-  )
-  if (ungroupedItems.length > 0) {
-    groups.push({ items: ungroupedItems, isPackage: false })
-  }
-
-  return groups
 })
 
 // 签字确认数据
@@ -2007,14 +1894,6 @@ const isConfirmAndSignDisabled = computed(() => {
 
 // 项目零件保存按钮是否禁用：没有添加项目或者零件
 const isPartsSaveDisabled = computed(() => {
-  return false
-  // const items = repairItemContentRef.value?.selectedItems || []
-  // const parts = repairItemContentRef.value?.selectedParts || []
-  // return items.length === 0 && parts.length === 0
-})
-
-// 签名保存按钮是否禁用：同项目零件保存条件
-const isSignatureSaveDisabled = computed(() => {
   return false
   // const items = repairItemContentRef.value?.selectedItems || []
   // const parts = repairItemContentRef.value?.selectedParts || []
@@ -2077,18 +1956,6 @@ watch(
   },
   { deep: true }
 )
-
-// 删除维修项目（本地移除）
-const onDeleteRepairItem = (index) => {
-  partsData.repairItemRespList.splice(index, 1)
-  recalculateCosts()
-}
-
-// 删除维修配件（本地移除）
-const onDeleteSparePart = (index) => {
-  partsData.sparePartRespList.splice(index, 1)
-  recalculateCosts()
-}
 
 // 选择器显示状态
 const showDeliveryTimePicker = ref(false)
@@ -2588,15 +2455,15 @@ const refreshAttachmentList = () => {
 }
 
 // 预览图片
-const onPreviewImage = (type, index) => {
-  const imageArray = type === 'interior' ? detail.interiorImages : detail.exteriorImages
-  const images = imageArray.map((item) => getFilePreviewUrl(item))
-  showImagePreview({
-    images: images,
-    startPosition: index,
-    showIndex: true
-  })
-}
+// const onPreviewImage = (type, index) => {
+//   const imageArray = type === 'interior' ? detail.interiorImages : detail.exteriorImages
+//   const images = imageArray.map((item) => getFilePreviewUrl(item))
+//   showImagePreview({
+//     images: images,
+//     startPosition: index,
+//     showIndex: true
+//   })
+// }
 
 // 统一图片预览方法
 const showImg = (url) => {
@@ -2759,7 +2626,7 @@ const handleImageFileChange = (event) => {
 
 // 注册原生图片回调
 onMounted(() => {
-  window.getImage = async(url) => {
+  window.getScanResult = async(url) => {
     console.log('urlurlurl:', url)
     if (!url) return
 
@@ -2925,7 +2792,7 @@ const onDeleteFaultModule = async(module) => {
         message: '全部故障模块已删除，请重新确认【本次进店是否存在故障】？'
       })
     }
-  } catch (error) {
+  } catch {
     // 取消操作
   }
 }
@@ -3283,44 +3150,44 @@ const onPartsSave = async() => {
 }
 
 // 签字确认保存
-const onSignatureSave = async() => {
-  if (isSignatureSaveDisabled.value) return
-  // 从 RepairItemContent 组件获取数据
-  const items = repairItemContentRef.value?.selectedItems || []
-  const parts = repairItemContentRef.value?.selectedParts || []
+// const onSignatureSave = async() => {
+//   if (isSignatureSaveDisabled.value) return
+//   // 从 RepairItemContent 组件获取数据
+//   const items = repairItemContentRef.value?.selectedItems || []
+//   const parts = repairItemContentRef.value?.selectedParts || []
 
-  // 校验项目及零件不可为空
-  // if (items.length === 0 && parts.length === 0) {
-  //   showToast('项目及零件不可为空，请添加项目或者零件')
-  //   return
-  // }
+//   // 校验项目及零件不可为空
+//   // if (items.length === 0 && parts.length === 0) {
+//   //   showToast('项目及零件不可为空，请添加项目或者零件')
+//   //   return
+//   // }
 
-  savingLoading.value = true
-  try {
-    // 保存项目零件
-    const res = await saveSpRepairItem({
-      serviceProxyId: route.query.id,
-      discountId: '',
-      itemList: items,
-      partsList: parts
-    })
-    if (res.code !== 200) {
-      showToast(res.msg || '保存失败')
-      return
-    }
-    showToast('保存成功')
-    // 执行inspection保存（带id编辑）
-    const inspectionRes = await onInspectionSave(1)
-    if (inspectionRes?.code === 200) {
-      isSaved.value = true
-    }
-  } catch (error) {
-    console.error('保存失败:', error)
-    showToast('保存失败')
-  } finally {
-    savingLoading.value = false
-  }
-}
+//   savingLoading.value = true
+//   try {
+//     // 保存项目零件
+//     const res = await saveSpRepairItem({
+//       serviceProxyId: route.query.id,
+//       discountId: '',
+//       itemList: items,
+//       partsList: parts
+//     })
+//     if (res.code !== 200) {
+//       showToast(res.msg || '保存失败')
+//       return
+//     }
+//     showToast('保存成功')
+//     // 执行inspection保存（带id编辑）
+//     const inspectionRes = await onInspectionSave(1)
+//     if (inspectionRes?.code === 200) {
+//       isSaved.value = true
+//     }
+//   } catch (error) {
+//     console.error('保存失败:', error)
+//     showToast('保存失败')
+//   } finally {
+//     savingLoading.value = false
+//   }
+// }
 
 const onComplete = async() => {
   if (!validateRepairPerson()) return
@@ -3397,7 +3264,7 @@ const onConfirmAndSign = () => {
   // 纸质单据时才传signChannel
   console.log('signatureData.signChannel', signatureData, detail)
   savingLoading.value = true
-  if (signatureData.signChannel === '纸质单据' || detail.signChannel == 40) {
+  if (signatureData.signChannel === '纸质单据' || Number(detail.signChannel) === 40) {
     params.signChannel = '40'
   } else {
     params.signChannel = null
@@ -3473,7 +3340,7 @@ const onCloseDeliveryTimePicker = () => {
   showDeliveryTimePicker.value = false
 }
 const showSignatureChannelPickerHandle = () => {
-  if (detail.signStatus == 20) {
+  if (Number(detail.signStatus) === 20) {
     return
   }
   showSignatureChannelPicker.value = true
