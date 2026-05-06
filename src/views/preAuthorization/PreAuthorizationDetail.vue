@@ -1,5 +1,5 @@
 <template>
-  <div class="pre-auth-detail" :class="{ 'has-reject-reason': detail.status === 40 }">
+  <div class="pre-auth-detail">
     <!-- 加载状态 -->
     <div v-if="detailLoading" class="loading-overlay">
       <van-loading type="circular" color="#009100" />
@@ -470,6 +470,7 @@ const tabs = ref([
 
 // IntersectionObserver 实例
 let scrollContainer = null
+let clickScrollCleanup = null
 const buildEmptyAttachments = () => attachmentSections.reduce((acc, item) => {
   acc[item.key] = []
   return acc
@@ -511,6 +512,14 @@ const scrollToPosition = (targetScrollTop, behavior = 'smooth') => {
   }
 }
 
+const getElementScrollTop = (element) => {
+  const container = getScrollContainer()
+  if (container === window) {
+    return element.getBoundingClientRect().top + (window.scrollY || document.documentElement.scrollTop)
+  }
+  return element.getBoundingClientRect().top - container.getBoundingClientRect().top + container.scrollTop
+}
+
 // 根据状态动态添加审核信息tab
 const updateTabsByStatus = () => {
   const hasAuditTab = tabs.value.some(tab => tab.name === 'audit')
@@ -532,12 +541,8 @@ const setupScrollListener = () => {
 }
 
 const handleScroll = () => {
-  // 只有非点击触发的滚动才移除 active-section 类，并同步切换 tab
+  // 只有非点击触发的滚动才同步切换 tab
   if (!isClickScrolling.value) {
-    document.querySelectorAll('.tab-content-section').forEach(el => {
-      el.classList.remove('active-section')
-    })
-    // 根据滚动位置同步切换 tab
     syncTabByScroll()
   }
 }
@@ -559,7 +564,7 @@ let scrollSyncTimeout = null
 const syncTabByScroll = () => {
   const scrollTop = getScrollTop()
   const stickyHeaderHeight = getStickyHeaderHeight()
-  const offset = stickyHeaderHeight + 20
+  const offset = stickyHeaderHeight + 12
 
   // 判断滚动方向
   const isScrollingDown = scrollTop > lastScrollTop
@@ -577,7 +582,7 @@ const syncTabByScroll = () => {
     const tabEl = document.getElementById(`tab-${tabList[i].name}`)
     if (!tabEl) continue
 
-    const tabTop = tabEl.offsetTop
+    const tabTop = getElementScrollTop(tabEl)
     if (scrollTop + offset >= tabTop) {
       targetTab = tabList[i].name
       break
@@ -629,24 +634,15 @@ const switchTab = async(tabName) => {
   const targetEl = document.getElementById(`tab-${tabName}`)
   if (!targetEl) return
 
-  const stickyHeaderHeight = getStickyHeaderHeight() // 状态栏 + Tab导航实际高度
+  const stickyHeaderHeight = getStickyHeaderHeight()
 
   // 标记为点击触发的滚动
+  if (clickScrollCleanup) {
+    clickScrollCleanup()
+    clickScrollCleanup = null
+  }
   isClickScrolling.value = true
-
-  // 给目标 section 添加 active-section 类，增加顶部间距
-  document.querySelectorAll('.tab-content-section').forEach(el => {
-    el.classList.remove('active-section')
-  })
-  targetEl.classList.add('active-section')
-
-  // 强制同步更新 DOM
-  await nextTick()
-
-  // 计算目标滚动位置
-  // offsetTop 包含了 active-section 添加的 36px padding，所以直接用 offsetTop - stickyHeaderHeight
-  const targetOffsetTop = targetEl.offsetTop
-  const finalScrollTop = Math.max(0, targetOffsetTop - stickyHeaderHeight)
+  const finalScrollTop = Math.max(0, getElementScrollTop(targetEl) - stickyHeaderHeight - 12)
 
   // 使用 scrollTo 并监听滚动结束事件
   const container = getScrollContainer()
@@ -656,10 +652,18 @@ const switchTab = async(tabName) => {
     scrollEndTimer = setTimeout(() => {
       container.removeEventListener('scroll', onScrollEnd)
       isClickScrolling.value = false
+      clickScrollCleanup = null
     }, 150)
   }
 
   container.addEventListener('scroll', onScrollEnd)
+  clickScrollCleanup = () => {
+    if (scrollEndTimer) {
+      clearTimeout(scrollEndTimer)
+    }
+    container.removeEventListener('scroll', onScrollEnd)
+    isClickScrolling.value = false
+  }
   scrollToPosition(finalScrollTop, 'smooth')
 }
 
@@ -805,7 +809,11 @@ const uploadAttachment = (type) => {
     return
   }
   currentUploadType.value = type
-  getAppImg()
+  const started = getAppImg()
+  if (!started) {
+    currentUploadType.value = ''
+    showToast('当前环境暂不支持获取图片')
+  }
 }
 
 const handleNativeImage = async(rawFileUrl) => {
@@ -1090,6 +1098,13 @@ onUnmounted(() => {
   if (window.getImage === handleNativeImage) {
     window.getImage = null
   }
+  if (clickScrollCleanup) {
+    clickScrollCleanup()
+    clickScrollCleanup = null
+  }
+  if (scrollSyncTimeout) {
+    clearTimeout(scrollSyncTimeout)
+  }
   const container = getScrollContainer()
   if (container === window) {
     window.removeEventListener('scroll', handleScroll)
@@ -1101,14 +1116,11 @@ onUnmounted(() => {
 
 <style lang="scss" scoped>
 .pre-auth-detail {
-  min-height: 100vh;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
   background: #f5f5f5;
   padding-bottom: calc(76px + env(safe-area-inset-bottom));
-  padding-top: 84px;
-
-  &.has-reject-reason {
-    padding-top: 137px;
-  }
 }
 
 // 加载状态
@@ -1134,10 +1146,8 @@ onUnmounted(() => {
 
 // 置顶区域容器
 .sticky-header {
-  position: fixed;
-  top: 42px;
-  left: 0;
-  right: 0;
+  position: sticky;
+  top: 0;
   z-index: 100;
   background: #f5f5f5;
 }
@@ -1253,10 +1263,6 @@ onUnmounted(() => {
 // 内容区域
 .tab-content-section {
   padding: 0 12px;
-
-  &.active-section {
-    padding-top: 36px;
-  }
 }
 
 // 信息卡片

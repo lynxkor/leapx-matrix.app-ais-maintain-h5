@@ -391,9 +391,6 @@ const handleSubmit = async() => {
         display: flex;
         flex-wrap: wrap;
         gap: 8px;
-        max-height: 200px;
-        overflow-y: auto;
-
         .empty-tip {
           width: 100%;
           text-align: center;
