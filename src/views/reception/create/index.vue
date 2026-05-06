@@ -6,7 +6,7 @@
         <span class="plate-no">{{ detail.plateNo }}</span>
         <span class="appointment-tag" style="opacity: 0">预约客户</span>
         <span
-          v-if="detail.orderStatus == 100"
+          v-if="detail.orderStatus === 100"
           class="edit-plate edit-plate-after"
           @click="onChangeCar"
         >
@@ -525,7 +525,7 @@
           >保存</span
         > -->
         <span
-          v-if="detail.orderStatus == 110"
+          v-if="detail.orderStatus === 110"
           :class="['complete-btn', { disabled: isConfirmAndSignDisabled }]"
           @click="onConfirmAndSign"
           >制单确认并签字</span
@@ -1050,7 +1050,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, computed, onUnmounted, nextTick } from 'vue'
+import { ref, reactive, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { showToast, showConfirmDialog, showImagePreview } from 'vant'
 import { useGlobalStore } from '@/stores/global'
@@ -1361,15 +1361,15 @@ const onConfirmChangePlate = async() => {
 const moreActionsList = computed(() => {
   // 已作废210、反结算200、已生成结算单(isCreateStatementInfo == 1)时，作废禁用
   const isCancelDisabled =
-    detail.orderStatus == 210 || detail.orderStatus == 200 || detail.isCreateStatementInfo == 1
+    detail.orderStatus === 210 || detail.orderStatus === 200 || detail.isCreateStatementInfo === 1
 
   // 获取禁用原因文本
   let disabledReason = ''
-  if (detail.orderStatus == 210) {
+  if (detail.orderStatus === 210) {
     disabledReason = '已作废'
-  } else if (detail.orderStatus == 200) {
+  } else if (detail.orderStatus === 200) {
     disabledReason = '反结算'
-  } else if (detail.isCreateStatementInfo == 1) {
+  } else if (detail.isCreateStatementInfo === 1) {
     disabledReason = '已生成结算单'
   }
 
@@ -1392,10 +1392,13 @@ const faultModuleList = ref([])
 const fetchFaultModuleList = async() => {
   try {
     const res = await getFaultModule(faultSearchValue.value.trim())
-    if (res.code === 200) {
+    if (res.code === 200 && res.data) {
       faultModuleList.value = (res.data || []).map((item) => ({
-        ...item
+        ...item,
+        cccId: item.id
       }))
+    } else {
+      faultModuleList.value = []
     }
   } catch (error) {
     console.error('获取故障模块失败:', error)
@@ -1618,7 +1621,6 @@ const detail = reactive({
   alarmLevel: '',
   isLive: '',
   inCustomerContent: '',
-  customerComment: '',
   invaildDesc: '',
   previewingFinishAt: '',
   confirmedOn: '',
@@ -2212,7 +2214,7 @@ const onDeleteFaultModule = async(module) => {
         message: '全部故障模块已删除，请重新确认【本次进店是否存在故障】？'
       })
     }
-  } catch (error) {
+  } catch {
     // 取消操作
   }
 }
@@ -2256,18 +2258,6 @@ const onRepairPersonNameChange = () => {
 // 送修人手机变化
 const onRepairPersonPhoneChange = () => {
   detail.repairPersonPhone = repairPersonPhoneInput.value
-}
-
-// 选择业务类型
-const onSelectBusinessType = (item) => {
-  detail.businessType = item.value
-  // 收起面板
-  businessTypeCollapse.value = []
-}
-
-// 更多操作
-const onMore = () => {
-  showMoreActions.value = !showMoreActions.value
 }
 
 // 保存
@@ -2412,7 +2402,7 @@ const onSave = async() => {
     } else {
       showToast(res.msg || '保存失败')
     }
-  } catch (error) {
+  } catch {
     showToast('保存失败')
   } finally {
     savingLoading.value = false
@@ -2827,10 +2817,6 @@ const fetchDetailForSignature = async() => {
   }
 }
 
-const onLocalSearch = (val) => {
-  console.log('onLocalSearch', val)
-}
-
 // 添加项目/零件
 const onAddParts = () => {
   router.push({
@@ -2890,7 +2876,7 @@ const onCloseDeliveryTimePicker = () => {
 }
 
 const showSignatureChannelPickerHandle = () => {
-  if (detail.signStatus == 20) {
+  if (detail.signStatus === 20) {
     return
   }
   showSignatureChannelPicker.value = true

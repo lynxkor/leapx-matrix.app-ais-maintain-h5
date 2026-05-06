@@ -688,6 +688,8 @@ const handleClose = () => {
 
   // 维修项目列表
   .repair-list {
+    max-height: calc(90vh - 335px);
+    overflow-y: auto;
     .repair-item {
       display: flex;
       align-items: center;

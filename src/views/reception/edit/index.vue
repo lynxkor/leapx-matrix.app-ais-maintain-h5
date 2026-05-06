@@ -531,7 +531,7 @@
           @click="onInspectionSave"
           >保存</span
         >
-        <span v-if="detail.orderStatus === 100" class="complete-btn" @click="onComplete"
+        <span v-if="!detail.previewingFinishAt" class="complete-btn" @click="onComplete"
           >预检完成</span
         >
       </template>
@@ -1549,11 +1549,13 @@ const faultModuleList = ref([])
 const fetchFaultModuleList = async() => {
   try {
     const res = await getFaultModule(faultSearchValue.value.trim())
-    if (res.code === 200) {
+    if (res.code === 200 && res.data) {
       faultModuleList.value = (res.data || []).map((item) => ({
         ...item,
         cccId: item.id
       }))
+    } else {
+      faultModuleList.value = []
     }
   } catch (error) {
     console.error('获取故障模块失败:', error)
@@ -1771,7 +1773,6 @@ const detail = reactive({
   claimItemAmount: '',
   claimOtherAmount: '',
   claimPartsAmount: '',
-  departureMileage: '',
   outPower: '',
   departureNetMileage: '',
   outNetPower: '',
@@ -1787,7 +1788,6 @@ const detail = reactive({
   alarmLevel: '',
   isLive: '',
   inCustomerContent: '',
-  customerComment: '',
   invaildDesc: '',
   previewingFinishAt: '',
   confirmedOn: '',
@@ -3040,6 +3040,7 @@ const onInspectionSave = async(type) => {
     return { code: 200 }
   }
   savingLoading.value = true
+  // TODO: 待修复，不需要提交这么多字段
   const params = {
     id: detail.id,
     code: detail.code,
@@ -3054,14 +3055,14 @@ const onInspectionSave = async(type) => {
     bindingUser: detail.bindingUser,
     bindingUserId: detail.bindingUserId,
     carPlate: detail.plateNo,
-    dealerName: detail.salesDealerName,
-    dealerCode: detail.salesDealerCode,
+    // dealerName: detail.salesDealerName,
+    // dealerCode: detail.salesDealerCode,
     appointmentNo: detail.appointmentNo,
     mileage: detail.mileage,
     lastMileage: detail.lastMileage,
     startWarrantyDate: detail.vehicleProfileServiceResp.warrantyStartdate,
-    exclusiveServiceDealerName: detail.vehicleProfileServiceResp.serviceDealerName,
-    exclusiveServiceDealerCode: detail.vehicleProfileServiceResp.serviceDealerCode,
+    // exclusiveServiceDealerName: detail.vehicleProfileServiceResp.serviceDealerName,
+    // exclusiveServiceDealerCode: detail.vehicleProfileServiceResp.serviceDealerCode,
     expectFinishAt: signatureData.expectFinishAt,
     createStatementInfoDate: detail.createStatementInfoDate,
     remark: detail.remark,
@@ -3143,7 +3144,6 @@ const onInspectionSave = async(type) => {
     isCarWash: 0,
     isRetainOldParts: 0,
     inCustomerContent: detail.inCustomerContent,
-    customerComment: detail.customerComment,
     testResult: detail.testResult,
     currentFault: detail.hasFault === '1' ? 1 : 0,
     customerContent: detail.customerFaultDesc,
