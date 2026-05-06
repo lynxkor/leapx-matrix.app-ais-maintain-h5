@@ -405,6 +405,13 @@ import AisPopup from '@/libs/components/AisPopup.vue'
 import { getDetail, serviceProxyCancel } from '@/api/reception'
 import { getFileList } from '@/libs/api/fileConfig'
 import { isFileType } from '@/libs/utils/file'
+import pdfIcon from '@/libs/components/AisAttachment/icon/pdf.png'
+import xlsIcon from '@/libs/components/AisAttachment/icon/xls.png'
+import wordIcon from '@/libs/components/AisAttachment/icon/word.png'
+import pptIcon from '@/libs/components/AisAttachment/icon/ppt.png'
+import videoIcon from '@/libs/components/AisAttachment/icon/video.png'
+import zipIcon from '@/libs/components/AisAttachment/icon/zip.png'
+import textIcon from '@/libs/components/AisAttachment/icon/text.png'
 import './detail.scss'
 
 const route = useRoute()
@@ -692,13 +699,13 @@ const loadAttachmentList = async() => {
 // 获取文件图标路径
 const getFileIconPath = (file) => {
   if (file.isImage) return file.fileUrl
-  if (file.isPdf) return require('@/libs/components/AisAttachment/icon/pdf.png')
-  if (file.isExcel) return require('@/libs/components/AisAttachment/icon/xls.png')
-  if (file.isWord) return require('@/libs/components/AisAttachment/icon/word.png')
-  if (file.isPpt) return require('@/libs/components/AisAttachment/icon/ppt.png')
-  if (file.isVideo) return require('@/libs/components/AisAttachment/icon/video.png')
-  if (file.isZip) return require('@/libs/components/AisAttachment/icon/zip.png')
-  return require('@/libs/components/AisAttachment/icon/text.png')
+  if (file.isPdf) return pdfIcon
+  if (file.isExcel) return xlsIcon
+  if (file.isWord) return wordIcon
+  if (file.isPpt) return pptIcon
+  if (file.isVideo) return videoIcon
+  if (file.isZip) return zipIcon
+  return textIcon
 }
 
 // 格式化文件大小

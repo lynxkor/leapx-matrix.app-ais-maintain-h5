@@ -604,7 +604,7 @@
       close-icon-position="top-left"
       title="权益套餐"
       @close="showEquityDetail = false"
-      style="max-height: 80vh"
+      style="height: 80vh"
     >
       <van-overlay :show="equitySubmitting" style="z-index: 100">
         <div class="loading-wrapper">
@@ -724,7 +724,7 @@ import {
   specialActivityUse,
   specialFreeUse,
   specialPackageUse,
-  cancelSelect,
+  cancelSelect
 } from '@/api/reception'
 import './select-package.scss'
 
@@ -788,7 +788,7 @@ const selectedPackage = reactive({
   code: '',
   packageType: '10',
   totalPrice: '0.00',
-  itemRespList: [],
+  itemRespList: []
 })
 
 // 选中的服务活动
@@ -797,19 +797,19 @@ const selectedService = reactive({
   packageType: '50',
   activityResponse: {},
   itemResponseList: [],
-  partResponseList: [],
+  partResponseList: []
 })
 
 // 选中的免保项目
 const selectedFree = reactive({
   data: {},
   packageType: '40',
-  partDetailList: [],
+  partDetailList: []
 })
 
 // 选中的商城订单
 const selectedMall = ref({
-  packageType: '30',
+  packageType: '30'
 })
 
 // 选中的权益套餐
@@ -817,7 +817,7 @@ const selectedEquity = reactive({
   data: {},
   packageType: '20',
   repairItemList: [],
-  repairPartList: [],
+  repairPartList: []
 })
 
 // 当前权益是否已选
@@ -853,7 +853,7 @@ onMounted(() => {
         if (res.code === 200 && res.data) {
           packageList.value = res.data.map((item) => ({
             ...item,
-            selected: false,
+            selected: false
           }))
         } else {
           showToast(res.message || '请求失败')
@@ -977,7 +977,7 @@ const onEquityClick = (item) => {
 const onMallClick = (item) => {
   getSpecialGoodsDetail({
     id: serviceProxyId.value,
-    packageId: item.id,
+    packageId: item.id
   }).then((res) => {
     if (res.code === 200) {
       const data = res.data
@@ -992,7 +992,7 @@ const onMallClick = (item) => {
 const onFreeClick = (item) => {
   getSpecialFreeDetail({
     id: serviceProxyId.value,
-    packageId: item.id,
+    packageId: item.id
   }).then((res) => {
     if (res.code === 200) {
       const data = res.data
@@ -1010,22 +1010,22 @@ const onServiceClick = (item) => {
   getSpecialActivityDetail({
     activityId: item.activityId,
     id: serviceProxyId.value,
-    packageId: item.id,
+    packageId: item.id
   }).then((res) => {
     if (res.code === 200) {
       const data = res.data
       selectedService.id = data.id
       selectedService.activityResponse = data.activityResponse || {}
       // 根据activityType判断packageType: 4->50, 其他->60
-      selectedService.packageType = data.activityResponse?.activityType == 4 ? '50' : '60'
+      selectedService.packageType = Number(data.activityResponse?.activityType) === 4 ? '50' : '60'
       // 为每个项目和配件添加selected字段，默认false
       selectedService.itemResponseList = (data.itemResponseList || []).map((item) => ({
         ...item,
-        selected: false,
+        selected: false
       }))
       selectedService.partResponseList = (data.partResponseList || []).map((part) => ({
         ...part,
-        selected: part.allowDelete == 0, // allowDelete == 0 时默认选中
+        selected: Number(part.allowDelete) === 0 // allowDelete == 0 时默认选中
       }))
       isServiceSelected.value = item.used
       showServiceDetail.value = true
@@ -1038,11 +1038,11 @@ const onConfirmPackage = () => {
   packageSubmitting.value = true
   specialPackageUse({
     id: serviceProxyId.value,
-    packageId: selectedPackage.id,
+    packageId: selectedPackage.id
   })
     .then((res) => {
       if (res.code === 200) {
-        showToast('已添加: ' + selectedPackage.packageName)
+        showToast('已添加')
         showPackageDetail.value = false
         router.back()
       } else {
@@ -1065,7 +1065,7 @@ const onToggleItem = (item) => {
 // 勾选/取消勾选配件
 const onTogglePart = (part) => {
   // allowDelete == 0 时不可编辑
-  if (part.allowDelete == 0) return
+  if (Number(part.allowDelete) === 0) return
   part.selected = !part.selected
 }
 
@@ -1083,7 +1083,7 @@ const onConfirmService = () => {
     ...item,
     checkoutTypeId: activityResp.checkoutTypeId || '',
     checkoutTypeName: activityResp.checkoutTypeName || '',
-    workHour: item.workHour || 1,
+    workHour: item.workHour || 1
   }))
 
   // 补充 partsList 缺少的字段
@@ -1094,7 +1094,7 @@ const onConfirmService = () => {
     partsId: part.partId || part.oldPartId || '', // 零件代码id
     checkoutTypeId: activityResp.checkoutTypeId || '',
     checkoutTypeName: activityResp.checkoutTypeName || '',
-    partsCode: part.partCode || part.oldPartCode || '', // 零件代码
+    partsCode: part.partCode || part.oldPartCode || '' // 零件代码
   }))
 
   serviceSubmitting.value = true
@@ -1103,11 +1103,11 @@ const onConfirmService = () => {
     packageId: selectedService.id,
     activityId: activityResp.id,
     itemList: enrichedItems,
-    partsList: enrichedParts,
+    partsList: enrichedParts
   })
     .then((res) => {
       if (res.code === 200) {
-        showToast('已添加: ' + selectedService.activityResponse.activityName)
+        showToast('已添加')
         showServiceDetail.value = false
         router.back()
       } else {
@@ -1127,11 +1127,11 @@ const onConfirmFree = () => {
   freeSubmitting.value = true
   specialFreeUse({
     id: serviceProxyId.value,
-    packageId: selectedFree.data.id,
+    packageId: selectedFree.data.id
   })
     .then((res) => {
       if (res.code === 200) {
-        showToast('已添加: ' + selectedFree.data.policyName)
+        showToast('已添加')
         showFreeDetail.value = false
         router.back()
       } else {
@@ -1151,11 +1151,11 @@ const onConfirmMall = () => {
   mallSubmitting.value = true
   specialGoodsUse({
     id: serviceProxyId.value,
-    packageId: selectedMall.value.id,
+    packageId: selectedMall.value.id
   })
     .then((res) => {
       if (res.code === 200) {
-        showToast('已添加: ' + selectedMall.value.interestsGoodsName)
+        showToast('已添加')
         showMallDetail.value = false
         // router.back()
       } else {
@@ -1179,20 +1179,20 @@ const onConfirmEquity = () => {
     equityName: selectedEquity.data.rightsName,
     equityCode: selectedEquity.data.rightsCode,
     repairItemList: selectedEquity.data.repairItemList,
-    repairPartList: selectedEquity.data.repairPartList,
+    repairPartList: selectedEquity.data.repairPartList
   }
   specialEquityUse(params)
     .then((res) => {
       if (res.code === 200) {
-        showToast('已添加: ' + selectedEquity.data.rightsName)
+        showToast('已添加')
         showEquityDetail.value = false
         // router.back()
       } else {
         showToast(res.msg || '添加失败')
       }
     })
-    .catch(() => {
-      showToast(res.msg || '网络错误')
+    .catch((err) => {
+      showToast(err.msg || '网络错误')
     })
 }
 
@@ -1202,7 +1202,7 @@ const onCancelPackage = () => {
   cancelSelect({
     id: serviceProxyId.value,
     packageId: selectedPackage.id,
-    packageType: selectedPackage.packageType,
+    packageType: selectedPackage.packageType
   })
     .then((res) => {
       if (res.code === 200) {
@@ -1227,7 +1227,7 @@ const onCancelService = () => {
   cancelSelect({
     id: serviceProxyId.value,
     packageId: selectedService.id,
-    packageType: selectedService.packageType,
+    packageType: selectedService.packageType
   })
     .then((res) => {
       if (res.code === 200) {
@@ -1252,7 +1252,7 @@ const onCancelFree = () => {
   cancelSelect({
     id: serviceProxyId.value,
     packageId: selectedFree.data.id,
-    packageType: selectedFree.packageType,
+    packageType: selectedFree.packageType
   })
     .then((res) => {
       if (res.code === 200) {
@@ -1277,7 +1277,7 @@ const onCancelMall = () => {
   cancelSelect({
     id: serviceProxyId.value,
     packageId: selectedMall.value.id,
-    packageType: selectedMall.value.packageType,
+    packageType: selectedMall.value.packageType
   })
     .then((res) => {
       if (res.code === 200) {
@@ -1302,7 +1302,7 @@ const onCancelEquity = () => {
   cancelSelect({
     id: serviceProxyId.value,
     packageId: selectedEquity.data.useId,
-    packageType: selectedEquity.packageType,
+    packageType: selectedEquity.packageType
   })
     .then((res) => {
       if (res.code === 200) {

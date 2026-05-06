@@ -40,7 +40,7 @@
         </div>
       </div>
       <div v-else-if="hasSearched" class="search-empty">
-        <span>没有找到相关维修项目</span>
+        <span>{{activeTab === 'item' ? '没有找到相关维修项目' : '没有找到相关维修备件'}}</span>
       </div>
     </div>
 
@@ -98,6 +98,10 @@ defineProps({
   disabled: {
     type: Boolean,
     default: false
+  },
+  activeTab: {
+    type: String,
+    default: 'item'
   }
 })
 

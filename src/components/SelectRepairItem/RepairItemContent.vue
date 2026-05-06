@@ -35,6 +35,7 @@
           ? '输入维修项目代码、名称、拼音简码'
           : '输入维修零件代码、名称、拼音简码'
       "
+      :activeTab="activeTab"
       @search="performSearch"
       @add-item-with-parts="handleAddItemWithParts"
       @update-item="handleItemUpdateWrapper"

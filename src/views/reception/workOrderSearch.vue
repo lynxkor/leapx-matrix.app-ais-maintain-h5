@@ -62,7 +62,7 @@ import { showToast } from 'vant'
 const getResultText = (item) => {
   const plateNo = item.vehiclePlateNo || '无车牌'
   const vin = item.vin || ''
-  const name = item.vehicleProfileOwnerResp.customerName || ''
+  const name = item.vehicleProfileOwnerResp.ownerName || ''
   return `${plateNo}/${vin}/${name}`
 }
 
