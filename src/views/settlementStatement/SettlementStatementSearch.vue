@@ -551,8 +551,11 @@ if (route.params.initialValue) {
 
 <style lang="scss" scoped>
 .settlement-search {
-  min-height: 100vh;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
   background-color: #f5f5f5;
+  min-height: 100%;
 
   // 页面加载中样式
   .page-loading {
@@ -569,9 +572,10 @@ if (route.params.initialValue) {
   }
 
   .search-header {
+    flex-shrink: 0;
     display: flex;
     align-items: center;
-    padding: 8px 12px;
+    padding: calc(8px + var(--safe-area-top, env(safe-area-inset-top, 0px))) 12px 8px;
     background: #fff;
     gap: 8px;
 

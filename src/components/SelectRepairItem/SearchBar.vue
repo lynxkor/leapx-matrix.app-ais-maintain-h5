@@ -87,18 +87,18 @@ import {
   isDiscountEditable,
   isNameEditable,
   isItemDeletable,
-  isPartDeletable,
+  isPartDeletable
 } from './hooks/repairItemRules'
 
 defineProps({
   placeholder: {
     type: String,
-    default: '输入代码、名称、拼音简码',
+    default: '输入代码、名称、拼音简码'
   },
   disabled: {
     type: Boolean,
-    default: false,
-  },
+    default: false
+  }
 })
 
 const emit = defineEmits(['search', 'add-item-with-parts', 'update-item', 'delete-item', 'done'])

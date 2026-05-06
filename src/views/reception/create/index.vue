@@ -180,8 +180,8 @@
                 >
                   <img
                     style="width: 100%; height: 100%; margin-bottom: 0"
-                    :src="file.url"
-                    @click="showImg(file.url)"
+                    :src="getFilePreviewUrl(file)"
+                    @click="showImg(getFilePreviewUrl(file))"
                   />
                   <img
                     class="delete_icon"
@@ -217,8 +217,8 @@
                 >
                   <img
                     style="width: 100%; height: 100%; margin-bottom: 0"
-                    :src="file.url"
-                    @click="showImg(file.url)"
+                    :src="getFilePreviewUrl(file)"
+                    @click="showImg(getFilePreviewUrl(file))"
                   />
                   <img
                     class="delete_icon"
@@ -476,8 +476,8 @@
               >
                 <img
                   style="width: 100%; height: 100%; margin-bottom: 0"
-                  :src="file.url"
-                  @click="showImg(file.url)"
+                  :src="getFilePreviewUrl(file)"
+                  @click="showImg(getFilePreviewUrl(file))"
                 />
                 <img
                   class="delete_icon"
@@ -1105,6 +1105,35 @@ const getTargetFileList = (type) => {
       return detail.interiorImages
   }
 }
+
+const getFilePreviewUrl = (file) => {
+  return file?.authFileUrl || file?.url || file?.fileUrl || ''
+}
+
+const getFileSaveUrl = (file) => {
+  return file?.url || file?.fileUrl || file?.authFileUrl || ''
+}
+
+const getFileType = (file, fallback = '') => {
+  if (!file) return fallback
+  if (file.fileType || file.ext) return file.fileType || file.ext
+
+  const filePath = file.fileName || file.name || file.url || file.fileUrl || file.authFileUrl || ''
+  const cleanPath = filePath.split('?')[0]
+  const ext = cleanPath.includes('.') ? cleanPath.split('.').pop() : ''
+  return ext || fallback
+}
+
+const normalizeAttachmentFile = (file) => {
+  const rawUrl = file?.url || file?.fileUrl || ''
+  return {
+    ...file,
+    url: rawUrl,
+    fileUrl: rawUrl,
+    authFileUrl: file?.authFileUrl || rawUrl,
+    fileType: getFileType(file)
+  }
+}
 import { getAppImgLimit } from '@/libs/utils/nativeFn'
 import {
   getVehicleInfo,
@@ -1365,7 +1394,7 @@ const fetchFaultModuleList = async() => {
     const res = await getFaultModule(faultSearchValue.value.trim())
     if (res.code === 200 && res.data) {
       faultModuleList.value = (res.data || []).map((item) => ({
-        ...item,
+        ...item
         cccId: item.id
       }))
     } else {
@@ -1793,6 +1822,7 @@ const fetchDetail = async() => {
       // 初始化输入框
       repairPersonNameInput.value = item.vehicleProfileOwnerResp?.ownerName || ''
       repairPersonPhoneInput.value = item.vehicleProfileOwnerResp?.mobilephone || ''
+      detail.vehicleProfileServiceResp = item.vehicleProfileServiceResp || {}
       // 获取车联网里程数
       if (detail.vin) {
         fetchVehicleMileage(detail.vin)
@@ -1817,7 +1847,7 @@ const fetchDetail = async() => {
       signatureData.attachments = []
       // 根据 attachType 分类回显文件
       fileList.forEach((item) => {
-        const fileObj = { ...item, url: item.fileUrl }
+        const fileObj = normalizeAttachmentFile(item)
         switch (item.attachType) {
           case '车内照片':
             detail.interiorImages.push(fileObj)
@@ -1977,6 +2007,9 @@ const handleImageFileChange = (event) => {
     // 先添加临时预览
     const fileObj = {
       url: previewUrl,
+      fileUrl: previewUrl,
+      authFileUrl: previewUrl,
+      fileType: file.type || getFileType({ url: previewUrl }, 'image/jpeg'),
       status: 'uploading',
       message: '上传中...',
       id: null
@@ -2017,12 +2050,16 @@ const handleImageFileChange = (event) => {
           const targetList = getTargetFileList(uploadType)
           if (targetList.length > 0) {
             const lastIndex = targetList.length - 1
+            const rawUrl = uploadData.url || uploadData.fileUrl || previewUrl
             targetList[lastIndex] = {
               ...targetList[lastIndex],
               status: 'done',
               message: '',
               id: uploadData.id || null,
-              url: uploadData.authFileUrl || previewUrl
+              url: rawUrl,
+              fileUrl: rawUrl,
+              authFileUrl: uploadData.authFileUrl || rawUrl,
+              fileType: uploadData.fileType || uploadData.ext || file.type || getFileType({ url: rawUrl }, 'image/jpeg')
             }
           }
 
@@ -2063,7 +2100,7 @@ const refreshAttachmentList = () => {
       signatureData.attachments = []
       // 根据 attachType 分类回显文件
       fileList.forEach((item) => {
-        const fileObj = { ...item, url: item.fileUrl }
+        const fileObj = normalizeAttachmentFile(item)
         switch (item.attachType) {
           case '车内照片':
             detail.interiorImages.push(fileObj)
@@ -2289,66 +2326,26 @@ const onSave = async() => {
   savingLoading.value = true
   try {
     const res = await serviceAddOrUpdate({
-      code: '',
-      dataSource: '',
-      orderStatus: '',
-      warrantyTypeCollect: '',
       customerName: detail.owner,
       customerPhone: detail.ownerPhone,
-      custType: '',
       vehModelName: detail.vehicleModelName,
       bindingPhone: detail.binderPhone,
       bindingUser: detail.bindingUser,
-      bindingUserId: '',
       carPlate: detail.plateNo,
       dealerName: detail.salesDealerName,
       dealerCode: detail.salesDealerCode,
-      appointmentNo: '',
       mileage: detail.mileage,
       lastMileage: null,
       startWarrantyDate: detail.vehicleProfileServiceResp.warrantyStartdate || '',
       exclusiveServiceDealerName: detail.vehicleProfileServiceResp.serviceDealerName || '',
       exclusiveServiceDealerCode: detail.vehicleProfileServiceResp.serviceDealerCode || '',
       expectFinishAt: signatureData.expectFinishAt,
-      createStatementInfoDate: '',
-      remark: '',
-      status: '',
-      statusDesc: '',
-      pickStatus: '',
       shuttleName: detail.repairPerson,
       shuttlePhone: detail.repairPersonPhone,
-      payType: '',
-      warrantyCompany: '',
       signChannel: signatureData.signatureChannel === '纸质单据' ? '40' : '',
-      signCompletedOn: '',
-      signGeneratedOn: '',
-      signStatus: '',
-      signUrlExpiredOn: '',
-      appointmentType: '',
-      preAuthType: '',
-      isLockLive: '',
-      isCreateWarranty: '',
-      isOutboundOrder: '',
-      isVehRetentionRemind: '',
-      isCancelStorage: '',
-      discountId: '',
-      finalCheckAt: '',
-      finalCheckerId: '',
-      finalChecker: '',
-      ticketStep: '',
-      warrantyStatus: '',
-      claimItemAmount: '',
-      claimOtherAmount: '',
-      claimPartsAmount: '',
-      departureMileage: '',
       inPower: detail.battery,
-      outPower: '',
       netMileage: detail.networkMileageTotal,
-      departureNetMileage: '',
       inNetPower: detail.networkBattery,
-      outNetPower: '',
-      departureNetMileageElectricity: '',
-      departureNetMileageExtend: '',
       netMileageElectricity: detail.electricalMileage,
       netMileageExtend: detail.networkMileageAdd,
       vehProfileVin: detail.vin,
@@ -2366,48 +2363,23 @@ const onSave = async() => {
       batteryModel: detail.batteryModel,
       batterySerialNumber: detail.batterySerialNumber,
       engineNumber: detail.enginenNumber,
-      repairItemTypeDetailCollect: '',
       businessType: computedBusinessType.value,
-      alarmLevel: '',
-      isLive: '',
       haveRework: 0,
       isCarWash: 0,
       isRetainOldParts: 0,
-      inCustomerContent: '',
-      customerComment: '',
       testResult: detail.testResult,
       currentFault: detail.hasFault === '1' ? 1 : 0,
       customerContent: detail.customerFaultDesc,
-      invaildDesc: '',
       anomalyDescription: detail.abnormalDesc,
-      previewingFinishAt: '',
-      confirmedOn: '',
-      expectStartAt: '',
-      startAt: '',
-      finishAt: '',
-      faultSolve: '',
       currentSituation: detail.hasFault === '1' ? 20 : 10,
-      faultAlert: '',
-      faultPeriod: '',
-      earliestfaultServiceProxy: '',
-      recentlyfaultServiceProxy: '',
       faultModule: detail.faultModules.map((m) => m.cccCode).join(','),
       isCreateStatementInfo: 0,
-      isPreAuth: '',
-      isCreatePreAuth: '',
-      preAuthRuleId: '',
-      unresolvedReason: '',
-      faultDesc: '',
-      batteryUnitId: '',
-      batteryUnitName: '',
-      targetUnitCode: '',
-      beforeChangeCode: '',
-      afterChangeCode: '',
       exteriorPhotoList: detail.exteriorImages.map((item) => ({
         ...item,
         fileId: item.id,
         businessId: serviceProxyId.value || null,
-        fileUrl: item.url,
+        fileUrl: getFileSaveUrl(item),
+        fileType: getFileType(item, 'image/jpeg'),
         attachType: '车外照片',
         configCode: 'mcs_serviceproxy',
         id: null
@@ -2416,12 +2388,12 @@ const onSave = async() => {
         ...item,
         fileId: item.id,
         businessId: serviceProxyId.value || null,
-        fileUrl: item.url,
+        fileUrl: getFileSaveUrl(item),
+        fileType: getFileType(item, 'image/jpeg'),
         attachType: '车内照片',
         configCode: 'mcs_serviceproxy',
         id: null
       })),
-      isStoreLive: '',
       faultAlertRecordParams: detail.faultModules.map((m) => ({
         cccId: m.id || '',
         cccName: m.cccName || '',
@@ -2429,9 +2401,7 @@ const onSave = async() => {
         vfgName: m.vfgName || '',
         vrtId: m.vrtCode || '',
         vrtName: m.vrtName || ''
-      })),
-      latelyServiceProxy: '',
-      earlyServiceProxy: ''
+      }))
     })
     if (res.code === 200) {
       showToast('保存成功')
@@ -2598,7 +2568,6 @@ const onInspectionSave = async() => {
       customerContent: detail.customerFaultDesc,
       invaildDesc: detail.invaildDesc,
       anomalyDescription: detail.abnormalDesc,
-      customerComment: detail.customerComment,
       previewingFinishAt: detail.previewingFinishAt,
       confirmedOn: detail.confirmedOn,
       expectStartAt: detail.expectStartAt,
@@ -2626,7 +2595,8 @@ const onInspectionSave = async() => {
         ...item,
         fileId: item.id,
         businessId: serviceProxyId.value || detail.id,
-        fileUrl: item.url,
+        fileUrl: getFileSaveUrl(item),
+        fileType: getFileType(item, 'image/jpeg'),
         attachType: '车外照片',
         configCode: 'mcs_serviceproxy'
       })),
@@ -2634,7 +2604,8 @@ const onInspectionSave = async() => {
         ...item,
         fileId: item.id,
         businessId: serviceProxyId.value || detail.id,
-        fileUrl: item.url,
+        fileUrl: getFileSaveUrl(item),
+        fileType: getFileType(item, 'image/jpeg'),
         attachType: '车内照片',
         configCode: 'mcs_serviceproxy'
       })),
@@ -2744,11 +2715,9 @@ const onConfirmAndSign = () => {
   }
   // 从 RepairItemContent 组件获取数据
   const items = repairItemContentRef.value?.selectedItems || []
-  const parts = repairItemContentRef.value?.selectedParts || []
-
-  // 校验维修项目或者维修零件有值
-  if (items.length === 0 && parts.length === 0) {
-    showToast('项目及零件不可为空，请添加项目或者零件')
+  // 校验维修项目有值
+  if (items.length === 0) {
+    showToast('项目不可为空，请先添加维修项目')
     return
   }
   // 点击"准确"，执行接口
@@ -3025,6 +2994,9 @@ onMounted(() => {
     // 先添加临时预览
     const fileObj = {
       url: url,
+      fileUrl: url,
+      authFileUrl: url,
+      fileType: getFileType({ url }, 'image/jpeg'),
       status: 'uploading',
       message: '上传中...',
       id: null
@@ -3062,12 +3034,16 @@ onMounted(() => {
         const targetList = getTargetFileList(uploadType)
         if (targetList.length > 0) {
           const lastIndex = targetList.length - 1
+          const rawUrl = uploadData.url || uploadData.fileUrl || url
           targetList[lastIndex] = {
             ...targetList[lastIndex],
             status: 'done',
             message: '',
             id: uploadData.id || null,
-            url: uploadData.authFileUrl || url
+            url: rawUrl,
+            fileUrl: rawUrl,
+            authFileUrl: uploadData.authFileUrl || rawUrl,
+            fileType: uploadData.fileType || uploadData.ext || getFileType({ url: rawUrl }, 'image/jpeg')
           }
         }
 

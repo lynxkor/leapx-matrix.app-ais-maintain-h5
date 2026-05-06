@@ -1,7 +1,7 @@
 import { ref } from 'vue'
 import { showToast, showConfirmDialog, closeToast, showLoadingToast } from 'vant'
 import { filterRepairItems, filterRepairParts, saveRepairItemInfo } from '@/api/repairWork'
-import { WarrantyTypeEnum, UNIVERSAL_LABOR_HOUR_ITEM_ID, WorkRecordStatusEnum } from '@/views/repairWork/constant'
+import { WarrantyTypeEnum, UNIVERSAL_LABOR_HOUR_ITEM_ID, WorkRecordStatusEnum, PackageTypeEnum } from '@/views/repairWork/constant'
 
 /**
  * 维修项目和零件的增删改查操作 Hook
@@ -37,7 +37,7 @@ export default function useRepairItemOperations({
    * 执行搜索
    * @param {string} keyword - 搜索关键词
    */
-  const performSearch = async (keyword) => {
+  const performSearch = async(keyword) => {
     showLoadingToast('请稍候...')
     try {
       const apiFn = activeTab.value === 'item' ? filterRepairItems : filterRepairParts
@@ -143,9 +143,18 @@ export default function useRepairItemOperations({
 
     // 如果是套餐内的项目或零件，需要确认删除整个套餐
     if (item.packageId) {
+      const packageTypeLabelMap = {
+        [PackageTypeEnum.REPAIR]: '维修套餐',
+        [PackageTypeEnum.EQUITY]: '权益套餐',
+        [PackageTypeEnum.STORE]: '商城订单',
+        [PackageTypeEnum.FREE]: '免保项目',
+        [PackageTypeEnum.TECH_ACTIVITY]: '技术服务活动',
+        [PackageTypeEnum.CARE_ACTIVITY]: '关爱服务活动'
+      }
+      const packageLabel = packageTypeLabelMap[item.packageType] || '权益'
       showConfirmDialog({
         title: '提示',
-        message: '本操作视为您取消核销本次权益套餐，请确认',
+        message: `本操作视为您取消核销本次${packageLabel}，请确认`,
         confirmButtonText: '确认',
         cancelButtonText: '取消',
         'z-index': 5100
@@ -198,7 +207,7 @@ export default function useRepairItemOperations({
    * @param {Function} onSuccess - 成功回调
    * @returns {Promise<boolean>} 是否保存成功
    */
-  const handleSave = async (onSuccess) => {
+  const handleSave = async(onSuccess) => {
     if (selectedItems.value.length === 0 && selectedParts.value.length === 0) return false
 
     // 售前保修只能单独开单

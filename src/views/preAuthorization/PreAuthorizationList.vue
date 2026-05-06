@@ -16,22 +16,12 @@
 
     <!-- 预授权列表 -->
     <div class="list-container">
-      <!-- 空状态 -->
-      <div v-if="showEmpty" class="empty-state">
-        <img class="empty-image" src="@/libs/assets/image/no-data.png" alt="没有数据" />
-        <p class="empty-text">没有找到相关内容</p>
-        <van-button plain type="primary" size="normal" class="reset-btn" @click="handleResetFilter">
-          重置筛选
-        </van-button>
-      </div>
-
       <RefreshList
-        v-else
         ref="refreshListRef"
         :requestData="requestData"
         :has-no-data="dataList.length === 0"
         @setData="setData"
-        @resetFilters="resetFilters"
+        @resetFilters="handleResetFilter"
       >
         <ListItem
           v-for="item in dataList"
@@ -245,18 +235,6 @@ const setData = (res) => {
   showEmpty.value = dataList.value.length === 0
 }
 
-const resetFilters = () => {
-  activeTab.value = 'all'
-  requestData.data = {
-    pageNum: 1,
-    pageSize: 10,
-    dealerUnitIdList: [],
-    preAuthTypeList: [],
-    appSearchKeyWord: ''
-  }
-  showEmpty.value = false
-}
-
 const handleResetFilter = () => {
   activeTab.value = 'all'
   requestData.data = {
@@ -271,6 +249,9 @@ const handleResetFilter = () => {
   if (filterHeaderRef.value) {
     filterHeaderRef.value.resetFilters()
   }
+  nextTick(() => {
+    refreshListRef.value?.search(requestData.data)
+  })
 }
 
 const getStatusClass = (label) => {
@@ -302,18 +283,21 @@ const createAuthorization = () => {
 
 <style lang="scss" scoped>
 .pre-auth-list {
-  padding-bottom: 89px;
-  min-height: 100vh;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
   background-color: #f5f5f5;
+  overflow: hidden;
+  height: 100%;
+  min-height: 0;
+  overscroll-behavior: contain;
 
   &::-webkit-scrollbar {
     display: none;
   }
 
   .filter-fixed {
-    position: sticky;
-    top: 0;
-    z-index: 100;
+    flex-shrink: 0;
     background: #fff;
   }
 
@@ -326,36 +310,16 @@ const createAuthorization = () => {
   }
 
   .list-container {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
     padding: 12px 12px 77px 12px;
+    overscroll-behavior-y: contain;
+    -webkit-overflow-scrolling: touch;
   }
 
-  .empty-state {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 66px 0;
-
-    .empty-image {
-      width: 230px;
-      height: 142px;
-      margin-bottom: 16px;
-    }
-
-    .empty-text {
-      font-family: 'PingFang SC';
-      font-size: 14px;
-      color: #6c6e6c;
-      margin: 0 0 20px 0;
-    }
-
-    .reset-btn {
-      width: 88px;
-      height: 32px;
-      font-size: 14px;
-      color: #009100 !important;
-      border: 1px solid #009100 !important;
-      border-radius: 4px;
-    }
+  :deep(.pull-refresh-content) {
+    min-height: 100%;
   }
 
   .item-header {

@@ -247,13 +247,11 @@ onMounted(() => {
   flex-direction: column;
   height: 100%;
   background: #f7f7f7;
+  overflow: hidden;
 
   .sticky-header {
-    position: sticky;
-    top: 0;
-    z-index: 10;
-    background: #ffffff;
     flex-shrink: 0;
+    background: #ffffff;
   }
 
   :deep(.van-tabs) {

@@ -188,8 +188,8 @@
                 >
                   <img
                     style="width: 100%; height: 100%; margin-bottom: 0"
-                    :src="file.url"
-                    @click="showImg(file.url)"
+                    :src="getFilePreviewUrl(file)"
+                    @click="showImg(getFilePreviewUrl(file))"
                   />
                   <img
                     class="delete_icon"
@@ -225,8 +225,8 @@
                 >
                   <img
                     style="width: 100%; height: 100%; margin-bottom: 0"
-                    :src="file.url"
-                    @click="showImg(file.url)"
+                    :src="getFilePreviewUrl(file)"
+                    @click="showImg(getFilePreviewUrl(file))"
                   />
                   <img
                     class="delete_icon"
@@ -1211,6 +1211,14 @@ const attachmentConfig = computed(() => getAttachConfig('附件资料'))
 const computedBusinessType = computed(() => {
   return detail.businessType || (detail.isAppointment ? 50 : 10)
 })
+
+const getFilePreviewUrl = (file) => {
+  return file?.fileUrl || file?.url || file?.authFileUrl || ''
+}
+
+const getFileSaveUrl = (file) => {
+  return file?.url || file?.fileUrl || file?.authFileUrl || ''
+}
 
 // 施工单状态
 const isSaved = ref(false) // 是否已保存
@@ -2238,7 +2246,7 @@ const fetchDetail = async() => {
             signatureData.attachments = []
             // 根据 attachType 分类回显文件
             fileList.forEach((item) => {
-              const fileObj = { ...item, url: item.fileUrl }
+              const fileObj = { ...item, url: item.fileUrl, fileUrl: item.fileUrl }
               switch (item.attachType) {
                 case '车内照片':
                   detail.interiorImages.push(fileObj)
@@ -2563,7 +2571,7 @@ const refreshAttachmentList = () => {
       signatureData.attachments = []
       // 根据 attachType 分类回显文件
       fileList.forEach((item) => {
-        const fileObj = { ...item, url: item.fileUrl }
+        const fileObj = { ...item, url: item.fileUrl, fileUrl: item.fileUrl }
         switch (item.attachType) {
           case '车内照片':
             detail.interiorImages.push(fileObj)
@@ -2583,7 +2591,7 @@ const refreshAttachmentList = () => {
 // 预览图片
 const onPreviewImage = (type, index) => {
   const imageArray = type === 'interior' ? detail.interiorImages : detail.exteriorImages
-  const images = imageArray.map((item) => item.url)
+  const images = imageArray.map((item) => getFilePreviewUrl(item))
   showImagePreview({
     images: images,
     startPosition: index,
@@ -2604,7 +2612,7 @@ const showImg = (url) => {
 const onPreviewFile = (file) => {
   if (file.isImage) {
     showImagePreview({
-      images: [file.url],
+      images: [getFilePreviewUrl(file)],
       startPosition: 0,
       showIndex: false
     })
@@ -2703,6 +2711,8 @@ const handleImageFileChange = (event) => {
         if (res.code === 200) {
           // 兼容两种返回格式：数组或对象
           const uploadData = Array.isArray(res.data) ? res.data[0] || {} : res.data || {}
+          const rawUrl = uploadData.url || uploadData.fileUrl || previewUrl
+          const authFileUrl = uploadData.authFileUrl || rawUrl
 
           // 更新文件状态 - 使用保存的 uploadType
           const targetList = getTargetFileList(uploadType)
@@ -2713,7 +2723,9 @@ const handleImageFileChange = (event) => {
               status: 'done',
               message: '',
               id: uploadData.id || null,
-              url: uploadData.authFileUrl || previewUrl
+              url: rawUrl,
+              fileUrl: rawUrl,
+              authFileUrl
             }
           }
 
@@ -2793,6 +2805,8 @@ onMounted(() => {
       if (res.code === 200) {
         // 兼容两种返回格式：数组或对象
         const uploadData = Array.isArray(res.data) ? res.data[0] || {} : res.data || {}
+        const rawUrl = uploadData.url || uploadData.fileUrl || url
+        const authFileUrl = uploadData.authFileUrl || rawUrl
 
         // 更新文件状态 - 使用保存的 uploadType
         const targetList = getTargetFileList(uploadType)
@@ -2803,7 +2817,9 @@ onMounted(() => {
             status: 'done',
             message: '',
             id: uploadData.id || null,
-            url: uploadData.authFileUrl || url
+            url: rawUrl,
+            fileUrl: rawUrl,
+            authFileUrl
           }
         }
 
@@ -3026,6 +3042,7 @@ const onInspectionSave = async(type) => {
     return { code: 200 }
   }
   savingLoading.value = true
+  // TODO: 待修复，不需要提交这么多字段
   const params = {
     id: detail.id,
     code: detail.code,
@@ -3040,14 +3057,14 @@ const onInspectionSave = async(type) => {
     bindingUser: detail.bindingUser,
     bindingUserId: detail.bindingUserId,
     carPlate: detail.plateNo,
-    dealerName: detail.salesDealerName,
-    dealerCode: detail.salesDealerCode,
+    // dealerName: detail.salesDealerName,
+    // dealerCode: detail.salesDealerCode,
     appointmentNo: detail.appointmentNo,
     mileage: detail.mileage,
     lastMileage: detail.lastMileage,
-    startWarrantyDate: detail.vehicleProfileServiceResp.warrantyStartdate || '',
-    exclusiveServiceDealerName: detail.vehicleProfileServiceResp.serviceDealerName || '',
-    exclusiveServiceDealerCode: detail.vehicleProfileServiceResp.serviceDealerCode || '',
+    startWarrantyDate: detail.vehicleProfileServiceResp.warrantyStartdate,
+    // exclusiveServiceDealerName: detail.vehicleProfileServiceResp.serviceDealerName,
+    // exclusiveServiceDealerCode: detail.vehicleProfileServiceResp.serviceDealerCode,
     expectFinishAt: signatureData.expectFinishAt,
     createStatementInfoDate: detail.createStatementInfoDate,
     remark: detail.remark,
@@ -3079,7 +3096,7 @@ const onInspectionSave = async(type) => {
       ...item,
       fileId: item.id,
       businessId: route.query.id,
-      fileUrl: item.url,
+      fileUrl: getFileSaveUrl(item),
       attachType: '车外照片',
       configCode: 'mcs_serviceproxy'
     })),
@@ -3087,7 +3104,7 @@ const onInspectionSave = async(type) => {
       ...item,
       fileId: item.id,
       businessId: route.query.id,
-      fileUrl: item.url,
+      fileUrl: getFileSaveUrl(item),
       attachType: '车内照片',
       configCode: 'mcs_serviceproxy'
     })),
@@ -3109,7 +3126,7 @@ const onInspectionSave = async(type) => {
     vehProfileVin: detail.vin,
     maintenanceMileage: detail.vehicleProfileServiceResp.nextMaintainMileages,
     maintenanceTime: detail.vehicleProfileServiceResp.nextMaintainDate,
-    saleDate: detail.vehicleProfileServiceResp.salesDate || '',
+    saleDate: detail.vehicleProfileServiceResp.salesDate,
     vehModelId: detail.vehicleModelId,
     vehRegisteredModelId: detail.vehicleProfileServiceResp.carSaleSversionId,
     vehRegisteredModelName: detail.vehicleProfileServiceResp.carSalesVersionName,
@@ -3205,12 +3222,6 @@ const onPartsSave = async() => {
   const items = partsData.repairItemRespList || []
   const parts = partsData.sparePartRespList || []
 
-  // 校验项目及零件不可为空
-  if (items.length === 0 && parts.length === 0) {
-    showToast('项目及零件不可为空，请添加项目或者零件')
-    return
-  }
-
   savingLoading.value = true
   try {
     // 保存项目零件
@@ -3236,6 +3247,7 @@ const onPartsSave = async() => {
   } finally {
     savingLoading.value = false
   }
+  repairItemContentRef.value?.onSave()
 }
 
 // 签字确认保存
@@ -3340,11 +3352,9 @@ const onConfirmAndSign = () => {
   }
   // 从 RepairItemContent 组件获取数据
   const items = partsData.repairItemRespList || []
-  const parts = partsData.sparePartRespList || []
-  console.log('items', items, parts)
-  // 校验维修项目或者维修零件有值
-  if (items.length === 0 && parts.length === 0) {
-    showToast('项目及零件不可为空，请添加项目或者零件')
+  // 校验维修项目有值
+  if (items.length === 0) {
+    showToast('项目不可为空，请先添加维修项目')
     return
   }
   // 点击"准确"，执行接口

@@ -15,7 +15,7 @@
     </div>
 
     <!-- 维修项目列表 -->
-    <div class="item-list-wrapper" v-if="expandState !== 'collapsed'">
+    <div ref="listWrapperRef" class="item-list-wrapper" v-if="expandState !== 'collapsed'" @touchstart="onTouchStart" @touchmove="onWrapperTouchMove">
       <div class="item-list">
         <div v-for="(item, index) in displayItems" :key="index" class="repair-item-card">
           <div class="item-content">
@@ -115,6 +115,28 @@ const emit = defineEmits(['refresh'])
 
 // 三态折叠: collapsed(0条) / partial(2条) / full(全部)
 const expandState = ref('collapsed')
+const listWrapperRef = ref(null)
+let touchStartY = 0
+
+const onTouchStart = (e) => {
+  touchStartY = e.touches[0].clientY
+}
+
+// 阻止内层滚动事件冒泡到 van-pull-refresh，但在边界位置放行以允许下拉刷新
+const onWrapperTouchMove = (e) => {
+  const el = listWrapperRef.value
+  if (!el) return
+  const { scrollTop, scrollHeight, clientHeight } = el
+  if (scrollHeight <= clientHeight) return
+
+  const direction = e.touches[0].clientY - touchStartY
+  // 下拉到顶部 → 放行（允许 pull-to-refresh）
+  if (direction > 0 && scrollTop <= 0) return
+  // 上拉到底部 → 放行（允许外层滚动继续）
+  if (direction < 0 && scrollTop >= scrollHeight - clientHeight - 1) return
+
+  e.stopPropagation()
+}
 
 // 派工弹窗
 const showDispatchPopup = ref(false)
@@ -193,6 +215,8 @@ const handleDispatchSubmit = async() => {
 
   .item-list-wrapper {
     margin-top: 8px;
+    max-height: 360px;
+    overflow: auto;
 
     .item-list {
       display: flex;

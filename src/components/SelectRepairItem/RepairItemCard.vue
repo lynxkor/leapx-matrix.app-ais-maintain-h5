@@ -67,7 +67,7 @@
                 @keydown.enter="saveDiscountAmount"
               />
             </template>
-            <span v-else class="discount-tag-amount">¥{{ item.discountAmount || 0 }}</span>
+            <span v-else class="discount-tag-amount">¥{{ (+item.discountAmount || 0).toFixed(2) }}</span>
           </div>
         </div>
       </div>
@@ -81,7 +81,7 @@
           class="card-stepper"
           input-width="32px"
           button-size="32px"
-          @change="(val) => emit('update-item', item, { quantity: val })"
+          @change="(val) => emit('update-item', item, { quantity: val, workHour: val })"
         />
         <span v-else class="static-quantity">{{ item.quantity }}</span>
       </div>
@@ -175,32 +175,32 @@ import AisPopup from '@/libs/components/AisPopup.vue'
 const props = defineProps({
   item: {
     type: Object,
-    required: true,
+    required: true
   },
   stepperDisabled: {
     type: Boolean,
-    default: false,
+    default: false
   },
   discountDisabled: {
     type: Boolean,
-    default: false,
+    default: false
   },
   nameEditable: {
     type: Boolean,
-    default: false,
+    default: false
   },
   deletable: {
     type: Boolean,
-    default: true,
+    default: true
   },
   disabled: {
     type: Boolean,
-    default: false,
+    default: false
   },
   isReplace: {
     type: Boolean,
-    default: false,
-  },
+    default: false
+  }
 })
 
 const emit = defineEmits(['delete', 'update-item', 'replace'])
@@ -233,7 +233,7 @@ const onReplaceTagClick = (item) => {
 }
 
 const onSelectReplacePart = (part) => {
-  if (part.isOutstock == 1) {
+  if (Number(part.isOutstock) === 1) {
     showToast('该零件已出库')
     return
   }
@@ -247,7 +247,7 @@ const onConfirmReplace = () => {
   }
   emit('replace', {
     oldPart: props.item,
-    newPart: selectedReplacePart.value,
+    newPart: selectedReplacePart.value
   })
   showReplacePopup.value = false
 }

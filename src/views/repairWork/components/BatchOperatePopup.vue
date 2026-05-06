@@ -71,8 +71,8 @@
           <!-- 状态标签栏 -->
           <div class="status-tags">
             <div
-              v-for="(tag, index) in statusTags"
-              :key="index"
+              v-for="tag in statusTags"
+              :key="tag.index"
               class="status-tag-item"
               :class="{ active: activeTagIndex === tag.index }"
               @click="handleTagClick(tag.index)"
@@ -280,7 +280,7 @@ const statusTags = computed(() => {
 const loadRepairWorkRecord = async() => {
   loading.value = true
   try {
-    const res = await repairWorkRecord({ serviceProxyId: props.workOrder.serviceProxyId })
+    const res = await repairWorkRecord({ serviceProxyId: props.workOrder.serviceProxyId, pageSize: 1000 })
     if (res.code === 200) {
       internalRepairItems.value = (res?.data || []).map((item) => ({
         ...item,
@@ -688,6 +688,8 @@ const handleClose = () => {
 
   // 维修项目列表
   .repair-list {
+    max-height: calc(90vh - 335px);
+    overflow-y: auto;
     .repair-item {
       display: flex;
       align-items: center;

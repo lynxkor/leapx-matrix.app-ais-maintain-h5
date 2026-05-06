@@ -291,7 +291,7 @@ export async function handleFinalCheckFlow({ serviceProxyId, workOrder, onRefres
           repairWorkRecordResps: res.repairWorkRecordResps,
           faultAlertRecordParams: res.faultAlertRecordResps,
           traceRecordParams: res.partsTraceRecordResps,
-          currentFault: res.faultFlag === 1 ? 0 : 1,
+          currentFault: res.faultFlag ? 1 : 0,
           id: serviceProxyId,
           finalCheckAt: formatDateTime(new Date()),
           finalCheckerId: userStore.userId,
