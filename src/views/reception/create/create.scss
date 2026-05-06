@@ -876,6 +876,28 @@
   }
 }
 
+.fault-list {
+  height: 60vh;
+  overflow-y: auto;
+
+  .fault-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 7px 12px;
+    border-radius: 6px;
+    margin-bottom: 8px;
+    font-size: 13px;
+    &:last-child {
+      margin-bottom: 0;
+    }
+
+    &:active {
+      background: #f7f7f7;
+    }
+  }
+}
+
 // 预计交车时间选择器样式
 .delivery-time-picker {
   display: flex;

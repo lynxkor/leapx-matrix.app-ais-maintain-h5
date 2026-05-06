@@ -79,7 +79,7 @@
               </div>
               <div class="info-row">
                 <span class="label">客户经理</span>
-                <span class="value">{{ detailData.creatorName }}</span>
+                <span class="value">{{ popupData.creatorName }}</span>
               </div>
             </div>
           </div>
@@ -145,24 +145,7 @@ const refreshListRef = ref(null)
 const vehicleInfo = reactive({
   vin: '',
   plateNo: '',
-  vehicleModel: '',
-})
-
-// 详情数据
-const detailData = reactive({
-  carPlate: '',
-  vehModelName: '',
-  vehProfileVin: '',
-  code: '',
-  status: '',
-  statusDesc: '',
-  dealerName: '',
-  mileage: '',
-  netMileage: '',
-  netMileageExtend: '',
-  serviceAdvisorName: '',
-  createTime: '',
-  historyList: [],
+  vehicleModel: ''
 })
 
 // 弹框控制
@@ -178,7 +161,7 @@ const popupData = reactive({
   netMileage: '',
   serviceAdvisorName: '',
   repairItems: [],
-  repairParts: [],
+  repairParts: []
 })
 const list = ref([])
 
@@ -192,7 +175,7 @@ const statusMap = {
   160: '待交车',
   180: '已交车',
   200: '反结算',
-  210: '已作废',
+  210: '已作废'
 }
 
 // 获取状态标签
@@ -204,31 +187,12 @@ const getStatusLabel = (status) => {
 const fetchDetail = () => {
   const id = route.query.id
   if (!id) return
-  // getDetail(id).then((res) => {
-  //   if (res.code === 200) {
-  //     const data = res.data
-  //     detailData.carPlate = data.carPlate || ''
-  //     detailData.vehModelName = data.vehModelName || ''
-  //     detailData.vehProfileVin = data.vehProfileVin || ''
-  //     detailData.code = data.code || ''
-  //     detailData.status = data.status || ''
-  //     detailData.statusDesc = data.statusDesc || ''
-  //     detailData.dealerName = data.dealerName || ''
-  //     detailData.mileage = data.mileage || ''
-  //     detailData.netMileage = data.netMileage || ''
-  //     detailData.netMileageExtend = data.netMileageExtend || ''
-  //     detailData.serviceAdvisorName = data.serviceAdvisorName || ''
-  //     detailData.createTime = data.createTime || ''
-  //     detailData.historyList = data.historyList || []
-  //     list.value = data.historyList || []
-  //   }
-  // })
 }
 
 // RefreshList适配：包装api使其接受对象但内部提取id
 const requestData = reactive({
   api: (params) => getDetail(params.id),
-  data: { id: route.query.id },
+  data: { id: route.query.id }
 })
 // 设置列表数据
 const onSetData = (data) => {
@@ -260,6 +224,7 @@ const onCardClick = (item) => {
   popupData.serviceAdvisorName = item.serviceAdvisorName || ''
   popupData.repairItems = []
   popupData.repairParts = []
+  popupData.creatorName = item.creatorName
   showPopup.value = true
   popupLoading.value = true
   getHistoryDetail(item.id)

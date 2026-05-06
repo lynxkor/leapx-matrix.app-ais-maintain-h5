@@ -78,7 +78,7 @@
             <!-- 送修人信息 -->
             <div class="repair-person-info">
               <div class="info-row">
-                <span class="label">送修人姓名</span>
+                <span class="label">{{ repairPersonInputLabel }}姓名</span>
                 <div class="value-wrapper">
                   <input
                     v-model="repairPersonNameInput"
@@ -97,7 +97,7 @@
                 </div>
               </div>
               <div class="info-row">
-                <span class="label">送修人手机</span>
+                <span class="label">{{ repairPersonInputLabel }}手机</span>
                 <div class="value-wrapper">
                   <input
                     v-model="repairPersonPhoneInput"
@@ -692,7 +692,7 @@
                     '/' +
                     item.vin +
                     '/' +
-                    (item.vehicleProfileOwnerResp?.customerName || '')
+                    (item.vehicleProfileOwnerResp?.ownerName || '')
                   "
                 />
               </span>
@@ -2227,6 +2227,13 @@ const onViewAllModules = () => {
 // 送修人输入框是否禁用（车主/绑车人不可编辑，其他可编辑）
 const repairPersonInputDisabled = computed(() => repairPersonType.value !== 'other')
 
+// 送修人输入框标签文案（车主/绑车人/其他显示不同文案）
+const repairPersonInputLabel = computed(() => {
+  if (repairPersonType.value === 'owner') return '车主'
+  if (repairPersonType.value === 'bindingUser') return '绑车人'
+  return '送修人'
+})
+
 // 选择送修人类型
 const onSelectRepairPersonType = (type) => {
   repairPersonType.value = type
@@ -3360,28 +3367,6 @@ onMounted(() => {
         &:active {
           background: #007a00;
         }
-      }
-    }
-  }
-
-  .fault-list {
-    height: 60vh;
-    overflow-y: auto;
-
-    .fault-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 7px 12px;
-      border-radius: 6px;
-      margin-bottom: 8px;
-
-      &:last-child {
-        margin-bottom: 0;
-      }
-
-      &:active {
-        background: #f7f7f7;
       }
     }
   }

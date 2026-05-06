@@ -203,6 +203,7 @@
       close-icon-position="top-left"
       title="维修套餐"
       @close="showPackageDetail = false"
+      style="height: 80vh"
     >
       <van-overlay :show="packageSubmitting" style="z-index: 100">
         <div class="loading-wrapper">
@@ -1029,6 +1030,8 @@ const onServiceClick = (item) => {
       }))
       isServiceSelected.value = item.used
       showServiceDetail.value = true
+    } else {
+      showToast(res.msg || '获取详情失败')
     }
   })
 }

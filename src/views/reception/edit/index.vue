@@ -78,7 +78,7 @@
             <!-- 送修人信息 -->
             <div class="repair-person-info">
               <div class="info-row">
-                <span class="label">送修人姓名</span>
+                <span class="label">{{ repairPersonInputLabel }}姓名</span>
                 <div class="value-wrapper">
                   <input
                     v-model="repairPersonNameInput"
@@ -97,7 +97,7 @@
                 </div>
               </div>
               <div class="info-row">
-                <span class="label">送修人手机</span>
+                <span class="label">{{ repairPersonInputLabel }}手机</span>
                 <div class="value-wrapper">
                   <input
                     v-model="repairPersonPhoneInput"
@@ -477,9 +477,6 @@
                 <span class="value unsigned">未签字</span>
               </div>
             </div>
-            <!-- <div class="signature-action-row" v-if="detail.signStatus != 20">
-              <van-button type="primary" size="small" @click="onGoToSign">客户签字</van-button>
-            </div> -->
           </div>
 
           <!-- 附件资料 -->
@@ -712,7 +709,7 @@
                     '/' +
                     item.vin +
                     '/' +
-                    (item.vehicleProfileOwnerResp?.customerName || '')
+                    (item.vehicleProfileOwnerResp?.ownerName || '')
                   "
                 />
               </span>
@@ -1145,7 +1142,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, computed, onUnmounted, nextTick, watch } from 'vue'
+import { ref, reactive, onMounted, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { showToast, showConfirmDialog, showImagePreview } from 'vant'
 import { useGlobalStore } from '@/stores/global'
@@ -1160,7 +1157,7 @@ import {
   deleteAttachmentConfig,
   getFileList
 } from '@/libs/api/fileConfig'
-import { getAppImgLimit } from '@/libs/utils/nativeFn'
+import { getAppImgLimit, batchUploadImageLimit } from '@/libs/utils/nativeFn'
 import { RemindInfoTypeEnum, AlarmLevelEnum } from '@/views/repairWork/constant'
 import {
   getDetail,
@@ -2473,6 +2470,10 @@ const fetchVehicleMileage = async(vin) => {
       detail.networkMileageAdd = res.data.oilMileage || ''
       detail.networkBattery = res.data.electricity || ''
       detail.electricalMileage = res.data.electricMileage || ''
+      detail.mileage = res.data.mileage || ''
+      detail.battery = res.data.electricity || ''
+      // 获取车联网里程后进行校验
+      validateMileage(detail.mileage, detail.lastMileage, detail.networkMileageTotal)
     }
   } catch (error) {
     console.error('获取车联网里程失败:', error)
@@ -2607,15 +2608,15 @@ const showImg = (url) => {
 }
 
 // 预览文件
-const onPreviewFile = (file) => {
-  if (file.isImage) {
-    showImagePreview({
-      images: [getFilePreviewUrl(file)],
-      startPosition: 0,
-      showIndex: false
-    })
-  }
-}
+// const onPreviewFile = (file) => {
+//   if (file.isImage) {
+//     showImagePreview({
+//       images: [getFilePreviewUrl(file)],
+//       startPosition: 0,
+//       showIndex: false
+//     })
+//   }
+// }
 // 统一上传方法
 const uploadGeneric = (type) => {
   currentUploadType.value = type
@@ -2628,7 +2629,8 @@ const uploadGeneric = (type) => {
   }
   const config = getAttachConfig(attachTypeMap[type] || '车内照片')
   const maxSize = config.maxSize || 10
-  getAppImgLimit(maxSize)
+  console.log('maxSize:', config)
+  batchUploadImageLimit(maxSize, config.maxNum)
 }
 
 // 选择图片来源
@@ -2658,6 +2660,7 @@ const getTargetFileList = (type) => {
 
 // 处理图片文件选择
 const handleImageFileChange = (event) => {
+  console.log('event:', event)
   const files = event.target.files
   if (files && files.length > 0) {
     const file = files[0]
@@ -2692,6 +2695,7 @@ const handleImageFileChange = (event) => {
         break
     }
 
+    console.log('event:', 111111111111)
     // 调用上传接口
     const uploadFile = async() => {
       // 保存当前上传类型，避免异步上传完成时类型已改变
@@ -2756,88 +2760,112 @@ const handleImageFileChange = (event) => {
 // 注册原生图片回调
 onMounted(() => {
   window.getImage = async(url) => {
+    console.log('urlurlurl:', url)
     if (!url) return
 
-    // 保存当前上传类型，避免异步上传完成时类型已改变
-    const uploadType = currentUploadType.value
-
-    // attachType 映射
-    const attachTypeMap = {
-      interior: '车内照片',
-      exterior: '车外照片',
-      attachment: '附件资料'
+    // 处理 url 参数：可能是字符串或 JSON 数组字符串
+    let urlList = []
+    if (typeof url === 'string') {
+      if (url.startsWith('[')) {
+        // JSON 数组字符串，需要解析
+        try {
+          urlList = JSON.parse(url)
+        } catch {
+          // 解析失败，当作单个 URL 处理
+          urlList = [url]
+        }
+      } else {
+        // 单个 URL 字符串
+        urlList = [url]
+      }
+    } else if (Array.isArray(url)) {
+      urlList = url
+    } else {
+      return
     }
 
-    // 先添加临时预览
-    const fileObj = {
-      url: url,
-      status: 'uploading',
-      message: '上传中...',
-      id: null
-    }
+    // 遍历每个 URL 进行上传处理
+    for (const singleUrl of urlList) {
+      // 保存当前上传类型，避免异步上传完成时类型已改变
+      const uploadType = currentUploadType.value
 
-    // 根据当前上传类型添加到对应的文件列表
-    switch (uploadType) {
-      case 'interior':
-        detail.interiorImages.push(fileObj)
-        break
-      case 'exterior':
-        detail.exteriorImages.push(fileObj)
-        break
-      case 'attachment':
-        signatureData.attachments.push(fileObj)
-        break
-    }
-
-    // 调用上传接口
-    try {
-      const params = {
-        fileUrl: url,
-        businessId: route.query.id,
-        configCode: 'mcs_serviceproxy',
-        attachType: attachTypeMap[uploadType]
+      // attachType 映射
+      const attachTypeMap = {
+        interior: '车内照片',
+        exterior: '车外照片',
+        attachment: '附件资料'
+      }
+      // 先添加临时预览
+      const fileObj = {
+        url: singleUrl,
+        status: 'uploading',
+        message: '上传中...',
+        id: null
       }
 
-      const res = await uploadFileByUrl([params])
+      // 根据当前上传类型添加到对应的文件列表
+      switch (uploadType) {
+        case 'interior':
+          detail.interiorImages.push(fileObj)
+          break
+        case 'exterior':
+          detail.exteriorImages.push(fileObj)
+          break
+        case 'attachment':
+          signatureData.attachments.push(fileObj)
+          break
+      }
 
-      if (res.code === 200) {
-        // 兼容两种返回格式：数组或对象
-        const uploadData = Array.isArray(res.data) ? res.data[0] || {} : res.data || {}
-        const rawUrl = uploadData.url || uploadData.fileUrl || url
-        const authFileUrl = uploadData.authFileUrl || rawUrl
-
-        // 更新文件状态 - 使用保存的 uploadType
-        const targetList = getTargetFileList(uploadType)
-        if (targetList.length > 0) {
-          const lastIndex = targetList.length - 1
-          targetList[lastIndex] = {
-            ...targetList[lastIndex],
-            status: 'done',
-            message: '',
-            id: uploadData.id || null,
-            url: rawUrl,
-            fileUrl: rawUrl,
-            authFileUrl
-          }
+      // 调用上传接口
+      try {
+        const params = {
+          fileUrl: singleUrl,
+          businessId: route.query.id,
+          configCode: 'mcs_serviceproxy',
+          attachType: attachTypeMap[uploadType]
         }
 
-        showToast('上传成功')
-      } else {
-        // 上传失败，移除临时文件 - 使用保存的 uploadType
+        const res = await uploadFileByUrl([params])
+
+        if (res.code === 200) {
+          // 兼容两种返回格式：数组或对象
+          const uploadData = Array.isArray(res.data) ? res.data[0] || {} : res.data || {}
+          const rawUrl = uploadData.url || uploadData.fileUrl || singleUrl
+          const authFileUrl = uploadData.authFileUrl || rawUrl
+
+          // 更新文件状态 - 使用保存的 uploadType
+          const targetList = getTargetFileList(uploadType)
+          if (targetList.length > 0) {
+            const lastIndex = targetList.length - 1
+            targetList[lastIndex] = {
+              ...targetList[lastIndex],
+              status: 'done',
+              message: '',
+              id: uploadData.id || null,
+              url: rawUrl,
+              fileUrl: rawUrl,
+              authFileUrl
+            }
+          }
+
+          showToast('上传成功')
+        } else {
+          // 上传失败，移除临时文件 - 使用保存的 uploadType
+          const targetList = getTargetFileList(uploadType)
+          if (targetList.length > 0) {
+            targetList.pop()
+          }
+          showToast(res.msg || '上传失败')
+        }
+      } catch (e) {
+        console.error('上传出错:', e)
+        // 出错时移除临时文件 - 使用保存的 uploadType
         const targetList = getTargetFileList(uploadType)
         if (targetList.length > 0) {
           targetList.pop()
         }
-        showToast(res.msg || '上传失败')
+        showToast('上传出错')
       }
-    } catch (e) {
-      console.error('上传出错:', e)
-      // 出错时移除临时文件 - 使用保存的 uploadType
-      const targetList = getTargetFileList(uploadType)
-      if (targetList.length > 0) {
-        targetList.pop()
-      }
-      showToast('上传出错')
     }
   }
 })
@@ -2910,6 +2938,13 @@ const onViewAllModules = () => {
 // 送修人输入框是否禁用（车主/绑车人不可编辑，其他可编辑）
 const repairPersonInputDisabled = computed(() => repairPersonType.value !== 'other')
 
+// 送修人输入框标签文案（车主/绑车人/其他显示不同文案）
+const repairPersonInputLabel = computed(() => {
+  if (repairPersonType.value === 'owner') return '车主'
+  if (repairPersonType.value === 'bindingUser') return '绑车人'
+  return '送修人'
+})
+
 // 选择送修人类型
 const onSelectRepairPersonType = (type) => {
   repairPersonType.value = type
@@ -2944,11 +2979,11 @@ const onRepairPersonPhoneChange = () => {
 }
 
 // 选择业务类型
-const onSelectBusinessType = (item) => {
-  detail.businessType = item.value
-  // 收起面板
-  businessTypeCollapse.value = []
-}
+// const onSelectBusinessType = (item) => {
+//   detail.businessType = item.value
+//   // 收起面板
+//   businessTypeCollapse.value = []
+// }
 
 // 更多操作
 const onMore = () => {
@@ -3073,7 +3108,7 @@ const onInspectionSave = async(type) => {
     shuttlePhone: detail.repairPersonPhone,
     payType: detail.payType,
     warrantyCompany: detail.warrantyCompany,
-    signChannel: signatureData.signChannel === '纸质单据' || detail.signChannel == 40 ? '40' : '',
+    signChannel: signatureData.signChannel === '纸质单据' || Number(detail.signChannel) === 40 ? '40' : '',
     signCompletedOn: detail.signCompletedOn,
     signGeneratedOn: detail.signGeneratedOn,
     signStatus: detail.signStatus,
@@ -3398,18 +3433,6 @@ const onViewSignature = () => {
   } else {
     showToast('暂无签字图片')
   }
-}
-
-// 去签字
-const onGoToSign = () => {
-  router.push({
-    path: '/reception/sign',
-    query: {
-      vin: detail.vin,
-      serviceProxyNo: detail.code,
-      serviceProxyId: detail.id
-    }
-  })
 }
 
 // 打开预计交车时间选择器
@@ -3838,28 +3861,6 @@ onMounted(() => {
         &:active {
           background: #007a00;
         }
-      }
-    }
-  }
-
-  .fault-list {
-    height: 60vh;
-    overflow-y: auto;
-
-    .fault-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 7px 12px;
-      border-radius: 6px;
-      margin-bottom: 8px;
-
-      &:last-child {
-        margin-bottom: 0;
-      }
-
-      &:active {
-        background: #f7f7f7;
       }
     }
   }
@@ -4442,12 +4443,6 @@ onMounted(() => {
       align-items: center;
       gap: 4px;
     }
-  }
-
-  .signature-action-row {
-    padding: 12px 0;
-    display: flex;
-    justify-content: flex-end;
   }
 }
 </style>
