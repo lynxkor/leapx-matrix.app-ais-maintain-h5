@@ -52,7 +52,7 @@
               <svg class="chevron-icon" width="16" height="16" viewBox="0 0 16 16" fill="none">
                 <path
                   d="M6 4L10 8L6 12"
-                  :stroke="signStatusClass === 'status-green' ? '#009100' : '#888888'"
+                  :stroke="signStatusClass === 'status-red' ? '#B91919' : '#888888'"
                   stroke-width="1.5"
                   stroke-linecap="round"
                   stroke-linejoin="round"
@@ -376,7 +376,7 @@ const tabs = ref([])
 const activeTab = ref(0)
 const showSignChannel = ref(false)
 const selectedChannel = ref('paper')
-const signStatus = ref('not_signed')
+const signStatus = ref(null)
 const showPendingTip = ref(false)
 
 const isSuccessResponse = (res) => res?.code === 200 || res?.code === 0 || res?.success === true
@@ -409,31 +409,6 @@ const getSignStatus = (statement) => {
   }
 
   return 'not_signed'
-}
-
-const getStatementStatusText = (statement = {}) => {
-  return statement?.statementStatusLabel || statement?.statementStatusDesc || ''
-}
-
-const isStatementSubmitted = (statement = {}) => {
-  const statusText = getStatementStatusText(statement)
-
-  if (statusText.includes('待提交') || statusText.includes('未提交')) {
-    return false
-  }
-
-  if (
-    statement?.submitTime ||
-    statement?.submitOn ||
-    statement?.submittedOn ||
-    statement?.signGeneratedOn ||
-    statement?.signCompletedOn ||
-    statement?.receiveTime
-  ) {
-    return true
-  }
-
-  return statusText.includes('已提交') || statusText.includes('待签字') || statusText.includes('已签字')
 }
 
 const buildTabLabels = (list) => list.map((_, index) => `结算单${index + 1}`)
@@ -543,20 +518,14 @@ const pendingSettlementCount = computed(() => {
   }
   return uncheckedCount.value
 })
-const allSettlementsSubmitted = computed(() => {
-  return statementList.value.length > 0 && pendingSettlementCount.value === 0
-})
-const isPaperSubmittedSigned = computed(() => {
-  return Number(detailData.value.signChannel) === 40 && isStatementSubmitted(detailData.value)
-})
-const currentStatementSigned = computed(() => {
-  return signStatus.value === 'signed' || isPaperSubmittedSigned.value
-})
+// signStatus: null-不需要签字, 10-待签字, 20-已签字
 const showSignSection = computed(() => {
-  if (currentStatementSigned.value) {
-    return true
+  const backendSignStatus = Number(detailData.value.signStatus)
+  // null 或 undefined → 不显示签字模块
+  if (backendSignStatus !== 10 && backendSignStatus !== 20) {
+    return false
   }
-  return isCompleted.value && allSettlementsSubmitted.value
+  return true
 })
 const isPcPaymentCompleted = computed(() => {
   return Boolean(detailData.value.receiveTime) || statementStatusText.value.includes('已收款')
@@ -722,23 +691,28 @@ const selectPaymentMethod = (item) => {
 }
 
 // 根据签字规则显示不同文案和颜色
+// signStatus: 10-待签字, 20-已签字
 const signActionText = computed(() => {
-  if (currentStatementSigned.value) {
+  const backendSignStatus = Number(detailData.value.signStatus)
+  if (backendSignStatus === 20) {
     return '查看客户签字'
   }
-  return '请客户签字'
+  return '未签字'
 })
 
 const signDescription = computed(() => {
-  if (currentStatementSigned.value) {
+  const backendSignStatus = Number(detailData.value.signStatus)
+  if (backendSignStatus === 20) {
     return '客户已完成签字确认'
   }
   return '为保障双方合理权益，请完成客户签字确认'
 })
 
 const signStatusClass = computed(() => {
-  if (!currentStatementSigned.value) {
-    return 'status-green'
+  const backendSignStatus = Number(detailData.value.signStatus)
+  // 10-待签字显示红色(#B91919)，20-已签字显示灰色(#888888)
+  if (backendSignStatus === 10) {
+    return 'status-red'
   }
   return 'status-gray'
 })
@@ -754,11 +728,17 @@ const handleSignClick = () => {
     return
   }
 
-  if (!currentStatementSigned.value) {
-    // c: 所有结算单都已提交且未签字，显示签字渠道选择弹窗
-    showSignChannel.value = true
-  } else {
-    // b, d: 已签字或纸质单据已提交，跳转到外部施工单页面
+  const backendSignStatus = Number(detailData.value.signStatus)
+
+  // signStatus=10: 待签字，直接跳转外部页面（同APP/短信/零小跑逻辑）
+  if (backendSignStatus === 10) {
+    const targetUrl = `https://staticres-sitb.leapmotor.com/leapx/biling/ais/settlement?serviceProxyId=${serviceProxyId.value}&signChannel=3`
+    window.location.href = targetUrl
+    return
+  }
+
+  // signStatus=20: 已签字，跳转外部页面查看
+  if (backendSignStatus === 20) {
     const targetUrl = `https://staticres-sitb.leapmotor.com/leapx/biling/ais/settlement?serviceProxyId=${serviceProxyId.value}`
     window.location.href = targetUrl
   }
@@ -1011,7 +991,7 @@ const handlePaymentSubmit = async() => {
 
   .sticky-header {
     position: fixed;
-    top: 44px;
+    top: var(--nav-bar-total-height, 46px);
     left: 0;
     right: 0;
     z-index: 5001;
@@ -1413,10 +1393,10 @@ const handlePaymentSubmit = async() => {
         align-items: center;
         gap: 4px;
 
-        .status-green {
+        .status-red {
           font-family: 'PingFang SC';
           font-size: 14px;
-          color: #009100;
+          color: #B91919;
         }
 
         .status-gray {
