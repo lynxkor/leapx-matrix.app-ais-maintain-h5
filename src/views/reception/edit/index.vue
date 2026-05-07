@@ -1210,11 +1210,40 @@ const computedBusinessType = computed(() => {
 })
 
 const getFilePreviewUrl = (file) => {
-  return file?.fileUrl || file?.url || file?.authFileUrl || ''
+  return file?.authFileUrl || file?.url || file?.fileUrl || ''
 }
 
 const getFileSaveUrl = (file) => {
   return file?.url || file?.fileUrl || file?.authFileUrl || ''
+}
+
+// 处理图片列表参数的通用方法
+const formatPhotoList = (list, attachType, businessId) => {
+  return list.map((item) => {
+    // 判断是否为新上传的图片：有 id 但没有原始 businessId
+    const isNewUpload = item.id && !item.businessId
+    if (isNewUpload) {
+      // 新上传的图片：不传 id，其他参数都传，fileId 取 id
+      const { id, ...rest } = item
+      return {
+        ...rest,
+        fileId: id,
+        businessId,
+        fileUrl: getFileSaveUrl(item),
+        attachType,
+        configCode: 'mcs_serviceproxy'
+      }
+    }
+    // 旧图片：参数正常传
+    return {
+      ...item,
+      fileId: item.id,
+      businessId,
+      fileUrl: getFileSaveUrl(item),
+      attachType,
+      configCode: 'mcs_serviceproxy'
+    }
+  })
 }
 
 // 施工单状态
@@ -2387,72 +2416,42 @@ const onEditPlate = () => {
   changePlateDialog.value = true
 }
 
-// 删除车内照片图片
-const handleInteriorDelete = async(file) => {
-  if (file.id) {
+// 删除图片/附件的通用方法
+const handleFileDelete = async(file, type) => {
+  // 根据 type 获取目标列表
+  const targetList =
+    type === 'interior'
+      ? detail.interiorImages
+      : type === 'exterior'
+        ? detail.exteriorImages
+        : signatureData.attachments
+
+  // 判断是否为新上传的图片：有 id 但没有原始 businessId
+  const isNewUpload = file.id && !file.businessId
+  if (file.id && !isNewUpload) {
+    // 旧图片：调用删除接口，然后直接从列表中移除（不刷新整个列表，保留新上传的图片）
     await deleteAttachmentConfig([file.id])
-    refreshAttachmentList()
-  } else {
-    const index = detail.interiorImages.findIndex((item) => item === file)
+    const index = targetList.findIndex((item) => item.id === file.id)
     if (index > -1) {
-      detail.interiorImages.splice(index, 1)
+      targetList.splice(index, 1)
+    }
+  } else {
+    // 新上传的图片或没有 id 的临时图片：直接从列表中移除
+    const index = targetList.findIndex((item) => item.id === file.id || item === file)
+    if (index > -1) {
+      targetList.splice(index, 1)
     }
   }
 }
+
+// 删除车内照片图片
+const handleInteriorDelete = (file) => handleFileDelete(file, 'interior')
 
 // 删除车外照片图片
-const handleExteriorDelete = async(file) => {
-  if (file.id) {
-    await deleteAttachmentConfig([file.id])
-    refreshAttachmentList()
-  } else {
-    const index = detail.exteriorImages.findIndex((item) => item === file)
-    if (index > -1) {
-      detail.exteriorImages.splice(index, 1)
-    }
-  }
-}
+const handleExteriorDelete = (file) => handleFileDelete(file, 'exterior')
 
 // 删除附件资料
-const handleAttachmentDelete = async(file) => {
-  if (file.id) {
-    await deleteAttachmentConfig([file.id])
-    refreshAttachmentList()
-  } else {
-    const index = signatureData.attachments.findIndex((item) => item === file)
-    if (index > -1) {
-      signatureData.attachments.splice(index, 1)
-    }
-  }
-}
-
-// 刷新附件列表
-const refreshAttachmentList = () => {
-  getFileList({ businessId: route.query.id }).then((res) => {
-    if (res.code === 200) {
-      const fileList = res.data || []
-      // 清空所有列表
-      detail.interiorImages = []
-      detail.exteriorImages = []
-      signatureData.attachments = []
-      // 根据 attachType 分类回显文件
-      fileList.forEach((item) => {
-        const fileObj = { ...item, url: item.fileUrl, fileUrl: item.fileUrl }
-        switch (item.attachType) {
-          case '车内照片':
-            detail.interiorImages.push(fileObj)
-            break
-          case '车外照片':
-            detail.exteriorImages.push(fileObj)
-            break
-          case '附件资料':
-            signatureData.attachments.push(fileObj)
-            break
-        }
-      })
-    }
-  })
-}
+const handleAttachmentDelete = (file) => handleFileDelete(file, 'attachment')
 
 // 预览图片
 // const onPreviewImage = (type, index) => {
@@ -2496,8 +2495,20 @@ const uploadGeneric = (type) => {
   }
   const config = getAttachConfig(attachTypeMap[type] || '车内照片')
   const maxSize = config.maxSize || 10
-  console.log('maxSize:', config)
-  batchUploadImageLimit(maxSize, config.maxNum)
+  console.log('maxSize22:', config)
+  // 已上传数量（最大选择数量=config.maxNum-当前已上传数量，区间1-9）
+  const targetList = getTargetFileList(type)
+  const hasUploadNumber = targetList.length
+
+  // 如果已上传数量等于最大数量，不可上传
+  if (hasUploadNumber >= config.maxNum) {
+    showToast('已达到最大上传数量')
+    return
+  }
+
+  const maxSelectNum = Math.min(9, Math.max(1, config.maxNum - hasUploadNumber))
+
+  batchUploadImageLimit(maxSize, config.maxNum, maxSelectNum)
 }
 
 // 选择图片来源
@@ -2562,7 +2573,6 @@ const handleImageFileChange = (event) => {
         break
     }
 
-    console.log('event:', 111111111111)
     // 调用上传接口
     const uploadFile = async() => {
       // 保存当前上传类型，避免异步上传完成时类型已改变
@@ -2623,14 +2633,20 @@ const handleImageFileChange = (event) => {
   // 清空 input 值，允许重复选择同一文件
   event.target.value = ''
 }
+const getFileType = (file, fallback = '') => {
+  console.log('file', file)
+  if (!file) return fallback
+  if (file.fileType || file.ext) return file.fileType || file.ext
 
+  const filePath = file.fileName || file.name || file.url || file.fileUrl || file.authFileUrl || ''
+  const cleanPath = filePath.split('?')[0]
+  const ext = cleanPath.includes('.') ? cleanPath.split('.').pop() : ''
+  return ext || fallback
+}
 // 注册原生图片回调
 onMounted(() => {
   window.getScanResult = async(url) => {
-    console.log('urlurlurl:', url)
-    if (!url) return
-
-    // 处理 url 参数：可能是字符串或 JSON 数组字符串
+    console.log('url:', url, Array.isArray(url))
     let urlList = []
     if (typeof url === 'string') {
       if (url.startsWith('[')) {
@@ -2665,6 +2681,9 @@ onMounted(() => {
       // 先添加临时预览
       const fileObj = {
         url: singleUrl,
+        fileUrl: singleUrl,
+        authFileUrl: singleUrl,
+        fileType: getFileType({ url: singleUrl }, 'image/jpeg'),
         status: 'uploading',
         message: '上传中...',
         id: null
@@ -2682,12 +2701,11 @@ onMounted(() => {
           signatureData.attachments.push(fileObj)
           break
       }
-
       // 调用上传接口
       try {
         const params = {
           fileUrl: singleUrl,
-          businessId: route.query.id,
+          businessId: null,
           configCode: 'mcs_serviceproxy',
           attachType: attachTypeMap[uploadType]
         }
@@ -2697,13 +2715,12 @@ onMounted(() => {
         if (res.code === 200) {
           // 兼容两种返回格式：数组或对象
           const uploadData = Array.isArray(res.data) ? res.data[0] || {} : res.data || {}
-          const rawUrl = uploadData.url || uploadData.fileUrl || singleUrl
-          const authFileUrl = uploadData.authFileUrl || rawUrl
 
           // 更新文件状态 - 使用保存的 uploadType
           const targetList = getTargetFileList(uploadType)
           if (targetList.length > 0) {
             const lastIndex = targetList.length - 1
+            const rawUrl = uploadData.url || uploadData.fileUrl || singleUrl
             targetList[lastIndex] = {
               ...targetList[lastIndex],
               status: 'done',
@@ -2711,7 +2728,8 @@ onMounted(() => {
               id: uploadData.id || null,
               url: rawUrl,
               fileUrl: rawUrl,
-              authFileUrl
+              authFileUrl: uploadData.authFileUrl || rawUrl,
+              fileType: uploadData.fileType || uploadData.ext || getFileType({ url: rawUrl }, 'image/jpeg')
             }
           }
 
@@ -2724,6 +2742,7 @@ onMounted(() => {
           }
           showToast(res.msg || '上传失败')
         }
+        console.log('interior:', detail.interiorImages)
       } catch (e) {
         console.error('上传出错:', e)
         // 出错时移除临时文件 - 使用保存的 uploadType
@@ -2992,22 +3011,8 @@ const onInspectionSave = async(type) => {
     finalCheckerId: detail.finalCheckerId,
     finalChecker: detail.finalChecker,
     ticketStep: detail.ticketStep,
-    exteriorPhotoList: detail.exteriorImages.map((item) => ({
-      ...item,
-      fileId: item.id,
-      businessId: route.query.id,
-      fileUrl: getFileSaveUrl(item),
-      attachType: '车外照片',
-      configCode: 'mcs_serviceproxy'
-    })),
-    interiorPhotoList: detail.interiorImages.map((item) => ({
-      ...item,
-      fileId: item.id,
-      businessId: route.query.id,
-      fileUrl: getFileSaveUrl(item),
-      attachType: '车内照片',
-      configCode: 'mcs_serviceproxy'
-    })),
+    exteriorPhotoList: formatPhotoList(detail.exteriorImages, '车外照片', route.query.id),
+    interiorPhotoList: formatPhotoList(detail.interiorImages, '车内照片', route.query.id),
     warrantyStatus: detail.warrantyStatus,
     claimItemAmount: detail.claimItemAmount,
     claimOtherAmount: detail.claimOtherAmount,
@@ -3087,6 +3092,7 @@ const onInspectionSave = async(type) => {
     latelyServiceProxy: detail.latelyServiceProxy,
     earlyServiceProxy: detail.earlyServiceProxy
   }
+  console.log('保存参数:', params)
   try {
     const res = await serviceAddOrUpdate(params)
     savingLoading.value = false
