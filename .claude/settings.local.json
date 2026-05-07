@@ -77,12 +77,9 @@
       "Bash(py *)",
       "Bash(C:\\\\Users\\\\990900\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python312\\\\python.exe *)",
       "Bash(powershell *)",
-      "Bash(cmd.exe *)"
+      "Bash(cmd.exe *)",
+      "Bash(claude config *)"
     ]
-  },
-  "statusLine": {
-    "type": "command",
-    "command": "\"C:\\Program Files\\nodejs\\node.exe\" \"C:\\Users\\990900\\.claude\\plugins\\cache\\claude-hud\\claude-hud\\0.0.12\\dist\\index.js\""
   },
   "enabledPlugins": {
     "claude-hud@claude-hud": true,
