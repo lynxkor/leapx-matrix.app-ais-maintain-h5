@@ -348,7 +348,7 @@
             <!-- 客户故障描述 -->
             <div class="section-card">
               <div class="section-title" style="justify-content: flex-start">
-                <span class="required">*</span>客户故障描述
+                <span v-if="detail.hasFault === '1'" class="required">*</span>客户故障描述
               </div>
               <van-field
                 v-model="detail.customerFaultDesc"
@@ -358,6 +358,7 @@
                 autosize
                 show-word-limit
                 maxlength="500"
+                :disabled="detail.hasFault !== '1'"
                 style="background: #f5f5f5; border-radius: 6px"
               />
             </div>
@@ -936,7 +937,7 @@
             rows="4"
             autosize
             show-word-limit
-            maxlength="200"
+            maxlength="500"
             style="background: #f4f4f4; border-radius: 6px"
           />
         </div>
@@ -1100,6 +1101,18 @@
             <div class="info-title">{{ item.typeLabel }}</div>
             <div class="info-content">{{ item.content || '暂无提醒信息' }}</div>
           </template>
+          <!-- 车辆标识 -->
+          <template v-else-if="item.type === '5'">
+            <div class="info-title">{{ item.typeLabel }}</div>
+            <div class="info-content">
+              该车辆为<template v-for="(tag, index) in item.content.split(',')" :key="index">【{{ tag }}】</template>，请注意接待
+            </div>
+          </template>
+          <!-- 其他提醒 -->
+          <template v-else>
+            <div class="info-title">{{ item.typeLabel }}</div>
+            <div class="info-content">{{ item.content || '暂无提醒信息' }}</div>
+          </template>
         </template>
 
         <div class="alert-confirm-btn" @click="onConfirmWarrantyAlert">我知道了</div>
@@ -1169,7 +1182,9 @@ import {
   getRemindInfo,
   saveSpRepairItem,
   spConfirmAndSign,
-  serviceProxyCancel
+  serviceProxyCancel,
+  saveSpFaultModule,
+  deleteSpFaultModule
 } from '@/api/reception'
 import { preAuthAddOrUpdate } from '@/api/authorization'
 import '../create/create.scss'
@@ -1581,7 +1596,6 @@ const showCancelReason = ref(false)
 const cancelReason = ref('')
 // 更多操作选择内容
 const onSelectMoreAction = (action) => {
-  console.log(action)
   if (action.name === '作废') {
     // 检查是否禁用
     if (action.disabled) {
@@ -1651,7 +1665,7 @@ const onHasFaultChange = (value) => {
     // 如果已添加过故障模块或客户故障描述，弹出确认框
     if (detail.faultModules.length > 0 || detail.customerFaultDesc) {
       pendingFaultValue.value = value
-      showFaultConfirm.value = true
+      // showFaultConfirm.value = true
     } else {
       detail.hasFault = '2'
     }
@@ -2116,15 +2130,13 @@ const fetchDetail = async() => {
         detail.customerFaultDesc = data.customerContent || ''
         detail.faultAlertRecordRespList = data.faultAlertRecordRespList || []
         // 将故障预警记录映射到faultModules用于显示
-        if (data.faultAlertRecordRespList && data.faultAlertRecordRespList.length > 0) {
-          detail.faultModules = data.faultAlertRecordRespList.map((item) => ({
-            ...item,
-            cccCode: item.cccCode,
-            cccName: item.cccName,
-            vfgName: item.vfgName,
-            faultDesc: item.faultDescription
-          }))
-        }
+        detail.faultModules = (data.faultAlertRecordRespList || []).map((item) => ({
+          ...item,
+          cccCode: item.cccCode,
+          cccName: item.cccName,
+          vfgName: item.vfgName,
+          faultDesc: item.faultDescription
+        }))
         detail.vehicleProfileServiceResp = data.vehicleProfileServiceResp || {}
 
         // 获取附件列表并分类回显
@@ -2788,10 +2800,18 @@ const onAddFaultModuleItem = (item) => {
     showToast('该故障模块已添加')
     return
   }
-  detail.faultModules.push(item)
-  showToast('添加成功')
-  addFaultModuleShow.value = false
-  faultSearchValue.value = ''
+  saveSpFaultModule({ ...item, serviceProxyId: detail.id }).then(res => {
+    if (res.code === 200) {
+      fetchDetail()
+      showToast('添加成功')
+      addFaultModuleShow.value = false
+      faultSearchValue.value = ''
+    } else {
+      showToast(res.msg || '添加失败')
+    }
+  }).catch(err => {
+    showToast(err.msg || '添加失败')
+  })
 }
 
 // 删除故障模块
@@ -2801,10 +2821,14 @@ const onDeleteFaultModule = async(module) => {
       title: '提示',
       message: '是否要删除此接车施工单-故障模块？您无法撤销此操作。'
     })
-    const index = detail.faultModules.findIndex((m) => m.cccCode === module.cccCode)
-    if (index > -1) {
-      detail.faultModules.splice(index, 1)
-    }
+    deleteSpFaultModule([module.id]).then(res => {
+      if (res.code === 200) {
+        fetchDetail()
+        showToast('删除成功')
+      } else {
+        showToast(res.msg || '删除失败')
+      }
+    })
     if (detail.faultModules.length === 0) {
       showConfirmDialog({
         title: '提示',
@@ -2909,7 +2933,8 @@ const onInspectionSave = async(type) => {
 
   // 环检信息页需要校验
   if (!validateRepairPerson()) return { code: -1 }
-  if (!detail.customerFaultDesc.trim()) {
+  // 如果选择"是"，客户故障描述必填
+  if (detail.hasFault === '1' && !detail.customerFaultDesc.trim()) {
     showToast('请输入客户故障描述')
     return { code: -1 }
   }
@@ -3207,7 +3232,7 @@ const onComplete = async() => {
     return
   }
   // 如果选择"是"，客户故障描述必填
-  if (!detail.customerFaultDesc.trim()) {
+  if (detail.hasFault === '1' && !detail.customerFaultDesc.trim()) {
     showToast('请输入客户故障描述')
     return
   }
@@ -3235,7 +3260,8 @@ const onAddParts = () => {
   router.push({
     path: '/reception/add-parts',
     query: {
-      serviceProxyId: route.query.id
+      serviceProxyId: route.query.id,
+      vehModelName: detail.vehicleModelName
     }
   })
 }
