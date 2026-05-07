@@ -401,6 +401,7 @@
               isComponent
               isReplace
               @replace="handlePartsReplace"
+              @delete="handlePartsDelete"
             />
           </div>
 
@@ -1157,7 +1158,7 @@
 <script setup>
 import { ref, reactive, onMounted, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { showToast, showConfirmDialog, showImagePreview } from 'vant'
+import { showToast, showConfirmDialog, showImagePreview, closeToast, showLoadingToast } from 'vant'
 import { useGlobalStore } from '@/stores/global'
 import AisPopup from '@/libs/components/AisPopup.vue'
 import AisCascader from '@/components/AisCascader/index.vue'
@@ -1297,12 +1298,18 @@ const remindList = ref([])
 const onGenerateAuthorization = async() => {
   // 生成预授权
   try {
+    showLoadingToast('请稍候...')
     const res = await preAuthAddOrUpdate({ serviceProxyId: detail.id })
-    if (res.code === 0 || res.code === '0') {
+    closeToast()
+    if (res.code === 200) {
       showToast('生成预授权成功')
+      showWarrantyAlertDialog.value = false
       fetchDetail()
+    } else {
+      showToast(res.msg || '生成预授权失败')
     }
   } catch (error) {
+    closeToast()
     console.error(error)
   }
 }
@@ -2147,6 +2154,8 @@ const fetchDetail = async() => {
             detail.interiorImages = []
             detail.exteriorImages = []
             signatureData.attachments = []
+            // 用于存储最新的制单签字
+            let latestSignFile = null
             // 根据 attachType 分类回显文件
             fileList.forEach((item) => {
               const fileObj = { ...item, url: item.fileUrl, fileUrl: item.fileUrl }
@@ -2161,10 +2170,17 @@ const fetchDetail = async() => {
                   signatureData.attachments.push(fileObj)
                   break
                 case '制单签字':
-                  detail.signUrl = item.fileUrl
+                  // 对比createTime，保留最新的制单签字
+                  if (!latestSignFile || new Date(item.createTime) > new Date(latestSignFile.createTime)) {
+                    latestSignFile = item
+                  }
                   break
               }
             })
+            // 将最新的制单签字赋值给detail.signUrl
+            if (latestSignFile) {
+              detail.signUrl = latestSignFile.fileUrl
+            }
           }
         })
 
@@ -3145,6 +3161,19 @@ const handlePartsReplace = (data) => {
   console.log('更新后的 partsData:', partsData)
 }
 
+// 处理零件删除事件
+const handlePartsDelete = (data) => {
+  console.log('handlePartsDelete 收到数据:', data)
+  // 更新 partsData 中的数据源
+  partsData.repairItemRespList = data.selectedItems || []
+  partsData.sparePartRespList = data.selectedParts || []
+
+  // 重新计算费用
+  recalculateCosts()
+
+  console.log('删除后的 partsData:', partsData)
+}
+
 // 项目零件保存
 const onPartsSave = async() => {
   if (isPartsSaveDisabled.value) return
@@ -3170,6 +3199,8 @@ const onPartsSave = async() => {
     const inspectionRes = await onInspectionSave(1)
     if (inspectionRes?.code === 200) {
       isSaved.value = true
+      // 保存成功后查询详情刷新数据
+      fetchDetail()
     }
   } catch (error) {
     console.error('保存失败:', error)
@@ -4342,6 +4373,10 @@ onMounted(() => {
       align-items: center;
       gap: 4px;
     }
+  }
+  .signature-action-row{
+    text-align: right;
+    margin-top: 5px;
   }
 }
 </style>

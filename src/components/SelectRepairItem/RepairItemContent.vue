@@ -207,7 +207,7 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['close', 'confirm', 'replace'])
+const emit = defineEmits(['close', 'confirm', 'replace', 'delete'])
 
 // UI 状态
 const searchBarRef = ref(null)
@@ -253,7 +253,7 @@ const {
 })
 
 // 操作 Hook
-const { performSearch, handleAddItemWithParts, handleItemUpdate, removeItem, handleSave } =
+const { performSearch, handleAddItemWithParts, handleItemUpdate, removeItem: originalRemoveItem, handleSave } =
   useRepairItemOperations({
     serviceProxyId: props.serviceProxyId,
     selectedItems,
@@ -268,6 +268,27 @@ const { performSearch, handleAddItemWithParts, handleItemUpdate, removeItem, han
 // 列表分组 Hook
 const { regularItems, packageItemGroups, regularParts, packagePartGroups } =
   useRepairItemList({ selectedItems, selectedParts })
+
+// 删除操作包装函数 - 删除后通知父组件
+const removeItem = (item, type) => {
+  console.log('removeItem', item, type)
+  console.log('selectedItems', selectedItems.value, 'selectedParts', selectedParts.value)
+  // 如果删除的是维修项目，同步删除关联的维修配件
+  if (type === 'item') {
+    const repairItemTypeId = item.repairItemTypeId
+    // 删除 repairItemTypeId 等于该维修项目 id 的配件
+    selectedParts.value = selectedParts.value.filter(
+      (part) => part.repairItemTypeId !== repairItemTypeId
+    )
+  }
+  originalRemoveItem(item, type)
+  nextTick(() => {
+    emit('delete', {
+      selectedItems: selectedItems.value,
+      selectedParts: selectedParts.value
+    })
+  })
+}
 
 // 事件处理
 const handleItemUpdateWrapper = (item, updates) => {
