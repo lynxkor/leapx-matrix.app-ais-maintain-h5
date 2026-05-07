@@ -79,6 +79,7 @@
                   v-for="(img, index) in detail.interiorPhotos"
                   :key="'interior-' + index"
                   class="image-item"
+                  @click="onPreviewFile(img)"
                 >
                   <van-image :src="getInspectionPhotoUrl(img)" fit="cover" />
                 </div>
@@ -93,6 +94,7 @@
                   v-for="(img, index) in detail.exteriorPhotos"
                   :key="'exterior-' + index"
                   class="image-item"
+                  @click="onPreviewFile(img)"
                 >
                   <van-image :src="getInspectionPhotoUrl(img)" fit="cover" />
                 </div>
@@ -417,7 +419,6 @@ import './detail.scss'
 const route = useRoute()
 const router = useRouter()
 const globalStore = useGlobalStore()
-const changeCarDialog = ref(false)
 const loading = ref(false)
 const cancelLoading = ref(false)
 
@@ -425,17 +426,17 @@ const cancelLoading = ref(false)
 const moreActionsList = computed(() => {
   // 已作废210、反结算200、已生成结算单(isCreateStatementInfo == 1)时，作废禁用
   const isCancelDisabled =
-    detail.value.orderStatus == 210 ||
-    detail.value.orderStatus == 200 ||
-    detail.value.isCreateStatementInfo == 1
+    detail.value.orderStatus === 210 ||
+    detail.value.orderStatus === 200 ||
+    detail.value.isCreateStatementInfo === 1
 
   // 获取禁用原因文本
   let disabledReason = ''
-  if (detail.value.orderStatus == 210) {
+  if (detail.value.orderStatus === 210) {
     disabledReason = '已作废'
-  } else if (detail.value.orderStatus == 200) {
+  } else if (detail.value.orderStatus === 200) {
     disabledReason = '反结算'
-  } else if (detail.value.isCreateStatementInfo == 1) {
+  } else if (detail.value.isCreateStatementInfo === 1) {
     disabledReason = '已生成结算单'
   }
 
@@ -723,13 +724,13 @@ const formatFileSize = (size) => {
 
 // 预览文件
 const onPreviewFile = (file) => {
-  if (file.isImage) {
-    showImagePreview({
-      images: [file.fileUrl],
-      startPosition: 0,
-      showIndex: false
-    })
-  }
+  // if (file.isImage) {
+  showImagePreview({
+    images: [file.fileUrl],
+    startPosition: 0,
+    showIndex: false
+  })
+  // }
 }
 
 // 更多操作

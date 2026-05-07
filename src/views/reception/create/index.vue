@@ -78,7 +78,7 @@
             <!-- 送修人信息 -->
             <div class="repair-person-info">
               <div class="info-row">
-                <span class="label">送修人姓名</span>
+                <span class="label">{{ repairPersonInputLabel }}姓名</span>
                 <div class="value-wrapper">
                   <input
                     v-model="repairPersonNameInput"
@@ -97,7 +97,7 @@
                 </div>
               </div>
               <div class="info-row">
-                <span class="label">送修人手机</span>
+                <span class="label">{{ repairPersonInputLabel }}手机</span>
                 <div class="value-wrapper">
                   <input
                     v-model="repairPersonPhoneInput"
@@ -432,8 +432,8 @@
               <span class="label">签字渠道</span>
 
               <div class="value-wrapper">
-                <span :class="['value', { placeholder: !signatureData.signatureChannel }]">
-                  {{ signatureData.signatureChannel || '请选择' }}
+                <span :class="['value', { placeholder: !signatureData.signChannel }]">
+                  {{ signatureData.signChannel || '请选择' }}
                 </span>
                 <van-icon v-if="detail.signStatus != 20" name="arrow" size="12" color="#545454" />
               </div>
@@ -510,8 +510,8 @@
             @click="onInspectionSave"
             >保存</span
           >
-          <span v-if="!detail.previewingFinishAt" class="complete-btn" @click="onComplete"
-            >预检完成</span
+          <span v-if="!isPreCheckCompleted" class="complete-btn" @click="onComplete"
+            >预检完成{{detail.previewingFinishAt}}</span
           >
         </template>
       </template>
@@ -521,9 +521,6 @@
         >
       </template>
       <template v-else-if="activeTab === 'signature'">
-        <!-- <span :class="['save-btn', { disabled: isPartsSaveDisabled }]" @click="onSignatureSave"
-          >保存</span
-        > -->
         <span
           v-if="detail.orderStatus === 110"
           :class="['complete-btn', { disabled: isConfirmAndSignDisabled }]"
@@ -692,7 +689,7 @@
                     '/' +
                     item.vin +
                     '/' +
-                    (item.vehicleProfileOwnerResp?.customerName || '')
+                    (item.vehicleProfileOwnerResp?.ownerName || '')
                   "
                 />
               </span>
@@ -806,7 +803,7 @@
           <div
             v-for="(item, index) in signatureChannelList"
             :key="index"
-            :class="['picker-item', { active: signatureData.signatureChannel === item.label }]"
+            :class="['picker-item', { active: signatureData.signChannel === item.label }]"
             @click="onSelectSignatureChannel(item)"
           >
             <div class="channel-content">
@@ -816,7 +813,7 @@
               >
             </div>
             <van-icon
-              v-if="signatureData.signatureChannel === item.label"
+              v-if="signatureData.signChannel === item.label"
               name="success"
               size="16"
               color="#009100"
@@ -1124,6 +1121,37 @@ const getFileType = (file, fallback = '') => {
   return ext || fallback
 }
 
+// 处理图片列表参数的通用方法
+const formatPhotoList = (list, attachType, businessId) => {
+  return list.map((item) => {
+    // 判断是否为新上传的图片：有 id 但没有原始 businessId
+    const isNewUpload = item.id && !item.businessId
+    if (isNewUpload) {
+      // 新上传的图片：不传 id，其他参数都传，fileId 取 id
+      const { id, ...rest } = item
+      return {
+        ...rest,
+        fileId: id,
+        businessId,
+        fileUrl: getFileSaveUrl(item),
+        fileType: getFileType(item, 'image/jpeg'),
+        attachType,
+        configCode: 'mcs_serviceproxy'
+      }
+    }
+    // 旧图片：参数正常传
+    return {
+      ...item,
+      fileId: item.id,
+      businessId,
+      fileUrl: getFileSaveUrl(item),
+      fileType: getFileType(item, 'image/jpeg'),
+      attachType,
+      configCode: 'mcs_serviceproxy'
+    }
+  })
+}
+
 const normalizeAttachmentFile = (file) => {
   const rawUrl = file?.url || file?.fileUrl || ''
   return {
@@ -1134,7 +1162,7 @@ const normalizeAttachmentFile = (file) => {
     fileType: getFileType(file)
   }
 }
-import { getAppImgLimit } from '@/libs/utils/nativeFn'
+import { batchUploadImageLimit } from '@/libs/utils/nativeFn'
 import {
   getVehicleInfo,
   getVehicleMileage,
@@ -1196,7 +1224,6 @@ const repairPersonPhoneInput = ref('')
 
 // 折叠面板状态
 const repairPersonCollapse = ref([])
-const businessTypeCollapse = ref([])
 
 // 车牌输入相关
 const plateInputChars = ref(['', '', '', '', '', '', '', ''])
@@ -1723,7 +1750,7 @@ const signatureData = reactive({
   expectFinishAt: '',
   isDeliveryTimeFromApi: false,
   liveEnabled: false,
-  signatureChannel: '',
+  signChannel: '',
   attachments: []
 })
 
@@ -1974,7 +2001,19 @@ const uploadGeneric = (type) => {
   }
   const config = getAttachConfig(attachTypeMap[type] || '车内照片')
   const maxSize = config.maxSize || 10
-  getAppImgLimit(maxSize)
+  // 已上传数量（最大选择数量=config.maxNum-当前已上传数量，区间1-9）
+  const targetList = getTargetFileList(type)
+  const hasUploadNumber = targetList.length
+
+  // 如果已上传数量等于最大数量，不可上传
+  if (hasUploadNumber >= config.maxNum) {
+    showToast('已达到最大上传数量')
+    return
+  }
+
+  const maxSelectNum = Math.min(9, Math.max(1, config.maxNum - hasUploadNumber))
+
+  batchUploadImageLimit(maxSize, config.maxNum, maxSelectNum)
 }
 
 // 选择图片来源
@@ -2121,44 +2160,42 @@ const showImg = (url) => {
   showImagePreview([url])
 }
 
-// 处理车内照片删除
-const handleInteriorDelete = async(file) => {
-  if (file.id) {
+// 删除图片/附件的通用方法
+const handleFileDelete = async(file, type) => {
+  // 根据 type 获取目标列表
+  const targetList =
+    type === 'interior'
+      ? detail.interiorImages
+      : type === 'exterior'
+        ? detail.exteriorImages
+        : signatureData.attachments
+
+  // 判断是否为新上传的图片：有 id 但没有原始 businessId
+  const isNewUpload = file.id && !file.businessId
+  if (file.id && !isNewUpload) {
+    // 旧图片：调用删除接口，然后直接从列表中移除（不刷新整个列表，保留新上传的图片）
     await deleteAttachmentConfig([file.id])
-    refreshAttachmentList()
-  } else {
-    const index = detail.interiorImages.findIndex((item) => item === file)
+    const index = targetList.findIndex((item) => item.id === file.id)
     if (index > -1) {
-      detail.interiorImages.splice(index, 1)
+      targetList.splice(index, 1)
+    }
+  } else {
+    // 新上传的图片或没有 id 的临时图片：直接从列表中移除
+    const index = targetList.findIndex((item) => item.id === file.id || item === file)
+    if (index > -1) {
+      targetList.splice(index, 1)
     }
   }
 }
+
+// 处理车内照片删除
+const handleInteriorDelete = (file) => handleFileDelete(file, 'interior')
 
 // 处理车外照片删除
-const handleExteriorDelete = async(file) => {
-  if (file.id) {
-    await deleteAttachmentConfig([file.id])
-    refreshAttachmentList()
-  } else {
-    const index = detail.exteriorImages.findIndex((item) => item === file)
-    if (index > -1) {
-      detail.exteriorImages.splice(index, 1)
-    }
-  }
-}
+const handleExteriorDelete = (file) => handleFileDelete(file, 'exterior')
 
 // 处理附件资料删除
-const handleAttachmentDelete = async(file) => {
-  if (file.id) {
-    await deleteAttachmentConfig([file.id])
-    refreshAttachmentList()
-  } else {
-    const index = signatureData.attachments.findIndex((item) => item === file)
-    if (index > -1) {
-      signatureData.attachments.splice(index, 1)
-    }
-  }
-}
+const handleAttachmentDelete = (file) => handleFileDelete(file, 'attachment')
 
 // 添加故障模块
 const onAddFaultModule = () => {
@@ -2226,6 +2263,13 @@ const onViewAllModules = () => {
 
 // 送修人输入框是否禁用（车主/绑车人不可编辑，其他可编辑）
 const repairPersonInputDisabled = computed(() => repairPersonType.value !== 'other')
+
+// 送修人输入框标签文案（车主/绑车人/其他显示不同文案）
+const repairPersonInputLabel = computed(() => {
+  if (repairPersonType.value === 'owner') return '车主'
+  if (repairPersonType.value === 'bindingUser') return '绑车人'
+  return '送修人'
+})
 
 // 选择送修人类型
 const onSelectRepairPersonType = (type) => {
@@ -2329,7 +2373,7 @@ const onSave = async() => {
       expectFinishAt: signatureData.expectFinishAt,
       shuttleName: detail.repairPerson,
       shuttlePhone: detail.repairPersonPhone,
-      signChannel: signatureData.signatureChannel === '纸质单据' ? '40' : '',
+      signChannel: signatureData.signChannel === '纸质单据' ? '40' : '',
       inPower: detail.battery,
       netMileage: detail.networkMileageTotal,
       inNetPower: detail.networkBattery,
@@ -2352,6 +2396,7 @@ const onSave = async() => {
       engineNumber: detail.enginenNumber,
       businessType: computedBusinessType.value,
       haveRework: 0,
+      customerComment: detail.customerComment,
       isCarWash: 0,
       isRetainOldParts: 0,
       testResult: detail.testResult,
@@ -2361,26 +2406,8 @@ const onSave = async() => {
       currentSituation: detail.hasFault === '1' ? 20 : 10,
       faultModule: detail.faultModules.map((m) => m.cccCode).join(','),
       isCreateStatementInfo: 0,
-      exteriorPhotoList: detail.exteriorImages.map((item) => ({
-        ...item,
-        fileId: item.id,
-        businessId: serviceProxyId.value || null,
-        fileUrl: getFileSaveUrl(item),
-        fileType: getFileType(item, 'image/jpeg'),
-        attachType: '车外照片',
-        configCode: 'mcs_serviceproxy',
-        id: null
-      })),
-      interiorPhotoList: detail.interiorImages.map((item) => ({
-        ...item,
-        fileId: item.id,
-        businessId: serviceProxyId.value || null,
-        fileUrl: getFileSaveUrl(item),
-        fileType: getFileType(item, 'image/jpeg'),
-        attachType: '车内照片',
-        configCode: 'mcs_serviceproxy',
-        id: null
-      })),
+      exteriorPhotoList: formatPhotoList(detail.exteriorImages, '车外照片', serviceProxyId.value || null),
+      interiorPhotoList: formatPhotoList(detail.interiorImages, '车内照片', serviceProxyId.value || null),
       faultAlertRecordParams: detail.faultModules.map((m) => ({
         cccId: m.id || '',
         cccName: m.cccName || '',
@@ -2494,7 +2521,7 @@ const onInspectionSave = async() => {
       shuttlePhone: detail.repairPersonPhone,
       payType: detail.payType,
       warrantyCompany: detail.warrantyCompany,
-      signChannel: signatureData.signatureChannel === '纸质单据' ? '40' : '',
+      signChannel: signatureData.signChannel === '纸质单据' ? '40' : '',
       signCompletedOn: detail.signCompletedOn,
       signGeneratedOn: detail.signGeneratedOn,
       signStatus: detail.signStatus,
@@ -2578,24 +2605,8 @@ const onInspectionSave = async() => {
       targetUnitCode: detail.targetUnitCode,
       beforeChangeCode: detail.beforeChangeCode,
       afterChangeCode: detail.afterChangeCode,
-      exteriorPhotoList: detail.exteriorImages.map((item) => ({
-        ...item,
-        fileId: item.id,
-        businessId: serviceProxyId.value || detail.id,
-        fileUrl: getFileSaveUrl(item),
-        fileType: getFileType(item, 'image/jpeg'),
-        attachType: '车外照片',
-        configCode: 'mcs_serviceproxy'
-      })),
-      interiorPhotoList: detail.interiorImages.map((item) => ({
-        ...item,
-        fileId: item.id,
-        businessId: serviceProxyId.value || detail.id,
-        fileUrl: getFileSaveUrl(item),
-        fileType: getFileType(item, 'image/jpeg'),
-        attachType: '车内照片',
-        configCode: 'mcs_serviceproxy'
-      })),
+      exteriorPhotoList: formatPhotoList(detail.exteriorImages, '车外照片', serviceProxyId.value || detail.id),
+      interiorPhotoList: formatPhotoList(detail.interiorImages, '车内照片', serviceProxyId.value || detail.id),
       isStoreLive: detail.isStoreLive,
       faultAlertRecordParams: detail.faultModules.map((m) => ({
         cccId: m.id || '',
@@ -2659,42 +2670,6 @@ const onPartsSave = async() => {
   }
 }
 
-// 签字确认保存
-const onSignatureSave = async() => {
-  // 从 RepairItemContent 组件获取数据
-  const items = repairItemContentRef.value?.selectedItems || []
-  const parts = repairItemContentRef.value?.selectedParts || []
-
-  // 校验项目及零件不可为空
-  if (items.length === 0 && parts.length === 0) {
-    showToast('项目及零件不可为空，请添加项目或者零件')
-    return
-  }
-
-  savingLoading.value = true
-  try {
-    // 保存项目零件
-    const res = await saveSpRepairItem({
-      serviceProxyId: serviceProxyId.value || route.query.id,
-      discountId: '',
-      itemList: items,
-      partsList: parts
-    })
-    if (res.code !== 200) {
-      showToast(res.msg || '保存失败')
-      return
-    }
-    showToast('保存成功')
-    // 保存成功后获取详情数据更新
-    fetchDetailForSignature()
-  } catch (error) {
-    console.error('保存失败:', error)
-    showToast('保存失败')
-  } finally {
-    savingLoading.value = false
-  }
-}
-
 // 制单确认并签字
 const onConfirmAndSign = () => {
   if (isConfirmAndSignDisabled.value) {
@@ -2714,7 +2689,7 @@ const onConfirmAndSign = () => {
     expectFinishAt: signatureData.expectFinishAt
   }
   // 纸质单据时才传signChannel
-  if (signatureData.signChannel === '纸质单据' || detail.signChannel == 40) {
+  if (signatureData.signChannel === '纸质单据' || Number(detail.signChannel) === 40) {
     params.signChannel = '40'
   }
   spConfirmAndSign(params)
@@ -2895,7 +2870,7 @@ const onViewSignature = () => {
 }
 // 选择签字渠道
 const onSelectSignatureChannel = (item) => {
-  signatureData.signatureChannel = item.label
+  signatureData.signChannel = item.label
   showSignatureChannelPicker.value = false
 }
 
@@ -2960,93 +2935,114 @@ onMounted(() => {
   })
 
   // 注册原生图片选择回调
-  window.getImage = async(url) => {
-    console.log('原生返回图片地址:', url)
-    if (!url) return
-
-    // 保存当前上传类型，避免异步上传完成时类型已改变
-    const uploadType = currentUploadType.value
-
-    // attachType 映射
-    const attachTypeMap = {
-      interior: '车内照片',
-      exterior: '车外照片',
-      attachment: '附件资料'
+  window.getScanResult = async(url) => {
+    console.log('原生返回图片地址:', url, Array.isArray(url))
+    let urlList = []
+    if (typeof url === 'string') {
+      if (url.startsWith('[')) {
+        // JSON 数组字符串，需要解析
+        try {
+          urlList = JSON.parse(url)
+        } catch {
+          // 解析失败，当作单个 URL 处理
+          urlList = [url]
+        }
+      } else {
+        // 单个 URL 字符串
+        urlList = [url]
+      }
+    } else if (Array.isArray(url)) {
+      urlList = url
+    } else {
+      return
     }
 
-    // 先添加临时预览
-    const fileObj = {
-      url: url,
-      fileUrl: url,
-      authFileUrl: url,
-      fileType: getFileType({ url }, 'image/jpeg'),
-      status: 'uploading',
-      message: '上传中...',
-      id: null
-    }
+    // 遍历每个 URL 进行上传处理
+    for (const singleUrl of urlList) {
+      // 保存当前上传类型，避免异步上传完成时类型已改变
+      const uploadType = currentUploadType.value
 
-    // 根据当前上传类型添加到对应的文件列表
-    switch (uploadType) {
-      case 'interior':
-        detail.interiorImages.push(fileObj)
-        break
-      case 'exterior':
-        detail.exteriorImages.push(fileObj)
-        break
-      case 'attachment':
-        signatureData.attachments.push(fileObj)
-        break
-    }
-
-    // 调用上传接口
-    try {
-      const params = {
-        fileUrl: url,
-        businessId: serviceProxyId.value || null,
-        configCode: 'mcs_serviceproxy',
-        attachType: attachTypeMap[uploadType]
+      // attachType 映射
+      const attachTypeMap = {
+        interior: '车内照片',
+        exterior: '车外照片',
+        attachment: '附件资料'
       }
 
-      const res = await uploadFileByUrl([params])
+      // 先添加临时预览
+      const fileObj = {
+        url: singleUrl,
+        fileUrl: singleUrl,
+        authFileUrl: singleUrl,
+        fileType: getFileType({ url: singleUrl }, 'image/jpeg'),
+        status: 'uploading',
+        message: '上传中...',
+        id: null
+      }
 
-      if (res.code === 200) {
-        // 兼容两种返回格式：数组或对象
-        const uploadData = Array.isArray(res.data) ? res.data[0] || {} : res.data || {}
+      // 根据当前上传类型添加到对应的文件列表
+      switch (uploadType) {
+        case 'interior':
+          detail.interiorImages.push(fileObj)
+          break
+        case 'exterior':
+          detail.exteriorImages.push(fileObj)
+          break
+        case 'attachment':
+          signatureData.attachments.push(fileObj)
+          break
+      }
 
-        // 更新文件状态 - 使用保存的 uploadType
-        const targetList = getTargetFileList(uploadType)
-        if (targetList.length > 0) {
-          const lastIndex = targetList.length - 1
-          const rawUrl = uploadData.url || uploadData.fileUrl || url
-          targetList[lastIndex] = {
-            ...targetList[lastIndex],
-            status: 'done',
-            message: '',
-            id: uploadData.id || null,
-            url: rawUrl,
-            fileUrl: rawUrl,
-            authFileUrl: uploadData.authFileUrl || rawUrl,
-            fileType: uploadData.fileType || uploadData.ext || getFileType({ url: rawUrl }, 'image/jpeg')
-          }
+      // 调用上传接口
+      try {
+        const params = {
+          fileUrl: singleUrl,
+          businessId: serviceProxyId.value || null,
+          configCode: 'mcs_serviceproxy',
+          attachType: attachTypeMap[uploadType]
         }
 
-        showToast('上传成功')
-      } else {
-        // 上传失败，移除临时文件 - 使用保存的 uploadType
+        const res = await uploadFileByUrl([params])
+
+        if (res.code === 200) {
+          // 兼容两种返回格式：数组或对象
+          const uploadData = Array.isArray(res.data) ? res.data[0] || {} : res.data || {}
+
+          // 更新文件状态 - 使用保存的 uploadType
+          const targetList = getTargetFileList(uploadType)
+          if (targetList.length > 0) {
+            const lastIndex = targetList.length - 1
+            const rawUrl = uploadData.url || uploadData.fileUrl || singleUrl
+            targetList[lastIndex] = {
+              ...targetList[lastIndex],
+              status: 'done',
+              message: '',
+              id: uploadData.id || null,
+              url: rawUrl,
+              fileUrl: rawUrl,
+              authFileUrl: uploadData.authFileUrl || rawUrl,
+              fileType: uploadData.fileType || uploadData.ext || getFileType({ url: rawUrl }, 'image/jpeg')
+            }
+          }
+
+          showToast('上传成功')
+        } else {
+          // 上传失败，移除临时文件 - 使用保存的 uploadType
+          const targetList = getTargetFileList(uploadType)
+          if (targetList.length > 0) {
+            targetList.pop()
+          }
+          showToast(res.msg || '上传失败')
+        }
+      } catch (e) {
+        console.error('上传出错:', e)
+        // 出错时移除临时文件 - 使用保存的 uploadType
         const targetList = getTargetFileList(uploadType)
         if (targetList.length > 0) {
           targetList.pop()
         }
-        showToast(res.msg || '上传失败')
+        showToast('上传出错')
       }
-    } catch (e) {
-      console.error('上传出错:', e)
-      // 出错时移除临时文件 - 使用保存的 uploadType
-      const targetList = getTargetFileList(uploadType)
-      if (targetList.length > 0) {
-        targetList.pop()
-      }
-      showToast('上传出错')
     }
   }
 })
@@ -3360,28 +3356,6 @@ onMounted(() => {
         &:active {
           background: #007a00;
         }
-      }
-    }
-  }
-
-  .fault-list {
-    height: 60vh;
-    overflow-y: auto;
-
-    .fault-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 7px 12px;
-      border-radius: 6px;
-      margin-bottom: 8px;
-
-      &:last-child {
-        margin-bottom: 0;
-      }
-
-      &:active {
-        background: #f7f7f7;
       }
     }
   }

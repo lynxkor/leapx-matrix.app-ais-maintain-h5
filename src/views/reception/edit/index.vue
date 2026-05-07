@@ -78,7 +78,7 @@
             <!-- 送修人信息 -->
             <div class="repair-person-info">
               <div class="info-row">
-                <span class="label">送修人姓名</span>
+                <span class="label">{{ repairPersonInputLabel }}姓名</span>
                 <div class="value-wrapper">
                   <input
                     v-model="repairPersonNameInput"
@@ -97,7 +97,7 @@
                 </div>
               </div>
               <div class="info-row">
-                <span class="label">送修人手机</span>
+                <span class="label">{{ repairPersonInputLabel }}手机</span>
                 <div class="value-wrapper">
                   <input
                     v-model="repairPersonPhoneInput"
@@ -477,9 +477,6 @@
                 <span class="value unsigned">未签字</span>
               </div>
             </div>
-            <!-- <div class="signature-action-row" v-if="detail.signStatus != 20">
-              <van-button type="primary" size="small" @click="onGoToSign">客户签字</van-button>
-            </div> -->
           </div>
 
           <!-- 附件资料 -->
@@ -712,7 +709,7 @@
                     '/' +
                     item.vin +
                     '/' +
-                    (item.vehicleProfileOwnerResp?.customerName || '')
+                    (item.vehicleProfileOwnerResp?.ownerName || '')
                   "
                 />
               </span>
@@ -1145,7 +1142,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, computed, onUnmounted, nextTick, watch } from 'vue'
+import { ref, reactive, onMounted, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { showToast, showConfirmDialog, showImagePreview } from 'vant'
 import { useGlobalStore } from '@/stores/global'
@@ -1160,7 +1157,7 @@ import {
   deleteAttachmentConfig,
   getFileList
 } from '@/libs/api/fileConfig'
-import { getAppImgLimit } from '@/libs/utils/nativeFn'
+import { batchUploadImageLimit } from '@/libs/utils/nativeFn'
 import { RemindInfoTypeEnum, AlarmLevelEnum } from '@/views/repairWork/constant'
 import {
   getDetail,
@@ -1213,11 +1210,40 @@ const computedBusinessType = computed(() => {
 })
 
 const getFilePreviewUrl = (file) => {
-  return file?.fileUrl || file?.url || file?.authFileUrl || ''
+  return file?.authFileUrl || file?.url || file?.fileUrl || ''
 }
 
 const getFileSaveUrl = (file) => {
   return file?.url || file?.fileUrl || file?.authFileUrl || ''
+}
+
+// 处理图片列表参数的通用方法
+const formatPhotoList = (list, attachType, businessId) => {
+  return list.map((item) => {
+    // 判断是否为新上传的图片：有 id 但没有原始 businessId
+    const isNewUpload = item.id && !item.businessId
+    if (isNewUpload) {
+      // 新上传的图片：不传 id，其他参数都传，fileId 取 id
+      const { id, ...rest } = item
+      return {
+        ...rest,
+        fileId: id,
+        businessId,
+        fileUrl: getFileSaveUrl(item),
+        attachType,
+        configCode: 'mcs_serviceproxy'
+      }
+    }
+    // 旧图片：参数正常传
+    return {
+      ...item,
+      fileId: item.id,
+      businessId,
+      fileUrl: getFileSaveUrl(item),
+      attachType,
+      configCode: 'mcs_serviceproxy'
+    }
+  })
 }
 
 // 施工单状态
@@ -1302,17 +1328,6 @@ const getAlarmLabel = (level) => {
   }
 }
 
-// 点击类别区域，打开弹窗
-const onCategoryClick = (item) => {
-  // 套餐内的项目不可编辑类型
-  if (item.packageType) {
-    return
-  }
-  openCheckoutPicker(item)
-}
-
-// 维修类型级联选择器 Hook
-const emptySelectedItems = ref([])
 // 维修项目数据 Hook
 const {
   rawCheckoutTypes,
@@ -1328,10 +1343,7 @@ const {
 const {
   cascaderOptions: categoryCascaderOptions,
   showCheckoutPicker,
-  editingItem,
-  openCheckoutPicker,
-  onCheckoutConfirm,
-  closeCheckoutPicker
+  onCheckoutConfirm
 } = useRepairItemBusinessRules({
   dealerPermission,
   rawMaintenanceTypes,
@@ -1353,7 +1365,7 @@ const repairPersonPhoneInput = ref('')
 
 // 折叠面板状态
 const repairPersonCollapse = ref([])
-const businessTypeCollapse = ref([])
+// const businessTypeCollapse = ref([])
 
 // 车牌输入相关
 const plateInputChars = ref(['', '', '', '', '', '', '', ''])
@@ -1518,15 +1530,15 @@ const onConfirmChangePlate = async() => {
 const moreActionsList = computed(() => {
   // 已作废210、反结算200、已生成结算单(isCreateStatementInfo == 1)时，作废禁用
   const isCancelDisabled =
-    detail.orderStatus == 210 || detail.orderStatus == 200 || detail.isCreateStatementInfo == 1
+    detail.orderStatus === 210 || detail.orderStatus === 200 || detail.isCreateStatementInfo === 1
 
   // 获取禁用原因文本
   let disabledReason = ''
-  if (detail.orderStatus == 210) {
+  if (detail.orderStatus === 210) {
     disabledReason = '已作废'
-  } else if (detail.orderStatus == 200) {
+  } else if (detail.orderStatus === 200) {
     disabledReason = '反结算'
-  } else if (detail.isCreateStatementInfo == 1) {
+  } else if (detail.isCreateStatementInfo === 1) {
     disabledReason = '已生成结算单'
   }
 
@@ -1857,111 +1869,12 @@ const partsData = reactive({
   sparePartRespList: []
 })
 
-// 是否存在套餐
-const hasPackages = computed(() => {
-  return partsData.packageRespList && partsData.packageRespList.length > 0
-})
-
 // 套餐详情弹窗
 const showPackageDetail = ref(false)
 const selectedPackageDetail = ref({
   name: '',
   code: '',
   itemRespList: []
-})
-
-// 点击套餐分组查看详情
-const onPackageGroupClick = (group) => {
-  // 查找对应的套餐信息
-  const pkg = partsData.packageRespList.find((p) => p.packageType === group.packageType)
-  if (pkg) {
-    selectedPackageDetail.value = {
-      name: pkg.packageTypeLabel || '',
-      code: pkg.packageCode || group.packageCode || '',
-      itemRespList: group.items || []
-    }
-  } else {
-    selectedPackageDetail.value = {
-      name: group.packageTypeLabel || '',
-      code: group.packageCode || '',
-      itemRespList: group.items || []
-    }
-  }
-  showPackageDetail.value = true
-}
-
-// 按套餐分组的维修项目
-const groupedRepairItems = computed(() => {
-  if (!hasPackages.value) {
-    return [{ items: partsData.repairItemRespList, isPackage: false }]
-  }
-
-  const groups = []
-  const usedPackages = new Set()
-
-  // 按套餐分组
-  partsData.packageRespList.forEach((pkg) => {
-    const matchedItems = partsData.repairItemRespList.filter(
-      (item) => item.packageType === pkg.packageType
-    )
-    if (matchedItems.length > 0) {
-      groups.push({
-        packageTypeLabel: pkg.packageTypeLabel,
-        packageCode: matchedItems[0]?.packageCode,
-        packageType: pkg.packageType,
-        items: matchedItems,
-        isPackage: true
-      })
-      usedPackages.add(pkg.packageType)
-    }
-  })
-
-  // 未分组的项目（不属于任何套餐）
-  const ungroupedItems = partsData.repairItemRespList.filter(
-    (item) => !usedPackages.has(item.packageType)
-  )
-  if (ungroupedItems.length > 0) {
-    groups.push({ items: ungroupedItems, isPackage: false })
-  }
-
-  return groups
-})
-
-// 按套餐分组的维修配件
-const groupedSpareParts = computed(() => {
-  if (!hasPackages.value) {
-    return [{ items: partsData.sparePartRespList, isPackage: false }]
-  }
-
-  const groups = []
-  const usedPackages = new Set()
-
-  // 按套餐分组
-  partsData.packageRespList.forEach((pkg) => {
-    const matchedItems = partsData.sparePartRespList.filter(
-      (item) => item.packageType === pkg.packageType
-    )
-    if (matchedItems.length > 0) {
-      groups.push({
-        packageTypeLabel: pkg.packageTypeLabel,
-        packageCode: matchedItems[0]?.packageCode,
-        packageType: pkg.packageType,
-        items: matchedItems,
-        isPackage: true
-      })
-      usedPackages.add(pkg.packageType)
-    }
-  })
-
-  // 未分组的配件
-  const ungroupedItems = partsData.sparePartRespList.filter(
-    (item) => !usedPackages.has(item.packageType)
-  )
-  if (ungroupedItems.length > 0) {
-    groups.push({ items: ungroupedItems, isPackage: false })
-  }
-
-  return groups
 })
 
 // 签字确认数据
@@ -2010,14 +1923,6 @@ const isConfirmAndSignDisabled = computed(() => {
 
 // 项目零件保存按钮是否禁用：没有添加项目或者零件
 const isPartsSaveDisabled = computed(() => {
-  return false
-  // const items = repairItemContentRef.value?.selectedItems || []
-  // const parts = repairItemContentRef.value?.selectedParts || []
-  // return items.length === 0 && parts.length === 0
-})
-
-// 签名保存按钮是否禁用：同项目零件保存条件
-const isSignatureSaveDisabled = computed(() => {
   return false
   // const items = repairItemContentRef.value?.selectedItems || []
   // const parts = repairItemContentRef.value?.selectedParts || []
@@ -2080,18 +1985,6 @@ watch(
   },
   { deep: true }
 )
-
-// 删除维修项目（本地移除）
-const onDeleteRepairItem = (index) => {
-  partsData.repairItemRespList.splice(index, 1)
-  recalculateCosts()
-}
-
-// 删除维修配件（本地移除）
-const onDeleteSparePart = (index) => {
-  partsData.sparePartRespList.splice(index, 1)
-  recalculateCosts()
-}
 
 // 选择器显示状态
 const showDeliveryTimePicker = ref(false)
@@ -2473,6 +2366,10 @@ const fetchVehicleMileage = async(vin) => {
       detail.networkMileageAdd = res.data.oilMileage || ''
       detail.networkBattery = res.data.electricity || ''
       detail.electricalMileage = res.data.electricMileage || ''
+      detail.mileage = res.data.mileage || ''
+      detail.battery = res.data.electricity || ''
+      // 获取车联网里程后进行校验
+      validateMileage(detail.mileage, detail.lastMileage, detail.networkMileageTotal)
     }
   } catch (error) {
     console.error('获取车联网里程失败:', error)
@@ -2519,83 +2416,53 @@ const onEditPlate = () => {
   changePlateDialog.value = true
 }
 
-// 删除车内照片图片
-const handleInteriorDelete = async(file) => {
-  if (file.id) {
+// 删除图片/附件的通用方法
+const handleFileDelete = async(file, type) => {
+  // 根据 type 获取目标列表
+  const targetList =
+    type === 'interior'
+      ? detail.interiorImages
+      : type === 'exterior'
+        ? detail.exteriorImages
+        : signatureData.attachments
+
+  // 判断是否为新上传的图片：有 id 但没有原始 businessId
+  const isNewUpload = file.id && !file.businessId
+  if (file.id && !isNewUpload) {
+    // 旧图片：调用删除接口，然后直接从列表中移除（不刷新整个列表，保留新上传的图片）
     await deleteAttachmentConfig([file.id])
-    refreshAttachmentList()
-  } else {
-    const index = detail.interiorImages.findIndex((item) => item === file)
+    const index = targetList.findIndex((item) => item.id === file.id)
     if (index > -1) {
-      detail.interiorImages.splice(index, 1)
+      targetList.splice(index, 1)
+    }
+  } else {
+    // 新上传的图片或没有 id 的临时图片：直接从列表中移除
+    const index = targetList.findIndex((item) => item.id === file.id || item === file)
+    if (index > -1) {
+      targetList.splice(index, 1)
     }
   }
 }
+
+// 删除车内照片图片
+const handleInteriorDelete = (file) => handleFileDelete(file, 'interior')
 
 // 删除车外照片图片
-const handleExteriorDelete = async(file) => {
-  if (file.id) {
-    await deleteAttachmentConfig([file.id])
-    refreshAttachmentList()
-  } else {
-    const index = detail.exteriorImages.findIndex((item) => item === file)
-    if (index > -1) {
-      detail.exteriorImages.splice(index, 1)
-    }
-  }
-}
+const handleExteriorDelete = (file) => handleFileDelete(file, 'exterior')
 
 // 删除附件资料
-const handleAttachmentDelete = async(file) => {
-  if (file.id) {
-    await deleteAttachmentConfig([file.id])
-    refreshAttachmentList()
-  } else {
-    const index = signatureData.attachments.findIndex((item) => item === file)
-    if (index > -1) {
-      signatureData.attachments.splice(index, 1)
-    }
-  }
-}
-
-// 刷新附件列表
-const refreshAttachmentList = () => {
-  getFileList({ businessId: route.query.id }).then((res) => {
-    if (res.code === 200) {
-      const fileList = res.data || []
-      // 清空所有列表
-      detail.interiorImages = []
-      detail.exteriorImages = []
-      signatureData.attachments = []
-      // 根据 attachType 分类回显文件
-      fileList.forEach((item) => {
-        const fileObj = { ...item, url: item.fileUrl, fileUrl: item.fileUrl }
-        switch (item.attachType) {
-          case '车内照片':
-            detail.interiorImages.push(fileObj)
-            break
-          case '车外照片':
-            detail.exteriorImages.push(fileObj)
-            break
-          case '附件资料':
-            signatureData.attachments.push(fileObj)
-            break
-        }
-      })
-    }
-  })
-}
+const handleAttachmentDelete = (file) => handleFileDelete(file, 'attachment')
 
 // 预览图片
-const onPreviewImage = (type, index) => {
-  const imageArray = type === 'interior' ? detail.interiorImages : detail.exteriorImages
-  const images = imageArray.map((item) => getFilePreviewUrl(item))
-  showImagePreview({
-    images: images,
-    startPosition: index,
-    showIndex: true
-  })
-}
+// const onPreviewImage = (type, index) => {
+//   const imageArray = type === 'interior' ? detail.interiorImages : detail.exteriorImages
+//   const images = imageArray.map((item) => getFilePreviewUrl(item))
+//   showImagePreview({
+//     images: images,
+//     startPosition: index,
+//     showIndex: true
+//   })
+// }
 
 // 统一图片预览方法
 const showImg = (url) => {
@@ -2607,15 +2474,15 @@ const showImg = (url) => {
 }
 
 // 预览文件
-const onPreviewFile = (file) => {
-  if (file.isImage) {
-    showImagePreview({
-      images: [getFilePreviewUrl(file)],
-      startPosition: 0,
-      showIndex: false
-    })
-  }
-}
+// const onPreviewFile = (file) => {
+//   if (file.isImage) {
+//     showImagePreview({
+//       images: [getFilePreviewUrl(file)],
+//       startPosition: 0,
+//       showIndex: false
+//     })
+//   }
+// }
 // 统一上传方法
 const uploadGeneric = (type) => {
   currentUploadType.value = type
@@ -2628,7 +2495,20 @@ const uploadGeneric = (type) => {
   }
   const config = getAttachConfig(attachTypeMap[type] || '车内照片')
   const maxSize = config.maxSize || 10
-  getAppImgLimit(maxSize)
+  console.log('maxSize22:', config)
+  // 已上传数量（最大选择数量=config.maxNum-当前已上传数量，区间1-9）
+  const targetList = getTargetFileList(type)
+  const hasUploadNumber = targetList.length
+
+  // 如果已上传数量等于最大数量，不可上传
+  if (hasUploadNumber >= config.maxNum) {
+    showToast('已达到最大上传数量')
+    return
+  }
+
+  const maxSelectNum = Math.min(9, Math.max(1, config.maxNum - hasUploadNumber))
+
+  batchUploadImageLimit(maxSize, config.maxNum, maxSelectNum)
 }
 
 // 选择图片来源
@@ -2658,6 +2538,7 @@ const getTargetFileList = (type) => {
 
 // 处理图片文件选择
 const handleImageFileChange = (event) => {
+  console.log('event:', event)
   const files = event.target.files
   if (files && files.length > 0) {
     const file = files[0]
@@ -2752,92 +2633,125 @@ const handleImageFileChange = (event) => {
   // 清空 input 值，允许重复选择同一文件
   event.target.value = ''
 }
+const getFileType = (file, fallback = '') => {
+  console.log('file', file)
+  if (!file) return fallback
+  if (file.fileType || file.ext) return file.fileType || file.ext
 
+  const filePath = file.fileName || file.name || file.url || file.fileUrl || file.authFileUrl || ''
+  const cleanPath = filePath.split('?')[0]
+  const ext = cleanPath.includes('.') ? cleanPath.split('.').pop() : ''
+  return ext || fallback
+}
 // 注册原生图片回调
 onMounted(() => {
-  window.getImage = async(url) => {
-    if (!url) return
-
-    // 保存当前上传类型，避免异步上传完成时类型已改变
-    const uploadType = currentUploadType.value
-
-    // attachType 映射
-    const attachTypeMap = {
-      interior: '车内照片',
-      exterior: '车外照片',
-      attachment: '附件资料'
+  window.getScanResult = async(url) => {
+    console.log('url:', url, Array.isArray(url))
+    let urlList = []
+    if (typeof url === 'string') {
+      if (url.startsWith('[')) {
+        // JSON 数组字符串，需要解析
+        try {
+          urlList = JSON.parse(url)
+        } catch {
+          // 解析失败，当作单个 URL 处理
+          urlList = [url]
+        }
+      } else {
+        // 单个 URL 字符串
+        urlList = [url]
+      }
+    } else if (Array.isArray(url)) {
+      urlList = url
+    } else {
+      return
     }
 
-    // 先添加临时预览
-    const fileObj = {
-      url: url,
-      status: 'uploading',
-      message: '上传中...',
-      id: null
-    }
+    // 遍历每个 URL 进行上传处理
+    for (const singleUrl of urlList) {
+      // 保存当前上传类型，避免异步上传完成时类型已改变
+      const uploadType = currentUploadType.value
 
-    // 根据当前上传类型添加到对应的文件列表
-    switch (uploadType) {
-      case 'interior':
-        detail.interiorImages.push(fileObj)
-        break
-      case 'exterior':
-        detail.exteriorImages.push(fileObj)
-        break
-      case 'attachment':
-        signatureData.attachments.push(fileObj)
-        break
-    }
-
-    // 调用上传接口
-    try {
-      const params = {
-        fileUrl: url,
-        businessId: route.query.id,
-        configCode: 'mcs_serviceproxy',
-        attachType: attachTypeMap[uploadType]
+      // attachType 映射
+      const attachTypeMap = {
+        interior: '车内照片',
+        exterior: '车外照片',
+        attachment: '附件资料'
+      }
+      // 先添加临时预览
+      const fileObj = {
+        url: singleUrl,
+        fileUrl: singleUrl,
+        authFileUrl: singleUrl,
+        fileType: getFileType({ url: singleUrl }, 'image/jpeg'),
+        status: 'uploading',
+        message: '上传中...',
+        id: null
       }
 
-      const res = await uploadFileByUrl([params])
-
-      if (res.code === 200) {
-        // 兼容两种返回格式：数组或对象
-        const uploadData = Array.isArray(res.data) ? res.data[0] || {} : res.data || {}
-        const rawUrl = uploadData.url || uploadData.fileUrl || url
-        const authFileUrl = uploadData.authFileUrl || rawUrl
-
-        // 更新文件状态 - 使用保存的 uploadType
-        const targetList = getTargetFileList(uploadType)
-        if (targetList.length > 0) {
-          const lastIndex = targetList.length - 1
-          targetList[lastIndex] = {
-            ...targetList[lastIndex],
-            status: 'done',
-            message: '',
-            id: uploadData.id || null,
-            url: rawUrl,
-            fileUrl: rawUrl,
-            authFileUrl
-          }
+      // 根据当前上传类型添加到对应的文件列表
+      switch (uploadType) {
+        case 'interior':
+          detail.interiorImages.push(fileObj)
+          break
+        case 'exterior':
+          detail.exteriorImages.push(fileObj)
+          break
+        case 'attachment':
+          signatureData.attachments.push(fileObj)
+          break
+      }
+      // 调用上传接口
+      try {
+        const params = {
+          fileUrl: singleUrl,
+          businessId: null,
+          configCode: 'mcs_serviceproxy',
+          attachType: attachTypeMap[uploadType]
         }
 
-        showToast('上传成功')
-      } else {
-        // 上传失败，移除临时文件 - 使用保存的 uploadType
+        const res = await uploadFileByUrl([params])
+
+        if (res.code === 200) {
+          // 兼容两种返回格式：数组或对象
+          const uploadData = Array.isArray(res.data) ? res.data[0] || {} : res.data || {}
+
+          // 更新文件状态 - 使用保存的 uploadType
+          const targetList = getTargetFileList(uploadType)
+          if (targetList.length > 0) {
+            const lastIndex = targetList.length - 1
+            const rawUrl = uploadData.url || uploadData.fileUrl || singleUrl
+            targetList[lastIndex] = {
+              ...targetList[lastIndex],
+              status: 'done',
+              message: '',
+              id: uploadData.id || null,
+              url: rawUrl,
+              fileUrl: rawUrl,
+              authFileUrl: uploadData.authFileUrl || rawUrl,
+              fileType: uploadData.fileType || uploadData.ext || getFileType({ url: rawUrl }, 'image/jpeg')
+            }
+          }
+
+          showToast('上传成功')
+        } else {
+          // 上传失败，移除临时文件 - 使用保存的 uploadType
+          const targetList = getTargetFileList(uploadType)
+          if (targetList.length > 0) {
+            targetList.pop()
+          }
+          showToast(res.msg || '上传失败')
+        }
+        console.log('interior:', detail.interiorImages)
+      } catch (e) {
+        console.error('上传出错:', e)
+        // 出错时移除临时文件 - 使用保存的 uploadType
         const targetList = getTargetFileList(uploadType)
         if (targetList.length > 0) {
           targetList.pop()
         }
-        showToast(res.msg || '上传失败')
+        showToast('上传出错')
       }
-    } catch (e) {
-      console.error('上传出错:', e)
-      // 出错时移除临时文件 - 使用保存的 uploadType
-      const targetList = getTargetFileList(uploadType)
-      if (targetList.length > 0) {
-        targetList.pop()
-      }
-      showToast('上传出错')
     }
   }
 })
@@ -2897,7 +2811,7 @@ const onDeleteFaultModule = async(module) => {
         message: '全部故障模块已删除，请重新确认【本次进店是否存在故障】？'
       })
     }
-  } catch (error) {
+  } catch {
     // 取消操作
   }
 }
@@ -2909,6 +2823,13 @@ const onViewAllModules = () => {
 
 // 送修人输入框是否禁用（车主/绑车人不可编辑，其他可编辑）
 const repairPersonInputDisabled = computed(() => repairPersonType.value !== 'other')
+
+// 送修人输入框标签文案（车主/绑车人/其他显示不同文案）
+const repairPersonInputLabel = computed(() => {
+  if (repairPersonType.value === 'owner') return '车主'
+  if (repairPersonType.value === 'bindingUser') return '绑车人'
+  return '送修人'
+})
 
 // 选择送修人类型
 const onSelectRepairPersonType = (type) => {
@@ -2944,11 +2865,11 @@ const onRepairPersonPhoneChange = () => {
 }
 
 // 选择业务类型
-const onSelectBusinessType = (item) => {
-  detail.businessType = item.value
-  // 收起面板
-  businessTypeCollapse.value = []
-}
+// const onSelectBusinessType = (item) => {
+//   detail.businessType = item.value
+//   // 收起面板
+//   businessTypeCollapse.value = []
+// }
 
 // 更多操作
 const onMore = () => {
@@ -3073,7 +2994,7 @@ const onInspectionSave = async(type) => {
     shuttlePhone: detail.repairPersonPhone,
     payType: detail.payType,
     warrantyCompany: detail.warrantyCompany,
-    signChannel: signatureData.signChannel === '纸质单据' || detail.signChannel == 40 ? '40' : '',
+    signChannel: signatureData.signChannel === '纸质单据' || Number(detail.signChannel) === 40 ? '40' : '',
     signCompletedOn: detail.signCompletedOn,
     signGeneratedOn: detail.signGeneratedOn,
     signStatus: detail.signStatus,
@@ -3090,22 +3011,8 @@ const onInspectionSave = async(type) => {
     finalCheckerId: detail.finalCheckerId,
     finalChecker: detail.finalChecker,
     ticketStep: detail.ticketStep,
-    exteriorPhotoList: detail.exteriorImages.map((item) => ({
-      ...item,
-      fileId: item.id,
-      businessId: route.query.id,
-      fileUrl: getFileSaveUrl(item),
-      attachType: '车外照片',
-      configCode: 'mcs_serviceproxy'
-    })),
-    interiorPhotoList: detail.interiorImages.map((item) => ({
-      ...item,
-      fileId: item.id,
-      businessId: route.query.id,
-      fileUrl: getFileSaveUrl(item),
-      attachType: '车内照片',
-      configCode: 'mcs_serviceproxy'
-    })),
+    exteriorPhotoList: formatPhotoList(detail.exteriorImages, '车外照片', route.query.id),
+    interiorPhotoList: formatPhotoList(detail.interiorImages, '车内照片', route.query.id),
     warrantyStatus: detail.warrantyStatus,
     claimItemAmount: detail.claimItemAmount,
     claimOtherAmount: detail.claimOtherAmount,
@@ -3185,6 +3092,7 @@ const onInspectionSave = async(type) => {
     latelyServiceProxy: detail.latelyServiceProxy,
     earlyServiceProxy: detail.earlyServiceProxy
   }
+  console.log('保存参数:', params)
   try {
     const res = await serviceAddOrUpdate(params)
     savingLoading.value = false
@@ -3248,44 +3156,44 @@ const onPartsSave = async() => {
 }
 
 // 签字确认保存
-const onSignatureSave = async() => {
-  if (isSignatureSaveDisabled.value) return
-  // 从 RepairItemContent 组件获取数据
-  const items = repairItemContentRef.value?.selectedItems || []
-  const parts = repairItemContentRef.value?.selectedParts || []
+// const onSignatureSave = async() => {
+//   if (isSignatureSaveDisabled.value) return
+//   // 从 RepairItemContent 组件获取数据
+//   const items = repairItemContentRef.value?.selectedItems || []
+//   const parts = repairItemContentRef.value?.selectedParts || []
 
-  // 校验项目及零件不可为空
-  // if (items.length === 0 && parts.length === 0) {
-  //   showToast('项目及零件不可为空，请添加项目或者零件')
-  //   return
-  // }
+//   // 校验项目及零件不可为空
+//   // if (items.length === 0 && parts.length === 0) {
+//   //   showToast('项目及零件不可为空，请添加项目或者零件')
+//   //   return
+//   // }
 
-  savingLoading.value = true
-  try {
-    // 保存项目零件
-    const res = await saveSpRepairItem({
-      serviceProxyId: route.query.id,
-      discountId: '',
-      itemList: items,
-      partsList: parts
-    })
-    if (res.code !== 200) {
-      showToast(res.msg || '保存失败')
-      return
-    }
-    showToast('保存成功')
-    // 执行inspection保存（带id编辑）
-    const inspectionRes = await onInspectionSave(1)
-    if (inspectionRes?.code === 200) {
-      isSaved.value = true
-    }
-  } catch (error) {
-    console.error('保存失败:', error)
-    showToast('保存失败')
-  } finally {
-    savingLoading.value = false
-  }
-}
+//   savingLoading.value = true
+//   try {
+//     // 保存项目零件
+//     const res = await saveSpRepairItem({
+//       serviceProxyId: route.query.id,
+//       discountId: '',
+//       itemList: items,
+//       partsList: parts
+//     })
+//     if (res.code !== 200) {
+//       showToast(res.msg || '保存失败')
+//       return
+//     }
+//     showToast('保存成功')
+//     // 执行inspection保存（带id编辑）
+//     const inspectionRes = await onInspectionSave(1)
+//     if (inspectionRes?.code === 200) {
+//       isSaved.value = true
+//     }
+//   } catch (error) {
+//     console.error('保存失败:', error)
+//     showToast('保存失败')
+//   } finally {
+//     savingLoading.value = false
+//   }
+// }
 
 const onComplete = async() => {
   if (!validateRepairPerson()) return
@@ -3362,7 +3270,7 @@ const onConfirmAndSign = () => {
   // 纸质单据时才传signChannel
   console.log('signatureData.signChannel', signatureData, detail)
   savingLoading.value = true
-  if (signatureData.signChannel === '纸质单据' || detail.signChannel == 40) {
+  if (signatureData.signChannel === '纸质单据' || Number(detail.signChannel) === 40) {
     params.signChannel = '40'
   } else {
     params.signChannel = null
@@ -3398,18 +3306,6 @@ const onViewSignature = () => {
   } else {
     showToast('暂无签字图片')
   }
-}
-
-// 去签字
-const onGoToSign = () => {
-  router.push({
-    path: '/reception/sign',
-    query: {
-      vin: detail.vin,
-      serviceProxyNo: detail.code,
-      serviceProxyId: detail.id
-    }
-  })
 }
 
 // 打开预计交车时间选择器
@@ -3450,7 +3346,7 @@ const onCloseDeliveryTimePicker = () => {
   showDeliveryTimePicker.value = false
 }
 const showSignatureChannelPickerHandle = () => {
-  if (detail.signStatus == 20) {
+  if (Number(detail.signStatus) === 20) {
     return
   }
   showSignatureChannelPicker.value = true
@@ -3838,28 +3734,6 @@ onMounted(() => {
         &:active {
           background: #007a00;
         }
-      }
-    }
-  }
-
-  .fault-list {
-    height: 60vh;
-    overflow-y: auto;
-
-    .fault-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 7px 12px;
-      border-radius: 6px;
-      margin-bottom: 8px;
-
-      &:last-child {
-        margin-bottom: 0;
-      }
-
-      &:active {
-        background: #f7f7f7;
       }
     }
   }
@@ -4442,12 +4316,6 @@ onMounted(() => {
       align-items: center;
       gap: 4px;
     }
-  }
-
-  .signature-action-row {
-    padding: 12px 0;
-    display: flex;
-    justify-content: flex-end;
   }
 }
 </style>
