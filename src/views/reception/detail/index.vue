@@ -179,11 +179,11 @@
             </div>
           </div>
 
-          <!-- 维修项目列表 -->
-          <div v-if="partsData.repairItemRespList.length" style="padding: 12px">
+          <!-- 维修项目列表（非套餐） -->
+          <div v-if="partsData.repairItemRespList.filter(item => !item.packageType).length" style="padding: 12px">
             <div class="section-title" style="margin-bottom: 8px">维修项目</div>
             <div
-              v-for="(repairItem, rIndex) in partsData.repairItemRespList"
+              v-for="(repairItem, rIndex) in partsData.repairItemRespList.filter(item => !item.packageType)"
               :key="'repair-' + rIndex"
               class="parts-item-card"
             >
@@ -210,45 +210,85 @@
           </div>
 
           <!-- 套餐列表 -->
-          <div v-if="partsData.packageRespList.length" style="padding: 12px">
+          <div v-if="partsData.packageGroupList.length" style="padding: 12px">
             <div
-              v-for="(packageItem, pIndex) in partsData.packageRespList"
+              v-for="(packageItem, pIndex) in partsData.packageGroupList"
               :key="'package-' + pIndex"
               class="package-card"
             >
               <div class="package-header">
                 <span class="package-name"
-                  >{{ packageItem.packageTypeLabel }}-{{ packageItem.packageCount }}</span
+                  >{{ packageItem.packageTypeLabel }}-{{ packageItem.repairItems[0].packageName }}</span
                 >
               </div>
-              <!-- 项目列表 -->
-              <!-- <div class="item-main">
-                <div class="item-left">
-                  <div class="item-name">{{ packageItem.repairItemName }}</div>
-                  <div class="item-code">{{ packageItem.repairItemCode }}</div>
-                  <div class="item-code">
-                    {{ packageItem.repairItemTypeName }}-{{ packageItem.checkoutTypeName }}-{{
-                      packageItem.warrantyTypeName
-                    }}
+              <!-- 套餐下的维修项目 -->
+              <div
+                v-for="(repairItem, rIndex) in packageItem.repairItems"
+                :key="'package-repair-' + pIndex + '-' + rIndex"
+                class="parts-item-card"
+              >
+                <div class="item-main">
+                  <div class="item-left">
+                    <div class="item-name">{{ repairItem.repairItemName }}</div>
+                    <div class="item-code">{{ repairItem.repairItemCode }}</div>
+                    <div class="item-code">
+                      {{ repairItem.repairItemTypeName }}-{{ repairItem.checkoutTypeName }}-{{
+                        repairItem.warrantyTypeName
+                      }}
+                    </div>
+                  </div>
+                  <div class="item-right">
+                    <div class="item-price">¥{{ repairItem.repairAmount }}</div>
+                    <div class="item-discount">优惠 ¥{{ repairItem.discountAmount }}</div>
                   </div>
                 </div>
-                <div class="item-right">
-                  <div class="item-price">¥{{ packageItem.price }}</div>
-                  <div class="item-discount">优惠 ¥{{ packageItem.discountAmount }}</div>
+                <div class="item-footer">
+                  <span class="item-subtotal">¥{{ repairItem.price }}</span>
                 </div>
               </div>
-              <div class="item-footer">
-                <span class="item-subtotal">¥{{ packageItem.repairAmount }}</span>
-                <span class="item-quantity">x{{ packageItem.quantity }}</span>
-              </div> -->
+              <!-- 套餐下的维修配件 -->
+              <div
+                v-for="(sparePart, sIndex) in packageItem.spareParts"
+                :key="'package-spare-' + pIndex + '-' + sIndex"
+                class="parts-item-card"
+              >
+                <div class="item-main">
+                  <div class="item-left">
+                    <div class="item-name-row">
+                      <span class="item-name">{{ sparePart.partsName }}</span>
+                      <span v-if="sparePart.isOemPart" class="oem-tag">原厂件</span>
+                    </div>
+                    <div class="item-code">{{ sparePart.partsCode }}</div>
+                    <div class="item-category">
+                      {{ sparePart.partsTypeName }}-{{ sparePart.checkoutTypeName }}-{{
+                        sparePart.warrantyTypeName
+                      }}
+                    </div>
+                  </div>
+                  <div class="item-right">
+                    <div class="item-price">¥{{ sparePart.price }}</div>
+                    <div class="item-discount">优惠 ¥{{ sparePart.discountAmount }}</div>
+                  </div>
+                </div>
+                <div class="item-footer">
+                  <div class="footer-info">
+                    <span class="item-subtotal">¥{{ sparePart.partsAmount }}</span>
+                    <span class="footer-divider">|</span>
+                    <span class="footer-text">实际领料 {{ sparePart.actualPickNumber }}</span>
+                    <span class="footer-divider">|</span>
+                    <span class="footer-text">退料 {{ sparePart.refundedNumber }}</span>
+                  </div>
+                  <span class="item-quantity">x{{ sparePart.quantity }}</span>
+                </div>
+              </div>
             </div>
           </div>
 
-          <!-- 维修配件列表 -->
-          <div v-if="partsData.sparePartRespList.length" style="padding: 12px">
+          <!-- 维修配件列表（非套餐） -->
+          <div v-if="partsData.sparePartRespList.filter(item => !item.packageType).length" style="padding: 12px">
             <div class="section-title" style="margin-bottom: 8px">维修配件</div>
             <div
-              v-for="(sparePart, sIndex) in partsData.sparePartRespList"
+              v-for="(sparePart, sIndex) in partsData.sparePartRespList.filter(item => !item.packageType)"
               :key="'spare-' + sIndex"
               class="parts-item-card"
             >
@@ -580,8 +620,32 @@ const partsData = reactive({
   maintenanceCostEstimation: '',
   repairItemRespList: [],
   packageRespList: [],
-  sparePartRespList: []
+  sparePartRespList: [],
+  // 套餐分组数据
+  packageGroupList: []
 })
+
+// 处理套餐分组数据
+const processPackageGroupList = () => {
+  const result = []
+  // 遍历套餐列表
+  partsData.packageRespList.forEach((packageItem) => {
+    // 找出属于该套餐的维修项目
+    const matchedRepairItems = partsData.repairItemRespList.filter(
+      (item) => item.packageType === packageItem.packageType
+    )
+    // 找出属于该套餐的维修配件
+    const matchedSpareParts = partsData.sparePartRespList.filter(
+      (item) => item.packageType === packageItem.packageType
+    )
+    result.push({
+      ...packageItem,
+      repairItems: matchedRepairItems,
+      spareParts: matchedSpareParts
+    })
+  })
+  partsData.packageGroupList = result
+}
 
 // 签字确认数据
 const signatureData = reactive({
@@ -654,6 +718,8 @@ const fetchDetail = async() => {
           partsData.repairItemRespList = data.costCountResp.repairItemRespList || []
           partsData.packageRespList = data.costCountResp.packageRespList || []
           partsData.sparePartRespList = data.costCountResp.sparePartRespList || []
+          // 处理套餐分组数据
+          processPackageGroupList()
         }
       }
     })
