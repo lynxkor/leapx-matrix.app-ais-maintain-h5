@@ -37,7 +37,7 @@ export default function useRepairItemOperations({
    * 执行搜索
    * @param {string} keyword - 搜索关键词
    */
-  const performSearch = async(keyword) => {
+  const performSearch = async (keyword) => {
     showLoadingToast('请稍候...')
     try {
       const apiFn = activeTab.value === 'item' ? filterRepairItems : filterRepairParts
@@ -207,7 +207,7 @@ export default function useRepairItemOperations({
    * @param {Function} onSuccess - 成功回调
    * @returns {Promise<boolean>} 是否保存成功
    */
-  const handleSave = async(onSuccess) => {
+  const handleSave = async (onSuccess) => {
     if (selectedItems.value.length === 0 && selectedParts.value.length === 0) return false
 
     // 售前保修只能单独开单
@@ -234,7 +234,7 @@ export default function useRepairItemOperations({
         }
         return true
       } else {
-        showToast({ message: res?.message || '保存失败', 'z-index': 5100 })
+        showToast({ message: res?.message || '保存失败', 'z-index': 5100, duration: 3000 })
         return false
       }
     } catch (error) {

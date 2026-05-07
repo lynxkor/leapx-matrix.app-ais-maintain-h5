@@ -1120,7 +1120,7 @@
 <script setup>
 import { ref, reactive, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { showToast, showConfirmDialog, showImagePreview } from 'vant'
+import { showToast, showConfirmDialog, showImagePreview, closeToast, showLoadingToast } from 'vant'
 import { useGlobalStore } from '@/stores/global'
 import AisPopup from '@/libs/components/AisPopup.vue'
 import RepairItemContent from '@/components/SelectRepairItem/RepairItemContent.vue'
@@ -1300,7 +1300,9 @@ const remindList = ref([])
 const onGenerateAuthorization = async() => {
   // 生成预授权
   try {
+    showLoadingToast('请稍候...')
     const res = await preAuthAddOrUpdate({ serviceProxyId: serviceProxyId.value || route.query.id })
+    closeToast()
     if (res.code === 200) {
       showToast('生成预授权成功')
       showWarrantyAlertDialog.value = false
@@ -1308,6 +1310,7 @@ const onGenerateAuthorization = async() => {
       showToast(res.msg || '生成预授权失败')
     }
   } catch (error) {
+    closeToast()
     console.error(error)
   }
 }
@@ -2017,6 +2020,8 @@ const fetchDetail = async() => {
       detail.interiorImages = []
       detail.exteriorImages = []
       signatureData.attachments = []
+      // 用于存储最新的制单签字
+      let latestSignFile = null
       // 根据 attachType 分类回显文件
       fileList.forEach((item) => {
         const fileObj = normalizeAttachmentFile(item)
@@ -2030,8 +2035,18 @@ const fetchDetail = async() => {
           case '附件资料':
             signatureData.attachments.push(fileObj)
             break
+          case '制单签字':
+            // 对比createTime，保留最新的制单签字
+            if (!latestSignFile || new Date(item.createTime) > new Date(latestSignFile.createTime)) {
+              latestSignFile = item
+            }
+            break
         }
       })
+      // 将最新的制单签字赋值给detail.signUrl
+      if (latestSignFile) {
+        detail.signUrl = latestSignFile.fileUrl
+      }
     }
   })
 }
@@ -2620,11 +2635,11 @@ const onComplete = async() => {
   // 照片校验（根据配置判断是否必填）
   if (interiorConfig.value.required === '1' && detail.interiorImages.length === 0) {
     showToast('请上传车内照片')
-    // return
+    return
   }
   if (exteriorConfig.value.required === '1' && detail.exteriorImages.length === 0) {
     showToast('请上传车外照片')
-    // return
+    return
   }
   // 如果选择"是"，客户故障描述必填
   if (detail.hasFault === '1' && !detail.customerFaultDesc.trim()) {
