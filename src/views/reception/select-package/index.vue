@@ -66,7 +66,7 @@
             >
               <div class="item-info">
                 <div class="item-name">
-                  {{ item.rightsName }}({{ item.usedTimes }}/{{ item.totalRemainTimes }})
+                  {{ item.rightsName }}({{ item.remainTimes }}/{{ item.totalRemainTimes }})
                 </div>
                 <div class="item-code">{{ item.rightsCode }}</div>
               </div>
@@ -1084,6 +1084,7 @@ const onConfirmService = () => {
   // 补充 itemList 缺少的字段
   const enrichedItems = selectedItems.map((item) => ({
     ...item,
+    id: null,
     checkoutTypeId: activityResp.checkoutTypeId || '',
     checkoutTypeName: activityResp.checkoutTypeName || '',
     workHour: item.workHour || 1
@@ -1092,6 +1093,7 @@ const onConfirmService = () => {
   // 补充 partsList 缺少的字段
   const enrichedParts = selectedParts.map((part) => ({
     ...part,
+    id: null,
     partsName: part.partName || '', // 零件名称
     isOemPart: activityResp.isOemPart || 1, // 是否OEM件
     partsId: part.partId || part.oldPartId || '', // 零件代码id
@@ -1176,13 +1178,28 @@ const onConfirmMall = () => {
 // 替换零件
 // 确认选择权益套餐
 const onConfirmEquity = () => {
+  equitySubmitting.value = true
   const params = {
     id: serviceProxyId.value,
     equityUseId: selectedEquity.data.useId,
     equityName: selectedEquity.data.rightsName,
     equityCode: selectedEquity.data.rightsCode,
     repairItemList: selectedEquity.data.repairItemList,
-    repairPartList: selectedEquity.data.repairPartList
+    repairPartList: selectedEquity.data.repairPartList,
+
+    // equityDistributionId: selectedEquity.data.equityDistributionId,
+    verificationEquityCode: selectedEquity.data.rightsGrantCode,
+    verificationCityLevel: selectedEquity.data.writeOffCityLevel,
+    // name: selectedEquity.data.rightsName,
+    purchaseCityLevel: selectedEquity.data.cityLevel,
+    remainingUsageCount: selectedEquity.data.remainTimes,
+    // equityUsageStatus: selectedEquity.data.equityUsageStatus,
+    spreadType: selectedEquity.data.compensationMode,
+    suggestedSpreadPrice: selectedEquity.data.suggestedSpreadPrice,
+    // partsCode: selectedEquity.data.partsCode,
+    // equityList: selectedEquity.data.equityList,
+    totalRemainingUsage: selectedEquity.data.totalRemainTimes,
+    totalUsedCount: selectedEquity.data.usedTimes
   }
   specialEquityUse(params)
     .then((res) => {
@@ -1196,6 +1213,9 @@ const onConfirmEquity = () => {
     })
     .catch((err) => {
       showToast(err.msg || '网络错误')
+    })
+    .finally(() => {
+      equitySubmitting.value = false
     })
 }
 

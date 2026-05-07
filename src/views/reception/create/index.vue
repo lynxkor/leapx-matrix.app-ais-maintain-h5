@@ -336,7 +336,7 @@
             <!-- 客户故障描述 -->
             <div class="section-card">
               <div class="section-title" style="justify-content: flex-start">
-                <span class="required">*</span>客户故障描述
+                <span v-if="detail.hasFault === '1'" class="required">*</span>客户故障描述
               </div>
               <van-field
                 v-model="detail.customerFaultDesc"
@@ -346,6 +346,7 @@
                 autosize
                 show-word-limit
                 maxlength="500"
+                :disabled="detail.hasFault !== '1'"
                 style="background: #f5f5f5; border-radius: 6px"
               />
             </div>
@@ -502,6 +503,7 @@
 
     <!-- 底部操作栏 -->
     <div class="bottom-bar">
+      <span v-if="serviceProxyId" class="more-btn" @click="onMore">更多</span>
       <template v-if="activeTab === 'inspection'">
         <span v-if="!isSaved" class="save-btn" @click="onSave">保存</span>
         <template v-else>
@@ -902,7 +904,7 @@
             rows="4"
             autosize
             show-word-limit
-            maxlength="200"
+            maxlength="500"
             style="background: #f4f4f4; border-radius: 6px"
           />
         </div>
@@ -1037,6 +1039,75 @@
       </div>
     </van-dialog>
 
+    <!-- 三包预警提示框 -->
+    <van-dialog
+      v-model:show="showWarrantyAlertDialog"
+      :show-confirm-button="false"
+      :show-cancel-button="false"
+      close-on-click-overlay
+      class="warranty-alert-dialog"
+    >
+      <div class="warranty-alert-content">
+        <template v-for="item in remindList" :key="item.type">
+          <!-- 预授权提醒 -->
+          <div v-if="item.type === RemindInfoTypeEnum.PRE_AUTH" class="alert-section">
+            <div class="section-title">{{ item.typeLabel }}</div>
+            <div class="section-message">{{ item.content || '暂无提醒信息' }}</div>
+            <div class="section-action-btn" @click="onGenerateAuthorization">生成预授权</div>
+          </div>
+
+          <!-- 三包预警 -->
+          <div v-if="item.type === RemindInfoTypeEnum.THREE_GUARANTEES" class="alert-section">
+            <div class="section-title">{{ item.typeLabel }}</div>
+            <div class="warranty-alerts">
+              <div
+                v-for="(alarm, alarmIndex) in item.content"
+                :key="alarmIndex"
+                :class="['warranty-alert-card', getAlarmColor(alarm.alarmLevel)]"
+              >
+                <div class="alert-header">
+                  <span :class="['alert-tag', getAlarmColor(alarm.alarmLevel)]">
+                    {{ getAlarmLabel(alarm.alarmLevel) }}
+                  </span>
+                  <span class="alert-title">{{ alarm.title }}</span>
+                </div>
+                <div class="alert-partno">{{ alarm.partNo }}</div>
+                <div class="alert-details">
+                  <div
+                    v-for="(detail, dIndex) in alarm.details"
+                    :key="dIndex"
+                    class="alert-detail-item"
+                  >
+                    {{ detail }}
+                  </div>
+                </div>
+              </div>
+              <p v-if="!item.content || item.content.length === 0">暂无提醒信息</p>
+            </div>
+          </div>
+          <!-- 服务活动提醒 -->
+          <template v-else-if="item.type === RemindInfoTypeEnum.SERVICE_ACTIVITY">
+            <div class="info-title">{{ item.typeLabel }}</div>
+            <div class="info-content">{{ item.content || '暂无提醒信息' }}</div>
+          </template>
+          <!-- 车辆标识 -->
+          <template v-else-if="item.type === '5'">
+            <div class="info-title">{{ item.typeLabel }}</div>
+            <div class="info-content">
+              该车辆为<template v-for="(tag, index) in item.content.split(',')" :key="index">【{{ tag }}】</template>，请注意接待
+            </div>
+          </template>
+          <!-- 其他提醒 -->
+          <template v-else>
+            <div class="info-title">{{ item.typeLabel }}</div>
+            <div class="info-content">{{ item.content || '暂无提醒信息' }}</div>
+          </template>
+        </template>
+
+        <div class="alert-confirm-btn" @click="onConfirmWarrantyAlert">我知道了</div>
+      </div>
+    </van-dialog>
+
     <!-- 全屏Loading -->
     <van-overlay :show="savingLoading">
       <div class="loading-wrapper">
@@ -1163,6 +1234,8 @@ const normalizeAttachmentFile = (file) => {
   }
 }
 import { batchUploadImageLimit } from '@/libs/utils/nativeFn'
+import { RemindInfoTypeEnum, AlarmLevelEnum } from '@/views/repairWork/constant'
+import { preAuthAddOrUpdate } from '@/api/authorization'
 import {
   getVehicleInfo,
   getVehicleMileage,
@@ -1172,7 +1245,10 @@ import {
   getDetail,
   saveSpRepairItem,
   spConfirmAndSign,
-  serviceProxyCancel
+  serviceProxyCancel,
+  getRemindInfo,
+  saveSpFaultModule,
+  deleteSpFaultModule
 } from '@/api/reception'
 import './create.scss'
 
@@ -1215,6 +1291,77 @@ const showConfirmDialog2 = ref(false)
 
 const onConfirmDialogClose = () => {
   showConfirmDialog2.value = false
+}
+
+// 三包预警提示框
+const showWarrantyAlertDialog = ref(false)
+const remindList = ref([])
+
+const onGenerateAuthorization = async() => {
+  // 生成预授权
+  try {
+    const res = await preAuthAddOrUpdate({ serviceProxyId: serviceProxyId.value || route.query.id })
+    if (res.code === 200) {
+      showToast('生成预授权成功')
+      showWarrantyAlertDialog.value = false
+    } else {
+      showToast(res.msg || '生成预授权失败')
+    }
+  } catch (error) {
+    console.error(error)
+  }
+}
+
+const onConfirmWarrantyAlert = () => {
+  showWarrantyAlertDialog.value = false
+}
+
+// 获取预警等级颜色
+const getAlarmColor = (level) => {
+  switch (level) {
+    case AlarmLevelEnum.CRITICAL:
+      return 'red'
+    case AlarmLevelEnum.WARNING:
+      return 'yellow'
+    case AlarmLevelEnum.NORMAL:
+      return 'green'
+    case AlarmLevelEnum.EXPIRED:
+      return 'gray'
+    default:
+      return 'gray'
+  }
+}
+
+// 获取预警等级标签
+const getAlarmLabel = (level) => {
+  switch (level) {
+    case AlarmLevelEnum.CRITICAL:
+      return '红色预警'
+    case AlarmLevelEnum.WARNING:
+      return '黄色预警'
+    case AlarmLevelEnum.NORMAL:
+      return '绿色预警'
+    case AlarmLevelEnum.EXPIRED:
+      return '已过期'
+    default:
+      return '未知'
+  }
+}
+
+// 获取提醒信息
+const fetchRemindInfo = () => {
+  const id = serviceProxyId.value || route.query.id
+  if (!id) return
+  setTimeout(() => {
+    getRemindInfo(id).then((res) => {
+      if (res.code === 200) {
+        remindList.value = res.data || []
+        if (remindList.value.length > 0) {
+          showWarrantyAlertDialog.value = true
+        }
+      }
+    })
+  }, 1000)
 }
 
 // 送修人类型选择
@@ -1439,7 +1586,6 @@ const showCancelReason = ref(false)
 const cancelReason = ref('')
 // 更多操作选择内容
 const onSelectMoreAction = (action) => {
-  console.log(action)
   if (action.name === '作废') {
     // 检查是否禁用
     if (action.disabled) {
@@ -1464,7 +1610,7 @@ const onSelectMoreAction = (action) => {
     router.push({
       path: '/reception/rights-query',
       query: {
-        id: detail.id,
+        id: serviceProxyId.value || detail.id || route.query.id,
         vin: detail.vin
       }
     })
@@ -2228,10 +2374,27 @@ const onAddFaultModuleItem = (item) => {
     showToast('该故障模块已添加')
     return
   }
-  detail.faultModules.push(item)
-  showToast('添加成功')
-  addFaultModuleShow.value = false
-  faultSearchValue.value = ''
+  // 如果已保存，调用接口添加
+  if (serviceProxyId.value) {
+    saveSpFaultModule({ ...item, serviceProxyId: serviceProxyId.value }).then(res => {
+      if (res.code === 200) {
+        fetchDetailForSignature()
+        showToast('添加成功')
+        addFaultModuleShow.value = false
+        faultSearchValue.value = ''
+      } else {
+        showToast(res.msg || '添加失败')
+      }
+    }).catch(err => {
+      showToast(err.msg || '添加失败')
+    })
+  } else {
+    // 未保存时，直接添加到数组
+    detail.faultModules.push(item)
+    showToast('添加成功')
+    addFaultModuleShow.value = false
+    faultSearchValue.value = ''
+  }
 }
 
 // 删除故障模块
@@ -2241,9 +2404,23 @@ const onDeleteFaultModule = async(module) => {
       title: '提示',
       message: '是否要删除此接车施工单-故障模块？您无法撤销此操作。'
     })
-    const index = detail.faultModules.findIndex((m) => m.cccCode === module.cccCode)
-    if (index > -1) {
-      detail.faultModules.splice(index, 1)
+    // 如果已保存，调用接口删除
+    if (serviceProxyId.value && module.id) {
+      deleteSpFaultModule([module.id]).then(res => {
+        if (res.code === 200) {
+          fetchDetailForSignature()
+          showToast('删除成功')
+        } else {
+          showToast(res.msg || '删除失败')
+        }
+      })
+    } else {
+      // 未保存时，直接从数组删除
+      const index = detail.faultModules.findIndex((m) => m.cccCode === module.cccCode)
+      if (index > -1) {
+        detail.faultModules.splice(index, 1)
+      }
+      showToast('删除成功')
     }
     if (detail.faultModules.length === 0) {
       showConfirmDialog({
@@ -2328,10 +2505,10 @@ const savingLoading = ref(false)
 const cancelLoading = ref(false)
 
 const onSave = async() => {
-  console.log('保存:', detail, computedBusinessType.value)
+  console.log('保存:', detail)
   if (!validateRepairPerson()) return
   // 如果选择"是"，客户故障描述必填
-  if (!detail.customerFaultDesc.trim()) {
+  if (detail.hasFault === '1' && !detail.customerFaultDesc.trim()) {
     showToast('请输入客户故障描述')
     return
   }
@@ -2382,7 +2559,7 @@ const onSave = async() => {
       vehProfileVin: detail.vin,
       maintenanceMileage: detail.vehicleProfileServiceResp.nextMaintainMileages,
       maintenanceTime: detail.vehicleProfileServiceResp.nextMaintainDate,
-      saleDate: detail.vehicleProfileServiceResp.salesDate || '',
+      saleDate: detail.salesDate || '',
       vehModelId: detail.vehicleModelId,
       vehRegisteredModelId: detail.vehicleProfileServiceResp.carSaleSversionId,
       vehRegisteredModelName: detail.vehicleProfileServiceResp.carSalesVersionName,
@@ -2426,6 +2603,8 @@ const onSave = async() => {
       }
       // 保存成功后获取详情数据更新
       fetchDetailForSignature()
+      // 获取提醒信息
+      fetchRemindInfo()
     } else {
       showToast(res.msg || '保存失败')
     }
@@ -2441,16 +2620,27 @@ const onComplete = async() => {
   // 照片校验（根据配置判断是否必填）
   if (interiorConfig.value.required === '1' && detail.interiorImages.length === 0) {
     showToast('请上传车内照片')
-    return
+    // return
   }
   if (exteriorConfig.value.required === '1' && detail.exteriorImages.length === 0) {
     showToast('请上传车外照片')
-    return
+    // return
   }
   // 如果选择"是"，客户故障描述必填
-  if (!detail.customerFaultDesc.trim()) {
+  if (detail.hasFault === '1' && !detail.customerFaultDesc.trim()) {
     showToast('请输入客户故障描述')
     return
+  }
+  // 当该车辆销售日期+60天≤开单时间时(销售日期为空时不计算)，车牌号为必填项
+  const salesDate = detail?.salesDate
+  if (salesDate) {
+    const salesDateObj = new Date(salesDate)
+    const sixtyDaysLater = new Date(salesDateObj.getTime() + 60 * 24 * 60 * 60 * 1000)
+    const currentTime = new Date(detail.crearteTime)
+    if (sixtyDaysLater <= currentTime && !detail.plateNo.trim()) {
+      showToast('请输入车牌号')
+      return
+    }
   }
   showConfirmDialog({
     title: '提示',
@@ -2556,7 +2746,7 @@ const onInspectionSave = async() => {
       vehProfileVin: detail.vin,
       maintenanceMileage: detail.vehicleProfileServiceResp.nextMaintainMileages,
       maintenanceTime: detail.vehicleProfileServiceResp.nextMaintainDate,
-      saleDate: detail.vehicleProfileServiceResp.salesDate || '',
+      saleDate: detail.salesDate || '',
       vehModelId: detail.vehicleModelId,
       vehRegisteredModelId: detail.vehicleProfileServiceResp.carSaleSversionId,
       vehRegisteredModelName: detail.vehicleProfileServiceResp.carSalesVersionName,
@@ -2797,7 +2987,8 @@ const onAddParts = () => {
   router.push({
     path: '/reception/add-parts',
     query: {
-      serviceProxyId: serviceProxyId.value || detail.id || route.query.id
+      serviceProxyId: serviceProxyId.value || detail.id || route.query.id,
+      vehModelName: selectedCarInfo.value.selectedCarInfo
     }
   })
 }
@@ -2873,7 +3064,10 @@ const onSelectSignatureChannel = (item) => {
   signatureData.signChannel = item.label
   showSignatureChannelPicker.value = false
 }
-
+// 更多操作
+const onMore = () => {
+  showMoreActions.value = !showMoreActions.value
+}
 // 进店里程数弹框打开
 const onMileageDialogOpened = () => {
   mileageInputValue.value = detail.mileage
@@ -3464,6 +3658,160 @@ onMounted(() => {
     color: #009100;
     border-top: 0.5px solid #e6e6e5;
     margin-top: 24px;
+  }
+}
+
+// 三包预警提示框样式
+:deep(.warranty-alert-dialog) {
+  background: #ffffff;
+  border-radius: 8px;
+  width: 295px;
+  max-height: 80vh;
+  overflow-y: auto;
+
+  .van-dialog__content {
+    padding: 0;
+  }
+}
+
+.warranty-alert-content {
+  padding: 32px 24px 16px;
+
+  .alert-section {
+    margin-bottom: 24px;
+
+    &:last-of-type {
+      margin-bottom: 0;
+    }
+
+    .section-title {
+      font-size: 16px;
+      font-weight: 500;
+      color: #191a1b;
+      margin-bottom: 8px;
+    }
+
+    .section-message {
+      font-size: 14px;
+      color: #545454;
+      line-height: 22px;
+      margin-bottom: 12px;
+    }
+
+    .section-action-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 6px 16px;
+      font-size: 14px;
+      color: #009100;
+      border: 1px solid #009100;
+      border-radius: 38px;
+      width: 100%;
+    }
+  }
+
+  .warranty-alerts {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+
+    .warranty-alert-card {
+      background: #f8e8e8;
+      border-radius: 4px;
+      padding: 8px;
+
+      .alert-header {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        margin-bottom: 4px;
+
+        .alert-tag {
+          font-size: 12px;
+          padding: 1px 4px;
+          border-radius: 4px;
+          color: #ffffff;
+
+          &.red {
+            background: #b91919;
+          }
+
+          &.green {
+            background: #009100;
+          }
+
+          &.yellow {
+            background: #c8a12b;
+          }
+        }
+
+        .alert-title {
+          font-size: 14px;
+          font-weight: 500;
+          color: #b91919;
+        }
+      }
+
+      .alert-partno {
+        font-size: 14px;
+        font-weight: 500;
+        color: #b91919;
+        margin-bottom: 8px;
+      }
+
+      .alert-details {
+        .alert-detail-item {
+          font-size: 14px;
+          color: #3b3e3b;
+          line-height: 22px;
+        }
+      }
+
+      // 根据预警级别设置标题和零部件号颜色
+      &.red {
+        .alert-title,
+        .alert-partno {
+          color: #b91919;
+        }
+      }
+
+      &.green {
+        .alert-title,
+        .alert-partno {
+          color: #009100;
+        }
+      }
+
+      &.yellow {
+        .alert-title,
+        .alert-partno {
+          color: #c8a12b;
+        }
+      }
+    }
+  }
+
+  .alert-confirm-btn {
+    width: 100%;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    color: #009100;
+    border-top: 0.5px solid #e6e6e5;
+    margin-top: 24px;
+  }
+  .info-title,
+  .section-title {
+    color: #191a1b;
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+  .info-content,
+  .section-message {
+    color: #545454;
   }
 }
 

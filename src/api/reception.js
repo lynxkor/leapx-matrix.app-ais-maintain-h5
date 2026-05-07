@@ -165,3 +165,13 @@ export function spConfirmAndSign(data) {
 export function updateVehiclePlate(data) {
   return post('/datacenter/app/vehicle/vehicleProfile/updatePlate', data)
 }
+
+// 接车施工单-故障模块表新增/编辑
+export function saveSpFaultModule(data) {
+  return post('/maintain/app/sp/spFaultAlertRecord/addOrUpdate', data)
+}
+
+// 接车施工单-故障模块表删除
+export function deleteSpFaultModule(data) {
+  return post('/maintain/app/sp/spFaultAlertRecord/delete', data)
+}
