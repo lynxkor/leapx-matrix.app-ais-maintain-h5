@@ -551,6 +551,7 @@ if (route.params.initialValue) {
 
 <style lang="scss" scoped>
 .settlement-search {
+  --safe-area-top: env(safe-area-inset-top, 0px);
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -573,9 +574,17 @@ if (route.params.initialValue) {
 
   .search-header {
     flex-shrink: 0;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: calc(44px + var(--safe-area-top));
+    padding-top: var(--safe-area-top);
     display: flex;
     align-items: center;
-    padding: 8px 12px;
+    padding-left: 12px;
+    padding-right: 12px;
+    padding-bottom: 8px;
     background: #fff;
     gap: 8px;
 
@@ -636,6 +645,7 @@ if (route.params.initialValue) {
   }
 
   .search-section {
+    margin-top: calc(44px + var(--safe-area-top));
     padding: 16px;
     background: #fff;
     margin-bottom: 12px;
@@ -673,6 +683,7 @@ if (route.params.initialValue) {
   }
 
   .search-result {
+    margin-top: calc(44px + var(--safe-area-top));
     padding: 12px;
 
     .result-item {

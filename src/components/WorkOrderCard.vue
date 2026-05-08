@@ -65,8 +65,8 @@ const props = defineProps({
   item: {
     type: Object,
     required: true,
-    default: () => ({}),
-  },
+    default: () => ({})
+  }
 })
 
 // 定义 emits

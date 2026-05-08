@@ -176,6 +176,7 @@ const onLoad = () => {
 
 <style lang="scss" scoped>
 .search-page {
+  --safe-area-top: env(safe-area-inset-top, 0px);
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -190,6 +191,7 @@ const onLoad = () => {
   align-items: center;
   gap: 12px;
   padding: 8px 12px;
+  padding-top: calc(8px + var(--safe-area-top));
   background-color: #ffffff;
   box-shadow: 0px 0px 4px 0px rgba(57, 61, 58, 0.1);
 }
