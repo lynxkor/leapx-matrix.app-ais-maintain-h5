@@ -96,6 +96,7 @@
             ref="nameInputRef"
             v-model="tempName"
             placeholder="请输入维修项目名称"
+            maxlength="100"
             clearable
           />
         </div>
@@ -304,7 +305,7 @@ const cancelNameEdit = () => {
 const saveName = () => {
   const name = tempName.value.trim()
   if (name) {
-    emit('update-item', props.item, { name })
+    emit('update-item', props.item, { name, repairItemName: name })
   }
   showNameEditPopup.value = false
   tempName.value = ''
@@ -376,10 +377,6 @@ const openCascaderPopup = () => {
 
       // 左列：名称、代码、结算类型
       .info-left {
-        display: flex;
-        flex-direction: column;
-        gap: 2px;
-
         .name-row {
           display: flex;
           align-items: center;
@@ -392,6 +389,10 @@ const openCascaderPopup = () => {
             color: var(--leap-color-default);
             line-height: 20px;
             cursor: pointer;
+            max-width: 180px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
           }
 
           .edit-icon {
@@ -410,7 +411,7 @@ const openCascaderPopup = () => {
         }
 
         .code-row {
-          margin: 2px 0;
+          margin: 4px 0;
           .card-code {
             font-size: 12px;
             color: var(--leap-color-default-light-1);
@@ -419,7 +420,7 @@ const openCascaderPopup = () => {
         }
 
         .checkout-row {
-          display: flex;
+          display: inline-block;
           align-items: center;
           height: 20px;
           padding: 2px 4px;
