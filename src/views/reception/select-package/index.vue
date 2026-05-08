@@ -1116,7 +1116,6 @@ const onConfirmService = () => {
     itemList: enrichedItems,
     partsList: enrichedParts
   }
-  console.log('params', params)
   showLoadingToast('请稍候...')
   specialActivityUse(params)
     .then((res) => {
@@ -1257,8 +1256,7 @@ const onCancelPackage = () => {
 
 // 取消选择服务活动
 const onCancelService = () => {
-  serviceSubmitting.value = true
-  console.log('serviceProxyId.value', selectedService)
+  serviceSubmitting.value = TextTrackCue
   showLoadingToast('请稍候...')
   cancelSelect({
     id: serviceProxyId.value,
