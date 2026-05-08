@@ -575,7 +575,7 @@ if (route.params.initialValue) {
     flex-shrink: 0;
     display: flex;
     align-items: center;
-    padding: calc(8px + var(--safe-area-top, env(safe-area-inset-top, 0px))) 12px 8px;
+    padding: 8px 12px;
     background: #fff;
     gap: 8px;
 

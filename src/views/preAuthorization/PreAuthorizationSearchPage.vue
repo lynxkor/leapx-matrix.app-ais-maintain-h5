@@ -176,8 +176,7 @@ const goToDetail = (item) => {
 
 <style lang="scss" scoped>
 .search-page-wrapper {
-  --search-safe-area-top: var(--safe-area-top, env(safe-area-inset-top, 0px));
-  --search-header-height: calc(44px + var(--search-safe-area-top));
+  --search-header-height: 44px;
   min-height: 100%;
 }
 
@@ -191,7 +190,7 @@ const goToDetail = (item) => {
   background-color: #fff;
   display: flex;
   align-items: center;
-  padding: calc(7px + var(--search-safe-area-top)) 12px 7px;
+  padding: 7px 12px;
   box-sizing: border-box;
   z-index: 6000;
 

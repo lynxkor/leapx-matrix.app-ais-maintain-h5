@@ -189,7 +189,7 @@ const onLoad = () => {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: calc(8px + var(--safe-area-top, env(safe-area-inset-top, 0px))) 12px 8px;
+  padding: 8px 12px;
   background-color: #ffffff;
   box-shadow: 0px 0px 4px 0px rgba(57, 61, 58, 0.1);
 }
