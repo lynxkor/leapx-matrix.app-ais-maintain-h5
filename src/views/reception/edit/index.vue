@@ -454,9 +454,9 @@
 
               <div class="value-wrapper">
                 <span :class="['value', { placeholder: !signatureData.signChannel }]">
-                  {{ signatureData.signChannel || '请选择' }}
+                  {{ detail.signStatus == 10 ? '已选择' : (signatureData.signChannel || '请选择') }}
                 </span>
-                <van-icon v-if="detail.signStatus != 20" name="arrow" size="12" color="#545454" />
+                <van-icon v-if="detail.signStatus != 20 && detail.signStatus != 10" name="arrow" size="12" color="#545454" />
               </div>
             </div>
             <!-- 已签字状态显示 -->
@@ -466,6 +466,13 @@
                 <span class="value signed">已签字</span>
               </div>
             </div>
+            <!-- 待签字状态显示 -->
+            <div class="signature-row" v-if="detail.signStatus == 10">
+              <span class="label">签字状态</span>
+              <div class="value-wrapper">
+                <span class="value pending">待签字</span>
+              </div>
+            </div>
             <div
               class="signature-action-row"
               v-if="detail.signStatus == 20 && detail.signChannel != 40"
@@ -473,7 +480,7 @@
               <van-button type="primary" size="small" @click="onViewSignature">查看签字</van-button>
             </div>
             <!-- 未签字状态显示 -->
-            <div class="signature-row" v-if="detail.signStatus != 20">
+            <div class="signature-row" v-if="detail.signStatus != 20 && detail.signStatus != 10">
               <span class="label">签字状态</span>
               <div class="value-wrapper">
                 <span class="value unsigned">未签字</span>
@@ -1937,8 +1944,11 @@ const computedTotalCost = computed(() => {
   return total.toFixed(2)
 })
 
-// 制单确认并签字按钮是否禁用：预计交车时间为空或者签字渠道为空
+// 制单确认并签字按钮是否禁用：signStatus == 10 时可点击，否则需要预计交车时间和签字渠道
 const isConfirmAndSignDisabled = computed(() => {
+  if (Number(detail.signStatus) === 10) {
+    return false
+  }
   return !signatureData.expectFinishAt || !signatureData.signChannel
 })
 
@@ -3312,6 +3322,12 @@ const onConfirmAndSign = () => {
   if (isConfirmAndSignDisabled.value) {
     return
   }
+  // signStatus == 10 时，不调接口，直接跳转结算页面
+  if (Number(detail.signStatus) === 10) {
+    const settlementUrl = `https://staticres-sitb.leapmotor.com/leapx/biling/ais/constructionOrder?serviceProxyId=${detail.id}`
+    window.location.href = settlementUrl
+    return
+  }
   // 从 RepairItemContent 组件获取数据
   const items = partsData.repairItemRespList || []
   // 校验维修项目有值
@@ -3403,7 +3419,7 @@ const onCloseDeliveryTimePicker = () => {
   showDeliveryTimePicker.value = false
 }
 const showSignatureChannelPickerHandle = () => {
-  if (Number(detail.signStatus) === 20) {
+  if (Number(detail.signStatus) === 20 || Number(detail.signStatus) === 10) {
     return
   }
   showSignatureChannelPicker.value = true
@@ -4361,6 +4377,10 @@ onMounted(() => {
 
       &.unsigned {
         color: #b91919;
+      }
+
+      &.pending {
+        color: #ff9500;
       }
 
       &.placeholder {

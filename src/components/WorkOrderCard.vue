@@ -47,7 +47,7 @@
       </div>
       <div class="info-row">
         <span class="label">客户经理</span>
-        <span class="value">{{ item.dedicatedServiceManager }}</span>
+        <span class="value">{{ item.creatorName }}</span>
       </div>
       <div class="info-row">
         <span class="label">预计交车</span>
@@ -65,8 +65,8 @@ const props = defineProps({
   item: {
     type: Object,
     required: true,
-    default: () => ({}),
-  },
+    default: () => ({})
+  }
 })
 
 // 定义 emits
