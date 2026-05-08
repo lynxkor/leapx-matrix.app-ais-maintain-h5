@@ -150,8 +150,8 @@ const onCardClick = (item) => {
 
 <style lang="scss" scoped>
 .search-page-wrapper {
-  --search-safe-area-top: var(--safe-area-top, env(safe-area-inset-top, 0px));
-  --search-header-height: calc(44px + var(--search-safe-area-top));
+  --search-header-height: 44px;
+  --safe-area-top: env(safe-area-inset-top, 0px);
   min-height: 100%;
 }
 
@@ -161,12 +161,15 @@ const onCardClick = (item) => {
   top: 0;
   left: 0;
   right: 0;
-  height: var(--search-header-height);
+  height: calc(var(--search-header-height) + var(--safe-area-top));
+  padding-top: var(--safe-area-top);
   background-color: #fff;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: calc(7px + var(--search-safe-area-top)) 12px 7px;
+  padding-left: 12px;
+  padding-right: 12px;
+  padding-bottom: 7px;
   box-sizing: border-box;
   z-index: 6000;
 
@@ -231,7 +234,7 @@ const onCardClick = (item) => {
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
-  padding-top: var(--search-header-height);
+  padding-top: calc(var(--search-header-height) + var(--safe-area-top));
 }
 
 // 搜索加载状态

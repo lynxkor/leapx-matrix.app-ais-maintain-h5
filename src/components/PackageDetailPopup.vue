@@ -105,20 +105,20 @@ import AisPopup from '@/libs/components/AisPopup.vue'
 const props = defineProps({
   show: {
     type: Boolean,
-    default: false,
+    default: false
   },
   packageData: {
     type: Object,
     default: () => ({
       name: '',
       code: '',
-      itemRespList: [],
-    }),
+      itemRespList: []
+    })
   },
   showCancel: {
     type: Boolean,
-    default: false,
-  },
+    default: false
+  }
 })
 
 defineEmits(['close', 'confirm'])

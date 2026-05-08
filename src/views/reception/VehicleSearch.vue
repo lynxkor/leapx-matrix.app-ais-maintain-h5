@@ -147,6 +147,7 @@ const onSelectVehicle = (item) => {
 
 <style lang="scss" scoped>
 .vehicle-search-page {
+  --safe-area-top: env(safe-area-inset-top, 0px);
   display: flex;
   flex-direction: column;
   height: 100%;
@@ -159,12 +160,15 @@ const onSelectVehicle = (item) => {
   top: 0;
   left: 0;
   right: 0;
-  height: 44px;
+  height: calc(44px + var(--safe-area-top));
+  padding-top: var(--safe-area-top);
   background-color: #fff;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 7px 12px;
+  padding-left: 12px;
+  padding-right: 12px;
+  padding-bottom: 7px;
   box-sizing: border-box;
   z-index: 6000;
 
@@ -224,7 +228,7 @@ const onSelectVehicle = (item) => {
 
 .search-content {
   flex: 1;
-  padding-top: 44px;
+  padding-top: calc(44px + var(--safe-area-top));
   overflow-y: auto;
 }
 

@@ -11,7 +11,7 @@ import { uploadFile, uploadFileByUrl } from '@/libs/api/fileConfig'
 import { showToast } from 'vant'
 
 defineOptions({
-  name: 'DeliverySignView',
+  name: 'DeliverySignView'
 })
 
 const route = useRoute()
@@ -20,10 +20,10 @@ const router = useRouter()
 // 接收路由参数
 const signParams = ref({
   vin: route.query.vin || '',
-  serviceProxyNo: route.query.serviceProxyNo || '',
+  serviceProxyNo: route.query.serviceProxyNo || ''
 })
 
-const submitSign = async (val) => {
+const submitSign = async(val) => {
   console.log('submitSign', val)
 
   try {
@@ -59,7 +59,7 @@ const submitSign = async (val) => {
       fileUrl: fileUrl,
       businessId: route.query.serviceProxyId || '',
       configCode: 'mcs_serviceproxy',
-      attachType: '制单签字',
+      attachType: '制单签字'
     }
 
     const bindRes = await uploadFileByUrl([uploadParams])
@@ -76,7 +76,7 @@ const submitSign = async (val) => {
       ...signParams.value,
       signType: 1,
       signChannel: 30,
-      signUrl: signImageUrl,
+      signUrl: signImageUrl
     }
 
     const res = await spSignFinish(params)
