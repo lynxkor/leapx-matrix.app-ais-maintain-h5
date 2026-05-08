@@ -24,6 +24,7 @@
               alt=""
               @click="openNameEditPopup"
             />
+            <span class="card-tag" v-if="item.isOemPart == 1">原厂件</span>
             <span
               v-if="item.ifReplace == 1 && isReplace"
               class="replace-tag"
@@ -73,7 +74,11 @@
       </div>
       <!-- 下半区：原价 + 步进器 -->
       <div class="card-bottom-row">
-        <span class="original-price">¥{{ item.price || '0.00' }}</span>
+        <span class="original-price">
+          <em>¥{{ item.price || '0.00' }}</em>
+          <em v-if="item.partsId">实际领料 {{ Number(item.actualPickNumber) || 0 }}</em>
+          <em v-if="item.partsId">退料 {{ Number(item.refundedNumber) || 0 }}</em>
+        </span>
         <van-stepper
           v-if="!stepperDisabled && !disabled"
           :model-value="item.quantity"
@@ -394,6 +399,14 @@ const openCascaderPopup = () => {
             text-overflow: ellipsis;
             white-space: nowrap;
           }
+          .card-tag {
+            font-size: 12px;
+            color: #191a1b;
+            background: #f2f2f2;
+            padding: 2px 4px;
+            border-radius: 4px;
+            width:44px;
+          }
 
           .edit-icon {
             flex-shrink: 0;
@@ -402,7 +415,7 @@ const openCascaderPopup = () => {
 
           .replace-tag {
             flex-shrink: 0;
-            font-size: 11px;
+            font-size: 12px;
             color: #191a1b;
             background: #f2f2f2;
             padding: 1px 3px;
@@ -515,6 +528,10 @@ const openCascaderPopup = () => {
       .original-price {
         font-size: 12px;
         color: var(--leap-color-default-light-1);
+        em {
+          font-style: normal;
+          margin-right: 8px;
+        }
       }
 
       .static-quantity {
