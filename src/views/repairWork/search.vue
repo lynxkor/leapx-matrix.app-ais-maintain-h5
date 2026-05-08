@@ -63,8 +63,10 @@ import { getRecord } from '../../api/repairWork'
 import { RepairOrderStatusEnum, PAGESIZE } from './constant'
 import RepairWorkCard from './components/RepairWorkCard.vue'
 import Empty from './components/Empty.vue'
+import { usePageSafeArea } from '@/utils/safeArea'
 
 const globalStore = useGlobalStore()
+usePageSafeArea()
 
 // 设置页面标题
 globalStore.title = '搜索'
@@ -176,7 +178,7 @@ const onLoad = () => {
 
 <style lang="scss" scoped>
 .search-page {
-  --safe-area-top: env(safe-area-inset-top, 0px);
+  --safe-area-top: var(--page-safe-area-top, env(safe-area-inset-top, 0px));
   flex: 1;
   display: flex;
   flex-direction: column;

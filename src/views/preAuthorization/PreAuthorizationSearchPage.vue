@@ -103,8 +103,11 @@ import ListItem from '@/components/ListItem.vue'
 import AisButton from '@/components/AisButton.vue'
 import { preAuthList } from '@/api/authorization'
 import { callPhone } from '@/libs/utils/nativeFn'
+import { usePageSafeArea } from '@/utils/safeArea'
 
 const router = useRouter()
+
+usePageSafeArea()
 
 // 返回上一页
 const goBack = () => {
@@ -177,7 +180,7 @@ const goToDetail = (item) => {
 <style lang="scss" scoped>
 .search-page-wrapper {
   --search-header-height: 44px;
-  --safe-area-top: env(safe-area-inset-top, 0px);
+  --safe-area-top: var(--page-safe-area-top, env(safe-area-inset-top, 0px));
   min-height: 100%;
 }
 
