@@ -78,6 +78,8 @@ export default function useRepairItemOperations({
       }
       rawItem.repairItemId = rawItem.id
       delete rawItem.id
+      // 如果有自带的维修类型，增加不允许修改标志位
+      rawItem.repairItemDisabled = !!rawItem.repairItemTypeId
       const projectItem = normalizeItem(rawItem)
       selectedItems.value.push(projectItem)
 
