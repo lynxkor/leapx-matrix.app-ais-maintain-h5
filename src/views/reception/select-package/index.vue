@@ -708,7 +708,7 @@
 <script setup>
 import { ref, reactive, onMounted, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { showToast } from 'vant'
+import { showToast, closeToast, showLoadingToast } from 'vant'
 import AisPopup from '@/libs/components/AisPopup.vue'
 import {
   getSpecialPackageList,
@@ -795,6 +795,7 @@ const selectedPackage = reactive({
 // 选中的服务活动
 const selectedService = reactive({
   id: '',
+  activityId: '',
   packageType: '50',
   activityResponse: {},
   itemResponseList: [],
@@ -1008,14 +1009,17 @@ const onFreeClick = (item) => {
 
 // 点击服务活动
 const onServiceClick = (item) => {
+  showLoadingToast('请稍候...')
   getSpecialActivityDetail({
     activityId: item.activityId,
     id: serviceProxyId.value,
     packageId: item.id
   }).then((res) => {
+    closeToast()
     if (res.code === 200) {
       const data = res.data
       selectedService.id = data.id
+      selectedService.activityId = data.activityId
       selectedService.activityResponse = data.activityResponse || {}
       // 根据activityType判断packageType: 4->50, 其他->60
       selectedService.packageType = Number(data.activityResponse?.activityType) === 4 ? '50' : '60'
@@ -1033,6 +1037,8 @@ const onServiceClick = (item) => {
     } else {
       showToast(res.msg || '获取详情失败')
     }
+  }).catch(() => {
+    closeToast()
   })
 }
 
@@ -1103,14 +1109,18 @@ const onConfirmService = () => {
   }))
 
   serviceSubmitting.value = true
-  specialActivityUse({
+  const params = {
     id: serviceProxyId.value,
     packageId: selectedService.id,
     activityId: activityResp.id,
     itemList: enrichedItems,
     partsList: enrichedParts
-  })
+  }
+  console.log('params', params)
+  showLoadingToast('请稍候...')
+  specialActivityUse(params)
     .then((res) => {
+      closeToast()
       if (res.code === 200) {
         showToast('已添加')
         showServiceDetail.value = false
@@ -1121,6 +1131,7 @@ const onConfirmService = () => {
     })
     .catch(() => {
       showToast('网络错误')
+      closeToast()
     })
     .finally(() => {
       serviceSubmitting.value = false
@@ -1247,12 +1258,15 @@ const onCancelPackage = () => {
 // 取消选择服务活动
 const onCancelService = () => {
   serviceSubmitting.value = true
+  console.log('serviceProxyId.value', selectedService)
+  showLoadingToast('请稍候...')
   cancelSelect({
     id: serviceProxyId.value,
-    packageId: selectedService.id,
-    packageType: selectedService.packageType
+    packageId: selectedService.activityId + '#' + selectedService.id,
+    packageType: '50'
   })
     .then((res) => {
+      closeToast()
       if (res.code === 200) {
         showToast('已取消选择')
         showServiceDetail.value = false
@@ -1263,6 +1277,7 @@ const onCancelService = () => {
     })
     .catch(() => {
       showToast('网络错误')
+      closeToast()
     })
     .finally(() => {
       serviceSubmitting.value = false
