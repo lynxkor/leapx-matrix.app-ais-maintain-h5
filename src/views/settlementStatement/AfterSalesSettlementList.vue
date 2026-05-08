@@ -317,8 +317,10 @@ import {
   addReceiptRecord,
   receiptCompletion
 } from '@/api/settlementStatement'
+import { usePageSafeArea } from '@/utils/safeArea'
 
 const route = useRoute()
+usePageSafeArea({ bodyClass: 'ais-page-nav-safe-area' })
 
 // 加载状态
 const isLoading = ref(true)
