@@ -24,6 +24,7 @@
               alt=""
               @click="openNameEditPopup"
             />
+            <span class="card-tag" v-if="item.isOemPart == 1">原厂件</span>
             <span
               v-if="item.ifReplace == 1 && isReplace"
               class="replace-tag"
@@ -73,9 +74,11 @@
       </div>
       <!-- 下半区：原价 + 步进器 -->
       <div class="card-bottom-row">
-        <div class="original-price">¥{{ item.price || '0.00' }}
-          <span v-if="item.availableQty" style="margin-left: 20px;">可用库存：{{ item.availableQty }}</span>
-        </div>
+        <span class="original-price">
+          <em>¥{{ item.price || '0.00' }}</em>
+          <em v-if="item.partsId">实际领料 {{ Number(item.actualPickNumber) || 0 }}</em>
+          <em v-if="item.partsId">退料 {{ Number(item.refundedNumber) || 0 }}</em>
+        </span>
         <van-stepper
           v-if="!stepperDisabled && !disabled"
           :model-value="item.quantity"
@@ -98,6 +101,7 @@
             ref="nameInputRef"
             v-model="tempName"
             placeholder="请输入维修项目名称"
+            maxlength="100"
             clearable
           />
         </div>
@@ -306,7 +310,7 @@ const cancelNameEdit = () => {
 const saveName = () => {
   const name = tempName.value.trim()
   if (name) {
-    emit('update-item', props.item, { name })
+    emit('update-item', props.item, { name, repairItemName: name })
   }
   showNameEditPopup.value = false
   tempName.value = ''
@@ -378,10 +382,6 @@ const openCascaderPopup = () => {
 
       // 左列：名称、代码、结算类型
       .info-left {
-        display: flex;
-        flex-direction: column;
-        gap: 2px;
-
         .name-row {
           display: flex;
           align-items: center;
@@ -394,6 +394,18 @@ const openCascaderPopup = () => {
             color: var(--leap-color-default);
             line-height: 20px;
             cursor: pointer;
+            max-width: 180px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+          }
+          .card-tag {
+            font-size: 12px;
+            color: #191a1b;
+            background: #f2f2f2;
+            padding: 2px 4px;
+            border-radius: 4px;
+            width:44px;
           }
 
           .edit-icon {
@@ -403,7 +415,7 @@ const openCascaderPopup = () => {
 
           .replace-tag {
             flex-shrink: 0;
-            font-size: 11px;
+            font-size: 12px;
             color: #191a1b;
             background: #f2f2f2;
             padding: 1px 3px;
@@ -412,7 +424,7 @@ const openCascaderPopup = () => {
         }
 
         .code-row {
-          margin: 2px 0;
+          margin: 4px 0;
           .card-code {
             font-size: 12px;
             color: var(--leap-color-default-light-1);
@@ -421,7 +433,7 @@ const openCascaderPopup = () => {
         }
 
         .checkout-row {
-          display: flex;
+          display: inline-block;
           align-items: center;
           height: 20px;
           padding: 2px 4px;
@@ -516,6 +528,10 @@ const openCascaderPopup = () => {
       .original-price {
         font-size: 12px;
         color: var(--leap-color-default-light-1);
+        em {
+          font-style: normal;
+          margin-right: 8px;
+        }
       }
 
       .static-quantity {

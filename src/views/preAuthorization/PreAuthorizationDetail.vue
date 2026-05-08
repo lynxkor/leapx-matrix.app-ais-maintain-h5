@@ -392,8 +392,10 @@ import AisPopup from '@/components/AisPopup.vue'
 import { preAuthGet, preAuthAudit, preAuthGetErrorCodeList } from '@/api/authorization'
 import { getAttachmentList, uploadFileByUrl, deleteAttachmentConfig } from '@/libs/api/fileConfig'
 import { getAppImg } from '@/libs/utils/nativeFn'
+import { usePageSafeArea } from '@/utils/safeArea'
 
 const route = useRoute()
+usePageSafeArea({ bodyClass: 'ais-page-nav-safe-area' })
 const PRE_AUTH_ATTACHMENT_CONFIG_CODE = 'mcs_preauth'
 const MAX_ATTACHMENT_COUNT = 3
 const attachmentSections = [
@@ -809,11 +811,7 @@ const uploadAttachment = (type) => {
     return
   }
   currentUploadType.value = type
-  const started = getAppImg()
-  if (!started) {
-    currentUploadType.value = ''
-    showToast('当前环境暂不支持获取图片')
-  }
+  getAppImg()
 }
 
 const handleNativeImage = async(rawFileUrl) => {
