@@ -1062,7 +1062,7 @@
       <div class="warranty-alert-content">
         <template v-for="item in remindList" :key="item.type">
           <!-- 预授权提醒 -->
-          <div v-if="item.type === RemindInfoTypeEnum.PRE_AUTH" class="alert-section">
+          <div v-if="item.type === RemindInfoTypeEnum.PRE_AUTH && detail.isCreatePreAuth !== 1" class="alert-section">
             <div class="section-title">{{ item.typeLabel }}</div>
             <div class="section-message">{{ item.content || '暂无提醒信息' }}</div>
             <div class="section-action-btn" @click="onGenerateAuthorization">生成预授权</div>
