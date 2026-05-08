@@ -811,11 +811,7 @@ const uploadAttachment = (type) => {
     return
   }
   currentUploadType.value = type
-  const started = getAppImg()
-  if (!started) {
-    currentUploadType.value = ''
-    showToast('当前环境暂不支持获取图片')
-  }
+  getAppImg()
 }
 
 const handleNativeImage = async(rawFileUrl) => {
