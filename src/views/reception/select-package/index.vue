@@ -1186,7 +1186,7 @@ const onConfirmMall = () => {
 // 替换零件
 // 确认选择权益套餐
 const onConfirmEquity = () => {
-  equitySubmitting.value = true
+  showLoadingToast('请稍候...')
   const params = {
     id: serviceProxyId.value,
     equityUseId: selectedEquity.data.useId,
@@ -1211,9 +1211,9 @@ const onConfirmEquity = () => {
   }
   specialEquityUse(params)
     .then((res) => {
+      closeToast()
       if (res.code === 200) {
         showToast('已添加')
-        showEquityDetail.value = false
         // router.back()
       } else {
         showToast(res.msg || '添加失败')
@@ -1221,9 +1221,10 @@ const onConfirmEquity = () => {
     })
     .catch((err) => {
       showToast(err.msg || '网络错误')
+      closeToast()
     })
     .finally(() => {
-      equitySubmitting.value = false
+      closeToast()
     })
 }
 
