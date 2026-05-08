@@ -399,8 +399,10 @@ import {
 } from '@/api/authorization'
 import { uploadFileByUrl, deleteAttachmentConfig } from '@/libs/api/fileConfig'
 import { getAppImg } from '@/libs/utils/nativeFn'
+import { usePageSafeArea } from '@/utils/safeArea'
 
 const router = useRouter()
+usePageSafeArea({ bodyClass: 'ais-page-nav-safe-area' })
 const PRE_AUTH_ATTACHMENT_CONFIG_CODE = 'mcs_preauth'
 const attachmentTypeMap = {
   vehicle: '车辆信息',
@@ -422,6 +424,10 @@ const isClickScrolling = ref(false)
 const TAB_SYNC_TOLERANCE = 24
 const tabsNavRef = ref(null)
 const tabSectionRefs = {}
+const PRE_AUTH_ACTION = {
+  save: 0,
+  submit: 1
+}
 
 // Tab 配置
 const tabs = [
@@ -990,7 +996,7 @@ const handleNativeImage = async(rawFileUrl) => {
 const handleSubmit = async() => {
   const attachments = buildAttachmentsPayload()
   await savePreAuth({
-    saveOrSubmit: true,
+    saveOrSubmit: PRE_AUTH_ACTION.submit,
     attachments,
     loadingMessage: '提交中...',
     successMessage: '提交成功',
@@ -1190,7 +1196,7 @@ const onSaveConfirm = async() => {
   const attachments = buildAttachmentsPayload()
 
   await savePreAuth({
-    saveOrSubmit: false,
+    saveOrSubmit: PRE_AUTH_ACTION.save,
     attachments,
     loadingMessage: '保存中...',
     successMessage: '保存成功',

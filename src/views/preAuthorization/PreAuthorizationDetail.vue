@@ -392,8 +392,10 @@ import AisPopup from '@/components/AisPopup.vue'
 import { preAuthGet, preAuthAudit, preAuthGetErrorCodeList } from '@/api/authorization'
 import { getAttachmentList, uploadFileByUrl, deleteAttachmentConfig } from '@/libs/api/fileConfig'
 import { getAppImg } from '@/libs/utils/nativeFn'
+import { usePageSafeArea } from '@/utils/safeArea'
 
 const route = useRoute()
+usePageSafeArea({ bodyClass: 'ais-page-nav-safe-area' })
 const PRE_AUTH_ATTACHMENT_CONFIG_CODE = 'mcs_preauth'
 const MAX_ATTACHMENT_COUNT = 3
 const attachmentSections = [
