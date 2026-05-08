@@ -53,7 +53,7 @@ export default function useRepairItemData({ serviceProxyId }) {
   /**
    * 加载经销商权限数据
    */
-  const loadPermissionData = async() => {
+  const loadPermissionData = async () => {
     try {
       const res = await getDealerPermission({})
       const list = res?.data || []
@@ -198,7 +198,7 @@ export default function useRepairItemData({ serviceProxyId }) {
       repairItemName: raw.name || '',
       repairItemId: raw.repairItemId, // 关联维修项目ID
       repairitemcode: raw.code,
-      isOemPart: raw.isOemPart || 0,
+      isOemPart: raw.isOemPart || raw.oemPart || 0,
       // 已保存数据保留其类型
       ...(raw.repairItemTypeId ? { repairItemTypeId: raw.repairItemTypeId, repairItemTypeName: raw.repairItemTypeName } : {}),
       ...(raw.checkoutTypeId ? { checkoutTypeId: raw.checkoutTypeId, checkoutTypeName: raw.checkoutTypeName } : {}),
@@ -209,7 +209,7 @@ export default function useRepairItemData({ serviceProxyId }) {
   /**
    * 加载枚举数据
    */
-  const loadEnumData = async() => {
+  const loadEnumData = async () => {
     const [mtRes, ctRes, ritRes] = await Promise.all([
       getEnum('MaintenanceTypeEnum'),
       getEnum('StatementTypeEnum'),
@@ -249,7 +249,7 @@ export default function useRepairItemData({ serviceProxyId }) {
   /**
    * 加载初始数据
    */
-  const loadInitialData = async() => {
+  const loadInitialData = async () => {
     if (!serviceProxyId) return
     try {
       loading.value = true
