@@ -266,9 +266,12 @@ import RefreshList from '@/libs/components/RefreshList.vue'
 import ListItem from '@/components/ListItem.vue'
 import AisPopup from '@/libs/components/AisPopup.vue'
 import { getSettlementStatementPage, addServiceProxyStatement, cancelServiceProxy } from '@/api/settlementStatement'
+import { usePageSafeArea } from '@/utils/safeArea'
 
 const router = useRouter()
 const route = useRoute()
+
+usePageSafeArea()
 
 // 搜索值
 const searchValue = ref('')
@@ -551,7 +554,7 @@ if (route.params.initialValue) {
 
 <style lang="scss" scoped>
 .settlement-search {
-  --safe-area-top: env(safe-area-inset-top, 0px);
+  --safe-area-top: var(--page-safe-area-top, env(safe-area-inset-top, 0px));
   flex: 1;
   display: flex;
   flex-direction: column;

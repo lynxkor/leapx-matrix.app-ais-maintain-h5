@@ -58,6 +58,7 @@ import { useRouter } from 'vue-router'
 import { useGlobalStore } from '@/stores/global'
 import { getVehicleInfo } from '@/api/reception'
 import { showToast } from 'vant'
+import { usePageSafeArea } from '@/utils/safeArea'
 // 列表项显示文本：车牌号/VIN/姓名
 const getResultText = (item) => {
   const plateNo = item.vehiclePlateNo || '无车牌'
@@ -76,6 +77,7 @@ const highlightKeyword = (text) => {
 
 const router = useRouter()
 const globalStore = useGlobalStore()
+usePageSafeArea()
 
 // 返回上一页
 const goBack = () => {
@@ -151,7 +153,7 @@ const onCardClick = (item) => {
 <style lang="scss" scoped>
 .search-page-wrapper {
   --search-header-height: 44px;
-  --safe-area-top: env(safe-area-inset-top, 0px);
+  --safe-area-top: var(--page-safe-area-top, env(safe-area-inset-top, 0px));
   min-height: 100%;
 }
 
