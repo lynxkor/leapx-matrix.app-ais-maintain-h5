@@ -1,7 +1,7 @@
 <template>
   <div class="repair-work-page">
     <!-- 顶部标签页 -->
-    <van-sticky offset-top="46">
+    <van-sticky :offset-top="navBarOffsetTop">
       <van-tabs v-model:active="activeTab" class="work-tabs">
         <van-tab title="派工" name="dispatch" />
         <van-tab title="施工" name="working" />
@@ -61,8 +61,10 @@ import Empty from './components/Empty.vue'
 import { getRecord } from '../../api/repairWork'
 import { TabStatusMap, PAGESIZE } from './constant'
 import { formatDateTime } from '@/libs/utils'
+import { usePageSafeArea } from '@/utils/safeArea'
 
 const router = useRouter()
+const { navBarOffsetTop } = usePageSafeArea({ bodyClass: 'ais-page-nav-safe-area' })
 
 // 标签页
 const activeTab = ref('dispatch')

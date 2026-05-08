@@ -99,8 +99,11 @@ import ListItem from '@/components/ListItem.vue'
 import AisButton from '@/components/AisButton.vue'
 import { preAuthPage, preAuthGetStoreArea } from '@/api/authorization'
 import { callPhone } from '@/libs/utils/nativeFn'
+import { usePageSafeArea } from '@/utils/safeArea'
 
 const router = useRouter()
+
+usePageSafeArea({ bodyClass: 'ais-page-nav-safe-area' })
 
 // 定义 onBeforeBack，点击返回时直接退出 WebView
 const onBeforeBack = () => {
