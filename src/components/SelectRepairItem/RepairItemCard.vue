@@ -73,7 +73,9 @@
       </div>
       <!-- 下半区：原价 + 步进器 -->
       <div class="card-bottom-row">
-        <span class="original-price">¥{{ item.price || '0.00' }}</span>
+        <div class="original-price">¥{{ item.price || '0.00' }}
+          <span v-if="item.availableQty" style="margin-left: 20px;">可用库存：{{ item.availableQty }}</span>
+        </div>
         <van-stepper
           v-if="!stepperDisabled && !disabled"
           :model-value="item.quantity"
