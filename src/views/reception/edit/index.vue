@@ -454,20 +454,20 @@
 
               <div class="value-wrapper">
                 <span :class="['value', { placeholder: !signatureData.signChannel }]">
-                  {{ detail.signStatus == 10 ? '已选择' : (signatureData.signChannel || '请选择') }}
+                  {{ Number(detail.signStatus) === 10 ? '已选择' : (signatureData.signChannel || '请选择') }}
                 </span>
-                <van-icon v-if="detail.signStatus != 20 && detail.signStatus != 10" name="arrow" size="12" color="#545454" />
+                <van-icon v-if="Number(detail.signStatus) !== 20 && Number(detail.signStatus) !== 10" name="arrow" size="12" color="#545454" />
               </div>
             </div>
             <!-- 已签字状态显示 -->
-            <div class="signature-row" v-if="detail.signStatus == 20">
+            <div class="signature-row" v-if="Number(detail.signStatus) === 20">
               <span class="label">签字状态</span>
               <div class="value-wrapper">
                 <span class="value signed">已签字</span>
               </div>
             </div>
             <!-- 待签字状态显示 -->
-            <div class="signature-row" v-if="detail.signStatus == 10">
+            <div class="signature-row" v-if="Number(detail.signStatus) === 10">
               <span class="label">签字状态</span>
               <div class="value-wrapper">
                 <span class="value pending">待签字</span>
@@ -475,12 +475,12 @@
             </div>
             <div
               class="signature-action-row"
-              v-if="detail.signStatus == 20 && detail.signChannel != 40"
+              v-if="Number(detail.signStatus) === 20 && detail.signChannel != 40"
             >
               <van-button type="primary" size="small" @click="onViewSignature">查看签字</van-button>
             </div>
             <!-- 未签字状态显示 -->
-            <div class="signature-row" v-if="detail.signStatus != 20 && detail.signStatus != 10">
+            <div class="signature-row" v-if="Number(detail.signStatus) !== 20 && Number(detail.signStatus) !== 10">
               <span class="label">签字状态</span>
               <div class="value-wrapper">
                 <span class="value unsigned">未签字</span>

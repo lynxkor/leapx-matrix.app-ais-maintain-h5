@@ -1108,7 +1108,6 @@ const onConfirmService = () => {
     partsCode: part.partCode || part.oldPartCode || '' // 零件代码
   }))
 
-  serviceSubmitting.value = true
   const params = {
     id: serviceProxyId.value,
     packageId: selectedService.id,
@@ -1133,7 +1132,6 @@ const onConfirmService = () => {
       closeToast()
     })
     .finally(() => {
-      serviceSubmitting.value = false
     })
 }
 
@@ -1256,7 +1254,6 @@ const onCancelPackage = () => {
 
 // 取消选择服务活动
 const onCancelService = () => {
-  serviceSubmitting.value = TextTrackCue
   showLoadingToast('请稍候...')
   cancelSelect({
     id: serviceProxyId.value,
@@ -1278,7 +1275,6 @@ const onCancelService = () => {
       closeToast()
     })
     .finally(() => {
-      serviceSubmitting.value = false
     })
 }
 
