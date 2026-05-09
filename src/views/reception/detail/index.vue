@@ -341,7 +341,7 @@
               <span class="label">预计交车时间</span>
               <span class="value">{{ signatureData.expectFinishAt || '-' }}</span>
             </div>
-            <div class="signature-row">
+            <!-- <div class="signature-row">
               <span class="label">开启维修直播</span>
               <van-switch
                 v-model="signatureData.isLive"
@@ -349,7 +349,7 @@
                 active-color="#009100"
                 disabled
               />
-            </div>
+            </div> -->
             <div class="signature-row">
               <span class="label">签字渠道</span>
               <span class="value">{{ signatureData.signChannel || '-' }}</span>
