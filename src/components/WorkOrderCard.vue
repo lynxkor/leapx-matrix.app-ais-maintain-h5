@@ -3,7 +3,7 @@
   <div @click="onCardClick">
     <!-- 卡片头部 -->
     <div class="card-header">
-      <span class="order-no">{{ item.code }}---{{ item.orderStatus }}</span>
+      <span class="order-no">{{ item.code }}</span>
       <span :class="['status-tag', `status-${item.orderStatus}`]">{{ item.orderStatusLabel }}</span>
     </div>
 
