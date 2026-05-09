@@ -3017,6 +3017,34 @@ const fetchDetailForSignature = async() => {
           faultDesc: item.faultDescription
         }))
       }
+      // 获取附件列表并分类回显车内车外照片
+      getFileList({ businessId: id }).then((fileRes) => {
+        if (fileRes.code === 200) {
+          const fileList = fileRes.data || []
+          // 用于存储最新的制单签字
+          let latestSignFile = null
+          // 根据 attachType 分类回显文件
+          fileList.forEach((item) => {
+            const fileObj = {
+              ...item, url: item.fileUrl, fileUrl: item.fileUrl
+            }
+            if (item.attachType === '车内照片') {
+              detail.interiorImages.push(fileObj)
+            } else if (item.attachType === '车外照片') {
+              detail.exteriorImages.push(fileObj)
+            } else if (item.attachType === '制单签字') {
+              // 对比createTime，保留最新的制单签字
+              if (!latestSignFile || new Date(item.createTime) > new Date(latestSignFile.createTime)) {
+                latestSignFile = item
+              }
+            }
+          })
+          // 将最新的制单签字赋值给detail.signUrl
+          if (latestSignFile) {
+            detail.signUrl = latestSignFile.fileUrl
+          }
+        }
+      })
     }
   } catch (error) {
     savingLoading.value = false
