@@ -922,7 +922,7 @@
             </div>
             <!-- 无结果 -->
             <div v-if="faultModuleList.length === 0 && faultSearchValue" class="no-result">
-              <img src="@/assets/image/noList.png" alt="" />
+              <img src="@/assets/image/noCCC.png" alt="" />
             </div>
           </div>
         </div>
@@ -1976,6 +1976,7 @@ const isInspectionSaveDisabled = computed(() => {
   if (!detail.abnormalDesc) return true
   // 经理建议
   if (!detail.testResult) return true
+  if (savingLoading.value) return true
   return false
 })
 
