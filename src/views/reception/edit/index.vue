@@ -453,23 +453,27 @@
 
               <div class="value-wrapper">
                 <span :class="['value', { placeholder: !signatureData.signChannel }]">
-                  {{ Number(detail.signStatus) === 10 ? '已选择' : (signatureData.signChannel || '请选择') }}
+                  {{ signatureData.signChannel || '请选择' }}
                 </span>
                 <van-icon v-if="Number(detail.signStatus) !== 20 && Number(detail.signStatus) !== 10" name="arrow" size="12" color="#545454" />
               </div>
             </div>
             <!-- 已签字状态显示 -->
-            <div class="signature-row" v-if="Number(detail.signStatus) === 20">
+            <!-- <div class="signature-row" v-if="Number(detail.signStatus) === 20">
               <span class="label">签字状态</span>
               <div class="value-wrapper">
                 <span class="value signed">已签字</span>
               </div>
-            </div>
+            </div> -->
             <!-- 待签字状态显示 -->
             <div class="signature-row" v-if="Number(detail.signStatus) === 10">
               <span class="label">签字状态</span>
               <div class="value-wrapper">
-                <span class="value pending">待签字</span>
+                <div
+                  class="signature-action-row"
+                >
+                  <van-button type="primary" size="small" @click="onViewSignature">邀请客户签字</van-button>
+                </div>
               </div>
             </div>
             <div
@@ -550,7 +554,7 @@
           >保存</span
         > -->
         <span
-          v-if="detail.orderStatus == 110"
+          v-if="detail.orderStatus == 110 && Number(detail.signStatus) !== 10"
           :class="['complete-btn', { disabled: isConfirmAndSignDisabled }]"
           @click="onConfirmAndSign"
           >制单确认并签字</span
@@ -1192,7 +1196,8 @@ import {
   serviceProxyCancel,
   saveSpFaultModule,
   deleteSpFaultModule,
-  getRecentlyServiceProxy
+  getRecentlyServiceProxy,
+  checkFault
 } from '@/api/reception'
 import { preAuthAddOrUpdate } from '@/api/authorization'
 import '../create/create.scss'
@@ -1309,7 +1314,7 @@ const onGenerateAuthorization = async() => {
     const res = await preAuthAddOrUpdate({ serviceProxyId: detail.id })
     closeToast()
     if (res.code === 200) {
-      showToast('生成预授权成功')
+      showToast('已成功生成预授权申请，您可至预授权申请管理查看数据并提交审批')
       showWarrantyAlertDialog.value = false
       fetchDetail()
     } else {
@@ -2336,7 +2341,10 @@ const fetchDetail = async() => {
           vin: detail.vin,
           vehicleModel: detail.vehicleModel,
           // 送修人信息
-          repairPersonTag: detail.repairPersonTag
+          repairPersonTag: detail.repairPersonTag,
+          // 项目零件数据（用于判断维修类型变化）
+          repairItemRespList: [...(data.costCountResp?.repairItemRespList || [])],
+          sparePartRespList: [...(data.costCountResp?.sparePartRespList || [])]
         }
 
         // 判断状态
@@ -3044,7 +3052,10 @@ const onInspectionSave = async(type) => {
       // 送修人信息
       repairPersonTag: detail.repairPersonTag,
       // 经理建议
-      testResult: detail.testResult
+      testResult: detail.testResult,
+      // 项目零件数据（用于判断维修类型变化）
+      repairItemRespList: [...partsData.repairItemRespList],
+      sparePartRespList: [...partsData.sparePartRespList]
     }
     return { code: 200 }
   }
@@ -3220,6 +3231,22 @@ const onPartsSave = async() => {
   const items = partsData.repairItemRespList || []
   const parts = partsData.sparePartRespList || []
 
+  // 检查当前是否有一般维修或三电维修的项目/零件
+  const hasGeneralOrThreeElectricRepair = [...items, ...parts].some(
+    (item) => item.repairItemTypeName === '一般维修' || item.repairItemTypeName === '三电维修'
+  )
+  // 检查原来是否有一般维修或三电维修的项目/零件
+  const initialItems = initialInspectionData.value?.repairItemRespList || []
+  const initialParts = initialInspectionData.value?.sparePartRespList || []
+  const hadGeneralOrThreeElectricRepair = [...initialItems, ...initialParts].some(
+    (item) => item.repairItemTypeName === '一般维修' || item.repairItemTypeName === '三电维修'
+  )
+  // 如果当前有一般维修或三电维修，且原来没有，则更新为存在故障
+  if (hasGeneralOrThreeElectricRepair && !hadGeneralOrThreeElectricRepair) {
+    detail.hasFault = '1'
+    showToast('维修类型为一般维修或三电维修，系统默认调整 【本次进店是否存在故障】为是，存在故障，请填写故障模块信息!')
+  }
+
   savingLoading.value = true
   try {
     // 保存项目零件
@@ -3351,19 +3378,52 @@ const onConfirmAndSign = () => {
   if (isConfirmAndSignDisabled.value) {
     return
   }
+  // 从 RepairItemContent 组件获取数据
+  const items = partsData.repairItemRespList || []
+  const parts = partsData.sparePartRespList || []
+  // 校验维修项目或零件有值（有一个有值即可）
+  if (items.length === 0 && parts.length === 0) {
+    showToast('项目或零件不可为空，请先添加维修项目或零件')
+    return
+  }
+
+  // 弹框询问是否同意留车
+  showConfirmDialog({
+    title: '提示',
+    message: '该车辆需要留车检查，请咨询客户是否同意留车?',
+    confirmButtonText: '同意',
+    cancelButtonText: '不同意',
+    showCancelButton: true
+  })
+    .then(() => {
+      // 同意留车
+      handleConfirmAndSignWithCheck(1)
+    })
+    .catch(() => {
+      // 不同意留车
+      handleConfirmAndSignWithCheck(0)
+    })
+}
+
+// 处理制单确认并签字（带留车检查）
+const handleConfirmAndSignWithCheck = async(isVehRetention) => {
+  // 调用留车检查接口
+  try {
+    await checkFault({
+      isVehRetention,
+      vehRetentionConfigId: detail.id
+    })
+  } catch (error) {
+    console.error('留车检查接口调用失败:', error)
+  }
+
   // signStatus == 10 时，不调接口，直接跳转结算页面
   if (Number(detail.signStatus) === 10) {
     const settlementUrl = `https://staticres-sitb.leapmotor.com/leapx/biling/ais/constructionOrder?serviceProxyId=${detail.id}`
     window.location.href = settlementUrl
     return
   }
-  // 从 RepairItemContent 组件获取数据
-  const items = partsData.repairItemRespList || []
-  // 校验维修项目有值
-  if (items.length === 0) {
-    showToast('项目不可为空，请先添加维修项目')
-    return
-  }
+  // 不管成功还是失败，都继续执行后续逻辑
   // 点击"准确"，执行接口
   const params = {
     serviceProxyId: detail.id,

@@ -439,12 +439,12 @@
               </div>
             </div>
             <!-- 已签字状态显示 -->
-            <div class="signature-row" v-if="detail.signStatus == 20">
+            <!-- <div class="signature-row" v-if="detail.signStatus == 20">
               <span class="label">签字状态</span>
               <div class="value-wrapper">
                 <span class="value signed">已签字</span>
               </div>
-            </div>
+            </div> -->
             <div
               class="signature-action-row"
               v-if="detail.signStatus == 20 && detail.signChannel != 40"
@@ -452,12 +452,12 @@
               <van-button type="primary" size="small" @click="onViewSignature">查看签字</van-button>
             </div>
             <!-- 未签字状态显示 -->
-            <div class="signature-row" v-if="detail.signStatus != 20">
+            <!-- <div class="signature-row" v-if="detail.signStatus != 20">
               <span class="label">签字状态</span>
               <div class="value-wrapper">
                 <span class="value unsigned">未签字</span>
               </div>
-            </div>
+            </div> -->
           </div>
 
           <!-- 附件资料 -->
@@ -1248,7 +1248,8 @@ import {
   getRemindInfo,
   saveSpFaultModule,
   deleteSpFaultModule,
-  getRecentlyServiceProxy
+  getRecentlyServiceProxy,
+  checkFault
 } from '@/api/reception'
 import './create.scss'
 
@@ -1304,7 +1305,7 @@ const onGenerateAuthorization = async() => {
     const res = await preAuthAddOrUpdate({ serviceProxyId: serviceProxyId.value || route.query.id })
     closeToast()
     if (res.code === 200) {
-      showToast('生成预授权成功')
+      showToast('已成功生成预授权申请，您可至预授权申请管理查看数据并提交审批')
       showWarrantyAlertDialog.value = false
     } else {
       showToast(res.msg || '生成预授权失败')
@@ -2875,11 +2876,43 @@ const onConfirmAndSign = () => {
   }
   // 从 RepairItemContent 组件获取数据
   const items = repairItemContentRef.value?.selectedItems || []
-  // 校验维修项目有值
-  if (items.length === 0) {
-    showToast('项目不可为空，请先添加维修项目')
+  const parts = repairItemContentRef.value?.selectedParts || []
+  // 校验维修项目或零件有值（有一个有值即可）
+  if (items.length === 0 && parts.length === 0) {
+    showToast('项目或零件不可为空，请先添加维修项目或零件')
     return
   }
+
+  // 弹框询问是否同意留车
+  showConfirmDialog({
+    title: '提示',
+    message: '该车辆需要留车检查，请咨询客户是否同意留车?',
+    confirmButtonText: '同意',
+    cancelButtonText: '不同意',
+    showCancelButton: true
+  })
+    .then(() => {
+      // 同意留车
+      handleConfirmAndSignWithCheck(1)
+    })
+    .catch(() => {
+      // 不同意留车
+      handleConfirmAndSignWithCheck(0)
+    })
+}
+
+// 处理制单确认并签字（带留车检查）
+const handleConfirmAndSignWithCheck = async(isVehRetention) => {
+  // 调用留车检查接口
+  try {
+    await checkFault({
+      isVehRetention,
+      vehRetentionConfigId: detail.id
+    })
+  } catch (error) {
+    console.error('留车检查接口调用失败:', error)
+  }
+  // 不管成功还是失败，都继续执行后续逻辑
   // 点击"准确"，执行接口
   savingLoading.value = true
   const params = {
