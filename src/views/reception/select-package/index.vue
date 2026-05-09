@@ -1042,14 +1042,15 @@ const onServiceClick = (item) => {
   })
 }
 
-// 确认选择套餐
+// 确认选择维修套餐
 const onConfirmPackage = () => {
-  packageSubmitting.value = true
+  showLoadingToast('请稍候...')
   specialPackageUse({
     id: serviceProxyId.value,
     packageId: selectedPackage.id
   })
     .then((res) => {
+      closeToast()
       if (res.code === 200) {
         showToast('已添加')
         showPackageDetail.value = false
@@ -1060,9 +1061,7 @@ const onConfirmPackage = () => {
     })
     .catch(() => {
       showToast('网络错误')
-    })
-    .finally(() => {
-      packageSubmitting.value = false
+      closeToast()
     })
 }
 

@@ -180,3 +180,8 @@ export function deleteSpFaultModule(data) {
 export function getRecentlyServiceProxy(data) {
   return postJson('/maintain/app/sp/serviceProxy/getRecentlyServiceProxy', data)
 }
+
+// 校验故障情况
+export function checkFault(data) {
+  return postJson('/maintain/app/sp/serviceProxy/isVehRetention', data)
+}
