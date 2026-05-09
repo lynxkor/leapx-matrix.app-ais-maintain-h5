@@ -78,7 +78,15 @@
       "Bash(C:\\\\Users\\\\990900\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python312\\\\python.exe *)",
       "Bash(powershell *)",
       "Bash(cmd.exe *)",
-      "Bash(claude config *)"
+      "Bash(claude config *)",
+      "Skill(claude-hud:configure)",
+      "Bash(claude --version)",
+      "Bash(claude doctor *)",
+      "Bash(npm root *)",
+      "Bash(ls \"$\\(npm root -g\\)/@anthropic-ai/claude-code/bin/\")",
+      "mcp__context7__resolve-library-id",
+      "mcp__context7__query-docs",
+      "mcp__MiniMax__web_search"
     ]
   },
   "enabledPlugins": {
