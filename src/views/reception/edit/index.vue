@@ -458,6 +458,10 @@
                 <van-icon v-if="Number(detail.signStatus) !== 20 && Number(detail.signStatus) !== 10" name="arrow" size="12" color="#545454" />
               </div>
             </div>
+            <!-- APP/短信/零小跑渠道提示 -->
+            <div v-if="signatureData.signChannel === 'APP/短信/零小跑'" class="signature-hint">
+              此操作将生成待签字施工单且需要用户签字
+            </div>
             <!-- 已签字状态显示 -->
             <!-- <div class="signature-row" v-if="Number(detail.signStatus) === 20">
               <span class="label">签字状态</span>
@@ -483,12 +487,12 @@
               <van-button type="primary" size="small" @click="onViewSignature">查看签字</van-button>
             </div>
             <!-- 未签字状态显示 -->
-            <div class="signature-row" v-if="Number(detail.signStatus) !== 20 && Number(detail.signStatus) !== 10">
+            <!-- <div class="signature-row" v-if="Number(detail.signStatus) !== 20 && Number(detail.signStatus) !== 10">
               <span class="label">签字状态</span>
               <div class="value-wrapper">
                 <span class="value unsigned">未签字</span>
               </div>
-            </div>
+            </div> -->
           </div>
 
           <!-- 附件资料 -->
@@ -2583,15 +2587,18 @@ const uploadGeneric = (type) => {
   const targetList = getTargetFileList(type)
   const hasUploadNumber = targetList.length
 
-  // 如果已上传数量等于最大数量，不可上传
-  if (hasUploadNumber >= config.maxNum) {
+  // 如果已上传数量等于最大数量，不可上传（maxNum为null时不限制）
+  if (config.maxNum !== null && config.maxNum !== undefined && hasUploadNumber >= config.maxNum) {
     showToast('已达到最大上传数量')
     return
   }
 
-  const maxSelectNum = Math.min(9, Math.max(1, config.maxNum - hasUploadNumber))
+  // maxNum为null时不限制上传数量，hasUploadNumber传9
+  const uploadHasNumber = config.maxNum !== null && config.maxNum !== undefined
+    ? Math.min(9, Math.max(1, config.maxNum - hasUploadNumber))
+    : 9
 
-  batchUploadImageLimit(maxSize, config.maxNum, maxSelectNum)
+  batchUploadImageLimit(maxSize, config.maxNum || 9, uploadHasNumber)
 }
 
 // 选择图片来源
