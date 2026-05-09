@@ -148,6 +148,7 @@ export default function useRepairItemData({ serviceProxyId }) {
       code: raw.repairItemCode || raw.code,
       price: raw.workhourPrice || raw.price || '0.00',
       quantity: raw.workhour || raw.workHour || 1,
+      originalQuantity: raw.workhour || raw.workHour || 1,
       discountAmount: raw.discountAmount || 0,
       workHour: raw.workhour || raw.workHour || 1,
       repairItemName: raw.repairItemName || raw.name,
