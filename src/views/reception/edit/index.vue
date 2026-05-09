@@ -348,7 +348,7 @@
             <!-- 客户故障描述 -->
             <div class="section-card">
               <div class="section-title" style="justify-content: flex-start">
-                <span v-if="detail.hasFault === '1'" class="required">*</span>客户故障描述
+                <span class="required">*</span>客户故障描述
               </div>
               <van-field
                 v-model="detail.customerFaultDesc"
@@ -358,7 +358,6 @@
                 autosize
                 show-word-limit
                 maxlength="500"
-                :disabled="detail.hasFault !== '1'"
                 style="background: #f5f5f5; border-radius: 6px"
               />
             </div>
@@ -1192,7 +1191,8 @@ import {
   spConfirmAndSign,
   serviceProxyCancel,
   saveSpFaultModule,
-  deleteSpFaultModule
+  deleteSpFaultModule,
+  getRecentlyServiceProxy
 } from '@/api/reception'
 import { preAuthAddOrUpdate } from '@/api/authorization'
 import '../create/create.scss'
@@ -2447,6 +2447,42 @@ const onConfirmChangeCar = () => {
     fetchVehicleMileage(detail.vin)
   }
 
+  // 获取上次环检信息
+  if (detail.vin) {
+    getRecentlyServiceProxy(detail.vin).then((res) => {
+      if (res.code === 200 && res.data) {
+        // 已作废210、反结算200时不回显，其他状态回显上次环检信息
+        const recentData = res.data
+        if (recentData.orderStatus !== 210 && recentData.orderStatus !== 200) {
+          // 合并车内照片到 detail.interiorImages
+          if (recentData.interiorPhotoList && recentData.interiorPhotoList.length > 0) {
+            detail.interiorImages = [
+              ...detail.interiorImages,
+              ...recentData.interiorPhotoList.map((photo) => ({
+                ...photo,
+                url: photo.fileUrl
+              }))
+            ]
+          }
+          // 合并车外照片到 detail.exteriorImages
+          if (recentData.exteriorPhotoList && recentData.exteriorPhotoList.length > 0) {
+            detail.exteriorImages = [
+              ...detail.exteriorImages,
+              ...recentData.exteriorPhotoList.map((photo) => ({
+                ...photo,
+                url: photo.fileUrl
+              }))
+            ]
+          }
+          // 回显异常描述
+          if (recentData.anomalyDescription) {
+            detail.abnormalDesc = recentData.anomalyDescription
+          }
+        }
+      }
+    })
+  }
+
   showToast('更换车辆成功')
   onChangeCarClose()
 }
@@ -2961,7 +2997,7 @@ const onInspectionSave = async(type) => {
   // 环检信息页需要校验
   if (!validateRepairPerson()) return { code: -1 }
   // 如果选择"是"，客户故障描述必填
-  if (detail.hasFault === '1' && !detail.customerFaultDesc.trim()) {
+  if (!detail.customerFaultDesc.trim()) {
     showToast('请输入客户故障描述')
     return { code: -1 }
   }
@@ -3133,14 +3169,6 @@ const onInspectionSave = async(type) => {
     beforeChangeCode: detail.beforeChangeCode,
     afterChangeCode: detail.afterChangeCode,
     isStoreLive: detail.isStoreLive,
-    faultAlertRecordParams: detail.faultModules.map((m) => ({
-      cccId: m.id || '',
-      cccName: m.cccName || '',
-      vfgId: m.vfgCode || '',
-      vfgName: m.vfgName || '',
-      vrtId: m.vrtCode || '',
-      vrtName: m.vrtName || ''
-    })),
     latelyServiceProxy: detail.latelyServiceProxy,
     earlyServiceProxy: detail.earlyServiceProxy
   }
@@ -3274,7 +3302,7 @@ const onComplete = async() => {
     return
   }
   // 如果选择"是"，客户故障描述必填
-  if (detail.hasFault === '1' && !detail.customerFaultDesc.trim()) {
+  if (!detail.customerFaultDesc.trim()) {
     showToast('请输入客户故障描述')
     return
   }

@@ -336,7 +336,7 @@
             <!-- 客户故障描述 -->
             <div class="section-card">
               <div class="section-title" style="justify-content: flex-start">
-                <span v-if="detail.hasFault === '1'" class="required">*</span>客户故障描述
+                <span class="required">*</span>客户故障描述
               </div>
               <van-field
                 v-model="detail.customerFaultDesc"
@@ -346,7 +346,6 @@
                 autosize
                 show-word-limit
                 maxlength="500"
-                :disabled="detail.hasFault !== '1'"
                 style="background: #f5f5f5; border-radius: 6px"
               />
             </div>
@@ -512,8 +511,8 @@
             @click="onInspectionSave"
             >保存</span
           >
-          <span v-if="!isPreCheckCompleted" class="complete-btn" @click="onComplete"
-            >预检完成{{detail.previewingFinishAt}}</span
+          <span v-if="!detail.previewingFinishAt" class="complete-btn" @click="onComplete"
+            >预检完成</span
           >
         </template>
       </template>
@@ -1248,7 +1247,8 @@ import {
   serviceProxyCancel,
   getRemindInfo,
   saveSpFaultModule,
-  deleteSpFaultModule
+  deleteSpFaultModule,
+  getRecentlyServiceProxy
 } from '@/api/reception'
 import './create.scss'
 
@@ -2524,7 +2524,7 @@ const onSave = async() => {
   console.log('保存:', detail)
   if (!validateRepairPerson()) return
   // 如果选择"是"，客户故障描述必填
-  if (detail.hasFault === '1' && !detail.customerFaultDesc.trim()) {
+  if (!detail.customerFaultDesc.trim()) {
     showToast('请输入客户故障描述')
     return
   }
@@ -2814,14 +2814,6 @@ const onInspectionSave = async() => {
       exteriorPhotoList: formatPhotoList(detail.exteriorImages, '车外照片', serviceProxyId.value || detail.id),
       interiorPhotoList: formatPhotoList(detail.interiorImages, '车内照片', serviceProxyId.value || detail.id),
       isStoreLive: detail.isStoreLive,
-      faultAlertRecordParams: detail.faultModules.map((m) => ({
-        cccId: m.id || '',
-        cccName: m.cccName || '',
-        vfgId: m.vfgCode || '',
-        vfgName: m.vfgName || '',
-        vrtId: m.vrtCode || '',
-        vrtName: m.vrtName || ''
-      })),
       latelyServiceProxy: detail.latelyServiceProxy,
       earlyServiceProxy: detail.earlyServiceProxy
     })
@@ -2952,8 +2944,9 @@ const fetchDetailForSignature = async() => {
       detail.bindingUser = data.bindingUser || ''
       detail.binderPhone = data.bindingPhone || ''
       detail.bindingUserId = data.bindingUserId || ''
-      detail.repairPerson = data.customerName || ''
-      detail.repairPersonPhone = data.customerPhone || ''
+      // 送修人信息从接口返回的送修人字段获取
+      detail.repairPerson = data.shuttleName || ''
+      detail.repairPersonPhone = data.shuttlePhone || ''
       // 计算送修人类型
       detail.repairPersonTag =
         detail.repairPerson === data.customerName
@@ -3134,7 +3127,42 @@ onMounted(() => {
   generateDeliveryDates()
   // 初始化预计交车时间列表
   generateDeliveryTimes()
-
+  // 获取上次环检信息
+  if (route.params.vehicleInfo) {
+    const item = JSON.parse(route.params.vehicleInfo)
+    getRecentlyServiceProxy(item.vin).then((res) => {
+      if (res.code === 200 && res.data) {
+        // 已作废210、反结算200时不回显，其他状态回显上次环检信息
+        const recentData = res.data
+        if (recentData.orderStatus !== 210 && recentData.orderStatus !== 200) {
+          // 合并车内照片到 detail.interiorImages
+          if (recentData.interiorPhotoList && recentData.interiorPhotoList.length > 0) {
+            detail.interiorImages = [
+              ...detail.interiorImages,
+              ...recentData.interiorPhotoList.map((photo) => ({
+                ...photo,
+                url: photo.fileUrl
+              }))
+            ]
+          }
+          // 合并车外照片到 detail.exteriorImages
+          if (recentData.exteriorPhotoList && recentData.exteriorPhotoList.length > 0) {
+            detail.exteriorImages = [
+              ...detail.exteriorImages,
+              ...recentData.exteriorPhotoList.map((photo) => ({
+                ...photo,
+                url: photo.fileUrl
+              }))
+            ]
+          }
+          // 回显异常描述
+          if (recentData.anomalyDescription) {
+            detail.abnormalDesc = recentData.anomalyDescription
+          }
+        }
+      }
+    })
+  }
   // 获取上传配置
   getUploadConfig({
     configCode: 'mcs_serviceproxy'

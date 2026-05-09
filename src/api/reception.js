@@ -1,4 +1,4 @@
-import { post, postText } from './request.js'
+import { post, postText, postJson } from './request.js'
 
 // 获取施工单列表
 export function getList(data) {
@@ -174,4 +174,9 @@ export function saveSpFaultModule(data) {
 // 接车施工单-故障模块表删除
 export function deleteSpFaultModule(data) {
   return post('/maintain/app/sp/spFaultAlertRecord/delete', data)
+}
+
+// 检查信息复用
+export function getRecentlyServiceProxy(data) {
+  return postJson('/maintain/app/sp/serviceProxy/getRecentlyServiceProxy', data)
 }
