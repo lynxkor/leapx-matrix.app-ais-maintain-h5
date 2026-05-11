@@ -348,7 +348,7 @@
             <!-- 客户故障描述 -->
             <div class="section-card">
               <div class="section-title" style="justify-content: flex-start">
-                <span class="required">*</span>客户故障描述
+                <span v-if="detail.hasFault === 1" class="required">*</span>客户故障描述
               </div>
               <van-field
                 v-model="detail.customerFaultDesc"
@@ -358,6 +358,7 @@
                 autosize
                 show-word-limit
                 maxlength="500"
+                :disabled="detail.hasFault !== 1"
                 style="background: #f5f5f5; border-radius: 6px"
               />
             </div>
@@ -476,7 +477,7 @@
                 <div
                   class="signature-action-row"
                 >
-                  <van-button type="primary" size="small" @click="onViewSignature">邀请客户签字</van-button>
+                  <van-button type="primary" size="small" @click="onConfirmAndSign">邀请客户签字</van-button>
                 </div>
               </div>
             </div>
@@ -558,7 +559,7 @@
           >保存</span
         > -->
         <span
-          v-if="detail.orderStatus == 110 && Number(detail.signStatus) !== 10"
+          v-if="detail.orderStatus == 110"
           :class="['complete-btn', { disabled: isConfirmAndSignDisabled }]"
           @click="onConfirmAndSign"
           >制单确认并签字</span
@@ -941,7 +942,7 @@
       position="bottom"
       title="作废原因"
       @close="showCancelReason = false"
-      :style="{ background: '#f4f4f4', height: '50%' }"
+      :style="{ background: '#f4f4f4', height: '70%' }"
     >
       <template #content>
         <div class="cancel-reason-content">
@@ -1040,31 +1041,6 @@
       </div>
     </van-dialog>
 
-    <!-- 二次确认提示框 -->
-    <van-dialog
-      v-model:show="showConfirmDialog2"
-      :show-confirm-button="false"
-      :show-cancel-button="false"
-      close-on-click-overlay
-      class="confirm-dialog"
-    >
-      <div class="confirm-dialog-content">
-        <div class="confirm-section">
-          <div class="confirm-title">服务活动</div>
-          <div class="confirm-message">
-            该车辆有服务活动未完成，您可通过"添加维修项目"功能查看使用服务活动。
-          </div>
-        </div>
-        <div class="confirm-section">
-          <div class="confirm-title">车辆标识</div>
-          <div class="confirm-message">
-            该车辆为「车辆标识名称一」「车辆标识名称二」，请注意接待。
-          </div>
-        </div>
-        <div class="confirm-btn" @click="onConfirmDialogClose">我知道了</div>
-      </div>
-    </van-dialog>
-
     <!-- 三包预警提示框 -->
     <van-dialog
       v-model:show="showWarrantyAlertDialog"
@@ -1119,9 +1095,7 @@
           <!-- 车辆标识 -->
           <template v-else-if="item.type === '5'">
             <div class="info-title">{{ item.typeLabel }}</div>
-            <div class="info-content">
-              该车辆为<template v-for="(tag, index) in item.content.split(',')" :key="index">【{{ tag }}】</template>，请注意接待
-            </div>
+            <div class="info-content"><span style="white-space: nowrap">该车辆为</span><span v-for="(tag, index) in item.content.split(',')" :key="index" style="white-space: nowrap">【{{ tag }}】</span>，请注意接待</div>
           </template>
           <!-- 其他提醒 -->
           <template v-else>
@@ -1299,13 +1273,6 @@ const showMileageInput = ref(false)
 const showBatteryInput = ref(false)
 const mileageInputValue = ref('')
 const batteryInputValue = ref('')
-
-// 二次确认提示框
-const showConfirmDialog2 = ref(false)
-
-const onConfirmDialogClose = () => {
-  showConfirmDialog2.value = false
-}
 
 // 三包预警提示框
 const showWarrantyAlertDialog = ref(false)
@@ -1674,7 +1641,7 @@ const onConfirmCancel = async() => {
       showToast('作废成功')
       showCancelReason.value = false
       cancelReason.value = ''
-      await fetchDetail()
+      router.push('/reception/work-order')
     }
   } finally {
     cancelLoading.value = false
@@ -1835,7 +1802,6 @@ const detail = reactive({
   enginenNumber: '',
   repairItemTypeDetailCollect: '',
   alarmLevel: '',
-  isLive: '',
   inCustomerContent: '',
   invaildDesc: '',
   previewingFinishAt: '',
@@ -1920,7 +1886,6 @@ const signatureData = reactive({
   repairItemTypeDetailCollect: '',
   expectFinishAt: '',
   isDeliveryTimeFromApi: false,
-  isLive: false,
   signChannel: '',
   attachments: []
 })
@@ -2073,7 +2038,7 @@ const signatureChannelList = ref([
   { value: 30, label: 'APP/短信/零小跑' }
 ])
 
-// 签字渠道转换
+// 签字渠道转换（为空时默认为APP/短信/零小跑）
 const getSignChannelName = (channel) => {
   const channelMap = {
     40: '纸质单据',
@@ -2081,7 +2046,7 @@ const getSignChannelName = (channel) => {
     20: 'APP/短信/零小跑',
     30: 'APP/短信/零小跑'
   }
-  return channelMap[channel] || ''
+  return channelMap[channel] || 'APP/短信/零小跑'
 }
 
 // 里程校验
@@ -2257,7 +2222,6 @@ const fetchDetail = async() => {
         detail.enginenNumber = data.engineNumber || ''
         detail.repairItemTypeDetailCollect = data.repairItemTypeDetailCollect || ''
         detail.alarmLevel = data.alarmLevel || ''
-        detail.isLive = data.isLive || ''
         detail.inCustomerContent = data.inCustomerContent || ''
         detail.customerComment = data.customerComment || ''
         detail.invaildDesc = data.invaildDesc || ''
@@ -2292,7 +2256,6 @@ const fetchDetail = async() => {
         signatureData.repairItemTypeDetailCollect = data.repairItemTypeDetailCollect || ''
         signatureData.expectFinishAt = data.expectFinishAt || ''
         signatureData.isDeliveryTimeFromApi = !!data.expectFinishAt
-        signatureData.isLive = data.isLive === 1
         signatureData.signChannel = getSignChannelName(data.signChannel)
 
         // 项目零件数据
@@ -2353,6 +2316,8 @@ const fetchDetail = async() => {
 
         // 判断状态
         isSaved.value = true
+      } else {
+        showToast(res.msg || '获取详情失败')
       }
     })
     .finally(() => {
@@ -2593,12 +2558,8 @@ const uploadGeneric = (type) => {
     return
   }
 
-  // maxNum为null时不限制上传数量，hasUploadNumber传9
-  const uploadHasNumber = config.maxNum !== null && config.maxNum !== undefined
-    ? Math.min(9, Math.max(1, config.maxNum - hasUploadNumber))
-    : 9
-
-  batchUploadImageLimit(maxSize, config.maxNum || 9, uploadHasNumber)
+  // maxNum为null时不限制上传数量，hasUploadNumber传0
+  batchUploadImageLimit(maxSize, config.maxNum || 9, hasUploadNumber)
 }
 
 // 选择图片来源
@@ -2880,7 +2841,15 @@ const onAddFaultModuleItem = (item) => {
   }
   saveSpFaultModule({ ...item, serviceProxyId: detail.id }).then(res => {
     if (res.code === 200) {
-      fetchDetail()
+      // 将新添加的故障模块加入列表显示
+      detail.faultModules.push({
+        ...item,
+        id: res.data?.id || item.id,
+        cccCode: item.cccCode,
+        cccName: item.cccName,
+        vfgName: item.vfgName,
+        faultDesc: item.faultDescription || item.faultDesc
+      })
       showToast('添加成功')
       addFaultModuleShow.value = false
       faultSearchValue.value = ''
@@ -3011,8 +2980,8 @@ const onInspectionSave = async(type) => {
 
   // 环检信息页需要校验
   if (!validateRepairPerson()) return { code: -1 }
-  // 如果选择"是"，客户故障描述必填
-  if (!detail.customerFaultDesc.trim()) {
+  // 如果hasFault为1，客户故障描述必填
+  if (detail.hasFault === 1 && !detail.customerFaultDesc.trim()) {
     showToast('请输入客户故障描述')
     return { code: -1 }
   }
@@ -3088,8 +3057,6 @@ const onInspectionSave = async(type) => {
     mileage: detail.mileage,
     lastMileage: detail.lastMileage,
     startWarrantyDate: detail.vehicleProfileServiceResp.warrantyStartdate,
-    // exclusiveServiceDealerName: detail.vehicleProfileServiceResp.serviceDealerName,
-    // exclusiveServiceDealerCode: detail.vehicleProfileServiceResp.serviceDealerCode,
     expectFinishAt: signatureData.expectFinishAt,
     createStatementInfoDate: detail.createStatementInfoDate,
     remark: detail.remark,
@@ -3152,7 +3119,6 @@ const onInspectionSave = async(type) => {
     repairItemTypeDetailCollect: detail.repairItemTypeDetailCollect,
     businessType: computedBusinessType.value,
     alarmLevel: detail.alarmLevel,
-    isLive: detail.isLive,
     haveRework: 0,
     isCarWash: 0,
     isRetainOldParts: 0,
@@ -3273,8 +3239,8 @@ const onPartsSave = async() => {
     if (inspectionRes?.code === 200) {
       isSaved.value = true
       // 保存成功后查询详情刷新数据
-      fetchDetail()
     }
+    fetchDetail()
   } catch (error) {
     console.error('保存失败:', error)
     showToast('保存失败')
@@ -3335,8 +3301,8 @@ const onComplete = async() => {
     showToast('请上传车外照片')
     return
   }
-  // 如果选择"是"，客户故障描述必填
-  if (!detail.customerFaultDesc.trim()) {
+  // 如果hasFault为1，客户故障描述必填
+  if (detail.hasFault === 1 && !detail.customerFaultDesc.trim()) {
     showToast('请输入客户故障描述')
     return
   }
