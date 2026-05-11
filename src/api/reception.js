@@ -45,7 +45,7 @@ export function getVehicleMileage(data) {
 
 // 搜索故障模块
 export function getFaultModule(data) {
-  return post('/maintain/app/sp/serviceProxy/cccList', data)
+  return postText('/maintain/app/sp/serviceProxy/cccList', data)
 }
 
 // 搜索维修项目
@@ -181,7 +181,11 @@ export function getRecentlyServiceProxy(data) {
   return postJson('/maintain/app/sp/serviceProxy/getRecentlyServiceProxy', data)
 }
 
-// 校验故障情况
+// 判断是否留车
 export function checkFault(data) {
   return postJson('/maintain/app/sp/serviceProxy/isVehRetention', data)
+}
+// 创建留车单
+export function createRetention(data) {
+  return post('/maintain/web/sp/serviceProxy/addVehRetentionList', data)
 }

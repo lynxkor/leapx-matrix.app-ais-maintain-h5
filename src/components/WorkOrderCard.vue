@@ -50,7 +50,7 @@
         <span class="value">{{ item.creatorName }}</span>
       </div>
       <div class="info-row">
-        <span class="label">预计交车</span>
+        <span class="label">预交时间</span>
         <span class="value">{{ item.expectFinishAt }}</span>
       </div>
     </div>

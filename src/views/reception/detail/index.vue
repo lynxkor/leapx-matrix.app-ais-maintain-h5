@@ -747,7 +747,7 @@ const loadAttachmentList = async() => {
     if (res.code === 200 && res.data) {
       detail.value.interiorPhotos = res.data.filter((file) => file.attachType === '车内照片')
       detail.value.exteriorPhotos = res.data.filter((file) => file.attachType === '车外照片')
-      signatureData.attachments = res.data.map((file) => ({
+      signatureData.attachments = res.data.filter((file) => file.attachType === '附件资料').map((file) => ({
         ...file,
         isImage: isFileType(file, 'image'),
         isPdf: isFileType(file, 'pdf'),
