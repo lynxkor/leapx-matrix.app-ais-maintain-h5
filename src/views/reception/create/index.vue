@@ -2543,14 +2543,14 @@ const onSave = async() => {
     return
   }
   // 照片校验（根据配置判断是否必填）
-  // if (interiorConfig.value.required === '1' && detail.interiorImages.length === 0) {
-  //   showToast('请上传车内照片')
-  //   return
-  // }
-  // if (exteriorConfig.value.required === '1' && detail.exteriorImages.length === 0) {
-  //   showToast('请上传车外照片')
-  //   return
-  // }
+  if (interiorConfig.value.required === '1' && detail.interiorImages.length === 0) {
+    showToast('请上传车内照片')
+    return
+  }
+  if (exteriorConfig.value.required === '1' && detail.exteriorImages.length === 0) {
+    showToast('请上传车外照片')
+    return
+  }
   // 异常描述
   if (!detail.abnormalDesc) {
     showToast('请输入异常描述')
