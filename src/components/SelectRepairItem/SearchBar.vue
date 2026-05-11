@@ -36,6 +36,7 @@
           @click="onItemClick(item)"
         >
           <span class="item-text" v-html="highlight(item.partName || item.name)"></span>
+          <span class="item-text" v-if="activeTab !== 'item'">{{ '—库存：' + item.availableQty }}</span>
           <span class="item-code" v-html="'—' + highlight(item.partCode || item.code)"></span>
         </div>
       </div>
