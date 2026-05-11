@@ -285,7 +285,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, nextTick } from 'vue'
+import { ref, reactive, nextTick, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { showToast } from 'vant'
 import dayjs from 'dayjs'
@@ -298,6 +298,7 @@ import {
   addServiceProxyStatement
 } from '@/api/settlementStatement'
 import { callPhone } from '@/libs/utils/nativeFn'
+import { getEnumValue } from '@/libs/api/common'
 import { usePageSafeArea } from '@/utils/safeArea'
 
 const router = useRouter()
@@ -400,18 +401,25 @@ const updateRequestData = () => {
 updateRequestData()
 
 // 未解决原因选项
-const reasonOptions = [
-  { label: '需求不明确', value: '10' },
-  { label: '技术方案待确认', value: '20' },
-  { label: '依赖第三方接口未联调', value: '30' },
-  { label: '测试环境异常', value: '40' },
-  { label: '数据缺失或错误', value: '50' },
-  { label: '优先级较低暂未处理', value: '60' },
-  { label: '涉及多部门协作未对齐', value: '70' },
-  { label: '代码修复后未验证', value: '80' },
-  { label: '硬件资源不足', value: '90' },
-  { label: '其他原因', value: '99' }
-]
+const reasonOptions = ref([])
+
+const getReasonOptions = async() => {
+  try {
+    const res = await getEnumValue('UnresolvedIssueReasonEnum')
+    if (res?.data) {
+      reasonOptions.value = res.data.map((item) => ({
+        label: item.message,
+        value: item.code
+      }))
+    }
+  } catch (error) {
+    console.error('获取未解决原因枚举失败', error)
+  }
+}
+
+onMounted(() => {
+  getReasonOptions()
+})
 
 // 日期筛选标签
 const dateTags = [
