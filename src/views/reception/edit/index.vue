@@ -512,8 +512,8 @@
               >
                 <img
                   style="width: 100%; height: 100%; margin-bottom: 0"
-                  :src="file.url"
-                  @click="showImg(file.url)"
+                  :src="getFilePreviewUrl(file)"
+                  @click="showImg(getFilePreviewUrl(file))"
                 />
                 <img
                   class="delete_icon"
@@ -523,7 +523,7 @@
               </div>
               <div
                 class="upload-box upload-placeholder"
-                v-if="signatureData.attachments.length < (attachmentConfig.maxNum || 3)"
+                v-if="signatureData.attachments.length < (attachmentConfig.maxNum || 20)"
                 @click="uploadGeneric('attachment')"
               >
                 <svg class="icon upload-img" aria-hidden="true">
@@ -1230,20 +1230,20 @@ const formatPhotoList = (list, attachType, businessId) => {
     // 判断是否为新上传的图片：没有 id 表示新上传
     const isNewUpload = !item.id
     if (isNewUpload) {
-      // 新上传的图片：不传 id，其他参数都传
+      // 新上传的图片：不传 id，传 fileId（取上传成功后的 id）
       return {
-        ...item,
         businessId,
+        fileId: item.uploadId, // 取上传成功后保存的 id
         fileUrl: getFileSaveUrl(item),
         fileType: getFileType(item, 'image/jpeg'),
         attachType,
         configCode: 'mcs_serviceproxy'
       }
     }
-    // 旧图片：参数正常传，保留原有 businessId
+    // 旧图片：传 fileId（取原有的 id）
     return {
-      ...item,
       fileId: item.id,
+      businessId,
       fileUrl: getFileSaveUrl(item),
       fileType: getFileType(item, 'image/jpeg'),
       attachType,
@@ -2787,6 +2787,7 @@ onMounted(() => {
               status: 'done',
               message: '',
               id: null, // 新上传图片不保存id，保持null
+              uploadId: uploadData.id, // 保存上传成功后的id，用于fileId
               businessId: detail.id, // 新上传图片businessId取detail.id
               url: rawUrl,
               fileUrl: rawUrl,

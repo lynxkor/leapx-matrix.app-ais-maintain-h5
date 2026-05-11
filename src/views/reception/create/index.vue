@@ -1202,20 +1202,20 @@ const formatPhotoList = (list, attachType, businessId) => {
     // 判断是否为新上传的图片：没有 id 表示新上传
     const isNewUpload = !item.id
     if (isNewUpload) {
-      // 新上传的图片：不传 id，其他参数都传
+      // 新上传的图片：不传 id，传 fileId（取上传成功后的 id）
       return {
-        ...item,
         businessId,
+        fileId: item.uploadId, // 取上传成功后保存的 id
         fileUrl: getFileSaveUrl(item),
         fileType: getFileType(item, 'image/jpeg'),
         attachType,
         configCode: 'mcs_serviceproxy'
       }
     }
-    // 旧图片：参数正常传，保留原有 businessId
+    // 旧图片：传 fileId（取原有的 id）
     return {
-      ...item,
       fileId: item.id,
+      businessId,
       fileUrl: getFileSaveUrl(item),
       fileType: getFileType(item, 'image/jpeg'),
       attachType,
@@ -1799,8 +1799,6 @@ const detail = reactive({
   departureNetMileageElectricity: '',
   departureNetMileageExtend: '',
   electricalMileage: '',
-  motorModel: '',
-  motorSerialNumber: '',
   batteryModel: '',
   batterySerialNumber: '',
   enginenNumber: '',
@@ -2265,6 +2263,7 @@ const handleImageFileChange = (event) => {
               status: 'done',
               message: '',
               id: null, // 新上传图片不保存id，保持null
+              uploadId: uploadData.id, // 保存上传成功后的id，用于fileId
               businessId: null, // 新上传图片businessId保持null
               url: rawUrl,
               fileUrl: rawUrl,
@@ -2544,14 +2543,14 @@ const onSave = async() => {
     return
   }
   // 照片校验（根据配置判断是否必填）
-  if (interiorConfig.value.required === '1' && detail.interiorImages.length === 0) {
-    showToast('请上传车内照片')
-    return
-  }
-  if (exteriorConfig.value.required === '1' && detail.exteriorImages.length === 0) {
-    showToast('请上传车外照片')
-    return
-  }
+  // if (interiorConfig.value.required === '1' && detail.interiorImages.length === 0) {
+  //   showToast('请上传车内照片')
+  //   return
+  // }
+  // if (exteriorConfig.value.required === '1' && detail.exteriorImages.length === 0) {
+  //   showToast('请上传车外照片')
+  //   return
+  // }
   // 异常描述
   if (!detail.abnormalDesc) {
     showToast('请输入异常描述')
@@ -2595,8 +2594,6 @@ const onSave = async() => {
       vehYearTypeId: detail.vehicleProfileServiceResp.vehicleYearId,
       vehYearTypeName: detail.vehicleProfileServiceResp.vehicleYearName,
       dedicatedServiceManager: detail.vehicleProfileServiceResp.serviceUserName,
-      motorModel: detail.motorModel,
-      motorSerialNumber: detail.motorSerialNumber,
       batteryModel: detail.batteryModel,
       batterySerialNumber: detail.batterySerialNumber,
       engineNumber: detail.enginenNumber,
@@ -2785,8 +2782,6 @@ const onInspectionSave = async() => {
       vehYearTypeId: detail.vehicleProfileServiceResp.vehicleYearId,
       vehYearTypeName: detail.vehicleProfileServiceResp.vehicleYearName,
       dedicatedServiceManager: detail.vehicleProfileServiceResp.serviceUserName,
-      motorModel: detail.motorModel,
-      motorSerialNumber: detail.motorSerialNumber,
       batteryModel: detail.batteryModel,
       batterySerialNumber: detail.batterySerialNumber,
       engineNumber: detail.enginenNumber,
@@ -3362,6 +3357,7 @@ onMounted(() => {
               status: 'done',
               message: '',
               id: null, // 新上传图片不保存id，保持null
+              uploadId: uploadData.id, // 保存上传成功后的id，用于fileId
               businessId: null, // 新上传图片businessId保持null
               url: rawUrl,
               fileUrl: rawUrl,
