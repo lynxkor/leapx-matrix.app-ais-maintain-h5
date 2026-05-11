@@ -16,21 +16,23 @@
         <!-- 左列 -->
         <div class="info-left">
           <div class="name-row">
-            <span class="card-name">{{ item.name }}</span>
-            <img
-              v-if="nameEditable && !disabled"
-              :src="icon_edit"
-              class="edit-icon"
-              alt=""
-              @click="openNameEditPopup"
-            />
-            <span class="card-tag" v-if="item.isOemPart == 1">原厂件</span>
-            <span
-              v-if="item.ifReplace == 1 && isReplace"
-              class="replace-tag"
-              @click="onReplaceTagClick(item)"
-              >替<van-icon name="exchange" size="13px"
-            /></span>
+            <span class="card-name">
+              <span class="card-tag" v-if="item.isOemPart == 1">原厂件</span>
+              <span
+                v-if="item.ifReplace == 1 && isReplace"
+                class="replace-tag"
+                @click="onReplaceTagClick(item)"
+                >替<van-icon name="exchange" size="13px"
+              /></span>
+              {{ item.name }}
+              <img
+                v-if="nameEditable && !disabled"
+                :src="icon_edit"
+                class="edit-icon"
+                alt=""
+                @click="openNameEditPopup"
+              />
+            </span>
           </div>
           <div class="code-row">
             <span class="card-code">{{ item.code }}</span>
@@ -383,21 +385,18 @@ const openCascaderPopup = () => {
       // 左列：名称、代码、结算类型
       .info-left {
         .name-row {
-          display: flex;
-          align-items: center;
-          gap: 4px;
-          height: 20px;
-
           .card-name {
             font-size: 14px;
+            line-height: 20px;
             font-weight: 500;
             color: var(--leap-color-default);
-            line-height: 20px;
             cursor: pointer;
-            max-width: 180px;
+            max-width: 210px;
             overflow: hidden;
             text-overflow: ellipsis;
-            white-space: nowrap;
+            -webkit-line-clamp: 2;
+            display: -webkit-box;
+            -webkit-box-orient: vertical;
           }
           .card-tag {
             font-size: 12px;
@@ -406,11 +405,13 @@ const openCascaderPopup = () => {
             padding: 2px 4px;
             border-radius: 4px;
             width:44px;
+            margin-right: 4px;
           }
 
           .edit-icon {
             flex-shrink: 0;
             cursor: pointer;
+            vertical-align: middle;
           }
 
           .replace-tag {
