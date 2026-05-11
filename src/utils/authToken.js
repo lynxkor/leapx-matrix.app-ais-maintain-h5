@@ -27,5 +27,19 @@ export const applyAuthHeaders = (config, storeToken) => {
     config.headers.platform = 'leapx'
   }
 
+  config.authToken = token
+
   return config
+}
+
+export const waitForTokenChange = (requestToken) => {
+  return new Promise((resolve) => {
+    const interval = setInterval(() => {
+      const currentToken = getStoredToken()
+      if (currentToken && currentToken !== requestToken) {
+        clearInterval(interval)
+        resolve(currentToken)
+      }
+    }, 500)
+  })
 }
