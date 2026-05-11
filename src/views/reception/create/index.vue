@@ -336,7 +336,7 @@
             <!-- 客户故障描述 -->
             <div class="section-card">
               <div class="section-title" style="justify-content: flex-start">
-                <span class="required">*</span>客户故障描述
+                <span v-if="detail.hasFault === '1'" class="required">*</span>客户故障描述
               </div>
               <van-field
                 v-model="detail.customerFaultDesc"
@@ -346,6 +346,7 @@
                 autosize
                 show-word-limit
                 maxlength="500"
+                :disabled="detail.hasFault === '2'"
                 style="background: #f5f5f5; border-radius: 6px"
               />
             </div>
@@ -896,7 +897,7 @@
       position="bottom"
       title="作废原因"
       @close="showCancelReason = false"
-      :style="{ background: '#f4f4f4', height: '50%' }"
+      :style="{ background: '#f4f4f4', height: '70%' }"
     >
       <template #content>
         <div class="cancel-reason-content">
@@ -1643,7 +1644,7 @@ const onConfirmCancel = async() => {
       showToast('作废成功')
       showCancelReason.value = false
       cancelReason.value = ''
-      fetchDetailForSignature()
+      router.push('/reception/work-order')
     }
   } finally {
     cancelLoading.value = false
@@ -1660,6 +1661,12 @@ const onHasFaultChange = (value) => {
       showFaultConfirm.value = true
     } else {
       detail.hasFault = '2'
+      detail.customerFaultDesc = '本次进店车辆无故障'
+    }
+  } else if (value === '1') {
+    // 从"否"切换到"是"，清空默认文本
+    if (detail.customerFaultDesc === '本次进店车辆无故障') {
+      detail.customerFaultDesc = ''
     }
   }
 }
@@ -1674,8 +1681,9 @@ const onCancelFaultConfirm = () => {
 // 确认故障变更
 const onConfirmFaultChange = () => {
   showFaultConfirm.value = false
-  // 清空故障模块和客户故障描述
+  // 清空故障模块，设置默认客户故障描述
   detail.faultModules = []
+  detail.customerFaultDesc = '本次进店车辆无故障'
   detail.hasFault = '2'
   showToast('已更改')
 }
@@ -1742,7 +1750,7 @@ const detail = reactive({
   customerComment: '',
   currentFault: '',
   faultAlertRecordRespList: [],
-  hasFault: '2',
+  hasFault: '1',
   faultModules: [],
   customerFaultDesc: '',
   testResult: '',
@@ -2178,12 +2186,7 @@ const uploadGeneric = (type) => {
     return
   }
 
-  // maxNum为null时不限制上传数量，hasUploadNumber传9
-  const uploadHasNumber = config.maxNum !== null && config.maxNum !== undefined
-    ? Math.min(9, Math.max(1, config.maxNum - hasUploadNumber))
-    : 9
-
-  batchUploadImageLimit(maxSize, config.maxNum || 9, uploadHasNumber)
+  batchUploadImageLimit(maxSize, config.maxNum || 9, hasUploadNumber)
 }
 
 // 选择图片来源
@@ -2531,8 +2534,8 @@ const cancelLoading = ref(false)
 const onSave = async() => {
   console.log('保存:', detail)
   if (!validateRepairPerson()) return
-  // 如果选择"是"，客户故障描述必填
-  if (!detail.customerFaultDesc.trim()) {
+  // 如果hasFault为"1"，客户故障描述必填
+  if (detail.hasFault === '1' && !detail.customerFaultDesc.trim()) {
     showToast('请输入客户故障描述')
     return
   }
@@ -2569,8 +2572,6 @@ const onSave = async() => {
       mileage: detail.mileage,
       lastMileage: null,
       startWarrantyDate: detail.vehicleProfileServiceResp.warrantyStartdate || '',
-      exclusiveServiceDealerName: detail.vehicleProfileServiceResp.serviceDealerName || '',
-      exclusiveServiceDealerCode: detail.vehicleProfileServiceResp.serviceDealerCode || '',
       expectFinishAt: signatureData.expectFinishAt,
       shuttleName: detail.repairPerson,
       shuttlePhone: detail.repairPersonPhone,
@@ -2723,8 +2724,6 @@ const onInspectionSave = async() => {
       mileage: detail.mileage,
       lastMileage: null,
       startWarrantyDate: detail.vehicleProfileServiceResp.warrantyStartdate || '',
-      exclusiveServiceDealerName: detail.vehicleProfileServiceResp.serviceDealerName || '',
-      exclusiveServiceDealerCode: detail.vehicleProfileServiceResp.serviceDealerCode || '',
       expectFinishAt: signatureData.expectFinishAt,
       createStatementInfoDate: detail.createStatementInfoDate,
       remark: detail.remark,
@@ -2796,7 +2795,6 @@ const onInspectionSave = async() => {
       customerContent: detail.customerFaultDesc,
       invaildDesc: detail.invaildDesc,
       anomalyDescription: detail.abnormalDesc,
-      previewingFinishAt: detail.previewingFinishAt,
       confirmedOn: detail.confirmedOn,
       expectStartAt: detail.expectStartAt,
       startAt: detail.startAt,
@@ -2965,6 +2963,8 @@ const fetchDetailForSignature = async() => {
       signatureData.repairItemTypeDetailCollect = data.repairItemTypeDetailCollect || ''
       signatureData.expectFinishAt = data.expectFinishAt || ''
       signatureData.isDeliveryTimeFromApi = !!data.expectFinishAt
+      // 签字渠道：如果为空则默认为APP/短信/零小跑
+      signatureData.signChannel = data.signChannel ? (Number(data.signChannel) === 40 ? '纸质单据' : 'APP/短信/零小跑') : 'APP/短信/零小跑'
       // 更新项目零件数据
       if (data.costCountResp) {
         partsData.repairItemRespList = data.costCountResp.repairItemRespList || []
@@ -2987,6 +2987,7 @@ const fetchDetailForSignature = async() => {
       // 送修人信息从接口返回的送修人字段获取
       detail.repairPerson = data.shuttleName || ''
       detail.repairPersonPhone = data.shuttlePhone || ''
+      detail.previewingFinishAt = data.previewingFinishAt || ''
       // 计算送修人类型
       detail.repairPersonTag =
         detail.repairPerson === data.customerName
@@ -3052,6 +3053,8 @@ const fetchDetailForSignature = async() => {
           }
         }
       })
+    } else {
+      showToast(res.msg || '获取详情失败')
     }
   } catch (error) {
     savingLoading.value = false
@@ -3064,8 +3067,7 @@ const onAddParts = () => {
   router.push({
     path: '/reception/add-parts',
     query: {
-      serviceProxyId: serviceProxyId.value || detail.id || route.query.id,
-      vehModelName: selectedCarInfo.value.selectedCarInfo
+      serviceProxyId: serviceProxyId.value || detail.id || route.query.id
     }
   })
 }
