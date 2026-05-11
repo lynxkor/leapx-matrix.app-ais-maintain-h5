@@ -210,7 +210,8 @@ export default function useRepairItemOperations({
    * @returns {Promise<boolean>} 是否保存成功
    */
   const handleSave = async(onSuccess) => {
-    if (selectedItems.value.length === 0 && selectedParts.value.length === 0) return false
+    // 允许清空
+    // if (selectedItems.value.length === 0 && selectedParts.value.length === 0) return false
 
     // 售前保修只能单独开单
     if (!validatePreSaleWarranty()) return false

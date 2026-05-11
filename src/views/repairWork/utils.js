@@ -7,7 +7,7 @@ import {
   finalInspection,
   finalInspectionDetail,
   qualityInspection,
-  addOrUpdate
+  updateFaultAlertRecord
 } from '@/api/repairWork'
 import { formatDateTime } from '@/libs/utils'
 import { useUserStore } from '@/stores/user'
@@ -160,12 +160,9 @@ export async function showFaultCheckDialog(serviceProxyId, onRefresh, workOrder)
       })
       // 确认无故障，清空故障信息
       try {
-        const res = await addOrUpdate({
-          ...workOrder,
-          serviceProxyId,
-          faultAlertRecordRespList: [],
-          currentFault: 0,
-          customerContent: ''
+        const res = await updateFaultAlertRecord({
+          id: serviceProxyId,
+          currentFault: 0
         })
         if (res.code === 200) {
           showToast('已确认无故障')
