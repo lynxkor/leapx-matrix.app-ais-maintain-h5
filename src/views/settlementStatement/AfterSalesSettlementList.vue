@@ -699,7 +699,7 @@ const signActionText = computed(() => {
   if (backendSignStatus === 20) {
     return '查看客户签字'
   }
-  return '未签字'
+  return '邀请客户签字'
 })
 
 const signDescription = computed(() => {
@@ -1398,7 +1398,7 @@ const handlePaymentSubmit = async() => {
         .status-red {
           font-family: 'PingFang SC';
           font-size: 14px;
-          color: #B91919;
+          color: #009100;
         }
 
         .status-gray {
