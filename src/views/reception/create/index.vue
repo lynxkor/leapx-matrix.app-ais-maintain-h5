@@ -301,7 +301,7 @@
               </div>
 
               <!-- 故障模块列表 -->
-              <div class="fault-modules" v-if="detail.hasFault === '1'">
+              <div class="fault-modules" v-if="Number(detail.hasFault) === 1">
                 <div class="add-module" @click="onAddFaultModule">
                   <van-icon name="plus" />
                   <span>添加故障模块</span>
@@ -336,7 +336,7 @@
             <!-- 客户故障描述 -->
             <div class="section-card">
               <div class="section-title" style="justify-content: flex-start">
-                <span v-if="detail.hasFault === '1'" class="required">*</span>客户故障描述
+                <span v-if="Number(detail.hasFault) === 1" class="required">*</span>客户故障描述
               </div>
               <van-field
                 v-model="detail.customerFaultDesc"
@@ -1199,22 +1199,10 @@ const getFileType = (file, fallback = '') => {
 // 处理图片列表参数的通用方法
 const formatPhotoList = (list, attachType, businessId) => {
   return list.map((item) => {
-    // 判断是否为新上传的图片：没有 id 表示新上传
-    const isNewUpload = !item.id
-    if (isNewUpload) {
-      // 新上传的图片：不传 id，传 fileId（取上传成功后的 id）
-      return {
-        businessId,
-        fileId: item.uploadId, // 取上传成功后保存的 id
-        fileUrl: getFileSaveUrl(item),
-        fileType: getFileType(item, 'image/jpeg'),
-        attachType,
-        configCode: 'mcs_serviceproxy'
-      }
-    }
-    // 旧图片：传 fileId（取原有的 id）
+    // 如果有id（来自接口返回或复用图片），使用id；否则使用uploadId（新上传）
+    const fileId = item.id || item.uploadId
     return {
-      fileId: item.id,
+      fileId,
       businessId,
       fileUrl: getFileSaveUrl(item),
       fileType: getFileType(item, 'image/jpeg'),
@@ -1761,7 +1749,6 @@ const detail = reactive({
   salesDealerCode: '',
   appointmentNo: '',
   lastMileage: null,
-  createStatementInfoDate: '',
   remark: '',
   status: '',
   statusDesc: '',
@@ -2256,13 +2243,14 @@ const handleImageFileChange = (event) => {
           if (targetList.length > 0) {
             const lastIndex = targetList.length - 1
             const rawUrl = uploadData.url || uploadData.fileUrl || previewUrl
+            const currentBusinessId = serviceProxyId.value || detail.id || null
             targetList[lastIndex] = {
               ...targetList[lastIndex],
               status: 'done',
               message: '',
-              id: null, // 新上传图片不保存id，保持null
+              id: currentBusinessId ? uploadData.id : null, // 有施工单id时取上传id，无施工单id时为null
               uploadId: uploadData.id, // 保存上传成功后的id，用于fileId
-              businessId: null, // 新上传图片businessId保持null
+              businessId: currentBusinessId, // 取施工单id（如果有）
               url: rawUrl,
               fileUrl: rawUrl,
               authFileUrl: uploadData.authFileUrl || rawUrl,
@@ -2339,18 +2327,16 @@ const handleFileDelete = async(file, type) => {
         ? detail.exteriorImages
         : signatureData.attachments
 
-  // 判断是否为新上传的图片：有 id 但没有原始 businessId
-  const isNewUpload = file.id && !file.businessId
-  if (file.id && !isNewUpload) {
-    // 旧图片：调用删除接口，然后直接从列表中移除（不刷新整个列表，保留新上传的图片）
+  if (file.id) {
+    // 有id的图片：调用删除接口，然后从列表中移除
     await deleteAttachmentConfig([file.id])
     const index = targetList.findIndex((item) => item.id === file.id)
     if (index > -1) {
       targetList.splice(index, 1)
     }
   } else {
-    // 新上传的图片或没有 id 的临时图片：直接从列表中移除
-    const index = targetList.findIndex((item) => item.id === file.id || item === file)
+    // 无id的图片（复用图片或临时图片）：直接从列表中移除
+    const index = targetList.findIndex((item) => item === file)
     if (index > -1) {
       targetList.splice(index, 1)
     }
@@ -2531,12 +2517,12 @@ const onSave = async() => {
   console.log('保存:', detail)
   if (!validateRepairPerson()) return
   // 如果hasFault为"1"，客户故障描述必填
-  if (detail.hasFault === '1' && !detail.customerFaultDesc.trim()) {
+  if (Number(detail.hasFault) === 1 && !detail.customerFaultDesc.trim()) {
     showToast('请输入客户故障描述')
     return
   }
   // 如果hasFault为"1"，必须添加故障模块
-  if (detail.hasFault === '1' && detail.faultModules.length === 0) {
+  if (Number(detail.hasFault) === 1 && detail.faultModules.length === 0) {
     showToast('请添加故障模块')
     return
   }
@@ -2601,10 +2587,10 @@ const onSave = async() => {
       isCarWash: 0,
       isRetainOldParts: 0,
       testResult: detail.testResult,
-      currentFault: detail.hasFault === '1' ? 1 : 0,
+      currentFault: Number(detail.hasFault) === 1 ? 1 : 0,
       customerContent: detail.customerFaultDesc,
       anomalyDescription: detail.abnormalDesc,
-      currentSituation: detail.hasFault === '1' ? 20 : 10,
+      currentSituation: Number(detail.hasFault) === 1 ? 20 : 10,
       // faultModule: detail.faultModules.map((m) => m.cccCode).join(','),
       isCreateStatementInfo: 0,
       exteriorPhotoList: formatPhotoList(detail.exteriorImages, '车外照片', serviceProxyId.value || null),
@@ -2651,12 +2637,12 @@ const onComplete = async() => {
     return
   }
   // 如果选择"是"，客户故障描述必填
-  if (detail.hasFault === '1' && !detail.customerFaultDesc.trim()) {
+  if (Number(detail.hasFault) === 1 && !detail.customerFaultDesc.trim()) {
     showToast('请输入客户故障描述')
     return
   }
   // 如果hasFault为"1"，必须添加故障模块
-  if (detail.hasFault === '1' && detail.faultModules.length === 0) {
+  if (Number(detail.hasFault) === 1 && detail.faultModules.length === 0) {
     showToast('请添加故障模块')
     return
   }
@@ -2729,7 +2715,6 @@ const onInspectionSave = async() => {
       lastMileage: null,
       startWarrantyDate: detail.vehicleProfileServiceResp.warrantyStartdate || '',
       expectFinishAt: signatureData.expectFinishAt,
-      createStatementInfoDate: detail.createStatementInfoDate,
       remark: detail.remark,
       status: detail.status,
       statusDesc: detail.statusDesc,
@@ -2793,7 +2778,7 @@ const onInspectionSave = async() => {
       inCustomerContent: detail.inCustomerContent,
       customerComment: detail.customerComment,
       testResult: detail.testResult,
-      currentFault: detail.hasFault === '1' ? 1 : 0,
+      currentFault: Number(detail.hasFault) === 1 ? 1 : 0,
       customerContent: detail.customerFaultDesc,
       invaildDesc: detail.invaildDesc,
       anomalyDescription: detail.abnormalDesc,
@@ -2802,7 +2787,7 @@ const onInspectionSave = async() => {
       startAt: detail.startAt,
       finishAt: detail.finishAt,
       faultSolve: detail.faultSolve,
-      currentSituation: detail.hasFault === '1' ? 20 : 10,
+      currentSituation: Number(detail.hasFault) === 1 ? 20 : 10,
       faultAlert: detail.faultAlert,
       faultPeriod: detail.faultPeriod,
       earliestfaultServiceProxy: detail.earliestfaultServiceProxy,
@@ -3350,13 +3335,14 @@ onMounted(() => {
           if (targetList.length > 0) {
             const lastIndex = targetList.length - 1
             const rawUrl = uploadData.url || uploadData.fileUrl || singleUrl
+            const currentBusinessId = serviceProxyId.value || null
             targetList[lastIndex] = {
               ...targetList[lastIndex],
               status: 'done',
               message: '',
-              id: null, // 新上传图片不保存id，保持null
+              id: currentBusinessId ? uploadData.id : null, // 有施工单id时取上传id，无施工单id时为null
               uploadId: uploadData.id, // 保存上传成功后的id，用于fileId
-              businessId: null, // 新上传图片businessId保持null
+              businessId: currentBusinessId, // 取施工单id（如果有）
               url: rawUrl,
               fileUrl: rawUrl,
               authFileUrl: uploadData.authFileUrl || rawUrl,
