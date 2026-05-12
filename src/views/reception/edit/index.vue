@@ -512,8 +512,8 @@
               >
                 <img
                   style="width: 100%; height: 100%; margin-bottom: 0"
-                  :src="file.url"
-                  @click="showImg(file.url)"
+                  :src="getFilePreviewUrl(file)"
+                  @click="showImg(getFilePreviewUrl(file))"
                 />
                 <img
                   class="delete_icon"
@@ -523,7 +523,7 @@
               </div>
               <div
                 class="upload-box upload-placeholder"
-                v-if="signatureData.attachments.length < (attachmentConfig.maxNum || 3)"
+                v-if="signatureData.attachments.length < (attachmentConfig.maxNum || 20)"
                 @click="uploadGeneric('attachment')"
               >
                 <svg class="icon upload-img" aria-hidden="true">
@@ -1175,7 +1175,8 @@ import {
   saveSpFaultModule,
   deleteSpFaultModule,
   getRecentlyServiceProxy,
-  checkFault
+  checkFault,
+  createRetention
 } from '@/api/reception'
 import { preAuthAddOrUpdate } from '@/api/authorization'
 import '../create/create.scss'
@@ -1226,26 +1227,25 @@ const getFileSaveUrl = (file) => {
 // 处理图片列表参数的通用方法
 const formatPhotoList = (list, attachType, businessId) => {
   return list.map((item) => {
-    // 判断是否为新上传的图片：有 id 但没有原始 businessId
-    const isNewUpload = item.id && !item.businessId
+    // 判断是否为新上传的图片：没有 id 表示新上传
+    const isNewUpload = !item.id
     if (isNewUpload) {
-      // 新上传的图片：不传 id，其他参数都传，fileId 取 id
-      const { id, ...rest } = item
+      // 新上传的图片：不传 id，传 fileId（取上传成功后的 id）
       return {
-        ...rest,
-        fileId: id,
         businessId,
+        fileId: item.uploadId, // 取上传成功后保存的 id
         fileUrl: getFileSaveUrl(item),
+        fileType: getFileType(item, 'image/jpeg'),
         attachType,
         configCode: 'mcs_serviceproxy'
       }
     }
-    // 旧图片：参数正常传
+    // 旧图片：传 fileId（取原有的 id）
     return {
-      ...item,
       fileId: item.id,
       businessId,
       fileUrl: getFileSaveUrl(item),
+      fileType: getFileType(item, 'image/jpeg'),
       attachType,
       configCode: 'mcs_serviceproxy'
     }
@@ -1655,9 +1655,15 @@ const onHasFaultChange = (value) => {
     // 如果已添加过故障模块或客户故障描述，弹出确认框
     if (detail.faultModules.length > 0 || detail.customerFaultDesc) {
       pendingFaultValue.value = value
-      // showFaultConfirm.value = true
+      showFaultConfirm.value = true
     } else {
       detail.hasFault = '2'
+      detail.customerFaultDesc = '本次进店车辆无故障'
+    }
+  } else if (value === '1') {
+    // 从"否"切换到"是"，清空默认文本
+    if (detail.customerFaultDesc === '本次进店车辆无故障') {
+      detail.customerFaultDesc = ''
     }
   }
 }
@@ -2437,7 +2443,9 @@ const onConfirmChangeCar = () => {
               ...detail.interiorImages,
               ...recentData.interiorPhotoList.map((photo) => ({
                 ...photo,
-                url: photo.fileUrl
+                url: photo.fileUrl,
+                id: null,
+                businessId: detail.id
               }))
             ]
           }
@@ -2447,7 +2455,9 @@ const onConfirmChangeCar = () => {
               ...detail.exteriorImages,
               ...recentData.exteriorPhotoList.map((photo) => ({
                 ...photo,
-                url: photo.fileUrl
+                url: photo.fileUrl,
+                id: null,
+                businessId: detail.id
               }))
             ]
           }
@@ -2756,7 +2766,7 @@ onMounted(() => {
       try {
         const params = {
           fileUrl: singleUrl,
-          businessId: null,
+          businessId: detail.id,
           configCode: 'mcs_serviceproxy',
           attachType: attachTypeMap[uploadType]
         }
@@ -2776,7 +2786,9 @@ onMounted(() => {
               ...targetList[lastIndex],
               status: 'done',
               message: '',
-              id: uploadData.id || null,
+              id: null, // 新上传图片不保存id，保持null
+              uploadId: uploadData.id, // 保存上传成功后的id，用于fileId
+              businessId: detail.id, // 新上传图片businessId取detail.id
               url: rawUrl,
               fileUrl: rawUrl,
               authFileUrl: uploadData.authFileUrl || rawUrl,
@@ -2850,7 +2862,7 @@ const onAddFaultModuleItem = (item) => {
         vfgName: item.vfgName,
         faultDesc: item.faultDescription || item.faultDesc
       })
-      showToast('添加成功')
+      showToast(res.data || '添加成功')
       addFaultModuleShow.value = false
       faultSearchValue.value = ''
     } else {
@@ -2983,6 +2995,11 @@ const onInspectionSave = async(type) => {
   // 如果hasFault为1，客户故障描述必填
   if (detail.hasFault === 1 && !detail.customerFaultDesc.trim()) {
     showToast('请输入客户故障描述')
+    return { code: -1 }
+  }
+  // 如果hasFault为1，必须添加故障模块
+  if (detail.hasFault === 1 && detail.faultModules.length === 0) {
+    showToast('请添加故障模块')
     return { code: -1 }
   }
   // 照片校验（根据配置判断是否必填）
@@ -3162,8 +3179,9 @@ const onInspectionSave = async(type) => {
     savingLoading.value = false
     if (res.code === 200) {
       showToast('保存成功')
+      fetchDetail()
     } else {
-      showToast(res.msg || '保存失败')
+      showToast({ message: res.msg || '保存失败', duration: 3000 })
     }
   } catch (err) {
     showToast(err.msg || '保存失败')
@@ -3204,21 +3222,8 @@ const onPartsSave = async() => {
   const items = partsData.repairItemRespList || []
   const parts = partsData.sparePartRespList || []
 
-  // 检查当前是否有一般维修或三电维修的项目/零件
-  const hasGeneralOrThreeElectricRepair = [...items, ...parts].some(
-    (item) => item.repairItemTypeName === '一般维修' || item.repairItemTypeName === '三电维修'
-  )
-  // 检查原来是否有一般维修或三电维修的项目/零件
-  const initialItems = initialInspectionData.value?.repairItemRespList || []
-  const initialParts = initialInspectionData.value?.sparePartRespList || []
-  const hadGeneralOrThreeElectricRepair = [...initialItems, ...initialParts].some(
-    (item) => item.repairItemTypeName === '一般维修' || item.repairItemTypeName === '三电维修'
-  )
-  // 如果当前有一般维修或三电维修，且原来没有，则更新为存在故障
-  if (hasGeneralOrThreeElectricRepair && !hadGeneralOrThreeElectricRepair) {
-    detail.hasFault = '1'
-    showToast('维修类型为一般维修或三电维修，系统默认调整 【本次进店是否存在故障】为是，存在故障，请填写故障模块信息!')
-  }
+  // 记录原来的维修类型
+  const oldRepairItemTypeDetailCollect = detail.repairItemTypeDetailCollect || ''
 
   savingLoading.value = true
   try {
@@ -3240,7 +3245,22 @@ const onPartsSave = async() => {
       isSaved.value = true
       // 保存成功后查询详情刷新数据
     }
-    fetchDetail()
+    await fetchDetail()
+
+    // 判断：原来不包含一般维修或三电维修，保存后包含了一般维修或三电维修，且本次进店是否存在故障为否
+    const newRepairItemTypeDetailCollect = detail.repairItemTypeDetailCollect || ''
+    const hadGeneralOrThreeElectric = oldRepairItemTypeDetailCollect.includes('一般维修') || oldRepairItemTypeDetailCollect.includes('三电维修')
+    const hasGeneralOrThreeElectric = newRepairItemTypeDetailCollect.includes('一般维修') || newRepairItemTypeDetailCollect.includes('三电维修')
+    if (!hadGeneralOrThreeElectric && hasGeneralOrThreeElectric && detail.hasFault === '2') {
+      detail.hasFault = '1'
+      // 清空默认文本
+      if (detail.customerFaultDesc === '本次进店车辆无故障') {
+        detail.customerFaultDesc = ''
+      }
+      showToast('维修类型为一般维修或三电维修，系统默认调整 【本次进店是否存在故障】为是，存在故障，请填写故障模块信息!')
+      // 切换tab到环检信息
+      activeTab.value = 'inspection'
+    }
   } catch (error) {
     console.error('保存失败:', error)
     showToast('保存失败')
@@ -3346,57 +3366,81 @@ const onAddPackage = () => {
   })
 }
 
+// 留车检查返回数据
+const checkFaultData = ref(null)
+
 // 制单确认并签字
-const onConfirmAndSign = () => {
+const onConfirmAndSign = async() => {
   if (isConfirmAndSignDisabled.value) {
     return
   }
-  // 从 RepairItemContent 组件获取数据
-  const items = partsData.repairItemRespList || []
-  const parts = partsData.sparePartRespList || []
+  // 等待详情数据加载完成
+  if (savingLoading.value) {
+    showToast('数据加载中，请稍候')
+    return
+  }
+  // 从 RepairItemContent 组件获取数据，如果没有则使用 partsData 中的数据
+  const items = repairItemContentRef.value?.selectedItems || partsData.repairItemRespList || []
+  const parts = repairItemContentRef.value?.selectedParts || partsData.sparePartRespList || []
   // 校验维修项目或零件有值（有一个有值即可）
   if (items.length === 0 && parts.length === 0) {
     showToast('项目或零件不可为空，请先添加维修项目或零件')
     return
   }
 
-  // 弹框询问是否同意留车
-  showConfirmDialog({
-    title: '提示',
-    message: '该车辆需要留车检查，请咨询客户是否同意留车?',
-    confirmButtonText: '同意',
-    cancelButtonText: '不同意',
-    showCancelButton: true
-  })
-    .then(() => {
-      // 同意留车
-      handleConfirmAndSignWithCheck(1)
-    })
-    .catch(() => {
-      // 不同意留车
-      handleConfirmAndSignWithCheck(0)
-    })
+  // 先调用checkFault接口
+  try {
+    savingLoading.value = true
+    const res = await checkFault(detail.id)
+    savingLoading.value = false
+    if (res.code === 200) {
+      checkFaultData.value = res.data
+      // 如果isVehRetention=1，弹出留车确认框
+      if (res.data?.isVehRetention === 1) {
+        showConfirmDialog({
+          title: '提示',
+          message: '该车辆需要留车检查，请咨询客户是否同意留车?',
+          confirmButtonText: '同意',
+          cancelButtonText: '不同意',
+          showCancelButton: true
+        })
+          .then(() => {
+            // 同意留车，调用createRetention接口
+            createRetention({
+              serviceProxyId: detail.id,
+              vehRetentionConfigId: res.data?.vehRetentionConfigId
+            }).then(() => {
+              handleConfirmAndSignProcess()
+            }).catch((err) => {
+              showToast(err.msg || '留车操作失败')
+            })
+          })
+          .catch(() => {
+            // 不同意留车，继续后续流程
+            handleConfirmAndSignProcess()
+          })
+      } else {
+        // 不需要留车检查，直接执行后续流程
+        handleConfirmAndSignProcess()
+      }
+    } else {
+      showToast(res.msg || '检查失败')
+    }
+  } catch (error) {
+    savingLoading.value = false
+    console.error('checkFault接口调用失败:', error)
+    showToast(error.msg || '检查失败')
+  }
 }
 
-// 处理制单确认并签字（带留车检查）
-const handleConfirmAndSignWithCheck = async(isVehRetention) => {
-  // 调用留车检查接口
-  try {
-    await checkFault({
-      isVehRetention,
-      vehRetentionConfigId: detail.id
-    })
-  } catch (error) {
-    console.error('留车检查接口调用失败:', error)
-  }
-
+// 处理制单确认并签字后续流程
+const handleConfirmAndSignProcess = () => {
   // signStatus == 10 时，不调接口，直接跳转结算页面
   if (Number(detail.signStatus) === 10) {
-    const settlementUrl = `https://staticres-sitb.leapmotor.com/leapx/biling/ais/constructionOrder?serviceProxyId=${detail.id}`
+    const settlementUrl = `https://staticres-sitb.leapmotor.com/leapx/biling/ais/constructionOrder?serviceProxyId=${detail.id}&signChannel=2`
     window.location.href = settlementUrl
     return
   }
-  // 不管成功还是失败，都继续执行后续逻辑
   // 点击"准确"，执行接口
   const params = {
     serviceProxyId: detail.id,
@@ -3418,7 +3462,7 @@ const handleConfirmAndSignWithCheck = async(isVehRetention) => {
         fetchDetail()
         if (!params.signChannel) {
           // 接口成功后跳转结算页面
-          const settlementUrl = `https://staticres-sitb.leapmotor.com/leapx/biling/ais/constructionOrder?serviceProxyId=${detail.id}`
+          const settlementUrl = `https://staticres-sitb.leapmotor.com/leapx/biling/ais/constructionOrder?serviceProxyId=${detail.id}&signChannel=2`
           window.location.href = settlementUrl
         }
       } else {

@@ -1199,24 +1199,21 @@ const getFileType = (file, fallback = '') => {
 // 处理图片列表参数的通用方法
 const formatPhotoList = (list, attachType, businessId) => {
   return list.map((item) => {
-    // 判断是否为新上传的图片：有 id 但没有原始 businessId
-    const isNewUpload = item.id && !item.businessId
+    // 判断是否为新上传的图片：没有 id 表示新上传
+    const isNewUpload = !item.id
     if (isNewUpload) {
-      // 新上传的图片：不传 id，其他参数都传，fileId 取 id
-      const { id, ...rest } = item
+      // 新上传的图片：不传 id，传 fileId（取上传成功后的 id）
       return {
-        ...rest,
-        fileId: id,
         businessId,
+        fileId: item.uploadId, // 取上传成功后保存的 id
         fileUrl: getFileSaveUrl(item),
         fileType: getFileType(item, 'image/jpeg'),
         attachType,
         configCode: 'mcs_serviceproxy'
       }
     }
-    // 旧图片：参数正常传
+    // 旧图片：传 fileId（取原有的 id）
     return {
-      ...item,
       fileId: item.id,
       businessId,
       fileUrl: getFileSaveUrl(item),
@@ -1254,7 +1251,8 @@ import {
   saveSpFaultModule,
   deleteSpFaultModule,
   getRecentlyServiceProxy,
-  checkFault
+  checkFault,
+  createRetention
 } from '@/api/reception'
 import './create.scss'
 
@@ -1801,8 +1799,6 @@ const detail = reactive({
   departureNetMileageElectricity: '',
   departureNetMileageExtend: '',
   electricalMileage: '',
-  motorModel: '',
-  motorSerialNumber: '',
   batteryModel: '',
   batterySerialNumber: '',
   enginenNumber: '',
@@ -2266,7 +2262,9 @@ const handleImageFileChange = (event) => {
               ...targetList[lastIndex],
               status: 'done',
               message: '',
-              id: uploadData.id || null,
+              id: null, // 新上传图片不保存id，保持null
+              uploadId: uploadData.id, // 保存上传成功后的id，用于fileId
+              businessId: null, // 新上传图片businessId保持null
               url: rawUrl,
               fileUrl: rawUrl,
               authFileUrl: uploadData.authFileUrl || rawUrl,
@@ -2406,7 +2404,7 @@ const onAddFaultModuleItem = (item) => {
     saveSpFaultModule({ ...item, serviceProxyId: serviceProxyId.value }).then(res => {
       if (res.code === 200) {
         fetchDetailForSignature()
-        showToast('添加成功')
+        showToast(res.data || '添加成功')
         addFaultModuleShow.value = false
         faultSearchValue.value = ''
       } else {
@@ -2539,6 +2537,11 @@ const onSave = async() => {
     showToast('请输入客户故障描述')
     return
   }
+  // 如果hasFault为"1"，必须添加故障模块
+  if (detail.hasFault === '1' && detail.faultModules.length === 0) {
+    showToast('请添加故障模块')
+    return
+  }
   // 照片校验（根据配置判断是否必填）
   if (interiorConfig.value.required === '1' && detail.interiorImages.length === 0) {
     showToast('请上传车内照片')
@@ -2591,8 +2594,6 @@ const onSave = async() => {
       vehYearTypeId: detail.vehicleProfileServiceResp.vehicleYearId,
       vehYearTypeName: detail.vehicleProfileServiceResp.vehicleYearName,
       dedicatedServiceManager: detail.vehicleProfileServiceResp.serviceUserName,
-      motorModel: detail.motorModel,
-      motorSerialNumber: detail.motorSerialNumber,
       batteryModel: detail.batteryModel,
       batterySerialNumber: detail.batterySerialNumber,
       engineNumber: detail.enginenNumber,
@@ -2654,6 +2655,11 @@ const onComplete = async() => {
   // 如果选择"是"，客户故障描述必填
   if (detail.hasFault === '1' && !detail.customerFaultDesc.trim()) {
     showToast('请输入客户故障描述')
+    return
+  }
+  // 如果hasFault为"1"，必须添加故障模块
+  if (detail.hasFault === '1' && detail.faultModules.length === 0) {
+    showToast('请添加故障模块')
     return
   }
   // 当该车辆销售日期+60天≤开单时间时(销售日期为空时不计算)，车牌号为必填项
@@ -2776,8 +2782,6 @@ const onInspectionSave = async() => {
       vehYearTypeId: detail.vehicleProfileServiceResp.vehicleYearId,
       vehYearTypeName: detail.vehicleProfileServiceResp.vehicleYearName,
       dedicatedServiceManager: detail.vehicleProfileServiceResp.serviceUserName,
-      motorModel: detail.motorModel,
-      motorSerialNumber: detail.motorSerialNumber,
       batteryModel: detail.batteryModel,
       batterySerialNumber: detail.batterySerialNumber,
       engineNumber: detail.enginenNumber,
@@ -2828,7 +2832,7 @@ const onInspectionSave = async() => {
       // 保存成功后获取详情数据更新
       fetchDetailForSignature()
     } else {
-      showToast(res.msg || '保存失败')
+      showToast({ message: res.msg || '保存失败', duration: 3000 })
     }
   } catch (error) {
     console.error('保存失败:', error)
@@ -2874,8 +2878,11 @@ const onPartsSave = async() => {
   }
 }
 
+// 留车检查返回数据
+const checkFaultData = ref(null)
+
 // 制单确认并签字
-const onConfirmAndSign = () => {
+const onConfirmAndSign = async() => {
   if (isConfirmAndSignDisabled.value) {
     return
   }
@@ -2888,36 +2895,53 @@ const onConfirmAndSign = () => {
     return
   }
 
-  // 弹框询问是否同意留车
-  showConfirmDialog({
-    title: '提示',
-    message: '该车辆需要留车检查，请咨询客户是否同意留车?',
-    confirmButtonText: '同意',
-    cancelButtonText: '不同意',
-    showCancelButton: true
-  })
-    .then(() => {
-      // 同意留车
-      handleConfirmAndSignWithCheck(1)
-    })
-    .catch(() => {
-      // 不同意留车
-      handleConfirmAndSignWithCheck(0)
-    })
+  // 先调用checkFault接口
+  try {
+    savingLoading.value = true
+    const res = await checkFault({ serviceProxyId: detail.id })
+    savingLoading.value = false
+    if (res.code === 200) {
+      checkFaultData.value = res.data
+      // 如果isVehRetention=1，弹出留车确认框
+      if (res.data?.isVehRetention === 1) {
+        showConfirmDialog({
+          title: '提示',
+          message: '该车辆需要留车检查，请咨询客户是否同意留车?',
+          confirmButtonText: '同意',
+          cancelButtonText: '不同意',
+          showCancelButton: true
+        })
+          .then(() => {
+            // 同意留车，调用createRetention接口
+            createRetention({
+              serviceProxyId: detail.id,
+              vehRetentionConfigId: res.data?.vehRetentionConfigId
+            }).then(() => {
+              handleConfirmAndSignProcess()
+            }).catch((err) => {
+              showToast(err.msg || '留车操作失败')
+            })
+          })
+          .catch(() => {
+            // 不同意留车，继续后续流程
+            handleConfirmAndSignProcess()
+          })
+      } else {
+        // 不需要留车检查，直接执行后续流程
+        handleConfirmAndSignProcess()
+      }
+    } else {
+      showToast(res.msg || '检查失败')
+    }
+  } catch (error) {
+    savingLoading.value = false
+    console.error('checkFault接口调用失败:', error)
+    showToast(error.msg || '检查失败')
+  }
 }
 
-// 处理制单确认并签字（带留车检查）
-const handleConfirmAndSignWithCheck = async(isVehRetention) => {
-  // 调用留车检查接口
-  try {
-    await checkFault({
-      isVehRetention,
-      vehRetentionConfigId: detail.id
-    })
-  } catch (error) {
-    console.error('留车检查接口调用失败:', error)
-  }
-  // 不管成功还是失败，都继续执行后续逻辑
+// 处理制单确认并签字后续流程
+const handleConfirmAndSignProcess = () => {
   // 点击"准确"，执行接口
   savingLoading.value = true
   const params = {
@@ -2935,7 +2959,7 @@ const handleConfirmAndSignWithCheck = async(isVehRetention) => {
         fetchDetail()
         if (!params.signChannel) {
           // 接口成功后跳转结算页面
-          const settlementUrl = `https://staticres-sitb.leapmotor.com/leapx/biling/ais/settlement?serviceProxyId=${detail.id}`
+          const settlementUrl = `https://staticres-sitb.leapmotor.com/leapx/biling/ais/constructionOrder?serviceProxyId=${detail.id}&signChannel=2`
           window.location.href = settlementUrl
         }
       } else {
@@ -3029,6 +3053,9 @@ const fetchDetailForSignature = async() => {
       getFileList({ businessId: id }).then((fileRes) => {
         if (fileRes.code === 200) {
           const fileList = fileRes.data || []
+          // 清空已有图片列表，避免重复
+          detail.interiorImages = []
+          detail.exteriorImages = []
           // 用于存储最新的制单签字
           let latestSignFile = null
           // 根据 attachType 分类回显文件
@@ -3211,7 +3238,9 @@ onMounted(() => {
               ...detail.interiorImages,
               ...recentData.interiorPhotoList.map((photo) => ({
                 ...photo,
-                url: photo.fileUrl
+                url: photo.fileUrl,
+                id: null,
+                businessId: null
               }))
             ]
           }
@@ -3221,7 +3250,9 @@ onMounted(() => {
               ...detail.exteriorImages,
               ...recentData.exteriorPhotoList.map((photo) => ({
                 ...photo,
-                url: photo.fileUrl
+                url: photo.fileUrl,
+                id: null,
+                businessId: null
               }))
             ]
           }
@@ -3325,7 +3356,9 @@ onMounted(() => {
               ...targetList[lastIndex],
               status: 'done',
               message: '',
-              id: uploadData.id || null,
+              id: null, // 新上传图片不保存id，保持null
+              uploadId: uploadData.id, // 保存上传成功后的id，用于fileId
+              businessId: null, // 新上传图片businessId保持null
               url: rawUrl,
               fileUrl: rawUrl,
               authFileUrl: uploadData.authFileUrl || rawUrl,

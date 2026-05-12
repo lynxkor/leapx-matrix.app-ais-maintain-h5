@@ -1056,7 +1056,7 @@ const onConfirmPackage = () => {
         showPackageDetail.value = false
         router.back()
       } else {
-        showToast(res.message || '添加失败')
+        showToast({ message: res.msg || '保存失败', duration: 3000 })
       }
     })
     .catch(() => {
@@ -1123,7 +1123,7 @@ const onConfirmService = () => {
         showServiceDetail.value = false
         router.back()
       } else {
-        showToast(res.message || '添加失败')
+        showToast({ message: res.msg || '保存失败', duration: 3000 })
       }
     })
     .catch(() => {
@@ -1147,7 +1147,7 @@ const onConfirmFree = () => {
         showFreeDetail.value = false
         router.back()
       } else {
-        showToast(res.message || '添加失败')
+        showToast({ message: res.msg || '保存失败', duration: 3000 })
       }
     })
     .catch(() => {
@@ -1171,7 +1171,7 @@ const onConfirmMall = () => {
         showMallDetail.value = false
         // router.back()
       } else {
-        showToast(res.message || '添加失败')
+        showToast({ message: res.msg || '保存失败', duration: 3000 })
       }
     })
     .catch(() => {
