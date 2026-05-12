@@ -119,7 +119,7 @@
           <div class="fault-info">
             <!-- 是否存在故障 -->
             <div class="fault-toggle-section">
-              <span class="title">本次进店是否存在故障</span>
+              <span class="title">本次是否因故障进店</span>
               <div class="toggle-wrapper">
                 <!-- <van-icon name="checked" size="20px" color="#009100" /> -->
                 <span class="toggle-text">{{ detail.currentFaultLabel }}</span>
