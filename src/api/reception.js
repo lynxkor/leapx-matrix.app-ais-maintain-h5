@@ -45,7 +45,7 @@ export function getVehicleMileage(data) {
 
 // 搜索故障模块
 export function getFaultModule(data) {
-  return postText('/maintain/app/sp/serviceProxy/cccList', data)
+  return postJson('/maintain/app/sp/serviceProxy/cccList', data)
 }
 
 // 搜索维修项目
