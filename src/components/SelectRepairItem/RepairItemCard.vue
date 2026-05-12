@@ -18,13 +18,13 @@
           <div class="name-row">
             <span class="card-name">
               <span class="card-tag" v-if="item.isOemPart == 1">原厂件</span>
+              <span class="card-tag" v-else-if="item.partsId">副厂件</span>
               <span
                 v-if="item.ifReplace == 1 && isReplace"
                 class="replace-tag"
                 @click="onReplaceTagClick(item)"
                 >替<van-icon name="exchange" size="13px"
-              /></span>
-              {{ item.name }}
+              /></span>{{ item.name }}
               <img
                 v-if="nameEditable && !disabled"
                 :src="icon_edit"
@@ -133,6 +133,7 @@
             <div class="current-part-info">
               <span class="current-part-name">{{ item.name }}</span>
               <span class="original-tag" v-if="item.isOemPart == 1">原厂件</span>
+              <span class="original-tag" v-else>副厂件</span>
             </div>
             <div class="check-icon">
               <van-icon name="success" size="16" color="#009100" />
