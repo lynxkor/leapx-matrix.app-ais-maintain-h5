@@ -274,6 +274,12 @@ const removeItem = (item, type) => {
   originalRemoveItem(item, type, data => {
     emit('delete', data)
   })
+  nextTick(() => {
+    emit('delete', {
+      selectedItems: selectedItems.value,
+      selectedParts: selectedParts.value
+    })
+  })
 }
 
 // 事件处理
