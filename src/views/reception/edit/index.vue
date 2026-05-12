@@ -295,7 +295,7 @@
             <!-- 是否存在故障 -->
             <div class="section-card">
               <div class="fault-header">
-                <span class="title">本次进店是否存在故障</span>
+                <span class="title">本次是否因故障进店</span>
                 <div class="radio-group">
                   <van-radio-group
                     v-model="detail.hasFault"
@@ -348,7 +348,7 @@
             <!-- 客户故障描述 -->
             <div class="section-card">
               <div class="section-title" style="justify-content: flex-start">
-                <span v-if="detail.hasFault === 1" class="required">*</span>客户故障描述
+                <span v-if="detail.hasFault === '1'" class="required">*</span>客户故障描述
               </div>
               <van-field
                 v-model="detail.customerFaultDesc"
@@ -358,7 +358,7 @@
                 autosize
                 show-word-limit
                 maxlength="500"
-                :disabled="detail.hasFault !== 1"
+                :disabled="detail.hasFault !== '1'"
                 style="background: #f5f5f5; border-radius: 6px"
               />
             </div>
@@ -1661,10 +1661,8 @@ const onHasFaultChange = (value) => {
       detail.customerFaultDesc = '本次进店车辆无故障'
     }
   } else if (value === '1') {
-    // 从"否"切换到"是"，清空默认文本
-    if (detail.customerFaultDesc === '本次进店车辆无故障') {
-      detail.customerFaultDesc = ''
-    }
+    // 从"否"切换到"是"，清空客户故障描述
+    detail.customerFaultDesc = ''
   }
 }
 
@@ -1678,8 +1676,9 @@ const onCancelFaultConfirm = () => {
 // 确认故障变更
 const onConfirmFaultChange = () => {
   showFaultConfirm.value = false
-  // 清空故障模块和客户故障描述
+  // 清空故障模块，设置默认客户故障描述
   detail.faultModules = []
+  detail.customerFaultDesc = '本次进店车辆无故障'
   detail.hasFault = '2'
   showToast('已更改')
 }
@@ -3437,7 +3436,7 @@ const onConfirmAndSign = async() => {
 const handleConfirmAndSignProcess = () => {
   // signStatus == 10 时，不调接口，直接跳转结算页面
   if (Number(detail.signStatus) === 10) {
-    const settlementUrl = `https://staticres-sitb.leapmotor.com/leapx/biling/ais/constructionOrder?serviceProxyId=${detail.id}&signChannel=2`
+    const settlementUrl = `https://staticres-sitb.leapmotor.com/leapx/biling/ais/constructionOrder?serviceProxyId=${detail.id}&signChannel=3`
     window.location.href = settlementUrl
     return
   }
@@ -3462,7 +3461,7 @@ const handleConfirmAndSignProcess = () => {
         fetchDetail()
         if (!params.signChannel) {
           // 接口成功后跳转结算页面
-          const settlementUrl = `https://staticres-sitb.leapmotor.com/leapx/biling/ais/constructionOrder?serviceProxyId=${detail.id}&signChannel=2`
+          const settlementUrl = `https://staticres-sitb.leapmotor.com/leapx/biling/ais/constructionOrder?serviceProxyId=${detail.id}&signChannel=3`
           window.location.href = settlementUrl
         }
       } else {

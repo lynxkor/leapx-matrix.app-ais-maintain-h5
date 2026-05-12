@@ -287,7 +287,7 @@
             <!-- 是否存在故障 -->
             <div class="section-card">
               <div class="fault-header">
-                <span class="title">本次进店是否存在故障</span>
+                <span class="title">本次是否因故障进店</span>
                 <div class="radio-group">
                   <van-radio-group
                     v-model="detail.hasFault"
@@ -1662,10 +1662,8 @@ const onHasFaultChange = (value) => {
       detail.customerFaultDesc = '本次进店车辆无故障'
     }
   } else if (value === '1') {
-    // 从"否"切换到"是"，清空默认文本
-    if (detail.customerFaultDesc === '本次进店车辆无故障') {
-      detail.customerFaultDesc = ''
-    }
+    // 从"否"切换到"是"，清空客户故障描述
+    detail.customerFaultDesc = ''
   }
 }
 
@@ -2959,7 +2957,7 @@ const handleConfirmAndSignProcess = () => {
         fetchDetail()
         if (!params.signChannel) {
           // 接口成功后跳转结算页面
-          const settlementUrl = `https://staticres-sitb.leapmotor.com/leapx/biling/ais/constructionOrder?serviceProxyId=${detail.id}&signChannel=2`
+          const settlementUrl = `https://staticres-sitb.leapmotor.com/leapx/biling/ais/constructionOrder?serviceProxyId=${detail.id}&signChannel=3`
           window.location.href = settlementUrl
         }
       } else {
