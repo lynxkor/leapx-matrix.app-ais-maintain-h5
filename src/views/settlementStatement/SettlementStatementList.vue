@@ -116,11 +116,11 @@
               <div class="info-rows">
                 <div class="info-row">
                   <span class="info-label">车主</span>
-                  <span class="info-value">{{ item.creatorName }}</span>
+                  <span class="info-value">{{ item.customerName }}</span>
                 </div>
                 <div class="info-row">
                   <span class="info-label">客户经理</span>
-                  <span class="info-value">{{ item.serviceOwnerName }}</span>
+                  <span class="info-value">{{ item.creatorName }}</span>
                 </div>
                 <div class="info-row">
                   <span class="info-label">开单时间</span>
