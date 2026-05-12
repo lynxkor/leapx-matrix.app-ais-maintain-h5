@@ -2862,7 +2862,7 @@ const onAddFaultModuleItem = (item) => {
         vfgName: item.vfgName,
         faultDesc: item.faultDescription || item.faultDesc
       })
-      showToast('添加成功')
+      showToast(res.data || '添加成功')
       addFaultModuleShow.value = false
       faultSearchValue.value = ''
     } else {
@@ -3437,7 +3437,7 @@ const onConfirmAndSign = async() => {
 const handleConfirmAndSignProcess = () => {
   // signStatus == 10 时，不调接口，直接跳转结算页面
   if (Number(detail.signStatus) === 10) {
-    const settlementUrl = `https://staticres-sitb.leapmotor.com/leapx/biling/ais/constructionOrder?serviceProxyId=${detail.id}`
+    const settlementUrl = `https://staticres-sitb.leapmotor.com/leapx/biling/ais/constructionOrder?serviceProxyId=${detail.id}&signChannel=2`
     window.location.href = settlementUrl
     return
   }
@@ -3462,7 +3462,7 @@ const handleConfirmAndSignProcess = () => {
         fetchDetail()
         if (!params.signChannel) {
           // 接口成功后跳转结算页面
-          const settlementUrl = `https://staticres-sitb.leapmotor.com/leapx/biling/ais/constructionOrder?serviceProxyId=${detail.id}`
+          const settlementUrl = `https://staticres-sitb.leapmotor.com/leapx/biling/ais/constructionOrder?serviceProxyId=${detail.id}&signChannel=2`
           window.location.href = settlementUrl
         }
       } else {

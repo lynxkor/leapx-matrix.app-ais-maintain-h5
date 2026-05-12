@@ -2404,7 +2404,7 @@ const onAddFaultModuleItem = (item) => {
     saveSpFaultModule({ ...item, serviceProxyId: serviceProxyId.value }).then(res => {
       if (res.code === 200) {
         fetchDetailForSignature()
-        showToast('添加成功')
+        showToast(res.data || '添加成功')
         addFaultModuleShow.value = false
         faultSearchValue.value = ''
       } else {
@@ -2959,7 +2959,7 @@ const handleConfirmAndSignProcess = () => {
         fetchDetail()
         if (!params.signChannel) {
           // 接口成功后跳转结算页面
-          const settlementUrl = `https://staticres-sitb.leapmotor.com/leapx/biling/ais/constructionOrder?serviceProxyId=${detail.id}`
+          const settlementUrl = `https://staticres-sitb.leapmotor.com/leapx/biling/ais/constructionOrder?serviceProxyId=${detail.id}&signChannel=2`
           window.location.href = settlementUrl
         }
       } else {
