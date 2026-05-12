@@ -271,12 +271,8 @@ const { regularItems, packageItemGroups, regularParts, packagePartGroups } =
 
 // 删除操作包装函数 - 删除后通知父组件
 const removeItem = (item, type) => {
-  originalRemoveItem(item, type)
-  nextTick(() => {
-    emit('delete', {
-      selectedItems: selectedItems.value,
-      selectedParts: selectedParts.value
-    })
+  originalRemoveItem(item, type, data => {
+    emit('delete', data)
   })
 }
 

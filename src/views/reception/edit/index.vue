@@ -3266,7 +3266,6 @@ const onPartsSave = async() => {
   } finally {
     savingLoading.value = false
   }
-  repairItemContentRef.value?.onSave()
 }
 
 // 签字确认保存

@@ -138,7 +138,7 @@ export default function useRepairItemOperations({
    * @param {Object} item - 要移除的项目/零件
    * @param {string} type - 类型 'item' | 'part'
    */
-  const removeItem = (item, type) => {
+  const removeItem = (item, type, successCallback) => {
     const list = type === 'item' ? selectedItems : selectedParts
     const idx = list.value.indexOf(item)
     if (idx === -1) return
@@ -173,6 +173,10 @@ export default function useRepairItemOperations({
         const packageId = item.packageId
         selectedItems.value = selectedItems.value.filter(i => i.packageId !== packageId)
         selectedParts.value = selectedParts.value.filter(i => i.packageId !== packageId)
+        successCallback && successCallback({
+          selectedItems: selectedItems.value,
+          selectedParts: selectedParts.value
+        })
       }).catch(() => {
         // 取消删除，不做任何操作
       })
