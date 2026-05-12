@@ -1202,6 +1202,7 @@ const formatPhotoList = (list, attachType, businessId) => {
     // 如果有id（来自接口返回或复用图片），使用id；否则使用uploadId（新上传）
     const fileId = item.id || item.uploadId
     return {
+      id: businessId ? fileId : null,
       fileId,
       businessId,
       fileUrl: getFileSaveUrl(item),
@@ -2008,7 +2009,7 @@ const fetchDetail = async() => {
   console.log('获取详情:', id)
 
   // 获取附件列表并分类回显
-  getFileList({ businessId: id }).then((fileRes) => {
+  getFileList({ businessId: id, pageSize: 100 }).then((fileRes) => {
     if (fileRes.code === 200) {
       const fileList = fileRes.data || []
       // 清空列表
@@ -2286,7 +2287,7 @@ const handleImageFileChange = (event) => {
 
 // 刷新附件列表
 const refreshAttachmentList = () => {
-  getFileList({ businessId: serviceProxyId.value || route.query.id }).then((res) => {
+  getFileList({ businessId: serviceProxyId.value || route.query.id, pageSize: 100 }).then((res) => {
     if (res.code === 200) {
       const fileList = res.data || []
       // 清空所有列表
@@ -3033,7 +3034,7 @@ const fetchDetailForSignature = async() => {
         }))
       }
       // 获取附件列表并分类回显车内车外照片
-      getFileList({ businessId: id }).then((fileRes) => {
+      getFileList({ businessId: id, pageSize: 100 }).then((fileRes) => {
         if (fileRes.code === 200) {
           const fileList = fileRes.data || []
           // 清空已有图片列表，避免重复
@@ -3044,7 +3045,7 @@ const fetchDetailForSignature = async() => {
           // 根据 attachType 分类回显文件
           fileList.forEach((item) => {
             const fileObj = {
-              ...item, url: item.fileUrl, fileUrl: item.fileUrl
+              ...item, url: item.fileUrl
             }
             if (item.attachType === '车内照片') {
               detail.interiorImages.push(fileObj)
@@ -3335,7 +3336,7 @@ onMounted(() => {
           if (targetList.length > 0) {
             const lastIndex = targetList.length - 1
             const rawUrl = uploadData.url || uploadData.fileUrl || singleUrl
-            const currentBusinessId = serviceProxyId.value || null
+            const currentBusinessId = serviceProxyId.value
             targetList[lastIndex] = {
               ...targetList[lastIndex],
               status: 'done',

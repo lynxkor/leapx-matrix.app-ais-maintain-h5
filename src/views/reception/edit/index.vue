@@ -358,7 +358,7 @@
                 autosize
                 show-word-limit
                 maxlength="500"
-                :disabled="detail.hasFault !== '1'"
+                :disabled="detail.hasFault !== '1' || Number(detail.confirmFault) === 1"
                 style="background: #f5f5f5; border-radius: 6px"
               />
             </div>
@@ -1230,6 +1230,7 @@ const formatPhotoList = (list, attachType, businessId) => {
     // 如果有id（来自接口返回或复用图片），使用id；否则使用uploadId（新上传）
     const fileId = item.id || item.uploadId
     return {
+      id: fileId,
       fileId,
       businessId,
       fileUrl: getFileSaveUrl(item),
@@ -1648,7 +1649,7 @@ const onHasFaultChange = (value) => {
       detail.hasFault = '2'
       detail.customerFaultDesc = '本次进店车辆无故障'
     }
-  } else if (value === '1') {
+  } else if (value === '1' && detail.customerFaultDesc === '本次进店车辆无故障') {
     // 从"否"切换到"是"，清空客户故障描述
     detail.customerFaultDesc = ''
   }
@@ -1740,6 +1741,7 @@ const detail = reactive({
   currentFault: '',
   faultAlertRecordRespList: [],
   hasFault: '',
+  confirmFault: '',
   faultModules: [],
   customerFaultDesc: '',
   testResult: '',
@@ -2111,6 +2113,7 @@ const fetchDetail = async() => {
         detail.customerComment = data.customerComment || ''
         detail.currentFault = String(data.currentFault || '')
         detail.hasFault = data.currentFault === 1 ? '1' : '2'
+        detail.confirmFault = data.confirmFault
         detail.customerFaultDesc = data.customerContent || ''
         detail.faultAlertRecordRespList = data.faultAlertRecordRespList || []
         // 将故障预警记录映射到faultModules用于显示
@@ -2124,7 +2127,7 @@ const fetchDetail = async() => {
         detail.vehicleProfileServiceResp = data.vehicleProfileServiceResp || {}
 
         // 获取附件列表并分类回显
-        getFileList({ businessId: route.query.id }).then((fileRes) => {
+        getFileList({ businessId: route.query.id, pageSize: 100 }).then((fileRes) => {
           if (fileRes.code === 200) {
             const fileList = fileRes.data || []
             // 清空列表
@@ -2135,7 +2138,7 @@ const fetchDetail = async() => {
             let latestSignFile = null
             // 根据 attachType 分类回显文件
             fileList.forEach((item) => {
-              const fileObj = { ...item, url: item.fileUrl, fileUrl: item.fileUrl }
+              const fileObj = { ...item, url: item.fileUrl }
               switch (item.attachType) {
                 case '车内照片':
                   detail.interiorImages.push(fileObj)
@@ -2765,7 +2768,7 @@ onMounted(() => {
           const targetList = getTargetFileList(uploadType)
           if (targetList.length > 0) {
             const lastIndex = targetList.length - 1
-            const rawUrl = uploadData.url || uploadData.fileUrl || singleUrl
+            const rawUrl = uploadData.fileUrl || uploadData.url || singleUrl
             targetList[lastIndex] = {
               ...targetList[lastIndex],
               status: 'done',
@@ -3154,6 +3157,8 @@ const onInspectionSave = async(type) => {
     earlyServiceProxy: detail.earlyServiceProxy
   }
   console.log('保存参数:', params)
+  console.log('exteriorPhotoList', params.exteriorPhotoList, params.exteriorPhotoList.length)
+  console.log('interiorPhotoList', params.interiorPhotoList, params.interiorPhotoList.length)
   try {
     const res = await serviceAddOrUpdate(params)
     savingLoading.value = false

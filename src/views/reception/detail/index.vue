@@ -743,7 +743,7 @@ const getSignChannelName = (channel) => {
 const loadAttachmentList = async() => {
   if (!route.query.id) return
   try {
-    const res = await getFileList({ businessId: route.query.id, attachType: '' })
+    const res = await getFileList({ businessId: route.query.id, pageSize: 100 })
     if (res.code === 200 && res.data) {
       detail.value.interiorPhotos = res.data.filter((file) => file.attachType === '车内照片')
       detail.value.exteriorPhotos = res.data.filter((file) => file.attachType === '车外照片')
