@@ -2999,7 +2999,7 @@ const fetchDetailForSignature = async() => {
       detail.custTypeLabel = data.custTypeLabel || ''
       detail.vehicleModel = data.vehModelName || ''
       detail.vehicleModelName = data.vehModelName || ''
-      detail.vehicleModelId = data.vehicleModelId || ''
+      detail.vehicleModelId = data.vehModelId || ''
       detail.vin = data.vehProfileVin || ''
       detail.owner = data.customerName || ''
       detail.ownerPhone = data.customerPhone || ''

@@ -2092,7 +2092,7 @@ const fetchDetail = async() => {
         detail.custTypeLabel = data.custTypeLabel || ''
         detail.vehicleModel = data.vehModelName || ''
         detail.vehicleModelName = data.vehModelName || ''
-        detail.vehicleModelId = data.vehicleModelId || ''
+        detail.vehicleModelId = data.vehModelId || ''
         detail.vin = data.vehProfileVin || ''
         detail.customerName = data.customerName || ''
         detail.customerPhone = data.customerPhone || ''
