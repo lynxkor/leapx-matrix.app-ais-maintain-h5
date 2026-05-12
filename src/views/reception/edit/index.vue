@@ -2079,7 +2079,7 @@ const fetchDetail = async() => {
         detail.custTypeLabel = data.custTypeLabel || ''
         detail.vehicleModel = data.vehModelName || ''
         detail.vehicleModelName = data.vehModelName || ''
-        detail.vehicleModelId = data.vehicleModelId || ''
+        detail.vehicleModelId = data.vehModelId || ''
         detail.vin = data.vehProfileVin || ''
         detail.customerName = data.customerName || ''
         detail.customerPhone = data.customerPhone || ''
@@ -3137,7 +3137,7 @@ const onInspectionSave = async(type) => {
     faultPeriod: detail.faultPeriod,
     earliestfaultServiceProxy: detail.earliestfaultServiceProxy,
     recentlyfaultServiceProxy: detail.recentlyfaultServiceProxy,
-    faultModule: detail.faultModules.map((m) => m.cccCode).join(','),
+    // faultModule: detail.faultModules.map((m) => m.cccCode).join(','),
     isCreateStatementInfo: detail.isCreateStatementInfo,
     isPreAuth: detail.isPreAuth,
     isCreatePreAuth: detail.isCreatePreAuth,
@@ -3247,7 +3247,6 @@ const onPartsSave = async() => {
   } finally {
     savingLoading.value = false
   }
-  repairItemContentRef.value?.onSave()
 }
 
 // 签字确认保存

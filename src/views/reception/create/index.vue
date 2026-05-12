@@ -2554,8 +2554,8 @@ const onSave = async() => {
       bindingPhone: detail.binderPhone,
       bindingUser: detail.bindingUser,
       carPlate: detail.plateNo,
-      dealerName: detail.salesDealerName,
-      dealerCode: detail.salesDealerCode,
+      // dealerName: detail.salesDealerName,
+      // dealerCode: detail.salesDealerCode,
       mileage: detail.mileage,
       lastMileage: null,
       startWarrantyDate: detail.vehicleProfileServiceResp.warrantyStartdate || '',
@@ -2591,7 +2591,7 @@ const onSave = async() => {
       customerContent: detail.customerFaultDesc,
       anomalyDescription: detail.abnormalDesc,
       currentSituation: Number(detail.hasFault) === 1 ? 20 : 10,
-      faultModule: detail.faultModules.map((m) => m.cccCode).join(','),
+      // faultModule: detail.faultModules.map((m) => m.cccCode).join(','),
       isCreateStatementInfo: 0,
       exteriorPhotoList: formatPhotoList(detail.exteriorImages, '车外照片', serviceProxyId.value || null),
       interiorPhotoList: formatPhotoList(detail.interiorImages, '车内照片', serviceProxyId.value || null),
@@ -2792,7 +2792,7 @@ const onInspectionSave = async() => {
       faultPeriod: detail.faultPeriod,
       earliestfaultServiceProxy: detail.earliestfaultServiceProxy,
       recentlyfaultServiceProxy: detail.recentlyfaultServiceProxy,
-      faultModule: detail.faultModules.map((m) => m.cccCode).join(','),
+      // faultModule: detail.faultModules.map((m) => m.cccCode).join(','),
       isCreateStatementInfo: 0,
       isPreAuth: detail.isPreAuth,
       isCreatePreAuth: detail.isCreatePreAuth,
@@ -2984,7 +2984,7 @@ const fetchDetailForSignature = async() => {
       detail.custTypeLabel = data.custTypeLabel || ''
       detail.vehicleModel = data.vehModelName || ''
       detail.vehicleModelName = data.vehModelName || ''
-      detail.vehicleModelId = data.vehicleModelId || ''
+      detail.vehicleModelId = data.vehModelId || ''
       detail.vin = data.vehProfileVin || ''
       detail.owner = data.customerName || ''
       detail.ownerPhone = data.customerPhone || ''
