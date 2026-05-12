@@ -2708,8 +2708,6 @@ const onInspectionSave = async() => {
       bindingUser: detail.bindingUser,
       bindingUserId: detail.bindingUserId,
       carPlate: detail.plateNo,
-      dealerName: detail.salesDealerName,
-      dealerCode: detail.salesDealerCode,
       appointmentNo: detail.appointmentNo,
       mileage: detail.mileage,
       lastMileage: null,
