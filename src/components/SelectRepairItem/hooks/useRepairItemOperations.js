@@ -143,6 +143,14 @@ export default function useRepairItemOperations({
     const idx = list.value.indexOf(item)
     if (idx === -1) return
 
+    // 如果删除的是维修项目，同步删除关联的维修配件
+    if (type === 'item') {
+      const repairItemTypeId = item.id
+      // 删除 repairItemTypeId 等于该维修项目 id 的配件
+      selectedParts.value = selectedParts.value.filter(
+        (part) => part.repairItemTypeId !== repairItemTypeId
+      )
+    }
     // 如果是套餐内的项目或零件，需要确认删除整个套餐
     if (item.packageId) {
       const packageTypeLabelMap = {

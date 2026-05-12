@@ -3156,7 +3156,7 @@ const onInspectionSave = async(type) => {
     faultPeriod: detail.faultPeriod,
     earliestfaultServiceProxy: detail.earliestfaultServiceProxy,
     recentlyfaultServiceProxy: detail.recentlyfaultServiceProxy,
-    faultModule: detail.faultModules.map((m) => m.cccCode).join(','),
+    // faultModule: detail.faultModules.map((m) => m.cccCode).join(','),
     isCreateStatementInfo: detail.isCreateStatementInfo,
     isPreAuth: detail.isPreAuth,
     isCreatePreAuth: detail.isCreatePreAuth,

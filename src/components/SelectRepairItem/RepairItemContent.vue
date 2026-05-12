@@ -45,7 +45,7 @@
 
     <!-- 内容区域 -->
     <div class="content-area">
-      <div class="content-area-section" v-if="selectedItems.length > 0">
+      <div :class="`content-area-section ${isComponent ? '': 'border-r'}`" v-if="selectedItems.length > 0">
         <div class="section-title">维修项目</div>
         <div
           v-for="group in packageItemGroups"
@@ -82,7 +82,7 @@
         />
       </div>
 
-      <div class="content-area-section" v-if="selectedParts.length > 0">
+      <div :class="`content-area-section ${isComponent ? '': 'border-r'}`" v-if="selectedParts.length > 0">
         <div class="section-title">维修配件</div>
         <div
           v-for="group in packagePartGroups"
@@ -271,16 +271,6 @@ const { regularItems, packageItemGroups, regularParts, packagePartGroups } =
 
 // 删除操作包装函数 - 删除后通知父组件
 const removeItem = (item, type) => {
-  console.log('removeItem', item, type)
-  console.log('selectedItems', selectedItems.value, 'selectedParts', selectedParts.value)
-  // 如果删除的是维修项目，同步删除关联的维修配件
-  if (type === 'item') {
-    const repairItemTypeId = item.repairItemTypeId
-    // 删除 repairItemTypeId 等于该维修项目 id 的配件
-    selectedParts.value = selectedParts.value.filter(
-      (part) => part.repairItemTypeId !== repairItemTypeId
-    )
-  }
   originalRemoveItem(item, type)
   nextTick(() => {
     emit('delete', {
@@ -511,7 +501,9 @@ defineExpose({
       padding: 12px 12px 0 12px;
       margin-top: 10px;
       background-color: #fff;
-      border-radius: 12px;
+      &.border-r {
+        border-radius: 12px;
+      }
     }
 
     .section-title {
