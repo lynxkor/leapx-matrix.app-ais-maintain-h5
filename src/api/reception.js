@@ -187,5 +187,5 @@ export function checkFault(data) {
 }
 // 创建留车单
 export function createRetention(data) {
-  return post('/maintain/web/sp/serviceProxy/addVehRetentionList', data)
+  return post('/maintain/app/sp/serviceProxy/addVehRetentionList', data)
 }

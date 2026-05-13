@@ -313,7 +313,7 @@
       close-icon-position="top-left"
       title="服务活动"
       @close="showServiceDetail = false"
-      style="max-height: 80vh"
+      style="height: 80vh"
     >
       <van-overlay :show="serviceSubmitting" style="z-index: 100">
         <div class="loading-wrapper">
@@ -443,7 +443,7 @@
       close-icon-position="top-left"
       title="免保项目"
       @close="showFreeDetail = false"
-      style="max-height: 80vh"
+      style="height: 80vh"
     >
       <van-overlay :show="freeSubmitting" style="z-index: 100">
         <div class="loading-wrapper">
@@ -496,6 +496,7 @@
       close-icon-position="top-left"
       title="商城订单"
       @close="showMallDetail = false"
+      style="height: 80vh"
     >
       <van-overlay :show="mallSubmitting" style="z-index: 100">
         <div class="loading-wrapper">
@@ -949,6 +950,10 @@ const onSearchClear = () => {
 
 // 点击维修套餐
 const onPackageClick = (item) => {
+  if (item.used) {
+    showToast('已使用')
+    return
+  }
   getSpecialPackageDetail({ id: serviceProxyId.value, packageId: item.id }).then((res) => {
     if (res.code === 200) {
       const data = res.data
@@ -977,6 +982,10 @@ const onEquityClick = (item) => {
 
 // 点击商城订单
 const onMallClick = (item) => {
+  if (item.used) {
+    showToast('已使用')
+    return
+  }
   getSpecialGoodsDetail({
     id: serviceProxyId.value,
     packageId: item.id
@@ -992,6 +1001,10 @@ const onMallClick = (item) => {
 
 // 点击免保项目
 const onFreeClick = (item) => {
+  if (item.used) {
+    showToast('已使用')
+    return
+  }
   getSpecialFreeDetail({
     id: serviceProxyId.value,
     packageId: item.id
@@ -1009,6 +1022,10 @@ const onFreeClick = (item) => {
 
 // 点击服务活动
 const onServiceClick = (item) => {
+  if (item.used) {
+    showToast('已使用')
+    return
+  }
   showLoadingToast('请稍候...')
   getSpecialActivityDetail({
     activityId: item.activityId,
