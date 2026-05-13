@@ -173,7 +173,7 @@
     </template>
 
     <!-- 添加收款弹窗 -->
-    <AisPopup v-model:show="showAddPayment" title="创建收款记录" position="bottom" round>
+    <AisPopup v-model:show="showAddPayment" title="创建收款记录" position="bottom" round :popupStyle="{ height: '662px' }">
       <template #content>
         <div class="payment-form">
           <div class="payment-card">
@@ -198,8 +198,9 @@
               <input
                 v-model="paymentForm.amount"
                 class="payment-amount-input"
-                type="number"
+                type="text"
                 placeholder="请输入支付金额"
+                @input="onAmountInput"
               />
             </div>
           </div>
@@ -306,7 +307,7 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { showToast } from 'vant'
+import { showToast, showImagePreview } from 'vant'
 import { useRoute } from 'vue-router'
 import AisPopup from '@/libs/components/AisPopup.vue'
 import {
@@ -317,6 +318,7 @@ import {
   addReceiptRecord,
   receiptCompletion
 } from '@/api/settlementStatement'
+import { getFileList } from '@/libs/api/fileConfig'
 import { usePageSafeArea } from '@/utils/safeArea'
 
 const route = useRoute()
@@ -692,6 +694,20 @@ const selectPaymentMethod = (item) => {
   paymentForm.value.paymentMethodText = item.text
 }
 
+const onAmountInput = () => {
+  let val = paymentForm.value.amount
+  // 只允许数字和小数点
+  val = val.replace(/[^\d.]/g, '')
+  // 小数点只能出现一次
+  val = val.replace(/\.{2,}/g, '.')
+  val = val.replace(/^(\d*\.)(.*)$/, (_, prefix, rest) => prefix + rest.replace(/\./g, ''))
+  // 限制两位小数
+  val = val.replace(/^(\d*\.\d{2}).*$/, '$1')
+  // 不能以多个0开头（除非是0.x）
+  val = val.replace(/^0+(\d)/, '0')
+  paymentForm.value.amount = val
+}
+
 // 根据签字规则显示不同文案和颜色
 // signStatus: 10-待签字, 20-已签字
 const signActionText = computed(() => {
@@ -725,7 +741,7 @@ const switchTab = (index) => {
 }
 
 // 签字模块点击
-const handleSignClick = () => {
+const handleSignClick = async() => {
   if (!showSignSection.value) {
     return
   }
@@ -739,10 +755,29 @@ const handleSignClick = () => {
     return
   }
 
-  // signStatus=20: 已签字，跳转外部页面查看
+  // signStatus=20: 已签字，调用接口获取签字图片并展示
   if (backendSignStatus === 20) {
-    const targetUrl = `https://staticres-sitb.leapmotor.com/leapx/biling/ais/settlement?serviceProxyId=${serviceProxyId.value}`
-    window.location.href = targetUrl
+    const currentStatementId = detailData.value.id || statementId.value
+    if (!currentStatementId) {
+      showToast('缺少结算单ID')
+      return
+    }
+    try {
+      const res = await getFileList({ businessId: currentStatementId, attachType: '制单签字' })
+      if (res.code === 200 && res.data && res.data.length > 0) {
+        const images = res.data.map(item => item.fileUrl || item.authFileUrl || item.url)
+        showImagePreview({
+          images,
+          startPosition: 0,
+          showIndex: images.length > 1,
+          className: 'sign-image-preview'
+        })
+      } else {
+        showToast('暂无签字图片')
+      }
+    } catch (e) {
+      showToast('获取签字图片失败')
+    }
   }
 }
 
@@ -917,6 +952,9 @@ const handlePaymentSubmit = async() => {
     return
   }
 
+  // 补全两位小数
+  paymentForm.value.amount = parseFloat(paymentForm.value.amount).toFixed(2)
+
   // 校验支付方式
   if (!paymentForm.value.paymentMethod) {
     showToast('请选择支付方式')
@@ -996,7 +1034,7 @@ const handlePaymentSubmit = async() => {
     top: var(--nav-bar-total-height, 46px);
     left: 0;
     right: 0;
-    z-index: 5001;
+    z-index: 2000;
     background: #fff;
   }
 
@@ -1850,5 +1888,11 @@ const handlePaymentSubmit = async() => {
     justify-content: center;
     cursor: pointer;
   }
+}
+</style>
+
+<style lang="scss">
+.sign-image-preview .van-image-preview__image img {
+  background: #fff;
 }
 </style>
