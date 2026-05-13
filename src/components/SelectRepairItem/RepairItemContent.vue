@@ -139,7 +139,7 @@
           ? `${editingItem.repairItemTypeId || ''}-${editingItem.checkoutTypeId || ''}-${editingItem.warrantyTypeId || ''}`
           : ''
       "
-      @confirm="onCheckoutConfirm"
+      @confirm="d => updateItemType(d)"
     />
 
     <!-- 底部保存按钮 -->
@@ -289,6 +289,17 @@ const handleItemUpdateWrapper = (item, updates) => {
     return
   }
   handleItemUpdate(item, updates)
+  nextTick(() => {
+    emit('replace', {
+      selectedItems: selectedItems.value,
+      selectedParts: selectedParts.value
+    })
+  })
+}
+
+// 更新维修类型
+const updateItemType = (data) => {
+  onCheckoutConfirm(data)
   nextTick(() => {
     emit('replace', {
       selectedItems: selectedItems.value,
