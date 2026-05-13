@@ -274,6 +274,12 @@ const removeItem = (item, type) => {
   originalRemoveItem(item, type, data => {
     emit('delete', data)
   })
+  nextTick(() => {
+    emit('delete', {
+      selectedItems: selectedItems.value,
+      selectedParts: selectedParts.value
+    })
+  })
 }
 
 // 结算类型确认选择 - 包装函数，通知父组件数据变化

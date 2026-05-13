@@ -1107,21 +1107,44 @@ const onConfirmService = () => {
   const enrichedItems = selectedItems.map((item) => ({
     ...item,
     id: null,
+    serviceProxyId: serviceProxyId.value,
     checkoutTypeId: activityResp.checkoutTypeId || '',
     checkoutTypeName: activityResp.checkoutTypeName || '',
-    workHour: item.workHour || 1
+    warrantyTypeId: activityResp.repairItemTypeId,
+    warrantyTypeName: activityResp.repairItemTypeName,
+    workHour: item.workHour || 1,
+    price: item.amount,
+    packageType: String(activityResp.activityType) === '4' ? '60' : '50',
+    packageId: selectedService.activityId + '#' + selectedService.id,
+    packageCode: activityResp.activityCode,
+    packageName: activityResp.activityName
   }))
 
   // 补充 partsList 缺少的字段
   const enrichedParts = selectedParts.map((part) => ({
     ...part,
     id: null,
-    partsName: part.partName || '', // 零件名称
+    serviceProxyId: serviceProxyId.value,
     isOemPart: activityResp.isOemPart || 1, // 是否OEM件
     partsId: part.partId || part.oldPartId || '', // 零件代码id
+    partsName: part.partName || '', // 零件名称
+    partsCode: part.partCode || part.oldPartCode || '', // 零件代码
     checkoutTypeId: activityResp.checkoutTypeId || '',
     checkoutTypeName: activityResp.checkoutTypeName || '',
-    partsCode: part.partCode || part.oldPartCode || '' // 零件代码
+    planPickNumber: part.quantity,
+    quantity: part.quantity,
+    discountAmount: part.discountAmount || 0,
+    spRepairItemId: part.serviceActivityItemId,
+    repairItemId: part.serviceActivityItemId,
+    repairItemCode: part.repairItemCode || '',
+    repairItemName: part.repairItemName || '',
+    packageType: String(activityResp.activityType) === '4' ? '60' : '50',
+    packageId: selectedService.activityId + '#' + selectedService.id,
+    packageCode: activityResp.activityCode,
+    packageName: activityResp.activityName,
+    isOutstock: 0, // 新零件默认为0，下同
+    actualPickNumber: 0,
+    refundedNumber: 0
   }))
 
   const params = {
