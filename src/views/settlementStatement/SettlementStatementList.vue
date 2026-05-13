@@ -96,9 +96,9 @@
                   </svg>
                 </template>
                 <!-- 业务类型标签 -->
-                <template v-if="item.warrantyTypeCollect">
+                <template v-if="item.repairItemTypeDetailCollect">
                   <span
-                    v-for="(tag, index) in item.warrantyTypeCollect.split('&')"
+                    v-for="(tag, index) in item.repairItemTypeDetailCollect.split('&').filter(Boolean)"
                     :key="index"
                     class="svc-tag"
                   >{{ tag }}</span>
@@ -117,6 +117,7 @@
                 <div class="info-row">
                   <span class="info-label">车主</span>
                   <span class="info-value">{{ item.customerName }}</span>
+                  <span v-if="item.custType" class="cust-type-tag">{{ { '10': '预约客户', '20': '随到客户' }[item.custType] || item.custType }}</span>
                 </div>
                 <div class="info-row">
                   <span class="info-label">客户经理</span>
@@ -430,20 +431,20 @@ const dateTags = [
 
 // 切换日期标签
 const selectDateTag = (value) => {
+  if (selectedDateTag.value === value) return
   selectedDateTag.value = value
-  // 切换日期筛选时重新加载数据
+  // 切换日期筛选时重新加载数据（updateRequestData 修改 requestData.data 会触发 RefreshList watch 自动查询）
   updateRequestData()
-  refreshList()
 }
 
 // 切换标签页
 const switchTab = (tab) => {
+  if (activeTab.value === tab) return
   activeTab.value = tab
   // 切换tab时重置日期筛选到今天
   selectedDateTag.value = 'today'
-  // 切换tab时重新加载数据
+  // 切换tab时重新加载数据（updateRequestData 修改 requestData.data 会触发 RefreshList watch 自动查询，无需再手动 refreshList）
   updateRequestData()
-  refreshList()
 }
 
 // 跳转搜索页
@@ -484,9 +485,8 @@ const setData = (res) => {
 const resetAll = () => {
   searchValue.value = ''
   selectedDateTag.value = 'today'
-  // 更新请求参数并刷新列表
+  // 更新请求参数（修改 requestData.data 会触发 RefreshList watch 自动查询）
   updateRequestData()
-  refreshList()
 }
 
 const getStatusClass = (status) => {
@@ -898,6 +898,15 @@ const goToUpload = () => {
           .info-value {
             color: #191a1b;
             margin-left: 12px;
+          }
+
+          .cust-type-tag {
+            padding: 1px 4px;
+            font-family: 'PingFang SC';
+            font-size: 12px;
+            color: #191a1b;
+            background: rgba(25, 26, 27, 0.06);
+            border-radius: 4px;
           }
         }
       }
