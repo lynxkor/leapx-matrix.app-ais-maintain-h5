@@ -775,7 +775,7 @@ const handleSignClick = async() => {
       } else {
         showToast('暂无签字图片')
       }
-    } catch (e) {
+    } catch {
       showToast('获取签字图片失败')
     }
   }
