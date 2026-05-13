@@ -139,7 +139,7 @@
           ? `${editingItem.repairItemTypeId || ''}-${editingItem.checkoutTypeId || ''}-${editingItem.warrantyTypeId || ''}`
           : ''
       "
-      @confirm="onCheckoutConfirm"
+      @confirm="onCheckoutConfirmWrapper"
     />
 
     <!-- 底部保存按钮 -->
@@ -274,6 +274,20 @@ const removeItem = (item, type) => {
   originalRemoveItem(item, type, data => {
     emit('delete', data)
   })
+}
+
+// 结算类型确认选择 - 包装函数，通知父组件数据变化
+const onCheckoutConfirmWrapper = (params) => {
+  onCheckoutConfirm(params)
+  // 只在组件模式下通知父组件
+  if (props.isComponent) {
+    nextTick(() => {
+      emit('replace', {
+        selectedItems: selectedItems.value,
+        selectedParts: selectedParts.value
+      })
+    })
+  }
 }
 
 // 事件处理

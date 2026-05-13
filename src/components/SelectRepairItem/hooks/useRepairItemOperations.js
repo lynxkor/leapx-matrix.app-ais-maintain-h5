@@ -183,6 +183,10 @@ export default function useRepairItemOperations({
     } else {
       // 普通项目/零件，直接删除
       list.value.splice(idx, 1)
+      successCallback && successCallback({
+        selectedItems: selectedItems.value,
+        selectedParts: selectedParts.value
+      })
     }
   }
 

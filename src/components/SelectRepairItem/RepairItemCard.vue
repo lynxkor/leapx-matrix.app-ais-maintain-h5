@@ -19,7 +19,7 @@
             <span class="card-name">
               <span class="card-tag" v-if="item.isOemPart == 1">原厂件</span>
               <span
-                v-if="item.ifReplace == 1 && isReplace"
+                v-if="item.replaceSparePartRespList && item.replaceSparePartRespList.length > 0 && isReplace"
                 class="replace-tag"
                 @click="onReplaceTagClick(item)"
                 >替<van-icon name="exchange" size="13px"
