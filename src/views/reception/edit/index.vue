@@ -298,18 +298,18 @@
                 <span class="title">本次是否因故障进店</span>
                 <div class="radio-group">
                   <van-radio-group
-                    v-model="detail.hasFault"
+                    v-model="detail.currentFault"
                     direction="horizontal"
                     @change="onHasFaultChange"
                   >
                     <van-radio name="1">是</van-radio>
-                    <van-radio name="2">否</van-radio>
+                    <van-radio name="0">否</van-radio>
                   </van-radio-group>
                 </div>
               </div>
 
               <!-- 故障模块列表 -->
-              <div class="fault-modules" v-if="Number(detail.hasFault) === 1">
+              <div class="fault-modules" v-if="Number(detail.currentFault) === 1">
                 <div class="add-module" @click="onAddFaultModule">
                   <van-icon name="plus" />
                   <span>添加故障模块</span>
@@ -348,7 +348,7 @@
             <!-- 客户故障描述 -->
             <div class="section-card">
               <div class="section-title" style="justify-content: flex-start">
-                <span v-if="Number(detail.hasFault) === 1" class="required">*</span>客户故障描述
+                <span v-if="Number(detail.currentFault) === 1" class="required">*</span>客户故障描述
               </div>
               <van-field
                 v-model="detail.customerFaultDesc"
@@ -358,7 +358,7 @@
                 autosize
                 show-word-limit
                 maxlength="500"
-                :disabled="detail.hasFault !== '1'"
+                :disabled="detail.currentFault !== '1' || Number(detail.confirmFault) === 1"
                 style="background: #f5f5f5; border-radius: 6px"
               />
             </div>
@@ -1073,6 +1073,7 @@
                   </span>
                   <span class="alert-title">{{ alarm.title }}</span>
                 </div>
+                <div style="color: #373535; font-size: 13px;">{{ Array.isArray(alarm.contents) ? alarm.contents.join('、') : alarm.contents }}</div>
                 <div class="alert-partno">{{ alarm.partNo }}</div>
                 <div class="alert-details">
                   <div
@@ -1230,6 +1231,7 @@ const formatPhotoList = (list, attachType, businessId) => {
     // 如果有id（来自接口返回或复用图片），使用id；否则使用uploadId（新上传）
     const fileId = item.id || item.uploadId
     return {
+      id: fileId,
       fileId,
       businessId,
       fileUrl: getFileSaveUrl(item),
@@ -1638,17 +1640,19 @@ const onConfirmCancel = async() => {
 
 // 是否存在故障变更
 const onHasFaultChange = (value) => {
+  console.log('valuevaluevaluevalue', value)
+
   // 如果选择"否"，弹出确认框
-  if (value === '2') {
+  if (value === '0') {
     // 如果已添加过故障模块或客户故障描述，弹出确认框
     if (detail.faultModules.length > 0 || detail.customerFaultDesc) {
       pendingFaultValue.value = value
       showFaultConfirm.value = true
     } else {
-      detail.hasFault = '2'
+      detail.currentFault = '0'
       detail.customerFaultDesc = '本次进店车辆无故障'
     }
-  } else if (value === '1') {
+  } else if (value === '1' && detail.customerFaultDesc === '本次进店车辆无故障') {
     // 从"否"切换到"是"，清空客户故障描述
     detail.customerFaultDesc = ''
   }
@@ -1658,7 +1662,7 @@ const onHasFaultChange = (value) => {
 const onCancelFaultConfirm = () => {
   showFaultConfirm.value = false
   // 恢复为"是"
-  detail.hasFault = '1'
+  detail.currentFault = '1'
 }
 
 // 确认故障变更
@@ -1667,7 +1671,7 @@ const onConfirmFaultChange = () => {
   // 清空故障模块，设置默认客户故障描述
   detail.faultModules = []
   detail.customerFaultDesc = '本次进店车辆无故障'
-  detail.hasFault = '2'
+  detail.currentFault = '0'
   showToast('已更改')
 }
 
@@ -1739,7 +1743,7 @@ const detail = reactive({
   customerComment: '',
   currentFault: '',
   faultAlertRecordRespList: [],
-  hasFault: '',
+  confirmFault: '',
   faultModules: [],
   customerFaultDesc: '',
   testResult: '',
@@ -1837,7 +1841,7 @@ const hasInspectionDataChanged = () => {
     JSON.stringify(initial.exteriorImages) !== JSON.stringify(current.exteriorImages) ||
     initial.abnormalDesc !== current.abnormalDesc ||
     initial.customerComment !== current.customerComment ||
-    initial.hasFault !== current.hasFault ||
+    initial.currentFault !== current.currentFault ||
     initial.customerFaultDesc !== current.customerFaultDesc ||
     initial.businessType !== current.businessType ||
     initial.repairPerson !== current.repairPerson ||
@@ -2109,8 +2113,8 @@ const fetchDetail = async() => {
         detail.networkBattery = data.inNetPower || ''
         detail.abnormalDesc = data.anomalyDescription || ''
         detail.customerComment = data.customerComment || ''
-        detail.currentFault = String(data.currentFault || '')
-        detail.hasFault = data.currentFault === 1 ? '1' : '2'
+        detail.currentFault = String(data.currentFault)
+        detail.confirmFault = data.confirmFault
         detail.customerFaultDesc = data.customerContent || ''
         detail.faultAlertRecordRespList = data.faultAlertRecordRespList || []
         // 将故障预警记录映射到faultModules用于显示
@@ -2124,7 +2128,7 @@ const fetchDetail = async() => {
         detail.vehicleProfileServiceResp = data.vehicleProfileServiceResp || {}
 
         // 获取附件列表并分类回显
-        getFileList({ businessId: route.query.id }).then((fileRes) => {
+        getFileList({ businessId: route.query.id, pageSize: 100 }).then((fileRes) => {
           if (fileRes.code === 200) {
             const fileList = fileRes.data || []
             // 清空列表
@@ -2135,7 +2139,7 @@ const fetchDetail = async() => {
             let latestSignFile = null
             // 根据 attachType 分类回显文件
             fileList.forEach((item) => {
-              const fileObj = { ...item, url: item.fileUrl, fileUrl: item.fileUrl }
+              const fileObj = { ...item, url: item.fileUrl }
               switch (item.attachType) {
                 case '车内照片':
                   detail.interiorImages.push(fileObj)
@@ -2288,7 +2292,7 @@ const fetchDetail = async() => {
           exteriorImages: [...detail.exteriorImages],
           abnormalDesc: detail.abnormalDesc,
           customerComment: detail.customerComment,
-          hasFault: detail.hasFault,
+          currentFault: detail.currentFault,
           customerFaultDesc: detail.customerFaultDesc,
           businessType: computedBusinessType.value,
           repairPerson: detail.repairPerson,
@@ -2551,8 +2555,9 @@ const uploadGeneric = (type) => {
     return
   }
 
-  // maxNum为null时不限制上传数量，hasUploadNumber传0
-  batchUploadImageLimit(maxSize, config.maxNum || 9, hasUploadNumber)
+  // 计算最大可选数量：maxNum有值时用maxNum，无值时不限制传999
+  const maxSelectNum = config.maxNum || 20
+  batchUploadImageLimit(maxSize, maxSelectNum, hasUploadNumber)
 }
 
 // 选择图片来源
@@ -2765,7 +2770,7 @@ onMounted(() => {
           const targetList = getTargetFileList(uploadType)
           if (targetList.length > 0) {
             const lastIndex = targetList.length - 1
-            const rawUrl = uploadData.url || uploadData.fileUrl || singleUrl
+            const rawUrl = uploadData.fileUrl || uploadData.url || singleUrl
             targetList[lastIndex] = {
               ...targetList[lastIndex],
               status: 'done',
@@ -2975,13 +2980,13 @@ const onInspectionSave = async(type) => {
 
   // 环检信息页需要校验
   if (!validateRepairPerson()) return { code: -1 }
-  // 如果hasFault为1，客户故障描述必填
-  if (Number(detail.hasFault) === 1 && !detail.customerFaultDesc.trim()) {
+  // 如果currentFault为1，客户故障描述必填
+  if (Number(detail.currentFault) === 1 && !detail.customerFaultDesc.trim()) {
     showToast('请输入客户故障描述')
     return { code: -1 }
   }
-  // 如果hasFault为1，必须添加故障模块
-  if (Number(detail.hasFault) === 1 && detail.faultModules.length === 0) {
+  // 如果currentFault为1，必须添加故障模块
+  if (Number(detail.currentFault) === 1 && detail.faultModules.length === 0) {
     showToast('请添加故障模块')
     return { code: -1 }
   }
@@ -3015,7 +3020,7 @@ const onInspectionSave = async(type) => {
       exteriorImages: [...detail.exteriorImages],
       abnormalDesc: detail.abnormalDesc,
       customerComment: detail.customerComment,
-      hasFault: detail.hasFault,
+      currentFault: detail.currentFault,
       customerFaultDesc: detail.customerFaultDesc,
       businessType: computedBusinessType.value,
       repairPerson: detail.repairPerson,
@@ -3121,7 +3126,7 @@ const onInspectionSave = async(type) => {
     isRetainOldParts: 0,
     inCustomerContent: detail.inCustomerContent,
     testResult: detail.testResult,
-    currentFault: Number(detail.hasFault) === 1 ? 1 : 0,
+    currentFault: Number(detail.currentFault),
     customerContent: detail.customerFaultDesc,
     invaildDesc: detail.invaildDesc,
     anomalyDescription: detail.abnormalDesc,
@@ -3132,7 +3137,7 @@ const onInspectionSave = async(type) => {
     startAt: detail.startAt,
     finishAt: detail.finishAt,
     faultSolve: detail.faultSolve,
-    currentSituation: Number(detail.hasFault) === 1 ? 20 : 10,
+    currentSituation: Number(detail.currentFault) === 1 ? 20 : 10,
     faultAlert: detail.faultAlert,
     faultPeriod: detail.faultPeriod,
     earliestfaultServiceProxy: detail.earliestfaultServiceProxy,
@@ -3154,6 +3159,8 @@ const onInspectionSave = async(type) => {
     earlyServiceProxy: detail.earlyServiceProxy
   }
   console.log('保存参数:', params)
+  console.log('exteriorPhotoList', params.exteriorPhotoList, params.exteriorPhotoList.length)
+  console.log('interiorPhotoList', params.interiorPhotoList, params.interiorPhotoList.length)
   try {
     const res = await serviceAddOrUpdate(params)
     savingLoading.value = false
@@ -3231,8 +3238,8 @@ const onPartsSave = async() => {
     const newRepairItemTypeDetailCollect = detail.repairItemTypeDetailCollect || ''
     const hadGeneralOrThreeElectric = oldRepairItemTypeDetailCollect.includes('一般维修') || oldRepairItemTypeDetailCollect.includes('三电维修')
     const hasGeneralOrThreeElectric = newRepairItemTypeDetailCollect.includes('一般维修') || newRepairItemTypeDetailCollect.includes('三电维修')
-    if (!hadGeneralOrThreeElectric && hasGeneralOrThreeElectric && detail.hasFault === '2') {
-      detail.hasFault = '1'
+    if (!hadGeneralOrThreeElectric && hasGeneralOrThreeElectric && detail.currentFault === '0') {
+      detail.currentFault = '1'
       // 清空默认文本
       if (detail.customerFaultDesc === '本次进店车辆无故障') {
         detail.customerFaultDesc = ''
@@ -3300,8 +3307,8 @@ const onComplete = async() => {
     showToast('请上传车外照片')
     return
   }
-  // 如果hasFault为1，客户故障描述必填
-  if (Number(detail.hasFault) === 1 && !detail.customerFaultDesc.trim()) {
+  // 如果currentFault为1，客户故障描述必填
+  if (Number(detail.currentFault) === 1 && !detail.customerFaultDesc.trim()) {
     showToast('请输入客户故障描述')
     return
   }
