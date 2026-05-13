@@ -137,15 +137,17 @@ const handleSearch = async(keyword) => {
 }
 
 const onCardClick = (item) => {
-  // 使用 params 传递整个 item 对象
+  // 使用 params 传递整个 item 对象// 将车辆信息存到sessionStorage
+  sessionStorage.setItem('vehicleInfo', JSON.stringify(item))
+  // 跳转到新建施工单页面
   router.push({
     name: 'workOrderCreate',
     query: {
       id: item.id
-    },
-    params: {
-      vehicleInfo: JSON.stringify(item)
     }
+    // params: {
+    //   vehicleInfo: JSON.stringify(item)
+    // }
   })
 }
 </script>

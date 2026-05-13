@@ -1189,6 +1189,9 @@ const addFaultModuleShow = ref(false)
 const changeCarDialog = ref(false)
 const changePlateDialog = ref(false)
 
+// 数据加载标志（用于区分用户手动操作和数据赋值）
+const isDataLoading = ref(false)
+
 // RepairItemContent 组件引用
 const repairItemContentRef = ref(null)
 
@@ -1642,6 +1645,9 @@ const onConfirmCancel = async() => {
 const onHasFaultChange = (value) => {
   console.log('valuevaluevaluevalue', value)
 
+  // 如果是数据加载导致的改变，不执行逻辑
+  if (isDataLoading.value) return
+
   // 如果选择"否"，弹出确认框
   if (value === '0') {
     // 如果已添加过故障模块或客户故障描述，弹出确认框
@@ -2073,251 +2079,256 @@ const fetchDetail = async() => {
   if (!id) return
 
   savingLoading.value = true
-  getDetail(id)
-    .then((res) => {
-      if (res.code === 200) {
-        const data = res.data
-        // 填充详情数据
-        detail.plateNo = data.carPlate || ''
-        detail.isAppointment = !!data.appointmentNo // 有预约单号即为预约客户
-        detail.custTypeLabel = data.custTypeLabel || ''
-        detail.vehicleModel = data.vehModelName || ''
-        detail.vehicleModelName = data.vehModelName || ''
-        detail.vehicleModelId = data.vehModelId || ''
-        detail.vin = data.vehProfileVin || ''
-        detail.customerName = data.customerName || ''
-        detail.customerPhone = data.customerPhone || ''
-        detail.bindingUser = data.bindingUser || ''
-        detail.binderPhone = data.bindingPhone || ''
-        detail.bindingUserId = data.bindingUserId || ''
-        detail.shuttleName = data.shuttleName || ''
-        detail.shuttlePhone = data.shuttlePhone || ''
-        detail.repairPerson = data.shuttleName || data.customerName || ''
-        detail.repairPersonPhone = data.shuttlePhone || data.customerPhone || ''
-        // 计算送修人类型
-        detail.repairPersonTag =
-          detail.repairPerson === data.customerName
-            ? '车主'
-            : detail.repairPerson === data.bindingUser
-              ? '绑车人'
-              : '其他'
-        detail.id = data.id || ''
-        detail.testResult = data.testResult || ''
-        // 预约客户默认预约到店，否则默认自然到店
-        detail.businessType = data.businessType || (detail.isAppointment ? 50 : 10)
-        detail.mileage = data.mileage || ''
-        detail.departureMileage = data.departureMileage || ''
-        detail.networkMileageTotal = data.netMileage || ''
-        detail.networkMileageAdd = data.netMileageExtend || ''
-        detail.battery = data.inPower || ''
-        detail.networkBattery = data.inNetPower || ''
-        detail.abnormalDesc = data.anomalyDescription || ''
-        detail.customerComment = data.customerComment || ''
-        detail.currentFault = String(data.currentFault)
-        detail.confirmFault = data.confirmFault
-        detail.customerFaultDesc = data.customerContent || ''
-        detail.faultAlertRecordRespList = data.faultAlertRecordRespList || []
-        // 将故障预警记录映射到faultModules用于显示
-        detail.faultModules = (data.faultAlertRecordRespList || []).map((item) => ({
-          ...item,
-          cccCode: item.cccCode,
-          cccName: item.cccName,
-          vfgName: item.vfgName,
-          faultDesc: item.faultDescription
-        }))
-        detail.vehicleProfileServiceResp = data.vehicleProfileServiceResp || {}
+  isDataLoading.value = true // 开始数据加载
+  try {
+    const res = await getDetail(id)
+    if (res.code === 200) {
+      const data = res.data
+      // 填充详情数据
+      detail.plateNo = data.carPlate || ''
+      detail.isAppointment = !!data.appointmentNo // 有预约单号即为预约客户
+      detail.custTypeLabel = data.custTypeLabel || ''
+      detail.vehicleModel = data.vehModelName || ''
+      detail.vehicleModelName = data.vehModelName || ''
+      detail.vehicleModelId = data.vehModelId || ''
+      detail.vin = data.vehProfileVin || ''
+      detail.customerName = data.customerName || ''
+      detail.customerPhone = data.customerPhone || ''
+      detail.bindingUser = data.bindingUser || ''
+      detail.binderPhone = data.bindingPhone || ''
+      detail.bindingUserId = data.bindingUserId || ''
+      detail.shuttleName = data.shuttleName || ''
+      detail.shuttlePhone = data.shuttlePhone || ''
+      detail.repairPerson = data.shuttleName || data.customerName || ''
+      detail.repairPersonPhone = data.shuttlePhone || data.customerPhone || ''
+      // 计算送修人类型
+      detail.repairPersonTag =
+        detail.repairPerson === data.customerName
+          ? '车主'
+          : detail.repairPerson === data.bindingUser
+            ? '绑车人'
+            : '其他'
+      detail.id = data.id || ''
+      detail.testResult = data.testResult || ''
+      // 预约客户默认预约到店，否则默认自然到店
+      detail.businessType = data.businessType || (detail.isAppointment ? 50 : 10)
+      detail.mileage = data.mileage || ''
+      detail.departureMileage = data.departureMileage || ''
+      detail.networkMileageTotal = data.netMileage || ''
+      detail.networkMileageAdd = data.netMileageExtend || ''
+      detail.battery = data.inPower || ''
+      detail.networkBattery = data.inNetPower || ''
+      detail.abnormalDesc = data.anomalyDescription || ''
+      detail.customerComment = data.customerComment || ''
+      detail.currentFault = String(data.currentFault)
+      detail.confirmFault = data.confirmFault
+      detail.customerFaultDesc = data.customerContent || ''
+      detail.faultAlertRecordRespList = data.faultAlertRecordRespList || []
+      // 将故障预警记录映射到faultModules用于显示
+      detail.faultModules = (data.faultAlertRecordRespList || []).map((item) => ({
+        ...item,
+        cccCode: item.cccCode,
+        cccName: item.cccName,
+        vfgName: item.vfgName,
+        faultDesc: item.faultDescription
+      }))
+      detail.vehicleProfileServiceResp = data.vehicleProfileServiceResp || {}
 
-        // 获取附件列表并分类回显
-        getFileList({ businessId: route.query.id, pageSize: 100 }).then((fileRes) => {
-          if (fileRes.code === 200) {
-            const fileList = fileRes.data || []
-            // 清空列表
-            detail.interiorImages = []
-            detail.exteriorImages = []
-            signatureData.attachments = []
-            // 用于存储最新的制单签字
-            let latestSignFile = null
-            // 根据 attachType 分类回显文件
-            fileList.forEach((item) => {
-              const fileObj = { ...item, url: item.fileUrl }
-              switch (item.attachType) {
-                case '车内照片':
-                  detail.interiorImages.push(fileObj)
-                  break
-                case '车外照片':
-                  detail.exteriorImages.push(fileObj)
-                  break
-                case '附件资料':
-                  signatureData.attachments.push(fileObj)
-                  break
-                case '制单签字':
-                  // 对比createTime，保留最新的制单签字
-                  if (!latestSignFile || new Date(item.createTime) > new Date(latestSignFile.createTime)) {
-                    latestSignFile = item
-                  }
-                  break
+      // 获取附件列表并分类回显
+      const fileRes = await getFileList({ businessId: route.query.id, pageSize: 100 })
+      if (fileRes.code === 200) {
+        const fileList = fileRes.data || []
+        // 清空列表
+        detail.interiorImages = []
+        detail.exteriorImages = []
+        signatureData.attachments = []
+        // 用于存储最新的制单签字
+        let latestSignFile = null
+        // 根据 attachType 分类回显文件
+        fileList.forEach((item) => {
+          const fileObj = { ...item, url: item.fileUrl }
+          switch (item.attachType) {
+            case '车内照片':
+              detail.interiorImages.push(fileObj)
+              break
+            case '车外照片':
+              detail.exteriorImages.push(fileObj)
+              break
+            case '附件资料':
+              signatureData.attachments.push(fileObj)
+              break
+            case '制单签字':
+              // 对比createTime，保留最新的制单签字
+              if (!latestSignFile || new Date(item.createTime) > new Date(latestSignFile.createTime)) {
+                latestSignFile = item
               }
-            })
-            // 将最新的制单签字赋值给detail.signUrl
-            if (latestSignFile) {
-              detail.signUrl = latestSignFile.fileUrl
-            }
+              break
           }
         })
-
-        // 新增字段赋值
-        detail.code = data.code || ''
-        detail.dataSource = data.dataSource || ''
-        detail.orderStatus = data.orderStatus || ''
-        detail.warrantyTypeCollect = data.warrantyTypeCollect || ''
-        detail.custType = data.custType || ''
-        detail.salesDealerName = data.dealerName || ''
-        detail.salesDealerCode = data.dealerCode || ''
-        detail.appointmentNo = data.appointmentNo || ''
-        detail.lastMileage = data.lastMileage || null
-        detail.remark = data.remark || ''
-        detail.status = data.status || ''
-        detail.statusDesc = data.statusDesc || ''
-        detail.pickStatus = data.pickStatus || ''
-        detail.payType = data.payType || ''
-        detail.warrantyCompany = data.warrantyCompany || ''
-        detail.signChannel = data.signChannel || ''
-        detail.signUrl = data.signUrl || ''
-        detail.signCompletedOn = data.signCompletedOn || ''
-        detail.signGeneratedOn = data.signGeneratedOn || ''
-        detail.signStatus = data.signStatus || ''
-        detail.signUrlExpiredOn = data.signUrlExpiredOn || ''
-        detail.appointmentType = data.appointmentType || ''
-        detail.preAuthType = data.preAuthType || ''
-        detail.isLockLive = data.isLockLive || ''
-        detail.isCreateWarranty = data.isCreateWarranty || ''
-        detail.isOutboundOrder = data.isOutboundOrder || ''
-        detail.isVehRetentionRemind = data.isVehRetentionRemind || ''
-        detail.isCancelStorage = data.isCancelStorage || ''
-        detail.discountId = data.discountId || ''
-        detail.finalCheckAt = data.finalCheckAt || ''
-        detail.finalCheckerId = data.finalCheckerId || ''
-        detail.finalChecker = data.finalChecker || ''
-        detail.ticketStep = data.ticketStep || ''
-        detail.warrantyStatus = data.warrantyStatus || ''
-        detail.claimItemAmount = data.claimItemAmount || ''
-        detail.claimOtherAmount = data.claimOtherAmount || ''
-        detail.claimPartsAmount = data.claimPartsAmount || ''
-        detail.departureMileage = data.departureMileage || ''
-        detail.outPower = data.outPower || ''
-        detail.departureNetMileage = data.departureNetMileage || ''
-        detail.outNetPower = data.outNetPower || ''
-        detail.departureNetMileageElectricity = data.departureNetMileageElectricity || ''
-        detail.departureNetMileageExtend = data.departureNetMileageExtend || ''
-        detail.electricalMileage = data.netMileageElectricity || ''
-        detail.motorModel = data.motorModel || ''
-        detail.motorSerialNumber = data.motorSerialNumber || ''
-        detail.batteryModel = data.batteryModel || ''
-        detail.batterySerialNumber = data.batterySerialNumber || ''
-        detail.enginenNumber = data.engineNumber || ''
-        detail.repairItemTypeDetailCollect = data.repairItemTypeDetailCollect || ''
-        detail.alarmLevel = data.alarmLevel || ''
-        detail.inCustomerContent = data.inCustomerContent || ''
-        detail.customerComment = data.customerComment || ''
-        detail.invaildDesc = data.invaildDesc || ''
-        detail.previewingFinishAt = data.previewingFinishAt || ''
-        detail.confirmedOn = data.confirmedOn || ''
-        detail.expectStartAt = data.expectStartAt || ''
-        detail.startAt = data.startAt || ''
-        detail.finishAt = data.finishAt || ''
-        detail.faultSolve = data.faultSolve || ''
-        detail.faultAlert = data.faultAlert || ''
-        detail.faultPeriod = data.faultPeriod || ''
-        detail.earliestfaultServiceProxy = data.earliestfaultServiceProxy || ''
-        detail.recentlyfaultServiceProxy = data.recentlyfaultServiceProxy || ''
-        detail.isCreateStatementInfo = data.isCreateStatementInfo || 0
-        detail.isPreAuth = data.isPreAuth || ''
-        detail.isCreatePreAuth = data.isCreatePreAuth || ''
-        detail.preAuthRuleId = data.preAuthRuleId || ''
-        detail.unresolvedReason = data.unresolvedReason || ''
-        detail.faultDesc = data.faultDesc || ''
-        detail.batteryUnitId = data.batteryUnitId || ''
-        detail.batteryUnitName = data.batteryUnitName || ''
-        detail.targetUnitCode = data.targetUnitCode || ''
-        detail.beforeChangeCode = data.beforeChangeCode || ''
-        detail.afterChangeCode = data.afterChangeCode || ''
-        detail.isStoreLive = data.isStoreLive || ''
-        detail.latelyServiceProxy = data.latelyServiceProxy || ''
-        detail.earlyServiceProxy = data.earlyServiceProxy || ''
-
-        // 签字确认数据
-        signatureData.maintenanceCostEstimation =
-          data.costCountResp?.maintenanceCostEstimation || '0.00'
-        signatureData.repairItemTypeDetailCollect = data.repairItemTypeDetailCollect || ''
-        signatureData.expectFinishAt = data.expectFinishAt || ''
-        signatureData.isDeliveryTimeFromApi = !!data.expectFinishAt
-        signatureData.signChannel = getSignChannelName(data.signChannel)
-
-        // 项目零件数据
-        if (data.costCountResp) {
-          partsData.workCostCount = data.costCountResp.workCostCount || '0.00'
-          partsData.barkCostCount = data.costCountResp.barkCostCount || '0.00'
-          partsData.maintenanceCostEstimation =
-            data.costCountResp.maintenanceCostEstimation || '0.00'
-          partsData.repairItemRespList = data.costCountResp.repairItemRespList || []
-          partsData.packageRespList = data.costCountResp.packageRespList || []
-          partsData.sparePartRespList = data.costCountResp.sparePartRespList || []
+        // 将最新的制单签字赋值给detail.signUrl
+        if (latestSignFile) {
+          detail.signUrl = latestSignFile.fileUrl
         }
-
-        // 设置送修人类型
-        if (detail.repairPersonTag === '车主') {
-          repairPersonType.value = 'owner'
-          repairPersonNameInput.value = detail.customerName
-          repairPersonPhoneInput.value = detail.customerPhone
-        } else if (detail.repairPersonTag === '绑车人') {
-          repairPersonType.value = 'bindingUser'
-
-          repairPersonNameInput.value = detail.bindingUser
-          repairPersonPhoneInput.value = detail.binderPhone
-        } else {
-          repairPersonType.value = 'other'
-
-          repairPersonNameInput.value = detail.repairPerson
-          repairPersonPhoneInput.value = detail.repairPersonPhone
-        }
-
-        // 里程校验
-        validateMileage(data.mileage, data.lastMileage, data.netMileage)
-
-        // 保存环检数据快照
-        initialInspectionData.value = {
-          mileage: detail.mileage,
-          battery: detail.battery,
-          interiorImages: [...detail.interiorImages],
-          exteriorImages: [...detail.exteriorImages],
-          abnormalDesc: detail.abnormalDesc,
-          customerComment: detail.customerComment,
-          currentFault: detail.currentFault,
-          customerFaultDesc: detail.customerFaultDesc,
-          businessType: computedBusinessType.value,
-          repairPerson: detail.repairPerson,
-          repairPersonPhone: detail.repairPersonPhone,
-          faultModules: [...detail.faultModules],
-          // 车辆信息
-          plateNo: detail.plateNo,
-          vin: detail.vin,
-          vehicleModel: detail.vehicleModel,
-          // 送修人信息
-          repairPersonTag: detail.repairPersonTag,
-          // 项目零件数据（用于判断维修类型变化）
-          repairItemRespList: [...(data.costCountResp?.repairItemRespList || [])],
-          sparePartRespList: [...(data.costCountResp?.sparePartRespList || [])]
-        }
-
-        // 判断状态
-        isSaved.value = true
-      } else {
-        showToast(res.msg || '获取详情失败')
       }
-    })
-    .finally(() => {
-      savingLoading.value = false
-    })
+
+      // 新增字段赋值
+      detail.code = data.code || ''
+      detail.dataSource = data.dataSource || ''
+      detail.orderStatus = data.orderStatus || ''
+      detail.warrantyTypeCollect = data.warrantyTypeCollect || ''
+      detail.custType = data.custType || ''
+      detail.salesDealerName = data.dealerName || ''
+      detail.salesDealerCode = data.dealerCode || ''
+      detail.appointmentNo = data.appointmentNo || ''
+      detail.lastMileage = data.lastMileage || null
+      detail.remark = data.remark || ''
+      detail.status = data.status || ''
+      detail.statusDesc = data.statusDesc || ''
+      detail.pickStatus = data.pickStatus || ''
+      detail.payType = data.payType || ''
+      detail.warrantyCompany = data.warrantyCompany || ''
+      detail.signChannel = data.signChannel || ''
+      detail.signUrl = data.signUrl || ''
+      detail.signCompletedOn = data.signCompletedOn || ''
+      detail.signGeneratedOn = data.signGeneratedOn || ''
+      detail.signStatus = data.signStatus || ''
+      detail.signUrlExpiredOn = data.signUrlExpiredOn || ''
+      detail.appointmentType = data.appointmentType || ''
+      detail.preAuthType = data.preAuthType || ''
+      detail.isLockLive = data.isLockLive || ''
+      detail.isCreateWarranty = data.isCreateWarranty || ''
+      detail.isOutboundOrder = data.isOutboundOrder || ''
+      detail.isVehRetentionRemind = data.isVehRetentionRemind || ''
+      detail.isCancelStorage = data.isCancelStorage || ''
+      detail.discountId = data.discountId || ''
+      detail.finalCheckAt = data.finalCheckAt || ''
+      detail.finalCheckerId = data.finalCheckerId || ''
+      detail.finalChecker = data.finalChecker || ''
+      detail.ticketStep = data.ticketStep || ''
+      detail.warrantyStatus = data.warrantyStatus || ''
+      detail.claimItemAmount = data.claimItemAmount || ''
+      detail.claimOtherAmount = data.claimOtherAmount || ''
+      detail.claimPartsAmount = data.claimPartsAmount || ''
+      detail.departureMileage = data.departureMileage || ''
+      detail.outPower = data.outPower || ''
+      detail.departureNetMileage = data.departureNetMileage || ''
+      detail.outNetPower = data.outNetPower || ''
+      detail.departureNetMileageElectricity = data.departureNetMileageElectricity || ''
+      detail.departureNetMileageExtend = data.departureNetMileageExtend || ''
+      detail.electricalMileage = data.netMileageElectricity || ''
+      detail.motorModel = data.motorModel || ''
+      detail.motorSerialNumber = data.motorSerialNumber || ''
+      detail.batteryModel = data.batteryModel || ''
+      detail.batterySerialNumber = data.batterySerialNumber || ''
+      detail.enginenNumber = data.engineNumber || ''
+      detail.repairItemTypeDetailCollect = data.repairItemTypeDetailCollect || ''
+      detail.alarmLevel = data.alarmLevel || ''
+      detail.inCustomerContent = data.inCustomerContent || ''
+      detail.customerComment = data.customerComment || ''
+      detail.invaildDesc = data.invaildDesc || ''
+      detail.previewingFinishAt = data.previewingFinishAt || ''
+      detail.confirmedOn = data.confirmedOn || ''
+      detail.expectStartAt = data.expectStartAt || ''
+      detail.startAt = data.startAt || ''
+      detail.finishAt = data.finishAt || ''
+      detail.faultSolve = data.faultSolve || ''
+      detail.faultAlert = data.faultAlert || ''
+      detail.faultPeriod = data.faultPeriod || ''
+      detail.earliestfaultServiceProxy = data.earliestfaultServiceProxy || ''
+      detail.recentlyfaultServiceProxy = data.recentlyfaultServiceProxy || ''
+      detail.isCreateStatementInfo = data.isCreateStatementInfo || 0
+      detail.isPreAuth = data.isPreAuth || ''
+      detail.isCreatePreAuth = data.isCreatePreAuth || ''
+      detail.preAuthRuleId = data.preAuthRuleId || ''
+      detail.unresolvedReason = data.unresolvedReason || ''
+      detail.faultDesc = data.faultDesc || ''
+      detail.batteryUnitId = data.batteryUnitId || ''
+      detail.batteryUnitName = data.batteryUnitName || ''
+      detail.targetUnitCode = data.targetUnitCode || ''
+      detail.beforeChangeCode = data.beforeChangeCode || ''
+      detail.afterChangeCode = data.afterChangeCode || ''
+      detail.isStoreLive = data.isStoreLive || ''
+      detail.latelyServiceProxy = data.latelyServiceProxy || ''
+      detail.earlyServiceProxy = data.earlyServiceProxy || ''
+
+      // 签字确认数据
+      signatureData.maintenanceCostEstimation =
+        data.costCountResp?.maintenanceCostEstimation || '0.00'
+      signatureData.repairItemTypeDetailCollect = data.repairItemTypeDetailCollect || ''
+      signatureData.expectFinishAt = data.expectFinishAt || ''
+      signatureData.isDeliveryTimeFromApi = !!data.expectFinishAt
+      signatureData.signChannel = getSignChannelName(data.signChannel)
+
+      // 项目零件数据
+      if (data.costCountResp) {
+        partsData.workCostCount = data.costCountResp.workCostCount || '0.00'
+        partsData.barkCostCount = data.costCountResp.barkCostCount || '0.00'
+        partsData.maintenanceCostEstimation =
+          data.costCountResp.maintenanceCostEstimation || '0.00'
+        partsData.repairItemRespList = data.costCountResp.repairItemRespList || []
+        partsData.packageRespList = data.costCountResp.packageRespList || []
+        partsData.sparePartRespList = data.costCountResp.sparePartRespList || []
+      }
+
+      // 设置送修人类型
+      if (detail.repairPersonTag === '车主') {
+        repairPersonType.value = 'owner'
+        repairPersonNameInput.value = detail.customerName
+        repairPersonPhoneInput.value = detail.customerPhone
+      } else if (detail.repairPersonTag === '绑车人') {
+        repairPersonType.value = 'bindingUser'
+
+        repairPersonNameInput.value = detail.bindingUser
+        repairPersonPhoneInput.value = detail.binderPhone
+      } else {
+        repairPersonType.value = 'other'
+
+        repairPersonNameInput.value = detail.repairPerson
+        repairPersonPhoneInput.value = detail.repairPersonPhone
+      }
+
+      // 里程校验
+      validateMileage(data.mileage, data.lastMileage, data.netMileage)
+
+      // 保存环检数据快照
+      initialInspectionData.value = {
+        mileage: detail.mileage,
+        battery: detail.battery,
+        interiorImages: [...detail.interiorImages],
+        exteriorImages: [...detail.exteriorImages],
+        abnormalDesc: detail.abnormalDesc,
+        customerComment: detail.customerComment,
+        currentFault: detail.currentFault,
+        customerFaultDesc: detail.customerFaultDesc,
+        businessType: computedBusinessType.value,
+        repairPerson: detail.repairPerson,
+        repairPersonPhone: detail.repairPersonPhone,
+        faultModules: [...detail.faultModules],
+        // 车辆信息
+        plateNo: detail.plateNo,
+        vin: detail.vin,
+        vehicleModel: detail.vehicleModel,
+        // 送修人信息
+        repairPersonTag: detail.repairPersonTag,
+        // 项目零件数据（用于判断维修类型变化）
+        repairItemRespList: [...(data.costCountResp?.repairItemRespList || [])],
+        sparePartRespList: [...(data.costCountResp?.sparePartRespList || [])],
+        // 保存初始维修类型
+        repairItemTypeDetailCollect: data.repairItemTypeDetailCollect || ''
+      }
+
+      // 判断状态
+      isSaved.value = true
+    } else {
+      showToast(res.msg || '获取详情失败')
+    }
+  } catch (error) {
+    console.error('获取详情失败:', error)
+    showToast('获取详情失败')
+  } finally {
+    savingLoading.value = false
+    isDataLoading.value = false // 数据加载完成
+  }
 }
 // 换车
 const onChangeCar = () => {
@@ -3209,8 +3220,8 @@ const onPartsSave = async() => {
   const items = partsData.repairItemRespList || []
   const parts = partsData.sparePartRespList || []
 
-  // 记录原来的维修类型
-  const oldRepairItemTypeDetailCollect = detail.repairItemTypeDetailCollect || ''
+  // 记录原来的维修类型（从初始快照获取）
+  const oldRepairItemTypeDetailCollect = initialInspectionData.value?.repairItemTypeDetailCollect || ''
 
   savingLoading.value = true
   try {
@@ -3235,9 +3246,10 @@ const onPartsSave = async() => {
     await fetchDetail()
 
     // 判断：原来不包含一般维修或三电维修，保存后包含了一般维修或三电维修，且本次进店是否存在故障为否
-    const newRepairItemTypeDetailCollect = detail.repairItemTypeDetailCollect || ''
+    const newRepairItemTypeDetailCollect = detail.repairItemTypeDetailCollect
     const hadGeneralOrThreeElectric = oldRepairItemTypeDetailCollect.includes('一般维修') || oldRepairItemTypeDetailCollect.includes('三电维修')
     const hasGeneralOrThreeElectric = newRepairItemTypeDetailCollect.includes('一般维修') || newRepairItemTypeDetailCollect.includes('三电维修')
+    console.log('hadGeneralOrThreeElectric', hadGeneralOrThreeElectric, hasGeneralOrThreeElectric, detail.currentFault)
     if (!hadGeneralOrThreeElectric && hasGeneralOrThreeElectric && detail.currentFault === '0') {
       detail.currentFault = '1'
       // 清空默认文本
