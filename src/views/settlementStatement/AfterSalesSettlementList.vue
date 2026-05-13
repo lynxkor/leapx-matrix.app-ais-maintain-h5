@@ -754,7 +754,8 @@ const handleSignClick = async() => {
         showImagePreview({
           images,
           startPosition: 0,
-          showIndex: images.length > 1
+          showIndex: images.length > 1,
+          className: 'sign-image-preview'
         })
       } else {
         showToast('暂无签字图片')
@@ -1869,5 +1870,11 @@ const handlePaymentSubmit = async() => {
     justify-content: center;
     cursor: pointer;
   }
+}
+</style>
+
+<style lang="scss">
+.sign-image-preview .van-image-preview__image img {
+  background: #fff;
 }
 </style>
