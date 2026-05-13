@@ -306,7 +306,7 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { showToast } from 'vant'
+import { showToast, showImagePreview } from 'vant'
 import { useRoute } from 'vue-router'
 import AisPopup from '@/libs/components/AisPopup.vue'
 import {
@@ -317,6 +317,7 @@ import {
   addReceiptRecord,
   receiptCompletion
 } from '@/api/settlementStatement'
+import { getFileList } from '@/libs/api/fileConfig'
 import { usePageSafeArea } from '@/utils/safeArea'
 
 const route = useRoute()
@@ -725,7 +726,7 @@ const switchTab = (index) => {
 }
 
 // 签字模块点击
-const handleSignClick = () => {
+const handleSignClick = async() => {
   if (!showSignSection.value) {
     return
   }
@@ -739,10 +740,28 @@ const handleSignClick = () => {
     return
   }
 
-  // signStatus=20: 已签字，跳转外部页面查看
+  // signStatus=20: 已签字，调用接口获取签字图片并展示
   if (backendSignStatus === 20) {
-    const targetUrl = `https://staticres-sitb.leapmotor.com/leapx/biling/ais/settlement?serviceProxyId=${serviceProxyId.value}`
-    window.location.href = targetUrl
+    const currentStatementId = detailData.value.id || statementId.value
+    if (!currentStatementId) {
+      showToast('缺少结算单ID')
+      return
+    }
+    try {
+      const res = await getFileList({ businessId: currentStatementId, attachType: '制单签字' })
+      if (res.code === 200 && res.data && res.data.length > 0) {
+        const images = res.data.map(item => item.fileUrl || item.authFileUrl || item.url)
+        showImagePreview({
+          images,
+          startPosition: 0,
+          showIndex: images.length > 1
+        })
+      } else {
+        showToast('暂无签字图片')
+      }
+    } catch (e) {
+      showToast('获取签字图片失败')
+    }
   }
 }
 
