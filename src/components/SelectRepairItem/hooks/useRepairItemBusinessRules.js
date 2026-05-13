@@ -45,7 +45,7 @@ export default function useRepairItemBusinessRules({
 
     const isUniversal = item?.repairItemId === UNIVERSAL_LABOR_HOUR_ITEM_ID
     const isPart = !!item?.partsId
-    const isOemPart = Number(item?.oemPart) === 1
+    const isOemPart = Number(item?.oemPart || item?.isOemPart) === 1
 
     // 权限过滤
     const perm = dealerPermission.value
