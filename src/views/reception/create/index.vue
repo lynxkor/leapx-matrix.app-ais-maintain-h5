@@ -1075,6 +1075,7 @@
                   </span>
                   <span class="alert-title">{{ alarm.title }}</span>
                 </div>
+                <div class="alert-contents">{{ Array.isArray(alarm.contents) ? alarm.contents.join('、') : alarm.contents }}</div>
                 <div class="alert-partno">{{ alarm.partNo }}</div>
                 <div class="alert-details">
                   <div
