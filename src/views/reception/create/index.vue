@@ -1970,7 +1970,8 @@ const validateMileage = (mileage, lastMileage, netMileage) => {
 // 获取详情
 const fetchDetail = async() => {
   const id = serviceProxyId.value || route.query.id
-  const vehicleInfoStr = route.params.vehicleInfo || route.query.vehicleInfo
+  // 从sessionStorage获取车辆信息
+  const vehicleInfoStr = sessionStorage.getItem('vehicleInfo')
 
   // 如果有车辆信息，则从车辆搜索页面跳转过来
   if (vehicleInfoStr && !route.query.serviceProxyId) {
@@ -2614,6 +2615,8 @@ const onSave = async() => {
       if (res.data) {
         serviceProxyId.value = res.data
       }
+      // 保存成功生成施工单后，清除sessionStorage中的车辆信息
+      sessionStorage.removeItem('vehicleInfo')
       // 保存成功后获取详情数据更新
       fetchDetailForSignature()
       // 获取提醒信息
@@ -3208,8 +3211,9 @@ onMounted(() => {
   // 初始化预计交车时间列表
   generateDeliveryTimes()
   // 获取上次环检信息
-  if (route.params.vehicleInfo) {
-    const item = JSON.parse(route.params.vehicleInfo)
+  const vehicleInfoStr = sessionStorage.getItem('vehicleInfo')
+  if (vehicleInfoStr) {
+    const item = JSON.parse(vehicleInfoStr)
     getRecentlyServiceProxy(item.vin).then((res) => {
       if (res.code === 200 && res.data) {
         // 已作废210、反结算200时不回显，其他状态回显上次环检信息
