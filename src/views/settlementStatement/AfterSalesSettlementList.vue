@@ -173,7 +173,7 @@
     </template>
 
     <!-- 添加收款弹窗 -->
-    <AisPopup v-model:show="showAddPayment" title="创建收款记录" position="bottom" round>
+    <AisPopup v-model:show="showAddPayment" title="创建收款记录" position="bottom" round :popupStyle="{ height: '662px' }">
       <template #content>
         <div class="payment-form">
           <div class="payment-card">
@@ -198,8 +198,9 @@
               <input
                 v-model="paymentForm.amount"
                 class="payment-amount-input"
-                type="number"
+                type="text"
                 placeholder="请输入支付金额"
+                @input="onAmountInput"
               />
             </div>
           </div>
@@ -693,6 +694,20 @@ const selectPaymentMethod = (item) => {
   paymentForm.value.paymentMethodText = item.text
 }
 
+const onAmountInput = () => {
+  let val = paymentForm.value.amount
+  // 只允许数字和小数点
+  val = val.replace(/[^\d.]/g, '')
+  // 小数点只能出现一次
+  val = val.replace(/\.{2,}/g, '.')
+  val = val.replace(/^(\d*\.)(.*)$/, (_, prefix, rest) => prefix + rest.replace(/\./g, ''))
+  // 限制两位小数
+  val = val.replace(/^(\d*\.\d{2}).*$/, '$1')
+  // 不能以多个0开头（除非是0.x）
+  val = val.replace(/^0+(\d)/, '0')
+  paymentForm.value.amount = val
+}
+
 // 根据签字规则显示不同文案和颜色
 // signStatus: 10-待签字, 20-已签字
 const signActionText = computed(() => {
@@ -937,6 +952,9 @@ const handlePaymentSubmit = async() => {
     return
   }
 
+  // 补全两位小数
+  paymentForm.value.amount = parseFloat(paymentForm.value.amount).toFixed(2)
+
   // 校验支付方式
   if (!paymentForm.value.paymentMethod) {
     showToast('请选择支付方式')
@@ -1016,7 +1034,7 @@ const handlePaymentSubmit = async() => {
     top: var(--nav-bar-total-height, 46px);
     left: 0;
     right: 0;
-    z-index: 5001;
+    z-index: 2000;
     background: #fff;
   }
 
