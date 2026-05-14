@@ -1,4 +1,4 @@
-import { post, postText, postJson } from './request.js'
+import { post, postText, postJson, get } from './request.js'
 
 // 获取施工单列表
 export function getList(data) {
@@ -188,4 +188,8 @@ export function checkFault(data) {
 // 创建留车单
 export function createRetention(data) {
   return post('/maintain/app/sp/serviceProxy/addVehRetentionList', data)
+}
+// 预约单查询
+export function getReservationList(data) {
+  return get('/leapx/maintenance/appointment/findById/' + data)
 }
