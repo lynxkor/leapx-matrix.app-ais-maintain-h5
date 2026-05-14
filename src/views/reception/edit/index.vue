@@ -1165,16 +1165,14 @@ import { useRepairItemBusinessRules, useRepairItemData } from '@/components/Sele
 import {
   uploadFileByUrl,
   getUploadConfig,
-  deleteAttachmentConfig,
   getFileList
 } from '@/libs/api/fileConfig'
 import { batchUploadImageLimit } from '@/libs/utils/nativeFn'
-import { RemindInfoTypeEnum, AlarmLevelEnum } from '@/views/repairWork/constant'
+import { RemindInfoTypeEnum } from '@/views/repairWork/constant'
 import {
   getDetail,
   getVehicleInfo,
   getVehicleMileage,
-  getFaultModule,
   serviceAddOrUpdate,
   servicePreCheck,
   getRemindInfo,
@@ -1188,6 +1186,23 @@ import {
   createRetention
 } from '@/api/reception'
 import { preAuthAddOrUpdate } from '@/api/authorization'
+import {
+  getFilePreviewUrl,
+  getFileType,
+  formatPhotoList,
+  hasDuplicateFileId,
+  getAlarmColor,
+  getAlarmLabel,
+  generateDeliveryDates as _generateDeliveryDates,
+  generateDeliveryTimes as _generateDeliveryTimes,
+  validateMileage,
+  validateRepairPerson as _validateRepairPerson,
+  getAttachConfig as _getAttachConfig,
+  getTargetFileList as _getTargetFileList,
+  handleFileDelete as _handleFileDelete,
+  fetchFaultModuleList as _fetchFaultModuleList,
+  onSelectImageSource as _onSelectImageSource
+} from '@/utils/receptionCommon'
 import '../create/create.scss'
 
 const route = useRoute()
@@ -1211,10 +1226,8 @@ const showImageUploadSheet = ref(false)
 const uploadConfig = ref({})
 
 // 根据附件类型获取配置
-const getAttachConfig = (attachType) => {
-  const detailList = uploadConfig.value?.detailList || []
-  return detailList.find((item) => item.attachType === attachType) || {}
-}
+// 上传配置获取已从 receptionCommon 导入，此处为组件绑定
+const getAttachConfig = (attachType) => _getAttachConfig(attachType, uploadConfig)
 
 // 车内照片配置
 const interiorConfig = computed(() => getAttachConfig('车内照片'))
@@ -1228,30 +1241,7 @@ const computedBusinessType = computed(() => {
   return detail.businessType || (detail.isAppointment ? 50 : 10)
 })
 
-const getFilePreviewUrl = (file) => {
-  return file?.authFileUrl || file?.url || file?.fileUrl || ''
-}
-
-const getFileSaveUrl = (file) => {
-  return file?.url || file?.fileUrl || file?.authFileUrl || ''
-}
-
-// 处理图片列表参数的通用方法
-const formatPhotoList = (list, attachType, businessId) => {
-  return list.map((item) => {
-    // 如果有id（来自接口返回或复用图片），使用id；否则使用uploadId（新上传）
-    const fileId = item.id || item.uploadId
-    return {
-      id: fileId,
-      fileId,
-      businessId,
-      fileUrl: getFileSaveUrl(item),
-      fileType: getFileType(item, 'image/jpeg'),
-      attachType,
-      configCode: 'mcs_serviceproxy'
-    }
-  })
-}
+// getFilePreviewUrl、formatPhotoList 已从 receptionCommon 导入
 
 // 施工单状态
 const isSaved = ref(false) // 是否已保存
@@ -1303,36 +1293,7 @@ const onConfirmWarrantyAlert = () => {
 }
 
 // 获取预警等级颜色
-const getAlarmColor = (level) => {
-  switch (level) {
-    case AlarmLevelEnum.CRITICAL:
-      return 'red'
-    case AlarmLevelEnum.WARNING:
-      return 'yellow'
-    case AlarmLevelEnum.NORMAL:
-      return 'green'
-    case AlarmLevelEnum.EXPIRED:
-      return 'gray'
-    default:
-      return 'gray'
-  }
-}
-
-// 获取预警等级标签
-const getAlarmLabel = (level) => {
-  switch (level) {
-    case AlarmLevelEnum.CRITICAL:
-      return '红色预警'
-    case AlarmLevelEnum.WARNING:
-      return '黄色预警'
-    case AlarmLevelEnum.NORMAL:
-      return '绿色预警'
-    case AlarmLevelEnum.EXPIRED:
-      return '灰色预警'
-    default:
-      return '未知预警'
-  }
-}
+// 预警相关已从 receptionCommon 导入
 
 // 维修项目数据 Hook
 const {
@@ -1564,22 +1525,7 @@ const moreActionsList = computed(() => {
 const faultModuleList = ref([])
 
 // 获取故障模块列表
-const fetchFaultModuleList = async() => {
-  try {
-    const res = await getFaultModule(faultSearchValue.value.trim())
-    if (res.code === 200 && res.data) {
-      faultModuleList.value = (res.data || []).map((item) => ({
-        ...item,
-        cccId: item.id
-      }))
-    } else {
-      faultModuleList.value = []
-    }
-  } catch (error) {
-    console.error('获取故障模块失败:', error)
-    faultModuleList.value = []
-  }
-}
+const fetchFaultModuleList = () => _fetchFaultModuleList(faultSearchValue.value, faultModuleList)
 
 // 作废原因弹框状态
 const showCancelReason = ref(false)
@@ -1872,6 +1818,19 @@ const hasInspectionDataChanged = () => {
   )
 }
 
+// 检查项目零件数据是否有改动
+const hasPartsDataChanged = () => {
+  if (!initialInspectionData.value) return false
+  const initial = initialInspectionData.value
+  return (
+    JSON.stringify(initial.repairItemRespList) !== JSON.stringify(partsData.repairItemRespList) ||
+    JSON.stringify(initial.sparePartRespList) !== JSON.stringify(partsData.sparePartRespList)
+  )
+}
+
+// 检查文件列表中是否有重复的fileId
+// hasDuplicateFileId 已从 receptionCommon 导入
+
 // 项目零件数据
 const partsData = reactive({
   workCostCount: '',
@@ -2012,35 +1971,9 @@ const selectedDeliveryTime = ref('')
 
 // 预计交车日期列表（生成未来7天）
 const deliveryDateList = ref([])
-const generateDeliveryDates = () => {
-  const dates = []
-  const today = new Date()
-  for (let i = 0; i < 100; i++) {
-    const date = new Date(today)
-    date.setDate(today.getDate() + i)
-    const year = date.getFullYear()
-    const month = String(date.getMonth() + 1).padStart(2, '0')
-    const day = String(date.getDate()).padStart(2, '0')
-    dates.push({
-      value: `${year}-${month}-${day}`,
-      label: `${year}-${month}-${day}`
-    })
-  }
-  deliveryDateList.value = dates
-}
-
-// 预计交车时间列表（08:00:00 到 18:00:00，每15分钟一个）
+const generateDeliveryDates = () => { deliveryDateList.value = _generateDeliveryDates() }
 const deliveryTimeList = ref([])
-const generateDeliveryTimes = () => {
-  const times = []
-  for (let hour = 8; hour <= 18; hour++) {
-    for (let minute = 0; minute < 60; minute += 15) {
-      const timeStr = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}:00`
-      times.push({ value: timeStr, label: timeStr })
-    }
-  }
-  deliveryTimeList.value = times
-}
+const generateDeliveryTimes = () => { deliveryTimeList.value = _generateDeliveryTimes() }
 
 // 签字渠道列表
 const signatureChannelList = ref([
@@ -2060,26 +1993,7 @@ const getSignChannelName = (channel) => {
 }
 
 // 里程校验
-const validateMileage = (mileage, lastMileage, netMileage) => {
-  // 1. 进店里程与上次进店里程对比
-  if (mileage && lastMileage) {
-    const mileageNum = Number(mileage)
-    const lastMileageNum = Number(lastMileage)
-    if (mileageNum < lastMileageNum) {
-      showToast(`本次进店里程${mileageNum}小于上次进店里程数${lastMileageNum},请注意`)
-    }
-  }
-
-  // 2. 进店里程与车联网里程对比
-  if (mileage && netMileage) {
-    const mileageNum = Number(mileage)
-    const netMileageNum = Number(netMileage)
-    const diff = Math.abs(mileageNum - netMileageNum)
-    if (diff > 300) {
-      showToast('进店里程数和车联网里程数不符，请注意')
-    }
-  }
-}
+// validateMileage 已从 receptionCommon 导入
 
 // 获取详情
 const fetchDetail = async() => {
@@ -2487,39 +2401,10 @@ const onEditPlate = () => {
 }
 
 // 删除图片/附件的通用方法
-const handleFileDelete = async(file, type) => {
-  // 根据 type 获取目标列表
-  const targetList =
-    type === 'interior'
-      ? detail.interiorImages
-      : type === 'exterior'
-        ? detail.exteriorImages
-        : signatureData.attachments
-
-  if (file.id) {
-    // 有id的图片：调用删除接口，然后从列表中移除
-    await deleteAttachmentConfig([file.id])
-    const index = targetList.findIndex((item) => item.id === file.id)
-    if (index > -1) {
-      targetList.splice(index, 1)
-    }
-  } else {
-    // 无id的图片（复用图片或临时图片）：直接从列表中移除
-    const index = targetList.findIndex((item) => item === file)
-    if (index > -1) {
-      targetList.splice(index, 1)
-    }
-  }
-}
-
-// 删除车内照片图片
-const handleInteriorDelete = (file) => handleFileDelete(file, 'interior')
-
-// 删除车外照片图片
-const handleExteriorDelete = (file) => handleFileDelete(file, 'exterior')
-
-// 删除附件资料
-const handleAttachmentDelete = (file) => handleFileDelete(file, 'attachment')
+// 文件删除已从 receptionCommon 导入，此处为组件绑定
+const handleInteriorDelete = (file) => _handleFileDelete(file, 'interior', detail, signatureData)
+const handleExteriorDelete = (file) => _handleFileDelete(file, 'exterior', detail, signatureData)
+const handleAttachmentDelete = (file) => _handleFileDelete(file, 'attachment', detail, signatureData)
 
 // 预览图片
 // const onPreviewImage = (type, index) => {
@@ -2580,29 +2465,9 @@ const uploadGeneric = (type) => {
 }
 
 // 选择图片来源
-const onSelectImageSource = (source) => {
-  showImageUploadSheet.value = false
-  if (source === 'camera') {
-    // 拍照模式，让原生处理
-  } else {
-    // 从相册选择
-    imageUploadRef.value?.click()
-  }
-}
-
+const onSelectImageSource = (source) => _onSelectImageSource(source, showImageUploadSheet, imageUploadRef)
 // 获取目标文件列表
-const getTargetFileList = (type) => {
-  switch (type) {
-    case 'interior':
-      return detail.interiorImages
-    case 'exterior':
-      return detail.exteriorImages
-    case 'attachment':
-      return signatureData.attachments
-    default:
-      return detail.interiorImages
-  }
-}
+const getTargetFileList = (type) => _getTargetFileList(type, detail, signatureData)
 
 // 处理图片文件选择
 const handleImageFileChange = (event) => {
@@ -2702,16 +2567,7 @@ const handleImageFileChange = (event) => {
   // 清空 input 值，允许重复选择同一文件
   event.target.value = ''
 }
-const getFileType = (file, fallback = '') => {
-  console.log('file', file)
-  if (!file) return fallback
-  if (file.fileType || file.ext) return file.fileType || file.ext
-
-  const filePath = file.fileName || file.name || file.url || file.fileUrl || file.authFileUrl || ''
-  const cleanPath = filePath.split('?')[0]
-  const ext = cleanPath.includes('.') ? cleanPath.split('.').pop() : ''
-  return ext || fallback
-}
+// getFileType 已从 receptionCommon 导入
 // 注册原生图片回调
 onMounted(() => {
   window.getScanResult = async(url) => {
@@ -2967,24 +2823,7 @@ const onMore = () => {
 }
 
 // 保存
-const validateRepairPerson = () => {
-  if (repairPersonType.value === 'other') {
-    if (!repairPersonNameInput.value.trim()) {
-      showToast('请输入送修人姓名')
-      return false
-    }
-    if (!repairPersonPhoneInput.value.trim()) {
-      showToast('请输入送修人手机号')
-      return false
-    }
-    // 手机号格式校验
-    if (!/^1[3-9]\d{9}$/.test(repairPersonPhoneInput.value.trim())) {
-      showToast('请输入正确的手机号')
-      return false
-    }
-  }
-  return true
-}
+const validateRepairPerson = () => _validateRepairPerson(repairPersonType.value, repairPersonNameInput.value, repairPersonPhoneInput.value)
 
 const savingLoading = ref(false)
 const cancelLoading = ref(false)
@@ -2992,6 +2831,15 @@ const cancelLoading = ref(false)
 // 环检信息保存（新增或编辑）
 const onInspectionSave = async(type) => {
   if (isInspectionSaveDisabled.value) return
+  // 检查车内、车外照片是否有重复文件
+  if (hasDuplicateFileId(detail.interiorImages)) {
+    showToast('车内照片存在重复文件，请检查')
+    return { code: -1 }
+  }
+  if (hasDuplicateFileId(detail.exteriorImages)) {
+    showToast('车外照片存在重复文件，请检查')
+    return { code: -1 }
+  }
   // 如果是项目零件或签字确认页，且数据没改动，则跳过校验直接返回
   if (type === 1 && !hasInspectionDataChanged()) {
     return { code: 200 }
@@ -3225,6 +3073,15 @@ const handlePartsDelete = (data) => {
 // 项目零件保存
 const onPartsSave = async() => {
   if (isPartsSaveDisabled.value) return
+  // 检查车内、车外照片是否有重复文件
+  if (hasDuplicateFileId(detail.interiorImages)) {
+    showToast('车内照片存在重复文件，请检查')
+    return
+  }
+  if (hasDuplicateFileId(detail.exteriorImages)) {
+    showToast('车外照片存在重复文件，请检查')
+    return
+  }
   // 从 RepairItemContent 组件获取数据
   const items = partsData.repairItemRespList || []
   const parts = partsData.sparePartRespList || []
@@ -3392,6 +3249,11 @@ const onConfirmAndSign = async() => {
   // 校验维修项目或零件有值（有一个有值即可）
   if (items.length === 0 && parts.length === 0) {
     showToast('项目或零件不可为空，请先添加维修项目或零件')
+    return
+  }
+  // 检查附件资料是否有重复文件
+  if (hasDuplicateFileId(signatureData.attachments)) {
+    showToast('附件资料存在重复文件，请检查')
     return
   }
 
@@ -3618,6 +3480,24 @@ onMounted(() => {
     })
   }
 })
+
+// 返回按钮拦截：检查环检信息或项目零件是否有未保存改动
+const onBeforeBack = () => {
+  if (!hasInspectionDataChanged() && !hasPartsDataChanged()) {
+    return true
+  }
+  showConfirmDialog({
+    title: '提示',
+    message: '本次操作未保存，是否退出？',
+    confirmButtonText: '否',
+    cancelButtonText: '是'
+  }).catch(() => {
+    router.go(-1)
+  })
+  return false
+}
+
+defineExpose({ onBeforeBack })
 </script>
 <style lang="scss" scoped>
 :deep(.van-action-sheet__cancel) {
