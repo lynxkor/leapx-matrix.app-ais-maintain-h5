@@ -39,7 +39,7 @@
     <!-- 基础信息 Tab -->
     <div id="tab-basic" class="tab-content-section">
       <!-- 接车施工单卡片 -->
-      <div class="info-card">
+      <div class="info-card mt-12">
         <div class="card-header">
           <span class="card-title">接车施工单</span>
         </div>
@@ -80,12 +80,17 @@
             <span class="info-label">门店所属区域</span>
             <span class="info-value">{{ detail.storeArea || '--' }}</span>
           </div>
-          <div class="info-row">
+          <div class="info-row warning-item" @click="warningExpanded = !warningExpanded">
             <span class="info-label">预警信息</span>
-            <span class="info-value warning">
-              {{ detail.warningInfo || '--' }}
-              <van-icon name="arrow" size="12" color="#888888" />
-            </span>
+            <div class="info-value-wrap">
+              <span class="info-value" :class="{ 'text-collapsed': !warningExpanded }">{{ detail.warningInfo || '--' }}</span>
+              <van-icon
+                v-if="detail.warningInfo && detail.warningInfo.length > 20"
+                :name="warningExpanded ? 'arrow-up' : 'arrow-down'"
+                size="16"
+                color="#888888"
+              />
+            </div>
           </div>
           <div class="info-row">
             <span class="info-label">预交时间</span>
@@ -95,7 +100,7 @@
       </div>
 
       <!-- 质量反馈报告卡片 -->
-      <div v-if="detail.qualityReport" class="info-card">
+      <div v-if="detail.qualityReport" class="info-card mt-12" >
         <div class="card-header">
           <span class="card-title">质量反馈报告</span>
         </div>
@@ -219,10 +224,13 @@
                 :key="img.fileId || index"
                 class="attachments-image-item"
               >
-                <img :src="img.url" class="attached-img" />
+                <img :src="img.url" class="attached-img" @click="showImg(img.url)" />
+                <div class="attachment-delete" @click="deleteAttachment(section.key, index)">
+                  <van-icon name="cross" size="16" color="#ffffff" />
+                </div>
               </div>
               <div
-                v-if="detail.attachments[section.key].length < MAX_ATTACHMENT_COUNT"
+                v-if="getAttachConfig(section.label).maxNum == null || detail.attachments[section.key].length < getAttachConfig(section.label).maxNum"
                 class="attachments-upload-item"
                 @click="uploadAttachment(section.key)"
               >
@@ -283,9 +291,9 @@
         </div>
       </div>
     </div>
-    <div style="height: 50vh;"></div>
     <!-- 底部审核按钮 (仅审批中状态显示) -->
     <div v-if="detail.status === 20" class="bottom-actions">
+      <div class="action-btn back" @click="router.back()">返回</div>
       <div class="action-btn audit" @click="handleAudit">审核</div>
     </div>
 
@@ -310,7 +318,7 @@
           <!-- 错误内容（审批驳回时显示） -->
           <div v-if="isReject" class="audit-error-code-section">
             <div class="audit-error-code-header" @click="openErrorCodePopup">
-              <span class="audit-error-code-title">错误内容<span class="required">*</span></span>
+              <span class="audit-error-code-title">错误代码及内容<span class="required">*</span></span>
               <div class="audit-error-code-selector">
                 <span :class="['audit-error-code-text', { placeholder: !selectedErrorCode }]">
                   {{ selectedErrorCode || '请选择' }}
@@ -336,16 +344,19 @@
           <!-- 附件信息（审批驳回时显示） -->
           <div v-if="isReject" class="audit-attachment-section">
             <div class="audit-section-title">附件信息</div>
-            <div class="audit-attachment-list">
-              <div v-for="(img, index) in attachmentList" :key="index" class="audit-attachment-item">
-                <img :src="img" class="attachment-img" />
-                <van-icon name="close" class="attachment-delete" @click="removeAttachment(index)" />
-              </div>
-              <div v-if="attachmentList.length < 5" class="audit-attachment-upload" @click="handleUploadAttachment">
-                <div class="audit-attachment-icon">
-                  <van-icon name="photograph" />
+            <div class="attachments-image-list">
+              <div v-for="(img, index) in attachmentList" :key="index" class="attachments-image-item">
+                <img :src="img.url || img.fileUrl" class="attached-img" @click="showImg(img.url || img.fileUrl)" />
+                <div class="attachment-delete" @click="removeAttachment(index)">
+                  <van-icon name="cross" size="16" color="#ffffff" />
                 </div>
-                <span class="audit-attachment-text">上传</span>
+              </div>
+              <div
+                class="attachments-upload-item"
+                @click="handleUploadAttachment"
+              >
+                <van-icon name="photograph" size="24" color="#d8d8d8" />
+                <span class="attachments-upload-text">上传</span>
               </div>
             </div>
           </div>
@@ -374,7 +385,7 @@
               :class="['error-code-item', { active: selectedErrorCode === option.label }]"
               @click="selectErrorCode(option)"
             >
-              <span class="error-code-label">{{ option.label }}</span>
+              <span class="error-code-label">{{ option.label + '【' + option.value + '】' }}</span>
               <van-icon v-if="selectedErrorCode === option.label" name="success" class="error-code-check" />
             </div>
           </van-list>
@@ -386,18 +397,22 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted, nextTick, computed } from 'vue'
-import { useRoute } from 'vue-router'
-import { showToast, showLoadingToast, closeToast } from 'vant'
+import { useRoute, useRouter } from 'vue-router'
+import { showToast, showLoadingToast, closeToast, showImagePreview } from 'vant'
 import AisPopup from '@/components/AisPopup.vue'
 import { preAuthGet, preAuthAudit, preAuthGetErrorCodeList } from '@/api/authorization'
-import { getAttachmentList, uploadFileByUrl, deleteAttachmentConfig } from '@/libs/api/fileConfig'
-import { getAppImg } from '@/libs/utils/nativeFn'
+import { getAttachmentList, uploadFileByUrl, deleteAttachmentConfig, getUploadConfig } from '@/libs/api/fileConfig'
+import { getAppImgLimit } from '@/libs/utils/nativeFn'
 import { usePageSafeArea } from '@/utils/safeArea'
-
 const route = useRoute()
+const router = useRouter()
 usePageSafeArea({ bodyClass: 'ais-page-nav-safe-area' })
 const PRE_AUTH_ATTACHMENT_CONFIG_CODE = 'mcs_preauth'
-const MAX_ATTACHMENT_COUNT = 3
+const uploadConfig = ref({})
+const getAttachConfig = (attachType) => {
+  const detailList = uploadConfig.value?.detailList || []
+  return detailList.find((item) => item.attachType === attachType) || {}
+}
 const attachmentSections = [
   { key: 'vehicle', label: '车辆信息' },
   { key: 'license', label: '行驶证' },
@@ -414,6 +429,7 @@ const activeTab = ref('basic')
 const faultDescExpanded = ref(false)
 const faultProcessExpanded = ref(false)
 const reasonExpanded = ref(false)
+const warningExpanded = ref(false)
 const reasonNeedExpand = ref(true)
 const isClickScrolling = ref(false) // 标记是否点击触发的滚动
 const showAuditPopup = ref(false) // 审核弹窗显示状态
@@ -708,15 +724,7 @@ const handleAuditSubmit = async() => {
     params.preAuthRuleCodeId = selectedErrorCodeValue.value
     // 附件（审批驳回时必传，空数组或有数据都可以）
     params.attachments = attachmentList.value.map(item => ({
-      fileId: item.fileId,
-      businessId: item.businessId,
-      fileName: item.fileName,
-      fileUrl: item.fileUrl,
-      fileSize: item.fileSize,
-      fileType: item.fileType,
-      attachType: item.attachType,
-      configId: item.configId,
-      configCode: item.configCode
+      fileUrl: item.fileUrl || item.url || ''
     }))
   }
 
@@ -753,12 +761,10 @@ const openErrorCodePopup = () => {
   })
 }
 
-// 上传附件
+// 审核附件上传
 const handleUploadAttachment = () => {
-  if (attachmentList.value.length >= 5) {
-    showToast('最多上传5个附件')
-    return
-  }
+  currentUploadType.value = 'audit'
+  getAppImgLimit(10)
 }
 
 const isSuccessResponse = (res) => res?.code === 0 || res?.code === 200
@@ -806,12 +812,16 @@ const fetchAllAttachmentLists = async() => {
 
 const uploadAttachment = (type) => {
   const currentList = detail.value.attachments[type] || []
-  if (currentList.length >= MAX_ATTACHMENT_COUNT) {
-    showToast(`最多上传${MAX_ATTACHMENT_COUNT}个附件`)
+  const attachType = getAttachmentTypeLabel(type)
+  const config = getAttachConfig(attachType)
+  const maxNum = config.maxNum
+  if (maxNum != null && currentList.length >= maxNum) {
+    showToast(`最多上传${maxNum}个附件`)
     return
   }
   currentUploadType.value = type
-  getAppImg()
+  const maxSize = config.maxSize || 10
+  getAppImgLimit(maxSize)
 }
 
 const handleNativeImage = async(rawFileUrl) => {
@@ -824,15 +834,23 @@ const handleNativeImage = async(rawFileUrl) => {
   currentUploadType.value = ''
 
   if (!uploadType) return
-  if (!businessId) {
-    showToast('缺少预授权ID')
-    return
-  }
   if (!fileUrl) {
     showToast('未获取到图片地址')
     return
   }
   if (isUploadingAttachment.value) return
+
+  // 审核附件：直接收集图片信息，不走文件服务上传
+  if (uploadType === 'audit') {
+    attachmentList.value.push({ url: fileUrl, fileUrl })
+    return
+  }
+
+  // 附件信息Tab：走正常上传流程
+  if (!businessId) {
+    showToast('缺少预授权ID')
+    return
+  }
 
   const attachType = getAttachmentTypeLabel(uploadType)
   if (!attachType) {
@@ -857,6 +875,14 @@ const handleNativeImage = async(rawFileUrl) => {
       return
     }
 
+    const uploadData = uploadRes?.data
+    const uploadedFiles = Array.isArray(uploadData) ? uploadData : (uploadData ? [uploadData] : [])
+    if (!uploadedFiles.length) {
+      closeToast()
+      showToast('上传返回数据异常')
+      return
+    }
+
     await fetchAttachmentListByType(uploadType)
     closeToast()
     showToast('上传成功')
@@ -869,33 +895,29 @@ const handleNativeImage = async(rawFileUrl) => {
   }
 }
 
-// 删除附件
-const removeAttachment = async(index) => {
-  const item = attachmentList.value[index]
+// 图片预览
+const showImg = (url) => {
+  showImagePreview([url])
+}
+
+// 删除审核弹窗附件（本地图片，无需调用接口）
+const removeAttachment = (index) => {
+  attachmentList.value.splice(index, 1)
+}
+
+// 删除附件信息Tab的附件
+const deleteAttachment = async(type, index) => {
+  const item = detail.value.attachments[type]?.[index]
   if (!item) return
 
-  try {
-    showLoadingToast({ message: '删除中...', forbidClick: true })
+  detail.value.attachments[type].splice(index, 1)
 
-    // 调用删除接口
-    const res = await deleteAttachmentConfig({
-      id: item.id || item.fileId
-    })
-
-    closeToast()
-
-    if (res?.code !== 0 && res?.code !== 200) {
-      showToast(res?.msg || '删除失败')
-      return
+  if (item?.id || item?.fileId) {
+    try {
+      await deleteAttachmentConfig([item.id || item.fileId])
+    } catch (error) {
+      console.error('删除附件失败:', error)
     }
-
-    // 从列表中移除
-    attachmentList.value.splice(index, 1)
-    showToast('删除成功')
-  } catch (error) {
-    closeToast()
-    console.error('删除附件失败:', error)
-    showToast('删除失败，请稍后重试')
   }
 }
 
@@ -913,11 +935,10 @@ const fetchErrorCodeList = async() => {
     if (res.code === 200 && res.data) {
       const list = res.data?.map(item => ({
         label: item.content,
-        value: item.id
+        value: item.code
       })) || []
 
       errorCodeOptions.value = [...errorCodeOptions.value, ...list]
-      console.log('当前错误代码列表:', errorCodeOptions.value)
 
       // 判断是否还有更多数据
       if (list.length === 0 || list.length < errorCodePageSize) {
@@ -1086,7 +1107,11 @@ onMounted(() => {
   window.getImage = handleNativeImage
   console.log('预授权详情页加载，ID:', route.params.id)
   fetchDetail()
-
+  getUploadConfig({ configCode: PRE_AUTH_ATTACHMENT_CONFIG_CODE }).then((res) => {
+    if (res?.code === 200 || res?.code === 0) {
+      uploadConfig.value = res.data || {}
+    }
+  })
   nextTick(() => {
     setupScrollListener()
   })
@@ -1118,7 +1143,7 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   background: #f5f5f5;
-  padding-bottom: calc(76px + env(safe-area-inset-bottom));
+  padding-bottom: calc(83px + env(safe-area-inset-bottom));
 }
 
 // 加载状态
@@ -1265,7 +1290,6 @@ onUnmounted(() => {
 
 // 信息卡片
 .info-card {
-  margin-top: 12px;
   background: #ffffff;
   border-radius: 8px;
   margin-bottom: 12px;
@@ -1286,7 +1310,9 @@ onUnmounted(() => {
     padding: 4px 12px 12px;
   }
 }
-
+.mt-12 {
+  margin-top: 12px;
+}
 // 信息行
 .info-row {
   display: flex;
@@ -1310,8 +1336,33 @@ onUnmounted(() => {
     margin-left: 16px;
     width: 196px;
 
+    .svc-tag {
+      font-family: 'PingFang SC';
+      font-size: 12px;
+      font-style: normal;
+      color: #191a1b;
+      background: #ffffff;
+      border: 0.5px solid #191a1b;
+      border-radius: 4px;
+      padding: 1px 4px;
+      height: 20px;
+      line-height: 17px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      white-space: nowrap;
+      margin-left: 6px;
+    }
+
     &.warning {
       color: #ee0a24;
+    }
+
+    &.text-collapsed {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     &.collapsed {
@@ -1320,6 +1371,28 @@ onUnmounted(() => {
       -webkit-box-orient: vertical;
       overflow: hidden;
       text-overflow: ellipsis;
+    }
+  }
+
+  &.warning-item {
+    align-items: flex-start;
+
+    .info-value-wrap {
+      display: flex;
+      align-items: flex-start;
+      justify-content: flex-end;
+      gap: 2px;
+      flex: 1;
+      margin-left: 23px;
+      min-width: 0;
+      overflow: hidden;
+    }
+
+    .info-value {
+      flex: 1;
+      min-width: 0;
+      margin-left: 0;
+      width: auto;
     }
   }
 }
@@ -1614,11 +1687,27 @@ onUnmounted(() => {
     height: 80px;
     border-radius: 6px;
     overflow: hidden;
+    position: relative;
 
     .attached-img {
       width: 100%;
       height: 100%;
       object-fit: cover;
+    }
+
+    .attachment-delete {
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 24px;
+      height: 24px;
+      background: rgba(0, 0, 0, 0.4);
+      border-radius: 0 7px 0 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 5;
+      cursor: pointer;
     }
   }
 
@@ -1768,6 +1857,12 @@ onUnmounted(() => {
     &.audit {
       color: #ffffff;
       background: #009100;
+    }
+
+    &.back {
+      color: #545454;
+      background: #ffffff;
+      border: 1px solid #d8d8d8;
     }
 
     &.reject {
@@ -1988,78 +2083,11 @@ onUnmounted(() => {
   }
 }
 
-// 附件上传
+// 附件上传（审核弹窗）
 .audit-attachment-section {
   margin-bottom: 12px;
   background: #ffffff;
   border-radius: 6px;
   padding: 12px;
-
-  .audit-attachment-list {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-  }
-
-  .audit-attachment-item {
-    width: 80px;
-    height: 80px;
-    border-radius: 6px;
-    overflow: hidden;
-    position: relative;
-
-    .attachment-img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
-
-    .attachment-delete {
-      position: absolute;
-      top: 4px;
-      right: 4px;
-      width: 18px;
-      height: 18px;
-      background: rgba(0, 0, 0, 0.5);
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: #ffffff;
-      font-size: 12px;
-      cursor: pointer;
-    }
-  }
-
-  .audit-attachment-upload {
-    width: 80px;
-    height: 80px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    background: #f5f5f5;
-    border-radius: 6px;
-    cursor: pointer;
-
-    .audit-attachment-icon {
-      font-size: 24px;
-      color: #d8d8d8;
-      margin-bottom: 4px;
-    }
-
-    .audit-attachment-text {
-      font-family: 'PingFang SC';
-      font-size: 12px;
-      color: #888888;
-    }
-  }
-
-  .audit-attachment-tip {
-    margin-top: 8px;
-    font-family: 'PingFang SC';
-    font-size: 12px;
-    color: #888888;
-  }
 }
 </style>

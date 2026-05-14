@@ -68,7 +68,7 @@
               </van-col>
               <van-col span="24" class="card-info-col">
                 <span class="card-info-title">预交时间</span>
-                <span class="card-info-des">{{ item.estimateDeliverTime }}</span>
+                <span class="card-info-des">{{ item.expectFinishAt }}</span>
               </van-col>
             </van-row>
           </template>
