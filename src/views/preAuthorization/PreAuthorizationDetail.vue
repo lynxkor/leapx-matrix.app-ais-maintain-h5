@@ -39,7 +39,7 @@
     <!-- 基础信息 Tab -->
     <div id="tab-basic" class="tab-content-section">
       <!-- 接车施工单卡片 -->
-      <div class="info-card">
+      <div class="info-card mt-12">
         <div class="card-header">
           <span class="card-title">接车施工单</span>
         </div>
@@ -1143,7 +1143,7 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   background: #f5f5f5;
-  padding-bottom: calc(47px + env(safe-area-inset-bottom));
+  padding-bottom: calc(83px + env(safe-area-inset-bottom));
 }
 
 // 加载状态
