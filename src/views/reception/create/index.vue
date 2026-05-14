@@ -1054,14 +1054,16 @@
       <div class="warranty-alert-content">
         <template v-for="item in remindList" :key="item.type">
           <!-- 预授权提醒 -->
-          <div v-if="item.type === RemindInfoTypeEnum.PRE_AUTH && detail.isCreatePreAuth !== 1" class="alert-section">
-            <div class="section-title">{{ item.typeLabel }}</div>
-            <div class="section-message">{{ item.content || '暂无提醒信息' }}</div>
-            <div class="section-action-btn" @click="onGenerateAuthorization">生成预授权</div>
-          </div>
+          <template v-if="item.type === RemindInfoTypeEnum.PRE_AUTH">
+            <div v-if="detail.isCreatePreAuth !== 1" class="alert-section">
+              <div class="section-title">{{ item.typeLabel }}</div>
+              <div class="section-message">{{ item.content || '暂无提醒信息' }}</div>
+              <div class="section-action-btn" @click="onGenerateAuthorization">生成预授权</div>
+            </div>
+          </template>
 
           <!-- 三包预警 -->
-          <div v-if="item.type === RemindInfoTypeEnum.THREE_GUARANTEES" class="alert-section">
+          <div v-else-if="item.type === RemindInfoTypeEnum.THREE_GUARANTEES" class="alert-section">
             <div class="section-title">{{ item.typeLabel }}</div>
             <div class="warranty-alerts">
               <div
@@ -2886,7 +2888,6 @@ const fetchDetailForSignature = async() => {
       detail.code = data.code || ''
       detail.orderStatus = data.orderStatus || ''
       detail.signStatus = data.signStatus || ''
-      detail.signUrl = data.signUrl || ''
       // 将故障预警记录映射到faultModules用于显示
       if (data.faultAlertRecordRespList && data.faultAlertRecordRespList.length > 0) {
         detail.faultModules = data.faultAlertRecordRespList.map((item) => ({

@@ -449,14 +449,14 @@
               <span class="label">开启维修直播</span>
               <van-switch v-model="signatureData.liveEnabled" size="20" active-color="#009100" />
             </div> -->
-            <div class="signature-row" @click="showSignatureChannelPickerHandle">
+            <div class="signature-row">
               <span class="label">签字渠道</span>
 
               <div class="value-wrapper">
                 <span :class="['value', { placeholder: !signatureData.signChannel }]">
                   {{ signatureData.signChannel || '请选择' }}
                 </span>
-                <van-icon v-if="Number(detail.signStatus) !== 20 && Number(detail.signStatus) !== 10" name="arrow" size="12" color="#545454" />
+                <!-- <van-icon v-if="Number(detail.signStatus) !== 20 && Number(detail.signStatus) !== 10" name="arrow" size="12" color="#545454" /> -->
               </div>
             </div>
             <!-- APP/短信/零小跑渠道提示 -->
@@ -561,7 +561,7 @@
         <span
           v-if="detail.orderStatus == 110"
           :class="['complete-btn', { disabled: isConfirmAndSignDisabled }]"
-          @click="onConfirmAndSign"
+          @click="onConfirmAndSignClick"
           >制单确认并签字</span
         >
       </template>
@@ -1052,14 +1052,15 @@
       <div class="warranty-alert-content">
         <template v-for="item in remindList" :key="item.type">
           <!-- 预授权提醒 -->
-          <div v-if="item.type === RemindInfoTypeEnum.PRE_AUTH && detail.isCreatePreAuth !== 1" class="alert-section">
-            <div class="section-title">{{ item.typeLabel }}</div>
-            <div class="section-message">{{ item.content || '暂无提醒信息' }}</div>
-            <div class="section-action-btn" @click="onGenerateAuthorization">生成预授权</div>
-          </div>
-
+          <template v-if="item.type === RemindInfoTypeEnum.PRE_AUTH">
+            <div v-if="detail.isCreatePreAuth !== 1" class="alert-section">
+              <div class="section-title">{{ item.typeLabel }}</div>
+              <div class="section-message">{{ item.content || '暂无提醒信息' }}</div>
+              <div class="section-action-btn" @click="onGenerateAuthorization">生成预授权</div>
+            </div>
+          </template>
           <!-- 三包预警 -->
-          <div v-if="item.type === RemindInfoTypeEnum.THREE_GUARANTEES" class="alert-section">
+          <div v-else-if="item.type === RemindInfoTypeEnum.THREE_GUARANTEES" class="alert-section">
             <div class="section-title">{{ item.typeLabel }}</div>
             <div class="warranty-alerts">
               <div
@@ -1597,8 +1598,6 @@ const onConfirmCancel = async() => {
 
 // 是否存在故障变更
 const onHasFaultChange = (value) => {
-  console.log('valuevaluevaluevalue', value)
-
   // 如果是数据加载导致的改变，不执行逻辑
   if (isDataLoading.value) return
 
@@ -1887,12 +1886,12 @@ const computedTotalCost = computed(() => {
   return total.toFixed(2)
 })
 
-// 制单确认并签字按钮是否禁用：signStatus == 10 时可点击，否则需要预计交车时间和签字渠道
+// 制单确认并签字按钮是否禁用：需要预计交车时间
 const isConfirmAndSignDisabled = computed(() => {
   if (Number(detail.signStatus) === 10) {
     return false
   }
-  return !signatureData.expectFinishAt || !signatureData.signChannel
+  return !signatureData.expectFinishAt
 })
 
 // 项目零件保存按钮是否禁用：没有添加项目或者零件
@@ -2110,7 +2109,6 @@ const fetchDetail = async() => {
       detail.payType = data.payType || ''
       detail.warrantyCompany = data.warrantyCompany || ''
       detail.signChannel = data.signChannel || ''
-      detail.signUrl = data.signUrl || ''
       detail.signCompletedOn = data.signCompletedOn || ''
       detail.signGeneratedOn = data.signGeneratedOn || ''
       detail.signStatus = data.signStatus || ''
@@ -3257,6 +3255,12 @@ const onConfirmAndSign = async() => {
     return
   }
 
+  // 如果已设置不需要留车提醒，直接执行后续流程
+  if (Number(detail.isVehRetentionRemind) === 1) {
+    handleConfirmAndSignProcess()
+    return
+  }
+
   // 先调用checkFault接口
   try {
     savingLoading.value = true
@@ -3393,16 +3397,15 @@ const onSelectDeliveryTime = (item) => {
 const onCloseDeliveryTimePicker = () => {
   showDeliveryTimePicker.value = false
 }
-const showSignatureChannelPickerHandle = () => {
-  if (Number(detail.signStatus) === 20 || Number(detail.signStatus) === 10) {
-    return
-  }
+// 点击制单确认并签字，先弹出签字渠道选择
+const onConfirmAndSignClick = () => {
   showSignatureChannelPicker.value = true
 }
 // 选择签字渠道
 const onSelectSignatureChannel = (item) => {
   signatureData.signChannel = item.label
   showSignatureChannelPicker.value = false
+  onConfirmAndSign()
 }
 
 // 进店里程数弹框打开
