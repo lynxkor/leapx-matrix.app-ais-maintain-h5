@@ -750,6 +750,7 @@ watch(feedbackSearchText, (newVal) => {
     pageNum: 1,
     pageSize: 10,
     appSearchKeyWord: newVal,
+    serviceProxyCode: constructionNo.value,
     _t: Date.now()
   }
 })
@@ -759,7 +760,8 @@ const feedbackRequestData = reactive({
   data: {
     pageNum: 1,
     pageSize: 10,
-    appSearchKeyWord: ''
+    appSearchKeyWord: '',
+    serviceProxyCode: ''
   },
   api: (params) => preAuthGetQualityFeedbackList(params)
 })
@@ -790,6 +792,7 @@ const handleFeedbackSearch = () => {
     pageNum: 1,
     pageSize: 10,
     appSearchKeyWord: feedbackSearchText.value,
+    serviceProxyCode: constructionNo.value,
     _t: Date.now()
   }
 }
@@ -1041,19 +1044,21 @@ const openConstructionPicker = () => {
 }
 
 const openFeedbackPicker = () => {
+  if (!constructionNo.value) {
+    showToast('请先选择施工单')
+    return
+  }
+  // 先更新请求参数，确保 RefreshList 挂载后首次请求就带上 serviceProxyCode
+  feedbackRequestData.data = {
+    pageNum: 1,
+    pageSize: 10,
+    appSearchKeyWord: '',
+    serviceProxyCode: constructionNo.value,
+    _t: Date.now()
+  }
   feedbackSearchText.value = ''
   feedbackList.value = []
   showFeedbackPicker.value = true
-  // 触发重新查询 - 使用随机数强制刷新
-  nextTick(() => {
-    const timestamp = Date.now()
-    feedbackRequestData.data = {
-      pageNum: 1,
-      pageSize: 10,
-      appSearchKeyWord: '',
-      _t: timestamp
-    }
-  })
 }
 
 const onAuthTypeChange = (type) => {
