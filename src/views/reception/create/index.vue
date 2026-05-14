@@ -1095,6 +1095,11 @@
             <div class="info-title">{{ item.typeLabel }}</div>
             <div class="info-content">{{ item.content || '暂无提醒信息' }}</div>
           </template>
+          <!-- 差价提醒 -->
+          <template v-else-if="item.type === RemindInfoTypeEnum.PRICE_DIFFERENCE">
+            <div class="info-title">{{ item.typeLabel }}</div>
+            <div class="info-content">{{ item.content || '暂无提醒信息' }}</div>
+          </template>
           <!-- 车辆标识 -->
           <template v-else-if="item.type === '5'">
             <div class="info-title">{{ item.typeLabel }}</div>
@@ -1354,7 +1359,7 @@ const fetchRemindInfo = () => {
       if (res.code === 200) {
         const rawData = res.data || []
         // 只保留满足条件的提醒类型：预授权、三包预警、服务活动、车辆标识
-        const validTypes = [RemindInfoTypeEnum.THREE_GUARANTEES, RemindInfoTypeEnum.SERVICE_ACTIVITY, '5']
+        const validTypes = [RemindInfoTypeEnum.THREE_GUARANTEES, RemindInfoTypeEnum.SERVICE_ACTIVITY, RemindInfoTypeEnum.PRICE_DIFFERENCE, '5']
         // 预授权提醒：只有未创建预授权时才显示
         const preAuthItems = rawData.filter((item) => item.type === RemindInfoTypeEnum.PRE_AUTH && detail.isCreatePreAuth !== 1)
         // 其他有效类型

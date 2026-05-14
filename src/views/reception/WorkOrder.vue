@@ -144,11 +144,12 @@ const requestData = computed(() => {
   const data = {
     pageNum: 1,
     pageSize: 10,
+    itemFlag: 1,
     sortColumns: [
-      {
-        column: 'order_status',
-        sort: 'ASC'
-      },
+      // {
+      //   column: 'order_status',
+      //   sort: 'ASC'
+      // },
       {
         column: 'create_time',
         sort: 'DESC'

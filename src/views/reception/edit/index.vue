@@ -1073,7 +1073,10 @@
                   </span>
                   <span class="alert-title">{{ alarm.title }}</span>
                 </div>
-                <div style="color: #373535; font-size: 13px;">{{ Array.isArray(alarm.contents) ? alarm.contents.join('、') : alarm.contents }}</div>
+                <div v-if="Array.isArray(alarm.contents)" style="color: #373535; font-size: 13px;">
+                  <div v-for="(content, cIndex) in alarm.contents" :key="cIndex">{{ content }}</div>
+                </div>
+                <div v-else style="color: #373535; font-size: 13px;">{{ alarm.contents }}</div>
                 <div class="alert-partno">{{ alarm.partNo }}</div>
                 <div class="alert-details">
                   <div
@@ -1090,6 +1093,11 @@
           </div>
           <!-- 服务活动提醒 -->
           <template v-else-if="item.type === RemindInfoTypeEnum.SERVICE_ACTIVITY">
+            <div class="info-title">{{ item.typeLabel }}</div>
+            <div class="info-content">{{ item.content || '暂无提醒信息' }}</div>
+          </template>
+          <!-- 差价提醒 -->
+          <template v-else-if="item.type === RemindInfoTypeEnum.PRICE_DIFFERENCE">
             <div class="info-title">{{ item.typeLabel }}</div>
             <div class="info-content">{{ item.content || '暂无提醒信息' }}</div>
           </template>
@@ -1649,15 +1657,15 @@ const onHasFaultChange = (value) => {
   if (isDataLoading.value) return
 
   // 如果选择"否"，弹出确认框
-  if (value === '0') {
+  if (Number(value) === 0) {
     // 如果已添加过故障模块或客户故障描述，弹出确认框
     if (detail.faultModules.length > 0 || detail.customerFaultDesc) {
       pendingFaultValue.value = value
-      showFaultConfirm.value = true
     } else {
       detail.currentFault = '0'
       detail.customerFaultDesc = '本次进店车辆无故障'
     }
+    showFaultConfirm.value = true
   } else if (value === '1' && detail.customerFaultDesc === '本次进店车辆无故障') {
     // 从"否"切换到"是"，清空客户故障描述
     detail.customerFaultDesc = ''
@@ -3047,7 +3055,8 @@ const onInspectionSave = async(type) => {
       testResult: detail.testResult,
       // 项目零件数据（用于判断维修类型变化）
       repairItemRespList: [...partsData.repairItemRespList],
-      sparePartRespList: [...partsData.sparePartRespList]
+      sparePartRespList: [...partsData.sparePartRespList],
+      repairItemTypeDetailCollect: detail.repairItemTypeDetailCollect
     }
     return { code: 200 }
   }
@@ -3250,7 +3259,7 @@ const onPartsSave = async() => {
     const hadGeneralOrThreeElectric = oldRepairItemTypeDetailCollect.includes('一般维修') || oldRepairItemTypeDetailCollect.includes('三电维修')
     const hasGeneralOrThreeElectric = newRepairItemTypeDetailCollect.includes('一般维修') || newRepairItemTypeDetailCollect.includes('三电维修')
     console.log('hadGeneralOrThreeElectric', hadGeneralOrThreeElectric, hasGeneralOrThreeElectric, detail.currentFault)
-    if (!hadGeneralOrThreeElectric && hasGeneralOrThreeElectric && detail.currentFault === '0') {
+    if (!hadGeneralOrThreeElectric && hasGeneralOrThreeElectric && Number(detail.currentFault) === 0) {
       detail.currentFault = '1'
       // 清空默认文本
       if (detail.customerFaultDesc === '本次进店车辆无故障') {
@@ -3586,7 +3595,7 @@ onMounted(() => {
         if (res.code === 200) {
           const rawData = res.data || []
           // 只保留满足条件的提醒类型：预授权、三包预警、服务活动、车辆标识
-          const validTypes = [RemindInfoTypeEnum.THREE_GUARANTEES, RemindInfoTypeEnum.SERVICE_ACTIVITY, '5']
+          const validTypes = [RemindInfoTypeEnum.THREE_GUARANTEES, RemindInfoTypeEnum.SERVICE_ACTIVITY, RemindInfoTypeEnum.PRICE_DIFFERENCE, '5']
           // 预授权提醒：只有未创建预授权时才显示
           const preAuthItems = rawData.filter((item) => item.type === RemindInfoTypeEnum.PRE_AUTH && detail.isCreatePreAuth !== 1)
           // 其他有效类型

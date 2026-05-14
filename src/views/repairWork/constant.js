@@ -81,7 +81,9 @@ export const RemindInfoTypeEnum = {
   /** 三包预警 */
   THREE_GUARANTEES: '2',
   /** 预授权提醒 */
-  PRE_AUTH: '3'
+  PRE_AUTH: '3',
+  /** 差价提醒 */
+  PRICE_DIFFERENCE: '4'
 }
 
 // 三包预警等级枚举
