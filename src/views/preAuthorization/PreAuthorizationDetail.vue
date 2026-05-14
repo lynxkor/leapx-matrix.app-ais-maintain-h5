@@ -318,7 +318,7 @@
           <!-- 错误内容（审批驳回时显示） -->
           <div v-if="isReject" class="audit-error-code-section">
             <div class="audit-error-code-header" @click="openErrorCodePopup">
-              <span class="audit-error-code-title">错误内容<span class="required">*</span></span>
+              <span class="audit-error-code-title">错误代码及内容<span class="required">*</span></span>
               <div class="audit-error-code-selector">
                 <span :class="['audit-error-code-text', { placeholder: !selectedErrorCode }]">
                   {{ selectedErrorCode || '请选择' }}
@@ -385,7 +385,7 @@
               :class="['error-code-item', { active: selectedErrorCode === option.label }]"
               @click="selectErrorCode(option)"
             >
-              <span class="error-code-label">{{ option.label }}</span>
+              <span class="error-code-label">{{ option.label + '【' + option.value + '】' }}</span>
               <van-icon v-if="selectedErrorCode === option.label" name="success" class="error-code-check" />
             </div>
           </van-list>
@@ -935,11 +935,10 @@ const fetchErrorCodeList = async() => {
     if (res.code === 200 && res.data) {
       const list = res.data?.map(item => ({
         label: item.content,
-        value: item.id
+        value: item.code
       })) || []
 
       errorCodeOptions.value = [...errorCodeOptions.value, ...list]
-      console.log('当前错误代码列表:', errorCodeOptions.value)
 
       // 判断是否还有更多数据
       if (list.length === 0 || list.length < errorCodePageSize) {
