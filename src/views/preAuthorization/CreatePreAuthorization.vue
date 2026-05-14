@@ -65,7 +65,7 @@
         </div>
         <div class="vehicle-info-item">
           <span class="info-label">车辆用途</span>
-          <span class="info-value">{{ vehicleInfo.vehicleUse }}</span>
+          <span class="info-value">{{ vehicleInfo.carPropertyLabel }}</span>
         </div>
         <div class="vehicle-info-item">
           <span class="info-label">终身质保</span>
@@ -79,15 +79,17 @@
           <span class="info-label">门店所属区域</span>
           <span class="info-value">{{ vehicleInfo.storeArea }}</span>
         </div>
-        <div class="vehicle-info-item" @click="warningExpanded = !warningExpanded">
+        <div class="vehicle-info-item warning-item" @click="warningExpanded = !warningExpanded">
           <span class="info-label">预警信息</span>
-          <span class="info-value" :class="{ 'text-collapsed': !warningExpanded }">{{ vehicleInfo.warningInfo }}</span>
-          <van-icon
-            v-if="vehicleInfo.warningInfo && vehicleInfo.warningInfo.length > 20"
-            :name="warningExpanded ? 'arrow-up' : 'arrow-down'"
-            size="14"
-            color="#888888"
-          />
+          <div class="info-value-wrap">
+            <span class="info-value" :class="{ 'text-collapsed': !warningExpanded }">{{ vehicleInfo.alarmInfo }}</span>
+            <van-icon
+              v-if="vehicleInfo.alarmInfo && vehicleInfo.alarmInfo.length > 20"
+              :name="warningExpanded ? 'arrow-up' : 'arrow-down'"
+              size="16"
+              color="#888888"
+            />
+          </div>
         </div>
       </div>
 
@@ -212,14 +214,13 @@
                 <van-icon name="cross" size="12" color="#ffffff" />
               </div>
             </div>
-            <div class="attachment-upload" @click="uploadAttachment(key)" v-if="attachmentData[key].length < 3">
+            <div class="attachment-upload" @click="uploadAttachment(key)" v-if="getAttachConfig(getAttachmentTypeLabel(key)).maxNum == null || attachmentData[key].length < getAttachConfig(getAttachmentTypeLabel(key)).maxNum">
               <van-icon name="photograph" size="24" color="#d8d8d8" />
               <span class="upload-text">上传</span>
             </div>
           </div>
         </div>
       </div>
-      <div style="height: 70vh"></div>
     </div>
 
     <!-- 底部提交按钮 -->
@@ -295,9 +296,13 @@
                     </text>
                   </svg>
                 </div>
-                <div class="vehicle-tags" v-if="item.repairItemTypeDetailCollect">
-                  <span class="vehicle-tag">{{ item.repairItemTypeDetailCollect }}</span>
-                </div>
+                <template v-if="item.repairItemTypeDetailCollect">
+                  <span
+                    v-for="(tag, index) in item.repairItemTypeDetailCollect.split('&').filter(Boolean)"
+                    :key="index"
+                    class="vehicle-tag"
+                  >{{ tag }}</span>
+                </template>
               </div>
               <div class="construction-vehicle-info">
                 {{ item.vehModelName }} · {{ item.vehProfileVin }}
@@ -305,12 +310,12 @@
               <div class="construction-detail">
                 <div class="detail-row">
                   <span class="detail-label">送修人</span>
-                  <span class="detail-value">{{ item.customerName }}</span>
-                  <span v-if="item.customerType" class="customer-tag">{{ item.customerType }}</span>
+                  <span class="detail-value">{{ item.shuttleName }}</span>
+                  <span v-if="item.custType" class="customer-tag">{{ { '10': '预约客户', '20': '随到客户' }[item.custType] || item.custType }}</span>
                 </div>
                 <div class="detail-row">
                   <span class="detail-label">客户经理</span>
-                  <span class="detail-value">{{ item.dedicatedServiceManager }}</span>
+                  <span class="detail-value">{{ item.creatorName }}</span>
                 </div>
                 <div class="detail-row">
                   <span class="detail-label">预计交车</span>
@@ -397,13 +402,18 @@ import {
   preAuthGetConstructionList,
   preAuthGetQualityFeedbackList
 } from '@/api/authorization'
-import { uploadFileByUrl, deleteAttachmentConfig } from '@/libs/api/fileConfig'
-import { getAppImg } from '@/libs/utils/nativeFn'
+import { uploadFileByUrl, deleteAttachmentConfig, getUploadConfig } from '@/libs/api/fileConfig'
+import { getAppImgLimit } from '@/libs/utils/nativeFn'
 import { usePageSafeArea } from '@/utils/safeArea'
 
 const router = useRouter()
 usePageSafeArea({ bodyClass: 'ais-page-nav-safe-area' })
 const PRE_AUTH_ATTACHMENT_CONFIG_CODE = 'mcs_preauth'
+const uploadConfig = ref({})
+const getAttachConfig = (attachType) => {
+  const detailList = uploadConfig.value?.detailList || []
+  return detailList.find((item) => item.attachType === attachType) || {}
+}
 const attachmentTypeMap = {
   vehicle: '车辆信息',
   license: '行驶证',
@@ -510,6 +520,11 @@ onMounted(async() => {
   window.getImage = handleNativeImage
   await nextTick()
   setupScrollListener()
+  getUploadConfig({ configCode: PRE_AUTH_ATTACHMENT_CONFIG_CODE }).then((res) => {
+    if (res?.code === 200 || res?.code === 0) {
+      uploadConfig.value = res.data || {}
+    }
+  })
 })
 
 onUnmounted(() => {
@@ -687,7 +702,7 @@ const vehicleInfo = ref({
   lifetimeWarranty: '',
   serviceStore: '',
   storeArea: '',
-  warningInfo: ''
+  alarmInfo: ''
 })
 
 // 维修项目数据
@@ -1048,29 +1063,22 @@ const onAuthTypeChange = (type) => {
 }
 
 const onConstructionSelect = async(item) => {
-  constructionNo.value = item.code
-  constructionId.value = item.id || item.serviceProxyId
-  showConstructionPicker.value = false
-  hasEdited.value = true
-  showVehicleInfo.value = true
-
-  // 直接从选中项展示车辆信息
-  vehicleInfo.value = {
-    vin: item.vehProfileVin || '--',
-    warrantyTime: '--',
-    mileage: item.mileage || '--',
-    vehicleUse: item.carProperty || '--',
-    lifetimeWarranty: '--',
-    serviceStore: item.dealerName || '--',
-    storeArea: item.orgName || item.dealerUnitName || '--',
-    warningInfo: item.alarmInfo || '--'
-  }
-
   // 调用API获取预填充详情
   try {
     showLoadingToast({ message: '加载中...', forbidClick: true })
     const res = await preAuthGetPreAuthInfoDetail(item.id)
     closeToast()
+
+    if (res?.code !== 0 && res?.code !== 200) {
+      showToast(res?.msg || res?.message || '获取信息失败')
+      return
+    }
+
+    constructionNo.value = item.code
+    constructionId.value = item.id || item.serviceProxyId
+    showConstructionPicker.value = false
+    hasEdited.value = true
+    showVehicleInfo.value = true
 
     if (res?.data) {
       const data = res.data
@@ -1082,11 +1090,11 @@ const onConstructionSelect = async(item) => {
             ? `${data.guaranteeStartDate} 至 ${data.warrantyEndTime}`
             : '',
         mileage: data.mileage || item.mileage || '',
-        vehicleUse: data.carProperty || item.carProperty || '',
+        carPropertyLabel: data.carPropertyLabel || item.carPropertyLabel || '',
         lifetimeWarranty: data.isLifetime === 1 ? '是' : '否',
         serviceStore: data.dealerName || item.dealerName || '',
         storeArea: data.orgName || data.dealerUnitName || item.orgName || item.dealerUnitName || '',
-        warningInfo: data.alarmInfo || item.alarmInfo || '无'
+        alarmInfo: data.alarmInfo || item.alarmInfo || '无'
       }
       // 预授权类型: 1=技术预授权, 2=保修预授权
       authType.value = data.preAuthType === 1 ? 'tech' : 'warranty'
@@ -1140,12 +1148,16 @@ const onFeedbackSelect = (item) => {
 
 // 附件相关方法
 const uploadAttachment = (type) => {
-  if ((attachmentData[type] || []).length >= 3) {
-    showToast('最多上传3个附件')
+  const attachType = getAttachmentTypeLabel(type)
+  const config = getAttachConfig(attachType)
+  const maxNum = config.maxNum
+  if (maxNum != null && (attachmentData[type] || []).length >= maxNum) {
+    showToast(`最多上传${maxNum}个附件`)
     return
   }
   currentUploadType.value = type
-  getAppImg()
+  const maxSize = config.maxSize || 10
+  getAppImgLimit(maxSize)
   hasEdited.value = true
 }
 
@@ -1228,7 +1240,7 @@ defineExpose({
   background: #f5f5f5;
   padding-left: 12px;
   padding-right: 12px;
-  padding-bottom: 100px;
+  padding-bottom: calc(75px + env(safe-area-inset-bottom));
 }
 
 // Tab 导航 - 在页面滚动容器内吸顶
@@ -1710,6 +1722,10 @@ defineExpose({
       padding-bottom: 8px;
     }
 
+    &.warning-item {
+      align-items: flex-start;
+    }
+
     .info-label {
       font-family: 'PingFang SC';
       font-size: 14px;
@@ -1717,11 +1733,30 @@ defineExpose({
       flex-shrink: 0;
     }
 
+    .info-value-wrap {
+      display: flex;
+      align-items: flex-start;
+      justify-content: flex-end;
+      gap: 2px;
+      flex: 1;
+      margin-left: 23px;
+      min-width: 0;
+      overflow: hidden;
+    }
+
     .info-value {
       font-family: 'PingFang SC';
       font-size: 14px;
       color: #191a1b;
-      flex-shrink: 0;
+      text-align: right;
+      flex: 1;
+      min-width: 0;
+
+      &.text-collapsed {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
 
       &.warning-value {
         color: #ee0a24;
@@ -1969,19 +2004,22 @@ defineExpose({
           }
         }
 
-        .vehicle-tags {
-          display: flex;
-          gap: 4px;
-
-          .vehicle-tag {
+        .vehicle-tag {
             font-family: 'PingFang SC';
             font-size: 12px;
+            font-style: normal;
             color: #191a1b;
             border: 0.5px solid #191a1b;
             border-radius: 4px;
             padding: 1px 4px;
+            height: 20px;
+            line-height: 17px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            white-space: nowrap;
           }
-        }
       }
 
       .construction-vehicle-info {
@@ -2035,6 +2073,7 @@ defineExpose({
   border-radius: 6px;
   padding: 12px;
   margin-bottom: 12px;
+  margin-top: 12px;
 
   .section-title {
     font-family: 'PingFang SC';
