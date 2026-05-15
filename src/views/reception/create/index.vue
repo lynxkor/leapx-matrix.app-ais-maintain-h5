@@ -1829,6 +1829,71 @@ const isInspectionSaveDisabled = computed(() => {
   return false
 })
 
+// 初始环检数据快照
+const initialInspectionData = ref(null)
+
+// 保存数据快照（保存成功后同步调用，确保返回拦截判断准确）
+const saveDataSnapshot = () => {
+  initialInspectionData.value = {
+    mileage: detail.mileage,
+    battery: detail.battery,
+    interiorImages: [...detail.interiorImages],
+    exteriorImages: [...detail.exteriorImages],
+    abnormalDesc: detail.abnormalDesc,
+    customerComment: detail.customerComment,
+    currentFault: detail.currentFault,
+    customerFaultDesc: detail.customerFaultDesc,
+    businessType: computedBusinessType.value,
+    repairPerson: detail.repairPerson,
+    repairPersonPhone: detail.repairPersonPhone,
+    faultModules: [...detail.faultModules],
+    plateNo: detail.plateNo,
+    vin: detail.vin,
+    vehicleModel: detail.vehicleModel,
+    repairPersonTag: detail.repairPersonTag,
+    testResult: detail.testResult,
+    repairItemRespList: [...partsData.repairItemRespList],
+    sparePartRespList: [...partsData.sparePartRespList],
+    repairItemTypeDetailCollect: detail.repairItemTypeDetailCollect
+  }
+}
+
+// 检查环检数据是否有改动
+const hasInspectionDataChanged = () => {
+  if (!initialInspectionData.value) return false
+  const initial = initialInspectionData.value
+  const current = detail
+  return (
+    initial.mileage !== current.mileage ||
+    initial.battery !== current.battery ||
+    JSON.stringify(initial.interiorImages) !== JSON.stringify(current.interiorImages) ||
+    JSON.stringify(initial.exteriorImages) !== JSON.stringify(current.exteriorImages) ||
+    initial.abnormalDesc !== current.abnormalDesc ||
+    initial.customerComment !== current.customerComment ||
+    initial.currentFault !== current.currentFault ||
+    initial.customerFaultDesc !== current.customerFaultDesc ||
+    initial.businessType !== current.businessType ||
+    initial.repairPerson !== current.repairPerson ||
+    initial.repairPersonPhone !== current.repairPersonPhone ||
+    JSON.stringify(initial.faultModules) !== JSON.stringify(current.faultModules) ||
+    initial.plateNo !== current.plateNo ||
+    initial.vin !== current.vin ||
+    initial.vehicleModel !== current.vehicleModel ||
+    initial.repairPersonTag !== current.repairPersonTag ||
+    initial.testResult !== current.testResult
+  )
+}
+
+// 检查项目零件数据是否有改动
+const hasPartsDataChanged = () => {
+  if (!initialInspectionData.value) return false
+  const initial = initialInspectionData.value
+  return (
+    JSON.stringify(initial.repairItemRespList) !== JSON.stringify(partsData.repairItemRespList) ||
+    JSON.stringify(initial.sparePartRespList) !== JSON.stringify(partsData.sparePartRespList)
+  )
+}
+
 // 签字确认数据
 const signatureData = reactive({
   repairItemTypeDetailCollect: '',
@@ -2465,6 +2530,8 @@ const onSave = async() => {
       if (res.data) {
         serviceProxyId.value = res.data
       }
+      // 同步更新快照，防止返回时误提示
+      saveDataSnapshot()
       // 保存成功生成施工单后，清除sessionStorage中的车辆信息
       sessionStorage.removeItem('vehicleInfo')
       // 保存成功后获取详情数据更新
@@ -2675,6 +2742,7 @@ const onInspectionSave = async() => {
     })
     if (res.code === 200) {
       showToast('保存成功')
+      saveDataSnapshot()
       // 保存成功后获取详情数据更新
       fetchDetailForSignature()
     } else {
@@ -2714,6 +2782,7 @@ const onPartsSave = async() => {
       return
     }
     showToast('保存成功')
+    saveDataSnapshot()
     // 保存成功后获取详情数据，给签字确认页面赋值
     fetchDetailForSignature()
   } catch (error) {
@@ -2745,7 +2814,11 @@ const onConfirmAndSign = async() => {
     showToast('附件资料存在重复文件，请检查')
     return
   }
-
+  // 如果已设置不需要留车提醒，直接执行后续流程
+  if (Number(detail.isVehRetentionRemind) === 1) {
+    handleConfirmAndSignProcess()
+    return
+  }
   // 先调用checkFault接口
   try {
     savingLoading.value = true
@@ -2898,6 +2971,8 @@ const fetchDetailForSignature = async() => {
           faultDesc: item.faultDescription
         }))
       }
+      // 保存数据快照（主数据已更新完毕）
+      saveDataSnapshot()
       // 获取附件列表并分类回显车内车外照片
       getFileList({ businessId: id, pageSize: 100 }).then((fileRes) => {
         if (fileRes.code === 200) {
@@ -2927,6 +3002,8 @@ const fetchDetailForSignature = async() => {
           if (latestSignFile) {
             detail.signUrl = latestSignFile.fileUrl
           }
+          // 图片回显后更新快照
+          saveDataSnapshot()
         }
       })
     } else {
@@ -3252,6 +3329,37 @@ onMounted(async() => {
     }
   }
 })
+
+// 返回按钮拦截：未生成施工单前提示保存，生成后比对快照判断是否有未保存改动
+const onBeforeBack = () => {
+  // 未生成施工单，直接提示
+  if (!isSaved.value) {
+    showConfirmDialog({
+      title: '提示',
+      message: '本次操作未保存，是否退出？',
+      confirmButtonText: '否',
+      cancelButtonText: '是'
+    }).catch(() => {
+      router.go(-1)
+    })
+    return false
+  }
+  // 已生成施工单，比对快照
+  if (!hasInspectionDataChanged() && !hasPartsDataChanged()) {
+    return true
+  }
+  showConfirmDialog({
+    title: '提示',
+    message: '本次操作未保存，是否退出？',
+    confirmButtonText: '否',
+    cancelButtonText: '是'
+  }).catch(() => {
+    router.go(-1)
+  })
+  return false
+}
+
+defineExpose({ onBeforeBack })
 </script>
 <style lang="scss" scoped>
 :deep(.van-action-sheet__cancel) {

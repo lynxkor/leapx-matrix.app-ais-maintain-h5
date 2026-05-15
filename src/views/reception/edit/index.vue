@@ -1788,6 +1788,32 @@ const detail = reactive({
 // 初始环检数据快照
 const initialInspectionData = ref(null)
 
+// 保存数据快照（保存成功后同步调用，确保返回拦截判断准确）
+const saveDataSnapshot = () => {
+  initialInspectionData.value = {
+    mileage: detail.mileage,
+    battery: detail.battery,
+    interiorImages: [...detail.interiorImages],
+    exteriorImages: [...detail.exteriorImages],
+    abnormalDesc: detail.abnormalDesc,
+    customerComment: detail.customerComment,
+    currentFault: detail.currentFault,
+    customerFaultDesc: detail.customerFaultDesc,
+    businessType: computedBusinessType.value,
+    repairPerson: detail.repairPerson,
+    repairPersonPhone: detail.repairPersonPhone,
+    faultModules: [...detail.faultModules],
+    plateNo: detail.plateNo,
+    vin: detail.vin,
+    vehicleModel: detail.vehicleModel,
+    repairPersonTag: detail.repairPersonTag,
+    testResult: detail.testResult,
+    repairItemRespList: [...partsData.repairItemRespList],
+    sparePartRespList: [...partsData.sparePartRespList],
+    repairItemTypeDetailCollect: detail.repairItemTypeDetailCollect
+  }
+}
+
 // 检查环检数据是否有改动
 const hasInspectionDataChanged = () => {
   if (!initialInspectionData.value) return false
@@ -2211,31 +2237,7 @@ const fetchDetail = async() => {
       validateMileage(data.mileage, data.lastMileage, data.netMileage)
 
       // 保存环检数据快照
-      initialInspectionData.value = {
-        mileage: detail.mileage,
-        battery: detail.battery,
-        interiorImages: [...detail.interiorImages],
-        exteriorImages: [...detail.exteriorImages],
-        abnormalDesc: detail.abnormalDesc,
-        customerComment: detail.customerComment,
-        currentFault: detail.currentFault,
-        customerFaultDesc: detail.customerFaultDesc,
-        businessType: computedBusinessType.value,
-        repairPerson: detail.repairPerson,
-        repairPersonPhone: detail.repairPersonPhone,
-        faultModules: [...detail.faultModules],
-        // 车辆信息
-        plateNo: detail.plateNo,
-        vin: detail.vin,
-        vehicleModel: detail.vehicleModel,
-        // 送修人信息
-        repairPersonTag: detail.repairPersonTag,
-        // 项目零件数据（用于判断维修类型变化）
-        repairItemRespList: [...(data.costCountResp?.repairItemRespList || [])],
-        sparePartRespList: [...(data.costCountResp?.sparePartRespList || [])],
-        // 保存初始维修类型
-        repairItemTypeDetailCollect: data.repairItemTypeDetailCollect || ''
-      }
+      saveDataSnapshot()
 
       // 判断状态
       isSaved.value = true
@@ -2878,33 +2880,8 @@ const onInspectionSave = async(type) => {
   // 检查数据是否有改动
   if (!hasInspectionDataChanged()) {
     // 数据没有变化，更新快照并返回
-    initialInspectionData.value = {
-      mileage: detail.mileage,
-      battery: detail.battery,
-      interiorImages: [...detail.interiorImages],
-      exteriorImages: [...detail.exteriorImages],
-      abnormalDesc: detail.abnormalDesc,
-      customerComment: detail.customerComment,
-      currentFault: detail.currentFault,
-      customerFaultDesc: detail.customerFaultDesc,
-      businessType: computedBusinessType.value,
-      repairPerson: detail.repairPerson,
-      repairPersonPhone: detail.repairPersonPhone,
-      faultModules: [...detail.faultModules],
-      // 车辆信息
-      plateNo: detail.plateNo,
-      vin: detail.vin,
-      vehicleModel: detail.vehicleModel,
-      // 送修人信息
-      repairPersonTag: detail.repairPersonTag,
-      // 经理建议
-      testResult: detail.testResult,
-      // 项目零件数据（用于判断维修类型变化）
-      repairItemRespList: [...partsData.repairItemRespList],
-      sparePartRespList: [...partsData.sparePartRespList],
-      repairItemTypeDetailCollect: detail.repairItemTypeDetailCollect
-    }
-    return { code: 200 }
+    saveDataSnapshot()
+    // return { code: 200 }
   }
   savingLoading.value = true
   // TODO: 待修复，不需要提交这么多字段
@@ -3032,6 +3009,7 @@ const onInspectionSave = async(type) => {
     savingLoading.value = false
     if (res.code === 200) {
       showToast('保存成功')
+      saveDataSnapshot()
       fetchDetail()
     } else {
       showToast({ message: res.msg || '保存失败', duration: 3000 })
@@ -3101,11 +3079,12 @@ const onPartsSave = async() => {
       return
     }
     showToast('保存成功')
+    // 同步更新快照，确保返回拦截判断准确
+    saveDataSnapshot()
     // 执行inspection保存（带id编辑）
     const inspectionRes = await onInspectionSave(1)
     if (inspectionRes?.code === 200) {
       isSaved.value = true
-      // 保存成功后查询详情刷新数据
     }
     await fetchDetail()
 
