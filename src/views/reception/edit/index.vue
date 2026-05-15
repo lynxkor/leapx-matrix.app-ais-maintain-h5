@@ -1058,6 +1058,10 @@
               <div class="section-message">{{ item.content || '暂无提醒信息' }}</div>
               <div class="section-action-btn" @click="onGenerateAuthorization">生成预授权</div>
             </div>
+            <div v-else>
+              <div class="info-title">{{ item.typeLabel }}</div>
+            <div class="info-content">{{ item.content || '暂无提醒信息' }}</div>
+            </div>
           </template>
           <!-- 三包预警 -->
           <div v-else-if="item.type === RemindInfoTypeEnum.THREE_GUARANTEES" class="alert-section">
@@ -1106,11 +1110,6 @@
           <template v-else-if="item.type === '5'">
             <div class="info-title">{{ item.typeLabel }}</div>
             <div class="info-content"><span style="white-space: nowrap">该车辆为</span><span v-for="(tag, index) in item.content.split(',')" :key="index" style="white-space: nowrap">【{{ tag }}】</span>，请注意接待</div>
-          </template>
-          <!-- 其他提醒 -->
-          <template v-else>
-            <div class="info-title">{{ item.typeLabel }}</div>
-            <div class="info-content">{{ item.content || '暂无提醒信息' }}</div>
           </template>
         </template>
 
@@ -1270,6 +1269,23 @@ const batteryInputValue = ref('')
 const showWarrantyAlertDialog = ref(false)
 const remindList = ref([])
 
+// 过滤出实际会渲染可见内容的提醒项（与模板 v-if/v-else-if 条件保持一致）
+const visibleRemindList = computed(() => {
+  return remindList.value.filter((item) => {
+    // 预授权：已创建预授权时内层 v-if 会隐藏内容
+    if (item.type === RemindInfoTypeEnum.PRE_AUTH && detail.isCreatePreAuth === 1) return false
+    // 已识别的类型都会渲染
+    const knownTypes = [
+      RemindInfoTypeEnum.PRE_AUTH,
+      RemindInfoTypeEnum.THREE_GUARANTEES,
+      RemindInfoTypeEnum.SERVICE_ACTIVITY,
+      RemindInfoTypeEnum.PRICE_DIFFERENCE,
+      '5'
+    ]
+    return knownTypes.includes(item.type)
+  })
+})
+
 const onGenerateAuthorization = async() => {
   // 生成预授权
   try {
@@ -1322,10 +1338,6 @@ const {
 })
 
 // 初始化数据
-onMounted(() => {
-  loadInitialData()
-})
-
 // 送修人类型选择
 const repairPersonType = ref('owner') // owner/bindingUser/other
 const repairPersonNameInput = ref('')
@@ -1603,6 +1615,14 @@ const onHasFaultChange = (value) => {
 
   // 如果选择"否"，弹出确认框
   if (Number(value) === 0) {
+    // 维修类型包含一般维修或三电维修时，不允许改为"否"
+    const typeCollect = detail.repairItemTypeDetailCollect || ''
+    if (typeCollect.includes('一般维修') || typeCollect.includes('三电维修')) {
+      showToast('当前工单维修类型包含一般维修或三电维修，请确认是否存在故障!')
+      // 还原为"是"
+      detail.currentFault = '1'
+      return
+    }
     // 如果已添加过故障模块或客户故障描述，弹出确认框
     if (detail.faultModules.length > 0 || detail.customerFaultDesc) {
       pendingFaultValue.value = value
@@ -1812,6 +1832,16 @@ const saveDataSnapshot = () => {
     sparePartRespList: [...partsData.sparePartRespList],
     repairItemTypeDetailCollect: detail.repairItemTypeDetailCollect
   }
+}
+
+// 按 id 去重，防止并发请求或异步回调导致列表中出现重复数据
+const deduplicateById = (list) => {
+  const seen = new Set()
+  return list.filter((item) => {
+    if (!item.fileId || seen.has(item.fileId)) return false
+    seen.add(item.fileId)
+    return true
+  })
 }
 
 // 检查环检数据是否有改动
@@ -2116,6 +2146,10 @@ const fetchDetail = async() => {
         if (latestSignFile) {
           detail.signUrl = latestSignFile.fileUrl
         }
+        // 按 id 去重，防止并发请求导致重复数据
+        detail.interiorImages = deduplicateById(detail.interiorImages)
+        detail.exteriorImages = deduplicateById(detail.exteriorImages)
+        signatureData.attachments = deduplicateById(signatureData.attachments)
       }
 
       // 新增字段赋值
@@ -2184,7 +2218,7 @@ const fetchDetail = async() => {
       detail.recentlyfaultServiceProxy = data.recentlyfaultServiceProxy || ''
       detail.isCreateStatementInfo = data.isCreateStatementInfo || 0
       detail.isPreAuth = data.isPreAuth || ''
-      detail.isCreatePreAuth = data.isCreatePreAuth || ''
+      detail.isCreatePreAuth = data.isCreatePreAuth
       detail.preAuthRuleId = data.preAuthRuleId || ''
       detail.unresolvedReason = data.unresolvedReason || ''
       detail.faultDesc = data.faultDesc || ''
@@ -2569,118 +2603,116 @@ const handleImageFileChange = (event) => {
 }
 // getFileType 已从 receptionCommon 导入
 // 注册原生图片回调
-onMounted(() => {
-  window.getScanResult = async(url) => {
-    console.log('url:', url, Array.isArray(url))
-    let urlList = []
-    if (typeof url === 'string') {
-      if (url.startsWith('[')) {
-        // JSON 数组字符串，需要解析
-        try {
-          urlList = JSON.parse(url)
-        } catch {
-          // 解析失败，当作单个 URL 处理
-          urlList = [url]
-        }
-      } else {
-        // 单个 URL 字符串
+window.getScanResult = async(url) => {
+  console.log('url:', url, Array.isArray(url))
+  let urlList = []
+  if (typeof url === 'string') {
+    if (url.startsWith('[')) {
+      // JSON 数组字符串，需要解析
+      try {
+        urlList = JSON.parse(url)
+      } catch {
+        // 解析失败，当作单个 URL 处理
         urlList = [url]
       }
-    } else if (Array.isArray(url)) {
-      urlList = url
     } else {
-      return
+      // 单个 URL 字符串
+      urlList = [url]
+    }
+  } else if (Array.isArray(url)) {
+    urlList = url
+  } else {
+    return
+  }
+
+  // 遍历每个 URL 进行上传处理
+  for (const singleUrl of urlList) {
+    // 保存当前上传类型，避免异步上传完成时类型已改变
+    const uploadType = currentUploadType.value
+
+    // attachType 映射
+    const attachTypeMap = {
+      interior: '车内照片',
+      exterior: '车外照片',
+      attachment: '附件资料'
+    }
+    // 先添加临时预览
+    const fileObj = {
+      url: singleUrl,
+      fileUrl: singleUrl,
+      authFileUrl: singleUrl,
+      fileType: getFileType({ url: singleUrl }, 'image/jpeg'),
+      status: 'uploading',
+      message: '上传中...',
+      id: null
     }
 
-    // 遍历每个 URL 进行上传处理
-    for (const singleUrl of urlList) {
-      // 保存当前上传类型，避免异步上传完成时类型已改变
-      const uploadType = currentUploadType.value
-
-      // attachType 映射
-      const attachTypeMap = {
-        interior: '车内照片',
-        exterior: '车外照片',
-        attachment: '附件资料'
-      }
-      // 先添加临时预览
-      const fileObj = {
-        url: singleUrl,
+    // 根据当前上传类型添加到对应的文件列表
+    switch (uploadType) {
+      case 'interior':
+        detail.interiorImages.push(fileObj)
+        break
+      case 'exterior':
+        detail.exteriorImages.push(fileObj)
+        break
+      case 'attachment':
+        signatureData.attachments.push(fileObj)
+        break
+    }
+    // 调用上传接口
+    try {
+      const params = {
         fileUrl: singleUrl,
-        authFileUrl: singleUrl,
-        fileType: getFileType({ url: singleUrl }, 'image/jpeg'),
-        status: 'uploading',
-        message: '上传中...',
-        id: null
+        businessId: detail.id,
+        configCode: 'mcs_serviceproxy',
+        attachType: attachTypeMap[uploadType]
       }
 
-      // 根据当前上传类型添加到对应的文件列表
-      switch (uploadType) {
-        case 'interior':
-          detail.interiorImages.push(fileObj)
-          break
-        case 'exterior':
-          detail.exteriorImages.push(fileObj)
-          break
-        case 'attachment':
-          signatureData.attachments.push(fileObj)
-          break
-      }
-      // 调用上传接口
-      try {
-        const params = {
-          fileUrl: singleUrl,
-          businessId: detail.id,
-          configCode: 'mcs_serviceproxy',
-          attachType: attachTypeMap[uploadType]
+      const res = await uploadFileByUrl([params])
+
+      if (res.code === 200) {
+        // 兼容两种返回格式：数组或对象
+        const uploadData = Array.isArray(res.data) ? res.data[0] || {} : res.data || {}
+
+        // 更新文件状态 - 使用保存的 uploadType
+        const targetList = getTargetFileList(uploadType)
+        if (targetList.length > 0) {
+          const lastIndex = targetList.length - 1
+          const rawUrl = uploadData.fileUrl || uploadData.url || singleUrl
+          targetList[lastIndex] = {
+            ...targetList[lastIndex],
+            status: 'done',
+            message: '',
+            id: uploadData.id, // 取上传成功的id
+            businessId: detail.id, // 取施工单id
+            url: rawUrl,
+            fileUrl: rawUrl,
+            authFileUrl: uploadData.authFileUrl || rawUrl,
+            fileType: uploadData.fileType || uploadData.ext || getFileType({ url: rawUrl }, 'image/jpeg')
+          }
         }
 
-        const res = await uploadFileByUrl([params])
-
-        if (res.code === 200) {
-          // 兼容两种返回格式：数组或对象
-          const uploadData = Array.isArray(res.data) ? res.data[0] || {} : res.data || {}
-
-          // 更新文件状态 - 使用保存的 uploadType
-          const targetList = getTargetFileList(uploadType)
-          if (targetList.length > 0) {
-            const lastIndex = targetList.length - 1
-            const rawUrl = uploadData.fileUrl || uploadData.url || singleUrl
-            targetList[lastIndex] = {
-              ...targetList[lastIndex],
-              status: 'done',
-              message: '',
-              id: uploadData.id, // 取上传成功的id
-              businessId: detail.id, // 取施工单id
-              url: rawUrl,
-              fileUrl: rawUrl,
-              authFileUrl: uploadData.authFileUrl || rawUrl,
-              fileType: uploadData.fileType || uploadData.ext || getFileType({ url: rawUrl }, 'image/jpeg')
-            }
-          }
-
-          showToast('上传成功')
-        } else {
-          // 上传失败，移除临时文件 - 使用保存的 uploadType
-          const targetList = getTargetFileList(uploadType)
-          if (targetList.length > 0) {
-            targetList.pop()
-          }
-          showToast(res.msg || '上传失败')
-        }
-        console.log('interior:', detail.interiorImages)
-      } catch (e) {
-        console.error('上传出错:', e)
-        // 出错时移除临时文件 - 使用保存的 uploadType
+        showToast('上传成功')
+      } else {
+        // 上传失败，移除临时文件 - 使用保存的 uploadType
         const targetList = getTargetFileList(uploadType)
         if (targetList.length > 0) {
           targetList.pop()
         }
-        showToast('上传出错')
+        showToast(res.msg || '上传失败')
       }
+      console.log('interior:', detail.interiorImages)
+    } catch (e) {
+      console.error('上传出错:', e)
+      // 出错时移除临时文件 - 使用保存的 uploadType
+      const targetList = getTargetFileList(uploadType)
+      if (targetList.length > 0) {
+        targetList.pop()
+      }
+      showToast('上传出错')
     }
   }
-})
+}
 
 // 添加故障模块
 const onAddFaultModule = () => {
@@ -3287,8 +3319,9 @@ const onConfirmAndSign = async() => {
 
 // 处理制单确认并签字后续流程
 const handleConfirmAndSignProcess = () => {
-  // signStatus == 10 时，不调接口，直接跳转结算页面
-  if (Number(detail.signStatus) === 10) {
+  const isPaperSign = signatureData.signChannel === '纸质单据' || Number(detail.signChannel) === 40
+  // signStatus == 10 时，纸质单据需调用接口保存，其他渠道直接跳转结算页面
+  if (Number(detail.signStatus) === 10 && !isPaperSign) {
     const settlementUrl = `https://staticres-sitb.leapmotor.com/leapx/biling/ais/constructionOrder?serviceProxyId=${detail.id}&signChannel=3`
     window.location.href = settlementUrl
     return
@@ -3298,10 +3331,9 @@ const handleConfirmAndSignProcess = () => {
     serviceProxyId: detail.id,
     expectFinishAt: signatureData.expectFinishAt
   }
-  // 纸质单据时才传signChannel
   console.log('signatureData.signChannel', signatureData, detail)
   savingLoading.value = true
-  if (signatureData.signChannel === '纸质单据' || Number(detail.signChannel) === 40) {
+  if (isPaperSign) {
     params.signChannel = '40'
   } else {
     params.signChannel = null
@@ -3422,6 +3454,7 @@ const onConfirmBattery = () => {
   showToast('保存成功')
 }
 onMounted(() => {
+  loadInitialData()
   fetchDetail()
   // 获取枚举数据
   globalStore.getEnumData()
@@ -3441,12 +3474,12 @@ onMounted(() => {
           // 只保留满足条件的提醒类型：预授权、三包预警、服务活动、车辆标识
           const validTypes = [RemindInfoTypeEnum.THREE_GUARANTEES, RemindInfoTypeEnum.SERVICE_ACTIVITY, RemindInfoTypeEnum.PRICE_DIFFERENCE, '5']
           // 预授权提醒：只有未创建预授权时才显示
-          const preAuthItems = rawData.filter((item) => item.type === RemindInfoTypeEnum.PRE_AUTH && detail.isCreatePreAuth !== 1)
+          const preAuthItems = rawData.filter((item) => item.type === RemindInfoTypeEnum.PRE_AUTH && Number(detail.isCreatePreAuth) !== 1)
           // 其他有效类型
           const otherItems = rawData.filter((item) => validTypes.includes(item.type))
           remindList.value = [...preAuthItems, ...otherItems]
           // 只有有满足条件的提醒才弹出弹框
-          if (remindList.value.length > 0) {
+          if (visibleRemindList.value.length > 0) {
             showWarrantyAlertDialog.value = true
           }
         }
