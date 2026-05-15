@@ -291,10 +291,15 @@
         </div>
       </div>
     </div>
-    <!-- 底部审核按钮 (仅审批中状态显示) -->
-    <div v-if="detail.status === 20" class="bottom-actions">
+    <!-- 底部审核按钮 (仅审批中状态且非善意保修时显示) -->
+    <div v-if="detail.status === 20 && detail.isGoodWarranty !== true" class="bottom-actions">
       <div class="action-btn back" @click="router.back()">返回</div>
       <div class="action-btn audit" @click="handleAudit">审核</div>
+    </div>
+
+    <!-- 底部提交按钮 (仅未提交状态显示) -->
+    <div v-if="detail.status === 10" class="bottom-actions">
+      <div class="action-btn submit" @click="handleSubmit">提交申请</div>
     </div>
 
     <!-- 审核弹窗 -->
@@ -400,7 +405,7 @@ import { ref, onMounted, onUnmounted, nextTick, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { showToast, showLoadingToast, closeToast, showImagePreview } from 'vant'
 import AisPopup from '@/components/AisPopup.vue'
-import { preAuthGet, preAuthAudit, preAuthGetErrorCodeList } from '@/api/authorization'
+import { preAuthGet, preAuthAudit, preAuthGetErrorCodeList, preAuthAddOrUpdate } from '@/api/authorization'
 import { getAttachmentList, uploadFileByUrl, deleteAttachmentConfig, getUploadConfig } from '@/libs/api/fileConfig'
 import { getAppImgLimit } from '@/libs/utils/nativeFn'
 import { usePageSafeArea } from '@/utils/safeArea'
@@ -643,7 +648,9 @@ const detail = ref({
   auditRecords: [],
   repairItems: [],
   partsItems: [],
-  attachments: buildEmptyAttachments()
+  attachments: buildEmptyAttachments(),
+  isGoodWarranty: null, // 善意保修标识，true为善意保修不展示审核按钮
+  serviceProxyId: '' // 施工单ID
 })
 
 // 切换 Tab
@@ -694,6 +701,42 @@ const handleAudit = () => {
   selectedErrorCode.value = ''
   selectedErrorCodeValue.value = ''
   attachmentList.value = []
+}
+
+// 提交申请操作
+const handleSubmit = async() => {
+  const id = route.params.id
+  if (!id) {
+    showToast('缺少预授权ID')
+    return
+  }
+
+  if (!detail.value.serviceProxyId) {
+    showToast('缺少施工单ID')
+    return
+  }
+
+  try {
+    showLoadingToast({ message: '提交中...', forbidClick: true })
+    const res = await preAuthAddOrUpdate({
+      id: id,
+      serviceProxyId: detail.value.serviceProxyId,
+      saveOrSubmit: 1 // 1表示提交
+    })
+    closeToast()
+
+    if (res.code === 200 || res.code === 0) {
+      showToast('提交成功')
+      // 刷新详情
+      fetchDetail()
+    } else {
+      showToast(res.msg || '提交失败')
+    }
+  } catch (error) {
+    closeToast()
+    console.error('提交申请失败:', error)
+    showToast('提交失败，请稍后重试')
+  }
 }
 
 // 审核状态映射
@@ -1087,6 +1130,10 @@ const formatDetailData = (data) => {
       actualQuantity: item.actualPickNumber || '0',
       returnQuantity: item.refundedNumber || '0'
     })),
+    // 善意保修标识 - 来自预授权主数据
+    isGoodWarranty: preAuthData.isGoodWarranty,
+    // 施工单ID - 来自施工单数据
+    serviceProxyId: serviceProxy.id || '',
     attachments: buildEmptyAttachments()
   }
 }
@@ -1872,6 +1919,11 @@ onUnmounted(() => {
     }
 
     &.approve {
+      color: #ffffff;
+      background: #009100;
+    }
+
+    &.submit {
       color: #ffffff;
       background: #009100;
     }
