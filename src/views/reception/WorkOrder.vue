@@ -270,6 +270,10 @@ onMounted(() => {
     min-height: 0;
     overflow-y: auto;
     padding-bottom: 12px;
+    :deep(.van-list-content) {
+      height: 76vh;
+      overflow: auto;
+    }
   }
 }
 
@@ -396,7 +400,7 @@ onMounted(() => {
   background: #ffffff;
   display: flex;
   justify-content: center;
-  padding: 7px 12px calc(12px + env(safe-area-inset-bottom));
+  padding: 7px 12px 40px;
 
   .create-btn {
     width: 100%;

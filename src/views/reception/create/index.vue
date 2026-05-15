@@ -1159,6 +1159,9 @@ const attachmentConfig = computed(() => getAttachConfig('附件资料'))
 
 // 业务类型计算：优先使用已有值，否则根据是否预约判断
 const computedBusinessType = computed(() => {
+  if (route.query.appointId) {
+    return 50
+  }
   return detail.businessType || (detail.isAppointment ? 50 : 10)
 })
 
@@ -1583,6 +1586,13 @@ const onConfirmCancel = async() => {
 const onHasFaultChange = (value) => {
   // 如果选择"否"，弹出确认框
   if (value === '0') {
+    // 维修类型包含一般维修或三电维修时，不允许改为"否"
+    const typeCollect = detail.repairItemTypeDetailCollect || ''
+    if (typeCollect.includes('一般维修') || typeCollect.includes('三电维修')) {
+      showToast('当前工单维修类型包含一般维修或三电维修，请确认是否存在故障!')
+      detail.currentFault = '1'
+      return
+    }
     // 如果已添加过故障模块或客户故障描述，弹出确认框
     if (detail.faultModules.length > 0 || detail.customerFaultDesc) {
       pendingFaultValue.value = value
