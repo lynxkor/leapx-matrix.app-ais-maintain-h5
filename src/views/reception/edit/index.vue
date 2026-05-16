@@ -10,7 +10,7 @@
           class="edit-plate edit-plate-after"
           @click="onChangeCar"
         >
-          <span><img src="@/assets/image/car.png" alt="" /></span>
+          <span style="position: relative; top: 2px;"><img src="@/assets/image/change-car.svg" alt="" /></span>
           <span>换车</span>
         </span>
         <span
@@ -18,7 +18,7 @@
           class="edit-plate"
           @click="onEditPlate"
         >
-          <span><img src="@/assets/image/edit.png" alt="" /></span>
+          <span style="position: relative; top: 1px;"><img src="@/assets/image/edit.svg" alt="" /></span>
           <span>修改车牌</span>
         </span>
       </div>
@@ -38,9 +38,6 @@
         <span class="label">绑车人：</span>
         <span class="value">{{ detail.bindingUser }} {{ detail.binderPhone }}</span>
       </div>
-
-      <div class="divider"></div>
-
       <!-- 送修人折叠面板 -->
       <van-collapse v-model="repairPersonCollapse" class="collapse-panel">
         <van-collapse-item name="repairPerson">
@@ -2097,7 +2094,7 @@ const fetchDetail = async() => {
       detail.networkBattery = data.inNetPower || ''
       detail.abnormalDesc = data.anomalyDescription || ''
       detail.customerComment = data.customerComment || ''
-      detail.currentFault = String(data.currentFault)
+      detail.currentFault = data.currentFault != null ? String(data.currentFault) : ''
       detail.confirmFault = data.confirmFault
       detail.customerFaultDesc = data.customerContent || ''
       detail.faultAlertRecordRespList = data.faultAlertRecordRespList || []
@@ -3081,6 +3078,11 @@ const handlePartsDelete = (data) => {
 // 项目零件保存
 const onPartsSave = async() => {
   if (isPartsSaveDisabled.value) return
+  // 数据未变更，不调接口
+  if (!hasPartsDataChanged()) {
+    showToast('数据未变更，无需保存')
+    return
+  }
   // 检查车内、车外照片是否有重复文件
   if (hasDuplicateFileId(detail.interiorImages)) {
     showToast('车内照片存在重复文件，请检查')
@@ -3408,8 +3410,24 @@ const onSelectDeliveryTime = (item) => {
 const onCloseDeliveryTimePicker = () => {
   showDeliveryTimePicker.value = false
 }
-// 点击制单确认并签字，先弹出签字渠道选择
-const onConfirmAndSignClick = () => {
+// 点击制单确认并签字，先查询最新状态，再弹出签字渠道选择
+const onConfirmAndSignClick = async() => {
+  const id = route.query.id
+  if (!id) return
+  try {
+    const res = await getDetail(id)
+    if (res.code === 200 && res.data) {
+      const signStatus = res.data.signStatus
+      // signStatus=20 表示工单状态已更新，需重新加载数据
+      if (String(signStatus) === '20') {
+        showToast('工单状态已更新')
+        await fetchDetail()
+        return
+      }
+    }
+  } catch (e) {
+    console.error('查询工单状态失败:', e)
+  }
   showSignatureChannelPicker.value = true
 }
 // 选择签字渠道

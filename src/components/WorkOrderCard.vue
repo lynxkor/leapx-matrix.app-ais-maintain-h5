@@ -13,13 +13,13 @@
         <span class="plate-no">{{ item.carPlate || '无车牌' }}</span>
         <div class="tag-list">
           <span v-if="item.alarmLevelList?.includes(40)">
-            <img src="@/assets/image/warning-red.png" alt="" />
+            <img src="@/assets/image/warning-red.svg" alt="" />
           </span>
           <span v-if="item.alarmLevelList?.includes(30)">
-            <img src="@/assets/image/warning-yellow.png" alt="" />
+            <img src="@/assets/image/warning-yellow.svg" alt="" />
           </span>
           <span v-if="item.alarmLevelList?.includes(20)" style="height: 17px">
-            <img src="@/assets/image/warning-green.png" alt="" />
+            <img src="@/assets/image/warning-green.svg" alt="" />
           </span>
           <span v-if="item.repairItemTypeDetailCollect">
             <span
@@ -89,13 +89,13 @@ const onCardClick = () => {
     padding-bottom: 10px;
     .order-no {
       font-size: 14px;
-      font-weight: 500;
+      font-weight: 400;
       color: #191a1b;
     }
 
     .status-tag {
       font-size: 12px;
-      padding: 2px 8px;
+      padding: 2px 0 2px 8px;
       border-radius: 4px;
       font-weight: 500;
       color: #c8a12b;

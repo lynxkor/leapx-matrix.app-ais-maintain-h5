@@ -44,8 +44,8 @@
       <!-- 无搜索结果 -->
       <div class="no-results-wrapper" v-else-if="hasSearched">
         <div class="no-results-content">
-          <img src="../../libs/assets/image/no-data.png" alt="无搜索结果" class="no-results-img" />
-          <p class="no-results-text">没有找到相关内容</p>
+          <img src="@/assets/image/noList.png" alt="无搜索结果" class="no-results-img" />
+          <!-- <p class="no-results-text">没有找到相关内容</p> -->
         </div>
       </div>
     </div>
@@ -268,22 +268,19 @@ const onCardClick = (item) => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
   padding: 40px;
 
   .no-results-content {
-    text-align: center;
 
     .no-results-img {
       width: 230px;
-      height: 142px;
+      height: 180px;
       margin-bottom: 16px;
-      margin-top: 228px;
     }
 
     .no-results-text {
-      font-size: 16px;
-      color: #666;
+      font-size: 14px;
+      color: #6C6E6C;
       margin-bottom: 8px;
     }
 

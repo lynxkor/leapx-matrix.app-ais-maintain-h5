@@ -270,9 +270,14 @@ onMounted(() => {
     min-height: 0;
     overflow-y: auto;
     padding-bottom: 12px;
+
+    :deep(.pull-refresh-content) {
+      min-height: 100%;
+    }
+
     :deep(.van-list-content) {
-      height: 76vh;
-      overflow: auto;
+      // 确保底部留白，最后一张卡片能完整展示
+      padding-bottom: 12px;
     }
   }
 }
@@ -400,7 +405,7 @@ onMounted(() => {
   background: #ffffff;
   display: flex;
   justify-content: center;
-  padding: 7px 12px 40px;
+  padding: 7px 12px calc(40px + env(safe-area-inset-bottom));
 
   .create-btn {
     width: 100%;
