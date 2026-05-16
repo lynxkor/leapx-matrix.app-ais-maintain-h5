@@ -10,7 +10,7 @@
           class="edit-plate edit-plate-after"
           @click="onChangeCar"
         >
-          <span><img src="@/assets/image/car.png" alt="" /></span>
+          <span style="position: relative; top: 2px;"><img src="@/assets/image/change-car.svg" alt="" /></span>
           <span>换车</span>
         </span>
         <span
@@ -18,7 +18,7 @@
           class="edit-plate"
           @click="onEditPlate"
         >
-          <span><img src="@/assets/image/edit.png" alt="" /></span>
+          <span style="position: relative; top: 1px;"><img src="@/assets/image/edit.svg" alt="" /></span>
           <span>修改车牌</span>
         </span>
       </div>
@@ -38,9 +38,6 @@
         <span class="label">绑车人：</span>
         <span class="value">{{ detail.bindingUser }} {{ detail.binderPhone }}</span>
       </div>
-
-      <div class="divider"></div>
-
       <!-- 送修人折叠面板 -->
       <van-collapse v-model="repairPersonCollapse" class="collapse-panel">
         <van-collapse-item name="repairPerson">
@@ -357,7 +354,10 @@
       <van-tab v-if="isPreCheckCompleted" title="项目零件" name="parts">
         <div class="tab-content parts-tab">
           <!-- 费用汇总 -->
-          <div style="padding: 12px; background: #fff">
+          <div
+            v-if="partsData.repairItemRespList.length > 0 || partsData.sparePartRespList.length > 0"
+            style="padding: 12px; background: #fff"
+          >
             <div class="cost-summary">
               <div class="summary-row">
                 <span class="label">维修项目</span>
@@ -377,24 +377,14 @@
           </div>
 
           <!-- 维修项目零件内容 - 使用 RepairItemContent 组件 -->
-          <RepairItemContent
-            ref="repairItemContentRef"
-            :service-proxy-id="detail.id"
-            :initial-items="partsData.repairItemRespList"
-            :initial-parts="partsData.sparePartRespList"
-            isComponent
-          />
-
-          <!-- 添加按钮 -->
-          <div class="add-buttons">
-            <div class="add-btn" @click="onAddParts">
-              <van-icon name="plus" />
-              <span>添加项目/零件</span>
-            </div>
-            <div class="add-btn" @click="onAddPackage">
-              <van-icon name="plus" />
-              <span>添加套餐及其他</span>
-            </div>
+           <div style="height: calc(42vh - 10px)">
+            <RepairItemContent
+              ref="repairItemContentRef"
+              :service-proxy-id="detail.id"
+              :initial-items="partsData.repairItemRespList"
+              :initial-parts="partsData.sparePartRespList"
+              isComponent
+            />
           </div>
         </div>
       </van-tab>
@@ -505,11 +495,23 @@
       </van-tab>
     </van-tabs>
 
+    <!-- 添加零件浮动栏 -->
+    <div v-if="activeTab === 'parts'" class="add-parts-bar">
+      <div class="add-btn" @click="onAddParts">
+        <van-icon name="plus" />
+        <span>添加项目/零件</span>
+      </div>
+      <div class="add-btn" @click="onAddPackage">
+        <van-icon name="plus" />
+        <span>添加套餐及其他</span>
+      </div>
+    </div>
+
     <!-- 底部操作栏 -->
     <div class="bottom-bar">
       <span v-if="serviceProxyId" class="more-btn" @click="onMore">更多</span>
       <template v-if="activeTab === 'inspection'">
-        <span v-if="!isSaved" class="save-btn" @click="onSave">保存</span>
+        <span v-if="!isSaved && (!serviceProxyId || !detail.id) " class="save-btn" @click="onSave">保存</span>
         <template v-else>
           <span
             :class="['save-btn', { disabled: isInspectionSaveDisabled }]"
@@ -2536,9 +2538,10 @@ const onSave = async() => {
     if (res.code === 200) {
       showToast('保存成功')
       isSaved.value = true
-      // 新建时保存返回的施工单id
+      // 新建时保存返回的施工单id，同步设置 detail.id 防止后续编辑保存时丢失
       if (res.data) {
         serviceProxyId.value = res.data
+        detail.id = res.data
       }
       // 同步更新快照，防止返回时误提示
       saveDataSnapshot()
@@ -2637,7 +2640,7 @@ const onInspectionSave = async() => {
   savingLoading.value = true
   try {
     const res = await serviceAddOrUpdate({
-      id: detail.id,
+      id: detail.id || serviceProxyId.value || route.query.id,
       code: detail.code,
       dataSource: detail.dataSource,
       orderStatus: detail.orderStatus,
@@ -2768,6 +2771,11 @@ const onInspectionSave = async() => {
 
 // 项目零件保存
 const onPartsSave = async() => {
+  // 数据未变更，不调接口
+  if (!hasPartsDataChanged()) {
+    showToast('数据未变更，无需保存')
+    return
+  }
   // 从 RepairItemContent 组件获取数据
   const items = repairItemContentRef.value?.selectedItems || []
   const parts = repairItemContentRef.value?.selectedParts || []
@@ -2963,7 +2971,7 @@ const fetchDetailForSignature = async() => {
       detail.networkBattery = data.inNetPower || ''
       detail.abnormalDesc = data.anomalyDescription || ''
       detail.customerComment = data.customerComment || ''
-      detail.currentFault = String(data.currentFault || '')
+      detail.currentFault = data.currentFault != null ? String(data.currentFault) : ''
       detail.customerFaultDesc = data.customerContent || ''
       detail.faultAlertRecordRespList = data.faultAlertRecordRespList || []
       detail.vehicleProfileServiceResp = data.vehicleProfileServiceResp || {}
@@ -3962,5 +3970,9 @@ defineExpose({ onBeforeBack })
 
 .action-sheet-item:last-child {
   border-bottom: none;
+}
+
+:deep(.van-collapse-item__content) {
+  padding: 0;
 }
 </style>
