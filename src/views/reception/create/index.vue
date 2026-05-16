@@ -2562,6 +2562,11 @@ const onSave = async() => {
 }
 
 const onComplete = async() => {
+  // 如果环检信息有未保存的改动，提示先保存
+  if (hasInspectionDataChanged()) {
+    showToast('请先保存当前编辑的环检信息')
+    return
+  }
   if (!validateRepairPerson()) return
   // 照片校验（根据配置判断是否必填）
   if (interiorConfig.value.required === '1' && detail.interiorImages.length === 0) {
