@@ -203,7 +203,7 @@ const props = defineProps({
   },
   isReplace: {
     type: Boolean,
-    default: false
+    default: true
   }
 })
 
@@ -312,7 +312,6 @@ const handleItemUpdateWrapper = (item, updates) => {
 }
 
 const repairItemContentReplace = (content) => {
-  console.log('repairItemContentReplace 收到数据:', content)
   const { oldPart, newPart } = content
 
   // 在 selectedParts 中查找并替换
@@ -320,34 +319,49 @@ const repairItemContentReplace = (content) => {
     (part) => part.partsId === oldPart.partsId || part.partsCode === oldPart.partsCode
   )
 
-  console.log('找到索引:', index, '原零件:', oldPart)
-
   if (index !== -1) {
-    // 保留原零件的一些属性（如 packageId、isBindltem 等）
-    const preservedProps = ['packageId', 'isBindltem', 'repairItemTypeId', 'repairItemTypeName']
+    // 需要替换零件的一些属性（如 packageId、isBindltem 等）
+    const replacedProps = ['partsCode', 'partsId', 'price', 'partsName', 'isOemPart']
 
-    // 先对 newPart 进行标准化处理，确保有所有必要的字段
-    const normalizedNewPart = normalizePart(newPart)
-    console.log('标准化后的新零件:', normalizedNewPart)
-
-    // 将原零件的关联属性复制到新零件上
-    preservedProps.forEach((prop) => {
-      if (oldPart[prop] !== undefined) {
-        normalizedNewPart[prop] = oldPart[prop]
+    const part = JSON.parse(JSON.stringify(oldPart))
+    replacedProps.forEach((prop) => {
+      if (newPart[prop] !== undefined) {
+        part[prop] = newPart[prop]
       }
     })
+    // 同步派生字段
+    part.name = part.partsName || part.name
+    part.code = part.partsCode || part.code
+
+    // 双向替换：在替换件列表中找到新零件对应项，替换为旧零件信息
+    const list = part.replaceSparePartRespList
+    if (list && list.length > 0) {
+      const idx = list.findIndex(
+        (r) => r.partsCode === newPart.partsCode || r.partsId === newPart.partsId
+      )
+      const oldPartInfo = {
+        partsId: oldPart.partsId,
+        partsCode: oldPart.partsCode,
+        partsName: oldPart.partsName || oldPart.name,
+        price: oldPart.price,
+        stockCount: oldPart.stockCount,
+        isOutstock: oldPart.isOutstock,
+        isOemPart: oldPart.isOemPart
+      }
+      if (idx !== -1) {
+        list.splice(idx, 1, oldPartInfo)
+      } else {
+        list.push(oldPartInfo)
+      }
+    }
 
     // 替换零件
-    selectedParts.value.splice(index, 1, normalizedNewPart)
-    console.log('替换后的列表:', selectedParts.value)
-
+    selectedParts.value.splice(index, 1, part)
     // 通知父组件发生了替换操作，传递更新后的零件列表
     emit('replace', {
       selectedItems: selectedItems.value,
       selectedParts: selectedParts.value
     })
-
-    showToast({ message: '替换成功', 'z-index': 5100 })
   } else {
     showToast({ message: '未找到要替换的零件', 'z-index': 5100 })
   }

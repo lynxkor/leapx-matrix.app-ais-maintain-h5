@@ -248,7 +248,11 @@ const selectTeam = (team) => {
 
 // 选择技师
 const selectTechnician = (technician) => {
-  selectedTechnician.value = technician
+  if (selectedTechnician.value?.userId === technician.userId) {
+    selectedTechnician.value = null
+  } else {
+    selectedTechnician.value = technician
+  }
 }
 
 // 关闭弹窗

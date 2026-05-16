@@ -80,8 +80,8 @@
                 <div class="form-label">去向单位</div>
                 <div class="form-field">
                   <SearchDropdown
-                    v-model="part.batteryUnitId"
-                    :search-keyword="part.batteryUnitName"
+                    v-model="part.targetUnitId"
+                    :search-keyword="part.targetUnitName"
                     :options="batteryUnitOptions"
                     placeholder="请搜索去向单位"
                     @onSearch="searchBatteryUnit"
@@ -126,17 +126,18 @@
 
       <!-- 底部按钮 -->
       <div class="popup-footer">
-        <div class="footer-bar"></div>
-        <van-button
-          type="primary"
-          color="var(--leap-color-primary)"
-          round
-          block
-          :disabled="!canSubmit"
-          @click="handleSubmit"
-        >
-          提交
-        </van-button>
+        <div class="footer-bar">
+          <van-button
+            type="primary"
+            color="var(--leap-color-primary)"
+            round
+            block
+            :disabled="!canSubmit"
+            @click="handleSubmit"
+          >
+            提交
+          </van-button>
+        </div>
       </div>
     </div>
   </van-popup>
@@ -287,6 +288,8 @@ const handlePartUnitClear = (part) => {
   part.targetUnitId = ''
   part.targetUnitName = ''
   part.targetUnitCode = ''
+  part.batteryUnitId = ''
+  part.batteryUnitName = ''
 }
 
 // 是否可以提交
@@ -297,7 +300,7 @@ const canSubmit = computed(() => {
 
   // 配件追溯必填项（如果展示了追溯区域）
   const partsValid = !detailData.value?.tranceFlag ||
-    partsList.value.every((part) => part.beforeChangeCode && part.afterChangeCode)
+    partsList.value.every((part) => part.beforeChangeCode && part.afterChangeCode && part.targetUnitId && part.targetUnitName)
 
   return batteryValid && partsValid
 })
@@ -305,6 +308,13 @@ const canSubmit = computed(() => {
 // 关闭弹窗
 const handleClose = () => {
   visible.value = false
+  formData.value = {
+    batteryUnitId: '',
+    batteryUnitName: '',
+    targetUnitCode: '',
+    beforeChangeCode: '',
+    afterChangeCode: ''
+  }
 }
 
 // 提交
@@ -342,7 +352,10 @@ const handleSubmit = () => {
       emit('refresh')
       emit('update:modelValue', false)
     } else {
-      showToast(target.message)
+      showToast({
+        message: target.message,
+        duration: 5000
+      })
     }
   }).catch(res => {
     showToast(res.message)
@@ -565,7 +578,7 @@ const handleSubmit = () => {
     display: flex;
     flex-direction: column;
     justify-content: flex-end;
-    padding: 0 12px 7px;
+    padding: 0 12px 34px 12px;
     flex-shrink: 0;
 
     .footer-bar {

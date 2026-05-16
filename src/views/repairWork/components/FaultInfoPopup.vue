@@ -5,6 +5,7 @@
     :style="{ width: '100vw', height: '100%' }"
     teleport="body"
     position="bottom"
+    z-index="5055"
     @close="handleClose"
   >
     <div class="fault-info-page">
@@ -167,6 +168,20 @@ const handleModuleSelect = (module) => {
 
 // 提交保存
 const handleSubmit = async() => {
+  if (!faultModules.value.length) {
+    showToast({
+      message: '请选择故障模块',
+      'z-index': 5100
+    })
+    return
+  }
+  if (!faultDescription.value) {
+    showToast({
+      message: '请填写故障描述',
+      'z-index': 5100
+    })
+    return
+  }
   try {
     const res = await updateFaultAlertRecord({
       ...props.order,
@@ -175,14 +190,23 @@ const handleSubmit = async() => {
       id: props.serviceProxyId
     })
     if (res.code === 200) {
-      showSuccessToast('保存成功')
+      showSuccessToast({
+        message: '保存成功',
+        'z-index': 5100
+      })
       emit('refresh')
       handleClose()
     } else {
-      showToast(res.message)
+      showToast({
+        message: res.message,
+        'z-index': 5100
+      })
     }
   } catch {
-    showToast('保存失败')
+    showToast({
+      message: '保存失败',
+      'z-index': 5100
+    })
   }
 }
 

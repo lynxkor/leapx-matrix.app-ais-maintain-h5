@@ -300,7 +300,10 @@ export async function handleFinalCheckFlow({ serviceProxyId, workOrder, onRefres
             showToast('终检成功')
             onRefresh?.()
           } else {
-            showToast(fres.message)
+            showToast({
+              message: fres.message,
+              duration: 5000
+            })
             onRefresh?.()
           }
         } catch (e) {

@@ -5,6 +5,7 @@
     round
     teleport="body"
     :style="{ height: '80vh' }"
+    z-index="5056"
     class="add-fault-info-popup"
   >
     <div class="popup-container">
