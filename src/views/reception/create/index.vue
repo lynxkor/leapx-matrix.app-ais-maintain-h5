@@ -354,7 +354,10 @@
       <van-tab v-if="isPreCheckCompleted" title="项目零件" name="parts">
         <div class="tab-content parts-tab">
           <!-- 费用汇总 -->
-          <div style="padding: 12px; background: #fff">
+          <div
+            v-if="partsData.repairItemRespList.length > 0 || partsData.sparePartRespList.length > 0"
+            style="padding: 12px; background: #fff"
+          >
             <div class="cost-summary">
               <div class="summary-row">
                 <span class="label">维修项目</span>
@@ -374,24 +377,14 @@
           </div>
 
           <!-- 维修项目零件内容 - 使用 RepairItemContent 组件 -->
-          <RepairItemContent
-            ref="repairItemContentRef"
-            :service-proxy-id="detail.id"
-            :initial-items="partsData.repairItemRespList"
-            :initial-parts="partsData.sparePartRespList"
-            isComponent
-          />
-
-          <!-- 添加按钮 -->
-          <div class="add-buttons">
-            <div class="add-btn" @click="onAddParts">
-              <van-icon name="plus" />
-              <span>添加项目/零件</span>
-            </div>
-            <div class="add-btn" @click="onAddPackage">
-              <van-icon name="plus" />
-              <span>添加套餐及其他</span>
-            </div>
+           <div style="height: calc(42vh - 10px)">
+            <RepairItemContent
+              ref="repairItemContentRef"
+              :service-proxy-id="detail.id"
+              :initial-items="partsData.repairItemRespList"
+              :initial-parts="partsData.sparePartRespList"
+              isComponent
+            />
           </div>
         </div>
       </van-tab>
@@ -501,6 +494,18 @@
         </div>
       </van-tab>
     </van-tabs>
+
+    <!-- 添加零件浮动栏 -->
+    <div v-if="activeTab === 'parts'" class="add-parts-bar">
+      <div class="add-btn" @click="onAddParts">
+        <van-icon name="plus" />
+        <span>添加项目/零件</span>
+      </div>
+      <div class="add-btn" @click="onAddPackage">
+        <van-icon name="plus" />
+        <span>添加套餐及其他</span>
+      </div>
+    </div>
 
     <!-- 底部操作栏 -->
     <div class="bottom-bar">
@@ -3965,5 +3970,9 @@ defineExpose({ onBeforeBack })
 
 .action-sheet-item:last-child {
   border-bottom: none;
+}
+
+:deep(.van-collapse-item__content) {
+  padding: 0;
 }
 </style>

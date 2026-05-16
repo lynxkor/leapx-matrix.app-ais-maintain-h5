@@ -134,7 +134,7 @@
                   :key="index"
                   class="fault-module-item"
                 >
-                  <span class="module-name">{{ module.name }}</span>
+                  <span class="module-name">{{ module.vrtName + '-' + module.vfgName + '-' + module.cccName }}</span>
                 </div>
               </div>
             </div>
