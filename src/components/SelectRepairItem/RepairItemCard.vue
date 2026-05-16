@@ -139,6 +139,7 @@
               <van-icon name="success" size="16" color="#009100" />
             </div>
           </div>
+          <div class="replace-divider">替换件</div>
           <!-- 替换件列表 -->
           <div class="replace-scroll-list">
             <div
@@ -154,9 +155,8 @@
               <div class="replace-item-content">
                 <div class="replace-info">
                   <div class="replace-name">
-                    {{ part.partsName }}-{{ part.quantity }}-¥{{ part.price }}
+                   {{ part.partsCode }} {{ part.partsName }}-{{ part.stockCount || 0 }}-¥{{ part.price }}
                   </div>
-                  <div class="replace-code">{{ part.partsCode }}</div>
                 </div>
               </div>
               <!-- 选中状态图标 -->
@@ -168,7 +168,7 @@
         </div>
       </template>
       <template #footer>
-        <div class="confirm-btn" @click="onConfirmReplace">确定</div>
+        <div :class="['confirm-btn', !selectedReplacePart?.partsCode ? 'disabled': '']" @click="onConfirmReplace">确定</div>
       </template>
     </ais-popup>
   </div>
@@ -416,6 +416,7 @@ const openCascaderPopup = () => {
           }
 
           .replace-tag {
+            margin-right: 4px;
             flex-shrink: 0;
             font-size: 12px;
             color: #191a1b;
@@ -646,10 +647,14 @@ const openCascaderPopup = () => {
 
 // 替换件列表
 .replace-list {
-  background: #fff;
   border-radius: 8px;
   overflow: hidden;
-
+  .replace-divider {
+    background: #f4f4f4;
+    margin: 8px 0;
+    color: #191a1b;
+    font-size:14px;
+  }
   // 当前零件行
   .current-part {
     display: flex;
@@ -657,6 +662,8 @@ const openCascaderPopup = () => {
     justify-content: space-between;
     padding: 12px;
     border-bottom: 0.5px solid #e6e6e5;
+    background: #fff;
+    border-radius: 8px;
 
     .current-part-info {
       display: flex;
@@ -685,6 +692,8 @@ const openCascaderPopup = () => {
 
   // 可滚动替换件列表
   .replace-scroll-list {
+    background: #fff;
+    border-radius: 8px;
     max-height: 40vh;
     overflow-y: auto;
     padding: 4px 12px;
@@ -694,7 +703,6 @@ const openCascaderPopup = () => {
     position: relative;
     display: flex;
     align-items: center;
-    height: 60px;
     padding: 10px 0;
     border-bottom: 0.5px solid #e6e6e5;
 
@@ -766,5 +774,9 @@ const openCascaderPopup = () => {
   border-radius: 8px;
   margin: 12px;
   cursor: pointer;
+  &.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
 }
 </style>
