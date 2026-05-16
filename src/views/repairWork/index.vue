@@ -151,10 +151,6 @@ const loadData = async(isRefresh = false) => {
       itemFlag: 1,
       sortColumns: [
         {
-          column: 'order_status',
-          sort: 'ASC'
-        },
-        {
           column: 'create_time',
           sort: 'DESC'
         }
@@ -214,7 +210,7 @@ const handleFilterChange = (value) => {
 
 // 搜索
 const handleSearch = () => {
-  router.push('/repairWork/search')
+  router.push({ path: '/repairWork/search', query: { tab: activeTab.value }})
 }
 
 // 监听标签页切换
