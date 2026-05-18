@@ -326,7 +326,8 @@ const fetchData = async(isRefresh = false) => {
       appSearchKeyWord: searchValue.value.trim(),
       orderStatus: statusMap[currentTab.value],
       pageNum: currentPage.value,
-      pageSize: 50
+      pageSize: 50,
+      sortColumns: [{ column: 'create_time', sort: 'DESC' }]
     })
     if (res.code === 200) {
       const data = res.data
