@@ -415,7 +415,7 @@
               <span class="value">¥{{ computedTotalCost }}</span>
             </div>
             <div class="signature-row">
-              <span class="label">维修类型</span>
+              <span class="label">维修类型（汇总）</span>
               <span class="value">{{ signatureData.repairItemTypeDetailCollect }}</span>
             </div>
             <div class="signature-row" @click="onOpenDeliveryTimePicker">
@@ -536,7 +536,7 @@
             >保存</span
           >
           <span v-if="!detail.previewingFinishAt" class="complete-btn" @click="onComplete"
-            >预检完成</span
+            >预检确认</span
           >
         </template>
       </template>

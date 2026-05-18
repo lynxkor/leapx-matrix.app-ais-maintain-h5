@@ -334,7 +334,7 @@
               <span class="value">¥{{ signatureData.maintenanceCostEstimation }}</span>
             </div>
             <div class="signature-row">
-              <span class="label">维修类型</span>
+              <span class="label">维修类型（汇总）</span>
               <span class="value">{{ signatureData.repairItemTypeDetailCollect }}</span>
             </div>
             <div class="signature-row">
