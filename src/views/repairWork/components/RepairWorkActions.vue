@@ -11,15 +11,6 @@
     @refresh="handleRefresh"
   />
 
-  <!-- 批量操作弹窗 -->
-  <BatchOperate
-    v-model="showBatchOperate"
-    :work-order="workOrder"
-    :repair-items="repairItems"
-    :default-tag-index="defaultTagIndex"
-    @refresh="handleRefresh"
-  />
-
   <div class="repair-work-actions">
     <div class="actions-left">
       <span class="more-text" @click="handleMore">更多</span>
@@ -108,7 +99,6 @@
 
 <script setup>
 import { ref, computed } from 'vue'
-import BatchOperate from './BatchOperatePopup.vue'
 import FinalCheckPopup from './FinalCheckPopup.vue'
 import FaultInfoPopup from './FaultInfoPopup.vue'
 import { filterByTag, handleFinalCheckFlow } from '../utils'
@@ -132,12 +122,10 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['refresh'])
+const emit = defineEmits(['refresh', 'openBatchOperate'])
 
-const showBatchOperate = ref(false)
 const showFinalCheckPopup = ref(false)
 const showFaultInfoPopup = ref(false)
-const defaultTagIndex = ref(0)
 
 const serviceProxyId = computed(() => props.workOrder.serviceProxyId)
 
@@ -152,42 +140,16 @@ const hasPendingQuality = computed(() => hasItem(3))
 const hasQualityed = computed(() => hasItem(4))
 const hasPendingFinal = computed(() => {
   const list = recordList.value
-  return list.length > 0 && list.every(item => filterByTag(item, 4))
+  return list.every(item => filterByTag(item, 4))
 })
 
-// 批量操作按钮 → 打开 BatchOperate 弹窗
-const handleDelete = () => {
-  defaultTagIndex.value = hasInProgress.value ? 2 : 1
-  showBatchOperate.value = true
-}
-
-const handleStart = () => {
-  defaultTagIndex.value = 1
-  showBatchOperate.value = true
-}
-
-const handleEnd = () => {
-  defaultTagIndex.value = 2
-  showBatchOperate.value = true
-}
-
-// 派工弹窗
-const handleDispatch = () => {
-  defaultTagIndex.value = 0
-  showBatchOperate.value = true
-}
-
-// 返修和质检
-const handleRework = async() => {
-  defaultTagIndex.value = 3
-  showBatchOperate.value = true
-}
-
-// 更多 → 批量操作
-const handleMore = () => {
-  defaultTagIndex.value = 0
-  showBatchOperate.value = true
-}
+// 批量操作按钮 → 通知父组件打开弹窗
+const handleDelete = () => emit('openBatchOperate', hasInProgress.value ? 2 : 1)
+const handleStart = () => emit('openBatchOperate', 1)
+const handleEnd = () => emit('openBatchOperate', 2)
+const handleDispatch = () => emit('openBatchOperate', 0)
+const handleRework = () => emit('openBatchOperate', 3)
+const handleMore = () => emit('openBatchOperate', 0)
 
 // 终检弹窗提交
 const handleFinalCheckSubmit = async() => {
@@ -202,7 +164,6 @@ const handleFinalCheckSubmit = async() => {
 
 // 刷新回调
 const handleRefresh = () => {
-  showBatchOperate.value = false
   showFaultInfoPopup.value = false
   showFinalCheckPopup.value = false
   emit('refresh')
