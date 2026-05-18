@@ -89,6 +89,12 @@
                   {{ item.vehModelName }}
                   ·
                   {{ item.vehProfileVin }}
+                  <img
+                    v-if="item.vehProfileVin"
+                    :src="copyIcon"
+                    class="copy-icon"
+                    @click.stop="handleCopyVin(item.vehProfileVin)"
+                  />
                 </div>
 
                 <!-- 信息行 -->
@@ -136,10 +142,9 @@
       </template>
     </div>
 
-    <!-- 结算确认弹窗 -->
+    <!-- 结算确认弹窗（存在故障） -->
     <AisPopup v-model:show="showSettlePopup" title="结算" position="bottom" round>
       <template #content>
-        <!-- 问题卡片 -->
         <div class="question-card">
           <div class="question-text">客户反馈故障是否全部解决</div>
           <div class="option-row">
@@ -177,7 +182,6 @@
         </div>
       </template>
       <template #footer>
-        <!-- 底部拖动条 + 提交按钮 -->
         <div class="settle-footer">
           <div class="submit-btn" @click="confirmSettle">确认结算</div>
         </div>
@@ -256,6 +260,8 @@ import ListItem from '@/components/ListItem.vue'
 import AisPopup from '@/libs/components/AisPopup.vue'
 import { getSettlementStatementPage, addServiceProxyStatement, cancelServiceProxy } from '@/api/settlementStatement'
 import { callPhone } from '@/libs/utils/nativeFn'
+import { copyText } from '@/libs/utils'
+import copyIcon from '@/libs/assets/image/copy_icon.svg'
 import { usePageSafeArea } from '@/utils/safeArea'
 
 const router = useRouter()
@@ -445,6 +451,10 @@ const executeCancel = async() => {
 }
 
 // 跳转到详情
+const handleCopyVin = (vin) => {
+  copyText(vin)
+}
+
 const goToDetail = (item) => {
   const serviceProxyId = item.serviceProxyId || item.id
 
@@ -465,15 +475,27 @@ const goToDetail = (item) => {
 }
 
 // 结算相关函数
+const currentFault = ref(0)
+
 const handleSettle = (item) => {
   currentItem.value = item
+  currentFault.value = item.currentFault ?? 0
   settleOption.value = 'resolved'
   selectedReason.value = ''
-  showSettlePopup.value = true
+  if (currentFault.value === 1) {
+    showSettlePopup.value = true
+  } else {
+    showConfirmPopup.value = true
+  }
 }
 
 const confirmSettle = () => {
-  // 如果是未解决且没有选择原因，提示并阻止
+  // 非故障进店：直接弹出确认对话框
+  if (currentFault.value !== 1) {
+    showConfirmPopup.value = true
+    return
+  }
+  // 存在故障：校验未解决原因
   if (settleOption.value === 'unresolved' && !selectedReason.value) {
     showToast('请选择未解决原因')
     return
@@ -714,6 +736,16 @@ if (route.params.initialValue) {
         font-size: 12px;
         color: #545454;
         margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+
+        .copy-icon {
+          width: 14px;
+          height: 14px;
+          margin-left: 2px;
+          cursor: pointer;
+          flex-shrink: 0;
+        }
       }
 
       .info-rows {

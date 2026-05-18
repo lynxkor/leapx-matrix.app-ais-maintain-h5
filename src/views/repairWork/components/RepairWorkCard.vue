@@ -45,6 +45,15 @@
       </div>
     </div>
 
+    <!-- 批量操作弹窗 -->
+    <BatchOperatePopup
+      v-model="showBatchOperate"
+      :work-order="workOrder"
+      :repair-items="repairItems"
+      :default-tag-index="batchDefaultTagIndex"
+      @refresh="handleBatchRefresh"
+    />
+
     <!-- 维修项目列表 -->
     <RepariItemList
       v-if="repairItems.length > 0"
@@ -52,7 +61,9 @@
       :service-proxy-id="workOrder.serviceProxyId"
       :order-no="workOrder.serviceProxyCode"
       :has-fault="hasFault"
+      :active-tab="activeTab"
       @refresh="handleRefresh"
+      @view-all="handleViewAll"
     />
 
     <!-- 底部操作按钮 -->
@@ -62,15 +73,17 @@
         :work-order="workOrder"
         :repair-items="repairItems"
         @refresh="handleRefresh"
+        @open-batch-operate="handleOpenBatchOperate"
       />
     </div>
   </div>
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import RepariItemList from './RepariItemList.vue'
 import RepairWorkActions from './RepairWorkActions.vue'
+import BatchOperatePopup from './BatchOperatePopup.vue'
 import { RepairOrderStatusEnum, AlarmLevelEnum } from '../constant'
 
 const props = defineProps({
@@ -85,6 +98,26 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['refresh'])
+
+// 批量操作弹窗
+const showBatchOperate = ref(false)
+const batchDefaultTagIndex = ref(0)
+
+const handleViewAll = () => {
+  const tabTagMap = { dispatch: 0, working: 2, inspection: 4 }
+  batchDefaultTagIndex.value = tabTagMap[props.activeTab] ?? 0
+  showBatchOperate.value = true
+}
+
+const handleOpenBatchOperate = (tagIndex) => {
+  batchDefaultTagIndex.value = tagIndex
+  showBatchOperate.value = true
+}
+
+const handleBatchRefresh = () => {
+  showBatchOperate.value = false
+  emit('refresh')
+}
 
 // 维修项目列表
 const repairItems = computed(() => {
@@ -270,6 +303,7 @@ const handleRefresh = () => emit('refresh')
 
   .card-actions {
     padding-top: 12px;
+    border-top: 0.5px solid var(--leap-color-default-light-4);
   }
 }
 </style>

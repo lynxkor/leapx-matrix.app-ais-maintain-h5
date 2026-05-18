@@ -838,7 +838,7 @@ const handleSignSuccess = async() => {
 
 const handleAddPayment = () => {
   paymentForm.value = {
-    amount: remainingAmount.value ? String(remainingAmount.value) : '',
+    amount: remainingAmount.value ? remainingAmount.value.toFixed(2) : '',
     paymentMethod: '',
     paymentMethodText: ''
   }
