@@ -96,9 +96,9 @@
         </div>
 
         <!-- 收款记录列表 -->
-        <div v-if="groupedInvoiceRecords.length > 0" class="payment-records-section">
+        <div v-if="invoiceRecords.length > 0" class="payment-records-section">
           <div class="section-title">收款记录</div>
-          <div v-for="(record, index) in groupedInvoiceRecords" :key="index" class="payment-record-item">
+          <div v-for="(record, index) in invoiceRecords" :key="index" class="payment-record-item">
             <div class="record-left">
               <div class="record-method">{{ getPayTypeText(record.payType) }}</div>
             </div>
@@ -199,6 +199,7 @@
                 v-model="paymentForm.amount"
                 class="payment-amount-input"
                 type="text"
+                inputmode="decimal"
                 placeholder="请输入支付金额"
                 @input="onAmountInput"
               />
@@ -242,7 +243,7 @@
       :popup-style="{ height: '360px' }"
     >
       <template #content>
-        <div class="sign-hint-text">此操作将生成待签字结算单且需要用户签字</div>
+        <div v-if="selectedChannel !== 'paper'" class="sign-hint-text">此操作将生成待签字结算单且需要用户签字</div>
         <div class="channel-list">
           <div
             class="channel-item"
@@ -348,22 +349,6 @@ const isEmptyDetail = computed(() => !detailData.value.id && !detailData.value.c
 const paidAmountDisplay = computed(() => paidAmount.value)
 const remainingAmount = computed(() => {
   return Math.max(Number(detailData.value.remainAmount) || 0, 0)
-})
-
-// 收款记录按支付方式类型分组合并
-const groupedInvoiceRecords = computed(() => {
-  const grouped = {}
-  invoiceRecords.value.forEach((record) => {
-    const payType = record.payType
-    if (!grouped[payType]) {
-      grouped[payType] = {
-        payType,
-        payAmount: 0
-      }
-    }
-    grouped[payType].payAmount += Number(record.payAmount) || 0
-  })
-  return Object.values(grouped)
 })
 
 // 从路由获取来源状态：pending-待交车，completed-已交车
@@ -853,7 +838,7 @@ const handleSignSuccess = async() => {
 
 const handleAddPayment = () => {
   paymentForm.value = {
-    amount: '',
+    amount: remainingAmount.value ? String(remainingAmount.value) : '',
     paymentMethod: '',
     paymentMethodText: ''
   }
