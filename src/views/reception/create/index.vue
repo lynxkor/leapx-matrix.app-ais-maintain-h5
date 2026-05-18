@@ -85,11 +85,10 @@
                     :disabled="repairPersonInputDisabled"
                     @input="onRepairPersonNameChange"
                   />
-                  <van-icon
+                  <img
                     v-if="!repairPersonInputDisabled"
-                    name="edit"
-                    size="16"
-                    color="#888888"
+                    src="@/assets/images/icon_edit.svg"
+                    class="edit-icon"
                   />
                 </div>
               </div>
@@ -105,11 +104,10 @@
                     maxlength="11"
                     @input="onRepairPersonPhoneChange"
                   />
-                  <van-icon
+                  <img
                     v-if="!repairPersonInputDisabled"
-                    name="edit"
-                    size="16"
-                    color="#888888"
+                    src="@/assets/images/icon_edit.svg"
+                    class="edit-icon"
                   />
                 </div>
               </div>
@@ -134,12 +132,20 @@
           <div class="inspection-info">
             <!-- 进店里程数 -->
             <div class="section-card borderB">
-              <div class="section-title">
+              <div class="section-title section-field">
                 <div>进店里程数</div>
-                <div class="editable-value" @click="showMileageInput = true">
-                  <span class="number">{{ detail.mileage }}</span>
-                  <span class="unit">km</span>
-                  <van-icon name="edit" size="14" color="#888888" />
+                <div class="editable-field">
+                  <van-field
+                    v-model="detail.mileage"
+                    type="number"
+                    placeholder="请输入"
+                    :border="false"
+                  >
+                    <template #button>
+                      <span class="unit">km</span>
+                      <img src="@/assets/images/icon_edit.svg" class="edit-icon" />
+                    </template>
+                  </van-field>
                 </div>
               </div>
               <div class="sub-info">车联网里程数(总)：{{ detail.networkMileageTotal }} km</div>
@@ -150,12 +156,20 @@
 
             <!-- 进店电量 -->
             <div class="section-card borderB">
-              <div class="section-title">
+              <div class="section-title section-field">
                 <div>进店电量</div>
-                <div class="editable-value" @click="showBatteryInput = true">
-                  <span class="number">{{ detail.battery }}</span>
-                  <span class="unit">%</span>
-                  <van-icon name="edit" size="14" color="#888888" />
+                <div class="editable-field">
+                  <van-field
+                    v-model="detail.battery"
+                    type="number"
+                    placeholder="请输入"
+                    :border="false"
+                  >
+                    <template #button>
+                      <span class="unit">%</span>
+                      <img src="@/assets/images/icon_edit.svg" class="edit-icon" />
+                    </template>
+                  </van-field>
                 </div>
               </div>
               <div class="sub-info">车联网电量: {{ detail.networkBattery }}%</div>
@@ -384,6 +398,9 @@
               :initial-items="partsData.repairItemRespList"
               :initial-parts="partsData.sparePartRespList"
               isComponent
+              isReplace
+              @replace="handlePartsReplace"
+              @delete="handlePartsDelete"
             />
           </div>
         </div>
@@ -511,7 +528,7 @@
     <div class="bottom-bar">
       <span v-if="serviceProxyId" class="more-btn" @click="onMore">更多</span>
       <template v-if="activeTab === 'inspection'">
-        <span v-if="!isSaved && (!serviceProxyId || !detail.id) " class="save-btn" @click="onSave">保存</span>
+        <span v-if="!isSaved && (!serviceProxyId && !detail.id) " class="save-btn" @click="onSave">保存</span>
         <template v-else>
           <span
             :class="['save-btn', { disabled: isInspectionSaveDisabled }]"
@@ -807,7 +824,6 @@
       :style="{ background: '#f4f4f4', height: '50%' }"
     >
       <template #content>
-        <div class="signature-tip">此操作将生成待签字施工单且需要用户签字</div>
         <div class="signature-channel-picker">
           <div
             v-for="(item, index) in signatureChannelList"
@@ -972,58 +988,6 @@
       style="display: none"
       @change="handleImageFileChange"
     />
-
-    <!-- 进店里程数编辑弹框 -->
-    <van-dialog
-      v-model:show="showMileageInput"
-      title="进店里程数"
-      show-cancel-button
-      confirmButtonText="保存"
-      cancelButtonText="取消"
-      confirmButtonColor="#009100"
-      cancelButtonColor="#191A1B"
-      @confirm="onConfirmMileage"
-      @opened="onMileageDialogOpened"
-    >
-      <div class="input-dialog-content">
-        <van-field
-          v-model="mileageInputValue"
-          type="number"
-          placeholder="请输入里程数"
-          :border="false"
-        >
-          <template #button>
-            <span class="input-unit">km</span>
-          </template>
-        </van-field>
-      </div>
-    </van-dialog>
-
-    <!-- 进店电量编辑弹框 -->
-    <van-dialog
-      v-model:show="showBatteryInput"
-      title="进店电量"
-      show-cancel-button
-      confirmButtonText="保存"
-      cancelButtonText="取消"
-      confirmButtonColor="#009100"
-      cancelButtonColor="#191A1B"
-      @confirm="onConfirmBattery"
-      @opened="onBatteryDialogOpened"
-    >
-      <div class="input-dialog-content">
-        <van-field
-          v-model="batteryInputValue"
-          type="number"
-          placeholder="请输入电量"
-          :border="false"
-        >
-          <template #button>
-            <span class="input-unit">%</span>
-          </template>
-        </van-field>
-      </div>
-    </van-dialog>
 
     <!-- 二次确认提示框 -->
     <van-dialog
@@ -1260,12 +1224,6 @@ const faultSearchValue = ref('')
 // 是否存在故障确认弹框
 const showFaultConfirm = ref(false)
 const pendingFaultValue = ref('')
-
-// 进店里程数和进店电量编辑
-const showMileageInput = ref(false)
-const showBatteryInput = ref(false)
-const mileageInputValue = ref('')
-const batteryInputValue = ref('')
 
 // 二次确认提示框
 const showConfirmDialog2 = ref(false)
@@ -2483,16 +2441,16 @@ const onSave = async() => {
     return
   }
   savingLoading.value = true
+  showLoadingToast('正在保存...')
   try {
     const res = await serviceAddOrUpdate({
+      id: detail.id || undefined,
       customerName: detail.owner,
       customerPhone: detail.ownerPhone,
       vehModelName: detail.vehicleModelName,
       bindingPhone: detail.binderPhone,
       bindingUser: detail.bindingUser,
       carPlate: detail.plateNo,
-      // dealerName: detail.salesDealerName,
-      // dealerCode: detail.salesDealerCode,
       mileage: detail.mileage,
       lastMileage: null,
       startWarrantyDate: detail.vehicleProfileServiceResp.warrantyStartdate || '',
@@ -2543,6 +2501,7 @@ const onSave = async() => {
     })
     if (res.code === 200) {
       showToast('保存成功')
+      closeToast()
       isSaved.value = true
       // 新建时保存返回的施工单id，同步设置 detail.id 防止后续编辑保存时丢失
       if (res.data) {
@@ -2562,6 +2521,7 @@ const onSave = async() => {
     }
   } catch {
     showToast('保存失败')
+    closeToast()
   } finally {
     savingLoading.value = false
   }
@@ -2820,6 +2780,18 @@ const onPartsSave = async() => {
   } finally {
     savingLoading.value = false
   }
+}
+
+// 处理零件替换事件
+const handlePartsReplace = (data) => {
+  partsData.repairItemRespList = data.selectedItems || []
+  partsData.sparePartRespList = data.selectedParts || []
+}
+
+// 处理零件删除事件
+const handlePartsDelete = (data) => {
+  partsData.repairItemRespList = data.selectedItems || []
+  partsData.sparePartRespList = data.selectedParts || []
 }
 
 // 留车检查返回数据
@@ -3137,40 +3109,6 @@ const onConfirmSignatureChannel = () => {
 // 更多操作
 const onMore = () => {
   showMoreActions.value = !showMoreActions.value
-}
-// 进店里程数弹框打开
-const onMileageDialogOpened = () => {
-  mileageInputValue.value = detail.mileage
-}
-
-// 确认进店里程数
-const onConfirmMileage = () => {
-  if (!mileageInputValue.value.trim()) {
-    showToast('请输入里程数')
-    return
-  }
-  detail.mileage = mileageInputValue.value
-  showToast('保存成功')
-}
-
-// 进店电量弹框打开
-const onBatteryDialogOpened = () => {
-  batteryInputValue.value = detail.battery
-}
-
-// 确认进店电量
-const onConfirmBattery = () => {
-  if (!batteryInputValue.value.trim()) {
-    showToast('请输入电量')
-    return
-  }
-  const value = parseInt(batteryInputValue.value)
-  if (value < 0 || value > 100) {
-    showToast('电量范围为0-100')
-    return
-  }
-  detail.battery = batteryInputValue.value
-  showToast('保存成功')
 }
 
 onMounted(async() => {
@@ -3834,10 +3772,11 @@ defineExpose({ onBeforeBack })
 
 .warranty-alert-content {
   padding: 32px 24px 16px;
-
+  max-height: 430px;
+  overflow: auto;
   .alert-section {
     margin-bottom: 24px;
-
+    margin-top: 10px;
     &:last-of-type {
       margin-bottom: 0;
     }
@@ -3848,7 +3787,6 @@ defineExpose({ onBeforeBack })
       color: #191a1b;
       margin-bottom: 8px;
     }
-
     .section-message {
       font-size: 14px;
       color: #545454;
@@ -3994,5 +3932,20 @@ defineExpose({ onBeforeBack })
 
 :deep(.van-collapse-item__content) {
   padding: 0;
+}
+
+.section-field{
+  :deep(.van-field__control) {
+    width: 100px;
+    text-align: right
+  }
+  :deep(.van-cell) {
+    padding-right: 0;
+  }
+  :deep(.van-field__button) {
+    padding-left: 3px;
+    display: inline-flex;
+    align-items: center;
+  }
 }
 </style>
