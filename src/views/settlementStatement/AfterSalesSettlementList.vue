@@ -199,6 +199,7 @@
                 v-model="paymentForm.amount"
                 class="payment-amount-input"
                 type="text"
+                inputmode="decimal"
                 placeholder="请输入支付金额"
                 @input="onAmountInput"
               />
@@ -242,7 +243,7 @@
       :popup-style="{ height: '360px' }"
     >
       <template #content>
-        <div class="sign-hint-text">此操作将生成待签字结算单且需要用户签字</div>
+        <div v-if="selectedChannel !== 'paper'" class="sign-hint-text">此操作将生成待签字结算单且需要用户签字</div>
         <div class="channel-list">
           <div
             class="channel-item"
@@ -853,7 +854,7 @@ const handleSignSuccess = async() => {
 
 const handleAddPayment = () => {
   paymentForm.value = {
-    amount: '',
+    amount: remainingAmount.value ? String(remainingAmount.value) : '',
     paymentMethod: '',
     paymentMethodText: ''
   }
