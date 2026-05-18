@@ -209,6 +209,10 @@ const props = defineProps({
   isReplace: {
     type: Boolean,
     default: false
+  },
+  selectedPartsCodes: {
+    type: Array,
+    default: () => []
   }
 })
 
@@ -246,12 +250,20 @@ const onSelectReplacePart = (part) => {
     showToast('该零件已出库')
     return
   }
+  if (props.selectedPartsCodes.includes(part.partsCode)) {
+    showToast('该零件已在列表中，请勿重复添加')
+    return
+  }
   selectedReplacePart.value = part
 }
 
 const onConfirmReplace = () => {
   if (!selectedReplacePart.value) {
     showToast('请选择替换件')
+    return
+  }
+  if (selectedReplacePart.value.partsCode === props.item.partsCode) {
+    showToast('替换件与原零件相同，请重新选择')
     return
   }
   emit('replace', {
