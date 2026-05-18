@@ -96,9 +96,9 @@
         </div>
 
         <!-- 收款记录列表 -->
-        <div v-if="groupedInvoiceRecords.length > 0" class="payment-records-section">
+        <div v-if="invoiceRecords.length > 0" class="payment-records-section">
           <div class="section-title">收款记录</div>
-          <div v-for="(record, index) in groupedInvoiceRecords" :key="index" class="payment-record-item">
+          <div v-for="(record, index) in invoiceRecords" :key="index" class="payment-record-item">
             <div class="record-left">
               <div class="record-method">{{ getPayTypeText(record.payType) }}</div>
             </div>
@@ -349,22 +349,6 @@ const isEmptyDetail = computed(() => !detailData.value.id && !detailData.value.c
 const paidAmountDisplay = computed(() => paidAmount.value)
 const remainingAmount = computed(() => {
   return Math.max(Number(detailData.value.remainAmount) || 0, 0)
-})
-
-// 收款记录按支付方式类型分组合并
-const groupedInvoiceRecords = computed(() => {
-  const grouped = {}
-  invoiceRecords.value.forEach((record) => {
-    const payType = record.payType
-    if (!grouped[payType]) {
-      grouped[payType] = {
-        payType,
-        payAmount: 0
-      }
-    }
-    grouped[payType].payAmount += Number(record.payAmount) || 0
-  })
-  return Object.values(grouped)
 })
 
 // 从路由获取来源状态：pending-待交车，completed-已交车
