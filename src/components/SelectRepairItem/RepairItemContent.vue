@@ -102,6 +102,7 @@
             :deletable="isPartDeletable(item)"
             :disabled="isAuditComplete"
             :isReplace="isReplace"
+            :selected-parts-codes="selectedPartsCodes"
             @delete="removeItem(item, 'part')"
             @update-item="handleItemUpdateWrapper"
             @replace="repairItemContentReplace"
@@ -117,6 +118,7 @@
           :deletable="isPartDeletable(item)"
           :disabled="isAuditComplete"
           :isReplace="isReplace"
+          :selected-parts-codes="selectedPartsCodes"
           @delete="removeItem(item, 'part')"
           @update-item="handleItemUpdateWrapper"
           @replace="repairItemContentReplace"
@@ -268,6 +270,9 @@ const { performSearch, handleAddItemWithParts, handleItemUpdate, removeItem: ori
 // 列表分组 Hook
 const { regularItems, packageItemGroups, regularParts, packagePartGroups } =
   useRepairItemList({ selectedItems, selectedParts })
+
+// 已选配件编码列表，用于替换件重复校验
+const selectedPartsCodes = computed(() => selectedParts.value.map((p) => p.partsCode).filter(Boolean))
 
 // 删除操作包装函数 - 删除后通知父组件
 const removeItem = (item, type) => {

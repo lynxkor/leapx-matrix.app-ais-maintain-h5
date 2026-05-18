@@ -328,7 +328,7 @@
                     <span class="module-name">{{
                       module.vrtName + '-' + module.vfgName + '-' + module.cccName
                     }}</span>
-                    <van-icon name="delete-o" @click="onDeleteFaultModule(module)" />
+                    <img src="@/assets/images/trash.svg"  @click="onDeleteFaultModule(module)"/>
                   </div>
                 </div>
 
@@ -528,7 +528,7 @@
     <div class="bottom-bar">
       <span v-if="serviceProxyId" class="more-btn" @click="onMore">更多</span>
       <template v-if="activeTab === 'inspection'">
-        <span v-if="!isSaved && (!serviceProxyId && !detail.id) " class="save-btn" @click="onSave">保存</span>
+        <span v-if="!isSaved && !serviceProxyId" class="save-btn" @click="onSave">保存</span>
         <template v-else>
           <span
             :class="['save-btn', { disabled: isInspectionSaveDisabled }]"
@@ -1818,7 +1818,7 @@ const saveDataSnapshot = () => {
     customerComment: detail.customerComment,
     currentFault: detail.currentFault,
     customerFaultDesc: detail.customerFaultDesc,
-    businessType: computedBusinessType.value,
+    businessType: detail.businessType,
     repairPerson: detail.repairPerson,
     repairPersonPhone: detail.repairPersonPhone,
     faultModules: [...detail.faultModules],
@@ -2444,7 +2444,7 @@ const onSave = async() => {
   showLoadingToast('正在保存...')
   try {
     const res = await serviceAddOrUpdate({
-      id: detail.id || undefined,
+      id: undefined,
       customerName: detail.owner,
       customerPhone: detail.ownerPhone,
       vehModelName: detail.vehicleModelName,
@@ -2512,8 +2512,8 @@ const onSave = async() => {
       saveDataSnapshot()
       // 保存成功生成施工单后，清除sessionStorage中的车辆信息
       sessionStorage.removeItem('vehicleInfo')
-      // 保存成功后获取详情数据更新
-      fetchDetailForSignature()
+      // 保存成功后获取详情数据更新（await 确保快照同步完成后再放开 loading）
+      await fetchDetailForSignature()
       // 获取提醒信息
       fetchRemindInfo()
     } else {
@@ -2727,8 +2727,8 @@ const onInspectionSave = async() => {
     if (res.code === 200) {
       showToast('保存成功')
       saveDataSnapshot()
-      // 保存成功后获取详情数据更新
-      fetchDetailForSignature()
+      // 保存成功后获取详情数据更新（await 确保快照同步完成后再放开 loading）
+      await fetchDetailForSignature()
     } else {
       showToast({ message: res.msg || '保存失败', duration: 3000 })
     }
@@ -2772,8 +2772,8 @@ const onPartsSave = async() => {
     }
     showToast('保存成功')
     saveDataSnapshot()
-    // 保存成功后获取详情数据，给签字确认页面赋值
-    fetchDetailForSignature()
+    // 保存成功后获取详情数据，给签字确认页面赋值（await 确保快照同步完成后再放开 loading）
+    await fetchDetailForSignature()
   } catch (error) {
     console.error('保存失败:', error)
     showToast('保存失败')
@@ -2975,38 +2975,37 @@ const fetchDetailForSignature = async() => {
       // 保存数据快照（主数据已更新完毕）
       saveDataSnapshot()
       // 获取附件列表并分类回显车内车外照片
-      getFileList({ businessId: id, pageSize: 100 }).then((fileRes) => {
-        if (fileRes.code === 200) {
-          const fileList = fileRes.data || []
-          // 清空已有图片列表，避免重复
-          detail.interiorImages = []
-          detail.exteriorImages = []
-          // 用于存储最新的制单签字
-          let latestSignFile = null
-          // 根据 attachType 分类回显文件
-          fileList.forEach((item) => {
-            const fileObj = {
-              ...item, url: item.fileUrl
-            }
-            if (item.attachType === '车内照片') {
-              detail.interiorImages.push(fileObj)
-            } else if (item.attachType === '车外照片') {
-              detail.exteriorImages.push(fileObj)
-            } else if (item.attachType === '制单签字') {
-              // 对比createTime，保留最新的制单签字
-              if (!latestSignFile || new Date(item.createTime) > new Date(latestSignFile.createTime)) {
-                latestSignFile = item
-              }
-            }
-          })
-          // 将最新的制单签字赋值给detail.signUrl
-          if (latestSignFile) {
-            detail.signUrl = latestSignFile.fileUrl
+      const fileRes = await getFileList({ businessId: id, pageSize: 100 })
+      if (fileRes.code === 200) {
+        const fileList = fileRes.data || []
+        // 清空已有图片列表，避免重复
+        detail.interiorImages = []
+        detail.exteriorImages = []
+        // 用于存储最新的制单签字
+        let latestSignFile = null
+        // 根据 attachType 分类回显文件
+        fileList.forEach((item) => {
+          const fileObj = {
+            ...item, url: item.fileUrl
           }
-          // 图片回显后更新快照
-          saveDataSnapshot()
+          if (item.attachType === '车内照片') {
+            detail.interiorImages.push(fileObj)
+          } else if (item.attachType === '车外照片') {
+            detail.exteriorImages.push(fileObj)
+          } else if (item.attachType === '制单签字') {
+            // 对比createTime，保留最新的制单签字
+            if (!latestSignFile || new Date(item.createTime) > new Date(latestSignFile.createTime)) {
+              latestSignFile = item
+            }
+          }
+        })
+        // 将最新的制单签字赋值给detail.signUrl
+        if (latestSignFile) {
+          detail.signUrl = latestSignFile.fileUrl
         }
-      })
+        // 图片回显后更新快照
+        saveDataSnapshot()
+      }
     } else {
       showToast(res.msg || '获取详情失败')
     }
@@ -3125,6 +3124,10 @@ onMounted(async() => {
     } catch (e) {
       console.error('获取预约车辆信息失败:', e)
     }
+  }
+  // 初始化施工单ID（从路由参数获取）
+  if (route.query.serviceProxyId) {
+    serviceProxyId.value = route.query.serviceProxyId
   }
   fetchDetail()
   if (route.query.serviceProxyId) {

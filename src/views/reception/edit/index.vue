@@ -336,11 +336,7 @@
                     <span class="module-name">{{
                       module.vrtName + '-' + module.vfgName + '-' + module.cccName
                     }}</span>
-                    <van-icon
-                      v-if="detail.isCreateStatementInfo != 1"
-                      name="delete-o"
-                      @click="onDeleteFaultModule(module)"
-                    />
+                    <img v-if="detail.isCreateStatementInfo != 1" src="@/assets/images/trash.svg"  @click="onDeleteFaultModule(module)"/>
                   </div>
                 </div>
 
