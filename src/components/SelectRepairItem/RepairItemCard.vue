@@ -155,7 +155,7 @@
               <div class="replace-item-content">
                 <div class="replace-info">
                   <div class="replace-name">
-                   {{ part.partsCode }} {{ part.partsName }}-{{ part.stockCount || 0 }}-¥{{ part.price }}
+                   {{ part.partsCode }} {{ part.partsName }}-库存: {{ part.stockCount || 0 }}-¥{{ part.price }}
                   </div>
                 </div>
               </div>
