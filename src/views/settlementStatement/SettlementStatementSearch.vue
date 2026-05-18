@@ -89,6 +89,12 @@
                   {{ item.vehModelName }}
                   ·
                   {{ item.vehProfileVin }}
+                  <img
+                    v-if="item.vehProfileVin"
+                    :src="copyIcon"
+                    class="copy-icon"
+                    @click.stop="handleCopyVin(item.vehProfileVin)"
+                  />
                 </div>
 
                 <!-- 信息行 -->
@@ -256,6 +262,8 @@ import ListItem from '@/components/ListItem.vue'
 import AisPopup from '@/libs/components/AisPopup.vue'
 import { getSettlementStatementPage, addServiceProxyStatement, cancelServiceProxy } from '@/api/settlementStatement'
 import { callPhone } from '@/libs/utils/nativeFn'
+import { copyText } from '@/libs/utils'
+import copyIcon from '@/libs/assets/image/copy_icon.svg'
 import { usePageSafeArea } from '@/utils/safeArea'
 
 const router = useRouter()
@@ -445,6 +453,10 @@ const executeCancel = async() => {
 }
 
 // 跳转到详情
+const handleCopyVin = (vin) => {
+  copyText(vin)
+}
+
 const goToDetail = (item) => {
   const serviceProxyId = item.serviceProxyId || item.id
 
@@ -714,6 +726,16 @@ if (route.params.initialValue) {
         font-size: 12px;
         color: #545454;
         margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+
+        .copy-icon {
+          width: 14px;
+          height: 14px;
+          margin-left: 2px;
+          cursor: pointer;
+          flex-shrink: 0;
+        }
       }
 
       .info-rows {
