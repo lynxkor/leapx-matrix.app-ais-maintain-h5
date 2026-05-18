@@ -142,6 +142,7 @@
                 <div class="item-name">{{ item.repairItemName }}</div>
                 <div class="item-code">{{ item.repairItemCode }}</div>
               </div>
+              <div v-if="item.used" class="item-status used">已使用</div>
             </div>
             <div v-if="freeList.length === 0 && !loading" class="no-data">
               <img src="@/assets/image/noList.png" alt="" />
