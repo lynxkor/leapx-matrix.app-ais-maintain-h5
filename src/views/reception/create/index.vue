@@ -803,30 +803,35 @@
       :show="showSignatureChannelPicker"
       position="bottom"
       title="选择签字渠道"
-      @close="showSignatureChannelPicker = false"
+      @close="onCancelSignatureChannel"
       :style="{ background: '#f4f4f4', height: '50%' }"
     >
       <template #content>
+        <div class="signature-tip">此操作将生成待签字施工单且需要用户签字</div>
         <div class="signature-channel-picker">
           <div
             v-for="(item, index) in signatureChannelList"
             :key="index"
-            :class="['picker-item', { active: signatureData.signChannel === item.label }]"
-            @click="onSelectSignatureChannel(item)"
+            :class="['picker-item', { active: tempSignatureChannel === item.label }]"
+            @click="tempSignatureChannel = item.label"
           >
             <div class="channel-content">
               <span class="channel-text">{{ item.label }}</span>
-              <span v-if="item.value === '999'" class="channel-hint"
+              <span v-if="item.value === 999 || item.value === '999'" class="channel-hint"
                 >将生成待签字施工单且需要用户签字</span
               >
             </div>
             <van-icon
-              v-if="signatureData.signChannel === item.label"
+              v-if="tempSignatureChannel === item.label"
               name="success"
               size="16"
               color="#009100"
             />
           </div>
+        </div>
+        <div class="signature-channel-footer">
+          <div class="cancel-btn" @click="onCancelSignatureChannel">取消</div>
+          <div class="confirm-btn" @click="onConfirmSignatureChannel">确定</div>
         </div>
       </template>
     </ais-popup>
@@ -1864,8 +1869,8 @@ const saveDataSnapshot = () => {
     vehicleModel: detail.vehicleModel,
     repairPersonTag: detail.repairPersonTag,
     testResult: detail.testResult,
-    repairItemRespList: [...partsData.repairItemRespList],
-    sparePartRespList: [...partsData.sparePartRespList],
+    repairItemRespList: JSON.parse(JSON.stringify(partsData.repairItemRespList)),
+    sparePartRespList: JSON.parse(JSON.stringify(partsData.sparePartRespList)),
     repairItemTypeDetailCollect: detail.repairItemTypeDetailCollect
   }
 }
@@ -1919,6 +1924,7 @@ const signatureData = reactive({
 // 选择器显示状态
 const showDeliveryTimePicker = ref(false)
 const showSignatureChannelPicker = ref(false)
+const tempSignatureChannel = ref('')
 
 // 预计交车时间选择相关
 const selectedDeliveryDate = ref('')
@@ -3100,6 +3106,7 @@ const showSignatureChannelPickerHandle = () => {
   if (detail.signStatus === 20) {
     return
   }
+  tempSignatureChannel.value = signatureData.signChannel || ''
   showSignatureChannelPicker.value = true
 }
 // 查看签字
@@ -3114,9 +3121,17 @@ const onViewSignature = () => {
     showToast('暂无签字图片')
   }
 }
-// 选择签字渠道
-const onSelectSignatureChannel = (item) => {
-  signatureData.signChannel = item.label
+// 取消选择签字渠道
+const onCancelSignatureChannel = () => {
+  showSignatureChannelPicker.value = false
+}
+// 确认选择签字渠道
+const onConfirmSignatureChannel = () => {
+  if (!tempSignatureChannel.value) {
+    showToast('请选择签字渠道')
+    return
+  }
+  signatureData.signChannel = tempSignatureChannel.value
   showSignatureChannelPicker.value = false
 }
 // 更多操作

@@ -833,16 +833,17 @@
       :show="showSignatureChannelPicker"
       position="bottom"
       title="选择签字渠道"
-      @close="showSignatureChannelPicker = false"
+      @close="onCancelSignatureChannel"
       :style="{ background: '#f4f4f4', height: '50%' }"
     >
       <template #content>
+        <div class="signature-tip">此操作将生成待签字施工单且需要用户签字</div>
         <div class="signature-channel-picker">
           <div
             v-for="(item, index) in signatureChannelList"
             :key="index"
-            :class="['picker-item', { active: signatureData.signChannel === item.label }]"
-            @click="onSelectSignatureChannel(item)"
+            :class="['picker-item', { active: tempSignatureChannel === item.label }]"
+            @click="tempSignatureChannel = item.label"
           >
             <div class="channel-content">
               <span class="channel-text">{{ item.label }}</span>
@@ -851,12 +852,18 @@
               >
             </div>
             <van-icon
-              v-if="signatureData.signChannel === item.label"
+              v-if="tempSignatureChannel === item.label"
               name="success"
               size="16"
               color="#009100"
             />
           </div>
+        </div>
+      </template>
+      <template #footer>
+        <div class="signature-channel-footer">
+          <div class="cancel-btn" @click="onCancelSignatureChannel">取消</div>
+          <div class="confirm-btn" @click="onConfirmSignatureChannel">确定</div>
         </div>
       </template>
     </ais-popup>
@@ -1829,8 +1836,8 @@ const saveDataSnapshot = () => {
     vehicleModel: detail.vehicleModel,
     repairPersonTag: detail.repairPersonTag,
     testResult: detail.testResult,
-    repairItemRespList: [...partsData.repairItemRespList],
-    sparePartRespList: [...partsData.sparePartRespList],
+    repairItemRespList: JSON.parse(JSON.stringify(partsData.repairItemRespList)),
+    sparePartRespList: JSON.parse(JSON.stringify(partsData.sparePartRespList)),
     repairItemTypeDetailCollect: detail.repairItemTypeDetailCollect
   }
 }
@@ -2020,6 +2027,7 @@ watch(
 // 选择器显示状态
 const showDeliveryTimePicker = ref(false)
 const showSignatureChannelPicker = ref(false)
+const tempSignatureChannel = ref('')
 
 // 预计交车时间选择相关
 const selectedDeliveryDate = ref('')
@@ -3423,25 +3431,40 @@ const onCloseDeliveryTimePicker = () => {
 const onConfirmAndSignClick = async() => {
   const id = route.query.id
   if (!id) return
+  showLoadingToast({ message: '请稍候...', forbidClick: true })
   try {
+    // 记录查询前的 signStatus，用于判断是否发生变化
+    const prevSignStatus = String(detail.signStatus)
     const res = await getDetail(id)
     if (res.code === 200 && res.data) {
-      const signStatus = res.data.signStatus
-      // signStatus=20 表示工单状态已更新，需重新加载数据
-      if (String(signStatus) === '20') {
+      const newSignStatus = String(res.data.signStatus)
+      // signStatus 由非20变为20，表示工单状态已更新，需重新加载数据
+      if (prevSignStatus !== '20' && newSignStatus === '20') {
+        closeToast()
         showToast('工单状态已更新')
         await fetchDetail()
         return
       }
     }
+    closeToast()
   } catch (e) {
+    closeToast()
     console.error('查询工单状态失败:', e)
   }
+  tempSignatureChannel.value = signatureData.signChannel || ''
   showSignatureChannelPicker.value = true
 }
-// 选择签字渠道
-const onSelectSignatureChannel = (item) => {
-  signatureData.signChannel = item.label
+// 取消选择签字渠道
+const onCancelSignatureChannel = () => {
+  showSignatureChannelPicker.value = false
+}
+// 确认选择签字渠道
+const onConfirmSignatureChannel = () => {
+  if (!tempSignatureChannel.value) {
+    showToast('请选择签字渠道')
+    return
+  }
+  signatureData.signChannel = tempSignatureChannel.value
   showSignatureChannelPicker.value = false
   onConfirmAndSign()
 }
