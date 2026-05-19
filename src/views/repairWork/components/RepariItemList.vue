@@ -154,7 +154,7 @@ const sortedItems = computed(() => {
   if (!items.length) return []
   switch (props.activeTab) {
     case 'dispatch':
-      return items.filter(item => filterByTag(item, 0))
+      return items.filter(item => filterByTag(item, 0) || filterByTag(item, 1))
     case 'working': {
       const priority = [2, 1, 3]
       const prioritized = []

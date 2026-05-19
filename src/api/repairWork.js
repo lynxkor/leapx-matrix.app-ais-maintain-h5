@@ -195,11 +195,19 @@ export function getBatteryUnitList(data) {
 }
 
 /**
- * 更新故障模块
+ * 更新故障模块, 只支持重置
  * @param {Object} data
  */
 export function updateFaultAlertRecord(data) {
   return post(prefix + '/addFaultRecord', data)
+}
+
+/**
+ * 更新故障模块
+ * @param {Object} data
+ */
+export function updateFaultRecord(data) {
+  return post(prefix + '/updateFaultRecord', data)
 }
 
 /**

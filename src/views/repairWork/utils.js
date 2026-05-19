@@ -162,7 +162,8 @@ export async function showFaultCheckDialog(serviceProxyId, onRefresh, workOrder)
       try {
         const res = await updateFaultAlertRecord({
           id: serviceProxyId,
-          currentFault: 0
+          currentFault: 0,
+          customerContent: '本次进店车辆无故障'
         })
         if (res.code === 200) {
           showToast('已确认无故障')

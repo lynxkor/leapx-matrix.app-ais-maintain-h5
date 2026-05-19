@@ -366,8 +366,8 @@
               @click="onFeedbackSelect(item)"
             >
               <div class="feedback-serial" v-html="highlightSearch(item.code, feedbackSearchText)"></div>
-              <div class="feedback-type" v-if="item.reportType">{{ item.reportType }}</div>
-              <div class="feedback-desc" v-if="item.customerContent">{{ item.customerContent }}</div>
+              <div class="feedback-type" v-if="item.reportType">{{ qualityReportTypeMap[item.reportType] || item.reportType }}</div>
+              <div class="feedback-desc" v-if="item.title">{{ item.title }}</div>
             </div>
           </RefreshList>
         </div>
@@ -405,6 +405,7 @@ import {
 import { uploadFileByUrl, deleteAttachmentConfig, getUploadConfig } from '@/libs/api/fileConfig'
 import { getAppImgLimit } from '@/libs/utils/nativeFn'
 import { usePageSafeArea } from '@/utils/safeArea'
+import { getEnumValue } from '@/libs/api/common'
 
 const router = useRouter()
 usePageSafeArea({ bodyClass: 'ais-page-nav-safe-area' })
@@ -523,6 +524,16 @@ onMounted(async() => {
   getUploadConfig({ configCode: PRE_AUTH_ATTACHMENT_CONFIG_CODE }).then((res) => {
     if (res?.code === 200 || res?.code === 0) {
       uploadConfig.value = res.data || {}
+    }
+  })
+  getEnumValue('QualityReportTypeEnum').then((res) => {
+    if (res?.code === 200) {
+      const list = res.data || []
+      const map = {}
+      list.forEach((item) => {
+        map[item.code] = item.message
+      })
+      qualityReportTypeMap.value = map
     }
   })
 })
@@ -743,6 +754,7 @@ const setConstructionData = (res) => {
 
 const feedbackSearchText = ref('')
 const feedbackList = ref([])
+const qualityReportTypeMap = ref({})
 
 // 监听质量反馈搜索词变化，实时搜索
 watch(feedbackSearchText, (newVal) => {
@@ -1136,16 +1148,15 @@ const onConstructionSelect = async(item) => {
     }
   } catch (error) {
     closeToast()
-    console.error('获取预填充信息失败:', error)
-    showToast('获取信息失败')
+    showToast(error.msg)
     showVehicleInfo.value = true
   }
 }
 
 const onFeedbackSelect = (item) => {
   feedbackNo.value = item.code
-  feedbackId.value = item.id || item.qualityOrderReportId || ''
-  feedbackDesc.value = item.customerContent || ''
+  feedbackId.value = item.id || ''
+  feedbackDesc.value = item.title || ''
   feedbackProcess.value = item.diagnosisContent || ''
   showFeedbackPicker.value = false
   hasEdited.value = true
