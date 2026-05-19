@@ -419,7 +419,7 @@
               :class="['error-code-item', { active: selectedErrorCode === option.label }]"
               @click="selectErrorCode(option)"
             >
-              <span class="error-code-label">{{ option.label + '【' + option.value + '】' }}</span>
+              <span class="error-code-label">{{ option.label + '【' + option.code + '】' }}</span>
               <van-icon v-if="selectedErrorCode === option.label" name="success" class="error-code-check" />
             </div>
           </van-list>
@@ -1323,7 +1323,8 @@ const fetchErrorCodeList = async() => {
     if (res.code === 200 && res.data) {
       const list = res.data?.map(item => ({
         label: item.content,
-        value: item.code
+        code: item.code,
+        value: item.id
       })) || []
 
       errorCodeOptions.value = [...errorCodeOptions.value, ...list]
