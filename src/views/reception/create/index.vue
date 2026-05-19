@@ -1086,9 +1086,8 @@
             <div class="info-content">{{ item.content || '暂无提醒信息' }}</div>
           </template>
         </template>
-
-        <div class="alert-confirm-btn" @click="onConfirmWarrantyAlert">我知道了</div>
       </div>
+      <div class="alert-confirm-btn" @click="onConfirmWarrantyAlert">我知道了</div>
     </van-dialog>
 
     <!-- 全屏Loading -->
@@ -1193,7 +1192,9 @@ import {
   getTargetFileList as _getTargetFileList,
   handleFileDelete as _handleFileDelete,
   fetchFaultModuleList as _fetchFaultModuleList,
-  onSelectImageSource as _onSelectImageSource
+  onSelectImageSource as _onSelectImageSource,
+  validatePreSaleWarranty,
+  validateGoodWillWarranty
 } from '@/utils/receptionCommon'
 import './create.scss'
 
@@ -2756,6 +2757,11 @@ const onPartsSave = async() => {
     showToast('项目及零件不可为空，请添加项目或者零件')
     return
   }
+  // 售前保修只能单独开单
+  if (!validatePreSaleWarranty(items, parts)) return
+
+  // 善意保修只能单独开单
+  if (!validateGoodWillWarranty(items, parts)) return
 
   savingLoading.value = true
   try {
@@ -2884,7 +2890,7 @@ const handleConfirmAndSignProcess = () => {
         fetchDetail()
         if (!params.signChannel) {
           // 接口成功后跳转结算页面
-          const settlementUrl = `https://staticres-sit.leapmotor.com/leapx/biling/aisInner/constructionOrder?serviceProxyId=${detail.id}&signChannel=3`
+          const settlementUrl = `https://staticres-sitb.leapmotor.com/leapx/biling/aisInner/constructionOrder?serviceProxyId=${detail.id}&signChannel=3`
           window.location.href = settlementUrl
         }
       } else {
@@ -2972,6 +2978,12 @@ const fetchDetailForSignature = async() => {
           faultDesc: item.faultDescription
         }))
       }
+      // 检查是否从添加项目/零件页面返回，需要更新故障状态
+      if (sessionStorage.getItem('faultDetected') === '1') {
+        detail.currentFault = '1'
+        sessionStorage.removeItem('faultDetected')
+      }
+
       // 保存数据快照（主数据已更新完毕）
       saveDataSnapshot()
       // 获取附件列表并分类回显车内车外照片
@@ -3020,7 +3032,8 @@ const onAddParts = () => {
   router.push({
     path: '/reception/add-parts',
     query: {
-      serviceProxyId: serviceProxyId.value || detail.id || route.query.id
+      serviceProxyId: serviceProxyId.value || detail.id || route.query.id,
+      currentFault: detail.currentFault
     }
   })
 }
@@ -3770,147 +3783,6 @@ defineExpose({ onBeforeBack })
 
   .van-dialog__content {
     padding: 0;
-  }
-}
-
-.warranty-alert-content {
-  padding: 32px 24px 16px;
-  max-height: 430px;
-  overflow: auto;
-  .alert-section {
-    margin-bottom: 24px;
-    margin-top: 10px;
-    &:last-of-type {
-      margin-bottom: 0;
-    }
-
-    .section-title {
-      font-size: 16px;
-      font-weight: 500;
-      color: #191a1b;
-      margin-bottom: 8px;
-    }
-    .section-message {
-      font-size: 14px;
-      color: #545454;
-      line-height: 22px;
-      margin-bottom: 12px;
-    }
-
-    .section-action-btn {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      padding: 6px 16px;
-      font-size: 14px;
-      color: #009100;
-      border: 1px solid #009100;
-      border-radius: 38px;
-      width: 100%;
-    }
-  }
-
-  .warranty-alerts {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-
-    .warranty-alert-card {
-      background: #f8e8e8;
-      border-radius: 4px;
-      padding: 8px;
-
-      .alert-header {
-        display: flex;
-        align-items: center;
-        gap: 4px;
-        margin-bottom: 4px;
-
-        .alert-tag {
-          font-size: 12px;
-          padding: 1px 4px;
-          border-radius: 4px;
-          color: #ffffff;
-
-          &.red {
-            background: #b91919;
-          }
-
-          &.green {
-            background: #009100;
-          }
-
-          &.yellow {
-            background: #c8a12b;
-          }
-        }
-
-        .alert-title {
-          font-size: 14px;
-          font-weight: 500;
-          color: #b91919;
-        }
-      }
-
-      .alert-partno {
-        font-size: 14px;
-        font-weight: 500;
-        color: #b91919;
-        margin-bottom: 8px;
-      }
-
-      .alert-details {
-        .alert-detail-item {
-          font-size: 14px;
-          color: #3b3e3b;
-          line-height: 22px;
-        }
-      }
-
-      // 根据预警级别设置标题和零部件号颜色
-      &.red {
-        .alert-title,
-        .alert-partno {
-          color: #b91919;
-        }
-      }
-
-      &.green {
-        .alert-title,
-        .alert-partno {
-          color: #009100;
-        }
-      }
-
-      &.yellow {
-        .alert-title,
-        .alert-partno {
-          color: #c8a12b;
-        }
-      }
-    }
-  }
-
-  .alert-confirm-btn {
-    width: 100%;
-    height: 44px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 14px;
-    color: #009100;
-    border-top: 0.5px solid #e6e6e5;
-    margin-top: 24px;
-  }
-  .info-title,
-  .section-title {
-    color: #191a1b;
-    font-weight: 600;
-    margin-bottom: 8px;
-  }
-  .info-content,
-  .section-message {
-    color: #545454;
   }
 }
 
