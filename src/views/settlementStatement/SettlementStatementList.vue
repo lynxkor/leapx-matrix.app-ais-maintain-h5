@@ -387,7 +387,8 @@ const requestData = reactive({
     orderStatus: statusMap['pending'],
     appSearchKeyWord: '',
     createTimeStart: '',
-    createTimeEnd: ''
+    createTimeEnd: '',
+    sortColumns: [{ 'column': 'create_time', 'sort': 'DESC' }]
   },
   api: getSettlementStatementPage
 })
