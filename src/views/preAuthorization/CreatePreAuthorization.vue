@@ -673,6 +673,7 @@ const constructionNo = ref('')
 const constructionId = ref('')
 const authType = ref('')
 const feedbackNo = ref('')
+const feedbackId = ref('')
 const feedbackDesc = ref('')
 const feedbackProcess = ref('')
 const descExpanded = ref(false)
@@ -836,7 +837,7 @@ const validatePreAuthForm = () => {
     showToast('请选择施工单')
     return false
   }
-  if (!feedbackNo.value) {
+  if (!feedbackId.value) {
     showToast('请选择质量反馈单号')
     return false
   }
@@ -866,7 +867,7 @@ const buildAttachmentsPayload = () =>
 const buildPreAuthPayload = (saveOrSubmit, attachments = buildAttachmentsPayload()) => {
   const payload = {
     serviceProxyId: constructionId.value,
-    qualityOrderReportId: feedbackNo.value,
+    qualityOrderReportId: feedbackId.value,
     reason: applyReason.value,
     saveOrSubmit,
     attachments
@@ -1154,6 +1155,7 @@ const onConstructionSelect = async(item) => {
 
 const onFeedbackSelect = (item) => {
   feedbackNo.value = item.code
+  feedbackId.value = item.id || ''
   feedbackDesc.value = item.title || ''
   feedbackProcess.value = item.diagnosisContent || ''
   showFeedbackPicker.value = false
