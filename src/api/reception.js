@@ -191,5 +191,5 @@ export function createRetention(data) {
 }
 // 预约单查询
 export function getReservationList(data) {
-  return get('/leapx/maintenance/appointment/findById/' + data)
+  return get('/leapx/maintenance/appointment/findById/' + data, undefined, 'leapx')
 }
