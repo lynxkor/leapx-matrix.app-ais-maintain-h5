@@ -63,7 +63,7 @@
           <div class="repair-title-row">
             <span class="repair-title">维修项目</span>
             <div class="add-repair" @click="handleAddRepair">
-              <span class="add-text">添加维修项目</span>
+              <span class="add-text">添加项目/零件</span>
               <van-icon name="arrow" class="arrow-icon" />
             </div>
           </div>
