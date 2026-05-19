@@ -126,14 +126,33 @@
       <div class="info-card">
         <div class="card-header">
           <span class="card-title">申请原因</span>
+          <van-icon v-if="detail.status === 10 && !isEditingReason" name="edit" size="16" color="#545454" class="edit-icon" @click="startEditReason" />
         </div>
         <div class="card-body">
-          <div class="reason-content" :class="{ collapsed: !reasonExpanded }">
-            {{ detail.applyReason || '--' }}
-          </div>
-          <div v-if="reasonNeedExpand" class="expand-btn" @click="reasonExpanded = !reasonExpanded">
-            {{ reasonExpanded ? '收起' : '展开' }}
-          </div>
+          <template v-if="isEditingReason">
+            <div class="reason-textarea-wrapper">
+              <textarea
+                v-model="editableReason"
+                class="reason-textarea"
+                placeholder="请输入申请原因"
+                rows="6"
+              ></textarea>
+              <div class="reason-textarea-count">{{ editableReason.length }}/500</div>
+            </div>
+            <div class="reason-edit-actions">
+              <div class="reason-edit-btn cancel" @click="cancelEditReason">取消</div>
+              <div class="reason-edit-btn save" @click="saveEditReason">保存</div>
+            </div>
+          </template>
+          <template v-else>
+            <div ref="reasonRef" class="reason-content" :class="{ collapsed: !reasonExpanded }">
+              {{ detail.applyReason || '--' }}
+            </div>
+            <div v-if="reasonNeedExpand" class="expand-btn" @click="reasonExpanded = !reasonExpanded">
+              {{ reasonExpanded ? '收起' : '展开' }}
+              <van-icon :name="reasonExpanded ? 'arrow-up' : 'arrow-down'" size="12" color="#009100" />
+            </div>
+          </template>
         </div>
       </div>
     </div>
@@ -157,11 +176,11 @@
               <div class="repair-type">{{item.repairItemTypeName}}-{{ item.checkoutTypeName }}-{{ item.warrantyTypeName }}</div>
             </div>
             <div class="repair-item-right">
-              <div class="repair-price">¥{{ item.price }}</div>
+              <div class="repair-price">¥{{ item.subtotal }}</div>
               <div class="repair-discount">优惠 ¥{{ item.discount }}</div>
             </div>
             <div class="repair-item-bottom">
-              <span class="repair-subtotal">¥{{ item.subtotal }}</span>
+              <span class="repair-subtotal">¥{{ item.price }}</span>
               <span class="repair-quantity">x{{ item.quantity }}</span>
             </div>
           </div>
@@ -435,7 +454,10 @@ const faultDescExpanded = ref(false)
 const faultProcessExpanded = ref(false)
 const reasonExpanded = ref(false)
 const warningExpanded = ref(false)
-const reasonNeedExpand = ref(true)
+const reasonNeedExpand = ref(false)
+const isEditingReason = ref(false)
+const editableReason = ref('')
+const reasonRef = ref(null)
 const isClickScrolling = ref(false) // 标记是否点击触发的滚动
 const showAuditPopup = ref(false) // 审核弹窗显示状态
 const showErrorCodePopup = ref(false) // 错误代码选择弹窗显示状态
@@ -690,6 +712,39 @@ const switchTab = async(tabName) => {
     isClickScrolling.value = false
   }
   scrollToPosition(finalScrollTop, 'smooth')
+}
+
+// 检测申请原因是否超出6行
+const checkReasonOverflow = () => {
+  nextTick(() => {
+    const el = reasonRef.value
+    if (el) {
+      reasonNeedExpand.value = el.scrollHeight > el.clientHeight + 2
+    }
+  })
+}
+
+// 编辑申请原因
+const startEditReason = () => {
+  editableReason.value = detail.value.applyReason || ''
+  isEditingReason.value = true
+}
+
+const cancelEditReason = () => {
+  isEditingReason.value = false
+}
+
+const saveEditReason = async() => {
+  const text = editableReason.value.trim()
+  if (!text) {
+    showToast('请输入申请原因')
+    return
+  }
+  detail.value.applyReason = text
+  isEditingReason.value = false
+  reasonExpanded.value = false
+  // 检测是否需要展开按钮
+  checkReasonOverflow()
 }
 
 // 审核操作
@@ -1028,6 +1083,7 @@ const fetchDetail = async() => {
       Object.assign(detail.value, formatDetailData(res.data))
       await fetchAllAttachmentLists()
       updateTabsByStatus()
+      checkReasonOverflow()
     } else {
       showToast(res.msg || '获取详情失败')
     }
@@ -1344,12 +1400,19 @@ onUnmounted(() => {
 
   .card-header {
     padding: 4px 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 
     .card-title {
       font-family: 'PingFang SC';
       font-size: 14px;
       font-weight: 500;
       color: #191a1b;
+    }
+
+    .edit-icon {
+      cursor: pointer;
     }
   }
 
@@ -1477,10 +1540,69 @@ onUnmounted(() => {
 
   &.collapsed {
     display: -webkit-box;
-    -webkit-line-clamp: 5;
+    -webkit-line-clamp: 6;
     -webkit-box-orient: vertical;
     overflow: hidden;
     text-overflow: ellipsis;
+  }
+}
+
+// 编辑申请原因 textarea
+.reason-textarea-wrapper {
+  position: relative;
+  background: #f8f7f7;
+  border-radius: 6px;
+  padding: 12px;
+
+  .reason-textarea {
+    width: 100%;
+    min-height: 120px;
+    border: none;
+    background: transparent;
+    font-family: 'PingFang SC';
+    font-size: 14px;
+    color: #191a1b;
+    line-height: 1.6;
+    resize: none;
+    outline: none;
+
+    &::placeholder {
+      color: #888888;
+    }
+  }
+
+  .reason-textarea-count {
+    text-align: right;
+    font-family: 'PingFang SC';
+    font-size: 12px;
+    color: #888888;
+    margin-top: 4px;
+  }
+}
+
+.reason-edit-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 12px;
+
+  .reason-edit-btn {
+    padding: 6px 20px;
+    border-radius: 4px;
+    font-family: 'PingFang SC';
+    font-size: 14px;
+    cursor: pointer;
+
+    &.cancel {
+      color: #545454;
+      background: #ffffff;
+      border: 1px solid #d8d8d8;
+    }
+
+    &.save {
+      color: #ffffff;
+      background: #009100;
+    }
   }
 }
 
@@ -1490,6 +1612,9 @@ onUnmounted(() => {
   font-size: 14px;
   color: #009100;
   padding: 8px 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
 // 维修项目

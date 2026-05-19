@@ -1078,8 +1078,8 @@
           </template>
         </template>
 
-        <div class="alert-confirm-btn" @click="onConfirmWarrantyAlert">我知道了</div>
       </div>
+      <div class="alert-confirm-btn" @click="onConfirmWarrantyAlert">我知道了</div>
     </van-dialog>
 
     <!-- 维修类型选择弹窗 -->
@@ -1166,7 +1166,9 @@ import {
   getTargetFileList as _getTargetFileList,
   handleFileDelete as _handleFileDelete,
   fetchFaultModuleList as _fetchFaultModuleList,
-  onSelectImageSource as _onSelectImageSource
+  onSelectImageSource as _onSelectImageSource,
+  validatePreSaleWarranty,
+  validateGoodWillWarranty
 } from '@/utils/receptionCommon'
 import '../create/create.scss'
 
@@ -1179,6 +1181,8 @@ const changePlateDialog = ref(false)
 
 // 数据加载标志（用于区分用户手动操作和数据赋值）
 const isDataLoading = ref(false)
+// 程序化设置 currentFault 标志（配合 isDataLoading 防止 @change 弹窗干扰）
+const isSettingFaultProgrammatically = ref(false)
 
 // RepairItemContent 组件引用
 const repairItemContentRef = ref(null)
@@ -1569,8 +1573,11 @@ const onConfirmCancel = async() => {
 
 // 是否存在故障变更
 const onHasFaultChange = (value) => {
-  // 如果是数据加载导致的改变，不执行逻辑
-  if (isDataLoading.value) return
+  // 如果是数据加载或程序化赋值导致的改变，不执行弹窗逻辑
+  if (isDataLoading.value || isSettingFaultProgrammatically.value) {
+    isSettingFaultProgrammatically.value = false
+    return
+  }
 
   // 如果选择"否"，弹出确认框
   if (Number(value) === 0) {
@@ -1778,7 +1785,7 @@ const saveDataSnapshot = () => {
     customerComment: detail.customerComment,
     currentFault: detail.currentFault,
     customerFaultDesc: detail.customerFaultDesc,
-    businessType: computedBusinessType.value,
+    businessType: detail.businessType,
     repairPerson: detail.repairPerson,
     repairPersonPhone: detail.repairPersonPhone,
     faultModules: [...detail.faultModules],
@@ -2230,6 +2237,13 @@ const fetchDetail = async() => {
       // 里程校验
       validateMileage(data.mileage, data.lastMileage, data.netMileage)
 
+      // 检查是否从添加项目/零件页面返回，需要更新故障状态
+      if (sessionStorage.getItem('faultDetected') === '1') {
+        isSettingFaultProgrammatically.value = true
+        detail.currentFault = '1'
+        sessionStorage.removeItem('faultDetected')
+      }
+
       // 保存环检数据快照
       saveDataSnapshot()
 
@@ -2240,7 +2254,6 @@ const fetchDetail = async() => {
     }
   } catch (error) {
     console.error('获取详情失败:', error)
-    showToast('获取详情失败')
   } finally {
     savingLoading.value = false
     isDataLoading.value = false // 数据加载完成
@@ -3058,7 +3071,11 @@ const onPartsSave = async() => {
   // 从 RepairItemContent 组件获取数据
   const items = partsData.repairItemRespList || []
   const parts = partsData.sparePartRespList || []
+  // 售前保修只能单独开单
+  if (!validatePreSaleWarranty(items, parts)) return
 
+  // 善意保修只能单独开单
+  if (!validateGoodWillWarranty(items, parts)) return
   // 记录原来的维修类型（从初始快照获取）
   const oldRepairItemTypeDetailCollect = initialInspectionData.value?.repairItemTypeDetailCollect || ''
 
@@ -3091,6 +3108,7 @@ const onPartsSave = async() => {
     const hasGeneralOrThreeElectric = newRepairItemTypeDetailCollect.includes('一般维修') || newRepairItemTypeDetailCollect.includes('三电维修')
     console.log('hadGeneralOrThreeElectric', hadGeneralOrThreeElectric, hasGeneralOrThreeElectric, detail.currentFault)
     if (!hadGeneralOrThreeElectric && hasGeneralOrThreeElectric && Number(detail.currentFault) === 0) {
+      isSettingFaultProgrammatically.value = true
       detail.currentFault = '1'
       // 清空默认文本
       if (detail.customerFaultDesc === '本次进店车辆无故障') {
@@ -3194,7 +3212,8 @@ const onAddParts = () => {
     path: '/reception/add-parts',
     query: {
       serviceProxyId: route.query.id,
-      vehModelName: detail.vehicleModelName
+      vehModelName: detail.vehicleModelName,
+      currentFault: detail.currentFault
     }
   })
 }
@@ -3292,7 +3311,7 @@ const handleConfirmAndSignProcess = () => {
   const isPaperSign = signatureData.signChannel === '纸质单据' || Number(detail.signChannel) === 40
   // signStatus == 10 时，纸质单据需调用接口保存，其他渠道直接跳转结算页面
   if (Number(detail.signStatus) === 10 && !isPaperSign) {
-    const settlementUrl = `https://staticres-sit.leapmotor.com/leapx/biling/aisInner/constructionOrder?serviceProxyId=${detail.id}&signChannel=3`
+    const settlementUrl = `https://staticres-sitb.leapmotor.com/leapx/biling/aisInner/constructionOrder?serviceProxyId=${detail.id}&signChannel=3`
     window.location.href = settlementUrl
     return
   }
@@ -3316,7 +3335,7 @@ const handleConfirmAndSignProcess = () => {
         fetchDetail()
         if (!params.signChannel) {
           // 接口成功后跳转结算页面
-          const settlementUrl = `https://staticres-sit.leapmotor.com/leapx/biling/aisInner/constructionOrder?serviceProxyId=${detail.id}&signChannel=3`
+          const settlementUrl = `https://staticres-sitb.leapmotor.com/leapx/biling/aisInner/constructionOrder?serviceProxyId=${detail.id}&signChannel=3`
           window.location.href = settlementUrl
         }
       } else {
@@ -3441,7 +3460,7 @@ onMounted(() => {
           // 只保留满足条件的提醒类型：预授权、三包预警、服务活动、车辆标识
           const validTypes = [RemindInfoTypeEnum.THREE_GUARANTEES, RemindInfoTypeEnum.SERVICE_ACTIVITY, RemindInfoTypeEnum.PRICE_DIFFERENCE, '5']
           // 预授权提醒：只有未创建预授权时才显示
-          const preAuthItems = rawData.filter((item) => item.type === RemindInfoTypeEnum.PRE_AUTH && Number(detail.isCreatePreAuth) !== 1)
+          const preAuthItems = rawData.filter((item) => item.type === RemindInfoTypeEnum.PRE_AUTH)
           // 其他有效类型
           const otherItems = rawData.filter((item) => validTypes.includes(item.type))
           remindList.value = [...preAuthItems, ...otherItems]
@@ -3927,149 +3946,6 @@ defineExpose({ onBeforeBack })
     padding: 0;
   }
 }
-
-.warranty-alert-content {
-  padding: 32px 24px 16px;
-  max-height: 430px;
-  overflow: auto;
-
-  .alert-section {
-    margin-bottom: 24px;
-    margin-top: 10px;
-    &:last-of-type {
-      margin-bottom: 0;
-    }
-
-    .section-title {
-      font-size: 16px;
-      font-weight: 500;
-      color: #191a1b;
-      margin-bottom: 8px;
-    }
-
-    .section-message {
-      font-size: 14px;
-      color: #545454;
-      line-height: 22px;
-      margin-bottom: 12px;
-    }
-
-    .section-action-btn {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      padding: 6px 16px;
-      font-size: 14px;
-      color: #009100;
-      border: 1px solid #009100;
-      border-radius: 38px;
-      width: 100%;
-    }
-  }
-
-  .warranty-alerts {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    .warranty-alert-card {
-      background: #f8e8e8;
-      border-radius: 4px;
-      padding: 8px;
-
-      .alert-header {
-        display: flex;
-        align-items: center;
-        gap: 4px;
-        margin-bottom: 4px;
-
-        .alert-tag {
-          font-size: 12px;
-          padding: 1px 4px;
-          border-radius: 4px;
-          color: #ffffff;
-
-          &.red {
-            background: #b91919;
-          }
-
-          &.green {
-            background: #009100;
-          }
-
-          &.yellow {
-            background: #c8a12b;
-          }
-        }
-
-        .alert-title {
-          font-size: 14px;
-          font-weight: 500;
-          color: #b91919;
-        }
-      }
-
-      .alert-partno {
-        font-size: 14px;
-        font-weight: 500;
-        color: #b91919;
-        margin-bottom: 8px;
-      }
-
-      .alert-details {
-        .alert-detail-item {
-          font-size: 14px;
-          color: #3b3e3b;
-          line-height: 22px;
-        }
-      }
-
-      // 根据预警级别设置标题和零部件号颜色
-      &.red {
-        .alert-title,
-        .alert-partno {
-          color: #b91919;
-        }
-      }
-
-      &.green {
-        .alert-title,
-        .alert-partno {
-          color: #009100;
-        }
-      }
-
-      &.yellow {
-        .alert-title,
-        .alert-partno {
-          color: #c8a12b;
-        }
-      }
-    }
-  }
-
-  .alert-confirm-btn {
-    width: 100%;
-    height: 44px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 14px;
-    color: #009100;
-    border-top: 0.5px solid #e6e6e5;
-    margin-top: 24px;
-  }
-  .info-title,
-  .section-title {
-    color: #191a1b;
-    font-weight: 600;
-    margin-bottom: 8px;
-  }
-  .info-content,
-  .section-message {
-    color: #545454;
-  }
-}
-
 .loading-wrapper {
   display: flex;
   align-items: center;

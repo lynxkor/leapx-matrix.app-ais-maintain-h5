@@ -208,16 +208,21 @@ const props = defineProps({
   isReplace: {
     type: Boolean,
     default: true
+  },
+  currentFault: {
+    type: String,
+    default: ''
   }
 })
 
 const emit = defineEmits(['close', 'confirm', 'replace', 'delete'])
 
+import { useRouter } from 'vue-router'
 // UI 状态
 const searchBarRef = ref(null)
 const activeTab = ref('item')
 const isAuditComplete = computed(() => extraInfo.value.isAuditComplete)
-
+const router = useRouter()
 // 数据管理 Hook
 const {
   rawCheckoutTypes,
@@ -377,7 +382,31 @@ const onSearchDone = () => {
   searchBarRef.value?.reset()
 }
 
+// 项目零件初始快照（用于保存后比较维修类型变化）
+const itemsSnapshot = ref({ items: [], parts: [] })
+
+const saveItemsSnapshot = () => {
+  itemsSnapshot.value = {
+    items: JSON.parse(JSON.stringify(selectedItems.value)),
+    parts: JSON.parse(JSON.stringify(selectedParts.value))
+  }
+}
+
+// 保存后检查：原来不含一般维修/三电维修，保存后包含了，且currentFault为否
+const checkFaultOnSave = () => {
+  const targetTypes = ['一般维修', '三电维修']
+  const hasType = (list) => list.some((item) => targetTypes.includes(item.repairItemTypeName))
+  const hadBefore = hasType(itemsSnapshot.value.items) || hasType(itemsSnapshot.value.parts)
+  const hasNow = hasType(selectedItems.value) || hasType(selectedParts.value)
+  if (!hadBefore && hasNow && props.currentFault === '0') {
+    showToast({ message: '更改为一般维修或者三电维修需要确认故障', duration: 3000 })
+    sessionStorage.setItem('faultDetected', '1')
+    router.go(-1)
+  }
+}
+
 const onSaveSuccess = (data) => {
+  checkFaultOnSave()
   emit('confirm', data)
 }
 
@@ -428,6 +457,7 @@ watch(activeTab, () => {
 watch(
   () => props.initialItems,
   (newItems) => {
+    console.log('RepairItemContent mounted', newItems)
     if (newItems && newItems.length > 0) {
       selectedItems.value = newItems.map(normalizeItem)
     }
@@ -463,7 +493,8 @@ defineExpose({
   searchBarRef,
   selectedItems,
   selectedParts,
-  onSave
+  onSave,
+  saveItemsSnapshot
 })
 </script>
 
@@ -539,7 +570,7 @@ defineExpose({
     flex: 1;
     overflow-y: auto;
     &-section {
-      padding: 12px 12px 0 12px;
+      padding: 12px;
       margin-top: 10px;
       background-color: #fff;
       &.border-r {
