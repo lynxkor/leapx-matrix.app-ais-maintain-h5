@@ -1272,7 +1272,7 @@ const fetchRemindInfo = () => {
         // 只保留满足条件的提醒类型：预授权、三包预警、服务活动、车辆标识
         const validTypes = [RemindInfoTypeEnum.THREE_GUARANTEES, RemindInfoTypeEnum.SERVICE_ACTIVITY, RemindInfoTypeEnum.PRICE_DIFFERENCE, '5']
         // 预授权提醒：只有未创建预授权时才显示
-        const preAuthItems = rawData.filter((item) => item.type === RemindInfoTypeEnum.PRE_AUTH && detail.isCreatePreAuth !== 1)
+        const preAuthItems = rawData.filter((item) => item.type === RemindInfoTypeEnum.PRE_AUTH)
         // 其他有效类型
         const otherItems = rawData.filter((item) => validTypes.includes(item.type))
         remindList.value = [...preAuthItems, ...otherItems]
