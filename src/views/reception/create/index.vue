@@ -1212,6 +1212,8 @@ const repairItemContentRef = ref(null)
 const isSaved = ref(false) // 是否已保存
 const isPreCheckCompleted = ref(false) // 是否预检完成
 const serviceProxyId = ref('') // 新建保存后返回的施工单id
+// 程序化设置 currentFault 标志（防止 API 赋值触发 @change 弹窗）
+const isSettingFaultProgrammatically = ref(false)
 
 // 换车相关
 const carSearchValue = ref('')
@@ -1550,6 +1552,11 @@ const onConfirmCancel = async() => {
 
 // 是否存在故障变更
 const onHasFaultChange = (value) => {
+  // 如果是程序化赋值导致的改变，不执行弹窗逻辑
+  if (isSettingFaultProgrammatically.value) {
+    isSettingFaultProgrammatically.value = false
+    return
+  }
   // 如果选择"否"，弹出确认框
   if (value === '0') {
     // 维修类型包含一般维修或三电维修时，不允许改为"否"
@@ -2960,6 +2967,7 @@ const fetchDetailForSignature = async() => {
       detail.networkBattery = data.inNetPower || ''
       detail.abnormalDesc = data.anomalyDescription || ''
       detail.customerComment = data.customerComment || ''
+      isSettingFaultProgrammatically.value = true
       detail.currentFault = data.currentFault != null ? String(data.currentFault) : ''
       detail.customerFaultDesc = data.customerContent || ''
       detail.faultAlertRecordRespList = data.faultAlertRecordRespList || []
@@ -2980,6 +2988,7 @@ const fetchDetailForSignature = async() => {
       }
       // 检查是否从添加项目/零件页面返回，需要更新故障状态
       if (sessionStorage.getItem('faultDetected') === '1') {
+        isSettingFaultProgrammatically.value = true
         detail.currentFault = '1'
         sessionStorage.removeItem('faultDetected')
       }
@@ -3324,8 +3333,9 @@ onMounted(async() => {
 
 // 返回按钮拦截：未生成施工单前提示保存，生成后比对快照判断是否有未保存改动
 const onBeforeBack = () => {
-  // 未生成施工单，直接提示
-  if (!isSaved.value) {
+  const hasOrder = !!(serviceProxyId.value || detail.id)
+  // 未生成施工单，且本会话未保存过，直接提示
+  if (!hasOrder && !isSaved.value) {
     showConfirmDialog({
       title: '提示',
       message: '本次操作未保存，是否退出？',
@@ -3336,7 +3346,7 @@ const onBeforeBack = () => {
     })
     return false
   }
-  // 已生成施工单，比对快照
+  // 已生成施工单（或有ID），比对快照
   if (!hasInspectionDataChanged() && !hasPartsDataChanged()) {
     return true
   }
