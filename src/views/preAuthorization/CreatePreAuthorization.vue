@@ -773,7 +773,8 @@ const feedbackRequestData = reactive({
     pageNum: 1,
     pageSize: 10,
     appSearchKeyWord: '',
-    serviceProxyCode: ''
+    serviceProxyCode: '',
+    orderStatus: 30
   },
   api: (params) => preAuthGetQualityFeedbackList(params)
 })
