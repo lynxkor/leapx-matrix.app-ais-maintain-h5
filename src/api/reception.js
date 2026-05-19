@@ -10,11 +10,6 @@ export function getDetail(data) {
   return postText('/maintain/app/sp/serviceProxy/detail', data)
 }
 
-// 获取权益列表
-export function getEquityList(data) {
-  return post('/maintain/app/sp/serviceProxy/rightsList', data)
-}
-
 // 施工单作废
 export function serviceProxyCancel(data) {
   return post('/maintain/app/sp/serviceProxy/cancel', data)

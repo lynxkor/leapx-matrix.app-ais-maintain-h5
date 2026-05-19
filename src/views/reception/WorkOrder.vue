@@ -68,7 +68,7 @@ import { useGlobalStore } from '@/stores/global'
 import ListItem from '@/components/ListItem.vue'
 import RefreshList from '@/libs/components/RefreshList.vue'
 import WorkOrderCard from '@/components/WorkOrderCard.vue'
-import { getList, getEquityList } from '@/api/reception'
+import { getList } from '@/api/reception'
 import { usePageSafeArea } from '@/utils/safeArea'
 defineOptions({
   name: 'receptionWorkOrder'
@@ -238,9 +238,7 @@ const onCreateOrder = () => {
 }
 
 onMounted(() => {
-  getEquityList().then((res) => {
-    console.log(res)
-  })
+
 })
 </script>
 

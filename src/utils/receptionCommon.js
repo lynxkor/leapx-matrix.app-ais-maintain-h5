@@ -1,5 +1,5 @@
 import { showToast } from 'vant'
-import { AlarmLevelEnum } from '@/views/repairWork/constant'
+import { AlarmLevelEnum, WarrantyTypeEnum } from '@/views/repairWork/constant'
 import { deleteAttachmentConfig } from '@/libs/api/fileConfig'
 import { getFaultModule } from '@/api/reception'
 
@@ -133,7 +133,11 @@ export function handleAttachmentDelete(file, detail, signatureData) {
 /**
  * 校验送修人信息
  */
-export function validateRepairPerson(repairPersonType, repairPersonNameInput, repairPersonPhoneInput) {
+export function validateRepairPerson(
+  repairPersonType,
+  repairPersonNameInput,
+  repairPersonPhoneInput
+) {
   if (repairPersonType === 'other') {
     if (!repairPersonNameInput.trim()) {
       showToast('请输入送修人姓名')
@@ -281,4 +285,36 @@ export function onSelectImageSource(source, showImageUploadSheet, imageUploadRef
   } else {
     imageUploadRef.value?.click()
   }
+}
+
+/**
+ * 验证售前保修只能单独开单
+ * @returns {boolean} 是否通过验证
+ */
+export function validatePreSaleWarranty(selectedItems, selectedParts) {
+  const allItems = [...selectedItems, ...selectedParts]
+  const filteredItems = allItems.filter(
+    (i) => i.warrantyTypeId === WarrantyTypeEnum.PRE_SALE_WARRANTY
+  )
+  if (filteredItems.length > 0 && allItems.length > filteredItems.length) {
+    showToast({ message: '售前保修只能单独开单', 'z-index': 5100 })
+    return false
+  }
+  return true
+}
+
+/**
+ * 验证善意保修只能单独开单
+ * @returns {boolean} 是否通过验证
+ */
+export function validateGoodWillWarranty(selectedItems, selectedParts) {
+  const allItems = [...selectedItems, ...selectedParts]
+  const filteredItems = allItems.filter(
+    (i) => i.warrantyTypeId === WarrantyTypeEnum.GOODWILL_WARRANTY
+  )
+  if (filteredItems.length > 0 && allItems.length > filteredItems.length) {
+    showToast({ message: '善意保修只能单独开单', 'z-index': 5100 })
+    return false
+  }
+  return true
 }
