@@ -180,18 +180,20 @@
             :key="index"
             class="repair-item"
           >
-            <div class="repair-item-left">
-              <div class="repair-name">{{ item.name }}</div>
-              <div class="repair-part-no">{{ item.partNo }}</div>
-              <div class="repair-type">{{item.repairItemTypeName}}-{{ item.checkoutTypeName }}-{{ item.warrantyTypeName }}</div>
-            </div>
-            <div class="repair-item-right">
-              <div class="repair-price">¥{{ item.subtotal }}</div>
-              <div class="repair-discount">优惠 ¥{{ item.discount }}</div>
+            <div class="repair-item-top">
+              <div class="repair-item-left">
+                <div class="repair-name">{{ item.name }}</div>
+                <div class="repair-part-no">{{ item.partNo }}</div>
+                <div class="repair-type">{{item.repairItemTypeName}}-{{ item.checkoutTypeName }}-{{ item.warrantyTypeName }}</div>
+              </div>
+              <div class="repair-item-right">
+                <div class="repair-price">¥{{ item.subtotal }}</div>
+                <div class="repair-discount">优惠 ¥{{ item.discount }}</div>
+              </div>
             </div>
             <div class="repair-item-bottom">
               <span class="repair-subtotal">¥{{ item.price }}</span>
-              <span class="repair-quantity">x{{ item.quantity }}</span>
+              <span class="repair-workHour">x{{ item.workHour }}</span>
             </div>
           </div>
         </div>
@@ -226,7 +228,7 @@
                 <span class="repair-actual">实际领料 {{ item.actualQuantity }}</span>
                 <span class="repair-return">退料 {{ item.returnQuantity }}</span>
               </div>
-              <span class="repair-quantity">x{{ item.quantity }}</span>
+              <span class="repair-workHour">x{{ item.workHour }}</span>
             </div>
           </div>
         </div>
@@ -957,7 +959,7 @@ const onConstructionSelect = async(item) => {
         price: ri.price || '0',
         discount: ri.discountAmount || '0',
         subtotal: ri.repairAmount || ri.totalAmount || '0',
-        quantity: ri.workHour || ri.quantity || '0'
+        workHour: ri.workHour || '0'
       }))
       detail.value.partsItems = (data.spSparePartResps || []).map((pi) => ({
         name: pi.partsName || '',
@@ -969,7 +971,7 @@ const onConstructionSelect = async(item) => {
         price: pi.price || '0',
         discount: pi.discountAmount || '0',
         subtotal: pi.partsAmount || pi.totalAmount || '0',
-        quantity: pi.quantity || '0',
+        workHour: pi.workHour || '0',
         actualQuantity: pi.actualPickNumber || '0',
         returnQuantity: pi.refundedNumber || '0'
       }))
@@ -1465,7 +1467,7 @@ const formatDetailData = (data) => {
       price: item.price || '0',
       discount: item.discountAmount || '0',
       subtotal: item.repairAmount || '0',
-      quantity: item.workHour || '0'
+      workHour: item.workHour || '0'
     })),
 
     // 维修配件 - 来自预授权主数据
@@ -1479,7 +1481,7 @@ const formatDetailData = (data) => {
       price: item.price || '0',
       discount: item.discountAmount || '0',
       subtotal: item.partsAmount || '0',
-      quantity: item.quantity || '0',
+      workHour: item.workHour || '0',
       actualQuantity: item.actualPickNumber || '0',
       returnQuantity: item.refundedNumber || '0'
     })),
@@ -1891,15 +1893,22 @@ onUnmounted(() => {
     border-bottom: none;
   }
 
+  .repair-item-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+  }
+
   .repair-item-left {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 2px;
+    flex: 1;
 
     .repair-name-row {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 4px;
 
       .repair-name {
         font-family: 'PingFang SC';
@@ -1916,6 +1925,13 @@ onUnmounted(() => {
         padding: 1px 4px;
         border-radius: 4px;
       }
+    }
+
+    .repair-name {
+      font-family: 'PingFang SC';
+      font-size: 14px;
+      font-weight: 500;
+      color: #191a1b;
     }
 
     .repair-part-no {
@@ -1935,7 +1951,8 @@ onUnmounted(() => {
     display: flex;
     flex-direction: column;
     align-items: flex-end;
-    margin-top: -40px;
+    gap: 2px;
+    flex-shrink: 0;
 
     .repair-price {
       font-family: 'PingFang SC';
@@ -1955,7 +1972,7 @@ onUnmounted(() => {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-top: 8px;
+    margin-top: 4px;
 
     .repair-bottom-left {
       display: flex;
@@ -1976,7 +1993,7 @@ onUnmounted(() => {
       }
     }
 
-    .repair-quantity {
+    .repair-workHour {
       font-family: 'PingFang SC';
       font-size: 14px;
       color: #191a1b;

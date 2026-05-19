@@ -1508,10 +1508,14 @@ defineExpose({
       align-items: center;
       gap: 12px;
       color: #545454;
-      font-size: 12px;
+      font-size: 14px;
       font-weight: 400;
       font-family: 'PingFang SC';
-
+      .repair-subtotal {
+        font-family: 'PingFang SC';
+        font-size: 14px;
+        color: #545454;
+      }
       .repair-quantity {
         margin-left: auto;
         font-family: 'PingFang SC';
