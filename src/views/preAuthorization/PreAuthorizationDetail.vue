@@ -63,6 +63,7 @@
               <span class="info-value">{{ detail.authType || '--' }}</span>
             </template>
           </div>
+          <template v-if="showVehicleInfo">
           <div class="info-row">
             <span class="info-label">VIN</span>
             <span class="info-value">{{ detail.vin || '--' }}</span>
@@ -107,6 +108,7 @@
             <span class="info-label">预交时间</span>
             <span class="info-value">{{ detail.estimateDeliverTime || '--' }}</span>
           </div>
+          </template>
         </div>
       </div>
 
@@ -636,6 +638,12 @@ const isEditable = computed(() => {
   return detail.value.status === 10 || detail.value.status === 40
 })
 
+// 是否展示车辆信息区域（可编辑时需要选择了施工单才展示；不可编辑时始终展示）
+const showVehicleInfo = computed(() => {
+  if (!isEditable.value) return true
+  return !!editConstructionId.value
+})
+
 // 是否为审批驳回
 const isReject = computed(() => {
   return auditResult.value === 'reject'
@@ -920,13 +928,15 @@ const onConstructionSelect = async(item) => {
     closeToast()
     if (res?.code !== 0 && res?.code !== 200) {
       showToast(res?.msg || '获取信息失败')
+      editConstructionId.value = ''
+      detail.value.constructionNo = ''
       return
     }
-    detail.value.constructionNo = item.code
-    editConstructionId.value = item.id
     showConstructionPicker.value = false
     hasEdited.value = true
     if (res?.data) {
+      detail.value.constructionNo = item.code
+      editConstructionId.value = item.id
       const data = res.data
       detail.value.vin = data.vehProfileVin || ''
       detail.value.warrantyTime = data.guaranteeStartDate && data.warrantyEndTime ? `${data.guaranteeStartDate} 至 ${data.warrantyEndTime}` : ''

@@ -1073,7 +1073,6 @@ const openFeedbackPicker = () => {
 
 const onAuthTypeChange = (type) => {
   authType.value = type
-  showVehicleInfo.value = true
   hasEdited.value = true
 }
 
@@ -1086,6 +1085,9 @@ const onConstructionSelect = async(item) => {
 
     if (res?.code !== 0 && res?.code !== 200) {
       showToast(res?.msg || res?.message || '获取信息失败')
+      showVehicleInfo.value = false
+      constructionId.value = ''
+      constructionNo.value = ''
       return
     }
 
@@ -1093,9 +1095,9 @@ const onConstructionSelect = async(item) => {
     constructionId.value = item.id || item.serviceProxyId
     showConstructionPicker.value = false
     hasEdited.value = true
-    showVehicleInfo.value = true
 
     if (res?.data) {
+      showVehicleInfo.value = true
       const data = res.data
       // 更新车辆信息
       vehicleInfo.value = {
@@ -1141,13 +1143,11 @@ const onConstructionSelect = async(item) => {
         actualQuantity: item.actualQuantity || '0',
         returnQuantity: item.returnQuantity || '0'
       }))
-
-      showVehicleInfo.value = true
     }
   } catch (error) {
     closeToast()
     showToast(error.msg)
-    showVehicleInfo.value = true
+    showVehicleInfo.value = false
   }
 }
 
