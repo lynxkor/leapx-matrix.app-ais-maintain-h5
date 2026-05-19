@@ -1932,6 +1932,8 @@ onUnmounted(() => {
 
 // 审核弹窗内容
 .audit-popup-content {
+  max-height: 60vh;
+  overflow-y: auto;
 
   .audit-result-section {
     margin-bottom: 12px;

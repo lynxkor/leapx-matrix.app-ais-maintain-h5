@@ -104,7 +104,7 @@
 import { ref, watch } from 'vue'
 import { showToast, showSuccessToast } from 'vant'
 import AddFaultInfoPopup from './AddFaultInfoPopup.vue'
-import { updateFaultAlertRecord } from '../../../api/repairWork'
+import { updateFaultRecord } from '../../../api/repairWork'
 
 const props = defineProps({
   modelValue: {
@@ -183,9 +183,14 @@ const handleSubmit = async() => {
     return
   }
   try {
-    const res = await updateFaultAlertRecord({
-      ...props.order,
-      faultAlertRecordParams: faultModules.value,
+    const faultModulesArr = faultModules.value.map(item => {
+      delete item.id
+      return {
+        ...item
+      }
+    })
+    const res = await updateFaultRecord({
+      faultAlertRecordParams: faultModulesArr,
       customerContent: faultDescription.value,
       id: props.serviceProxyId
     })

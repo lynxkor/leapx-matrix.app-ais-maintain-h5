@@ -194,7 +194,7 @@ export default function useRepairItemData({ serviceProxyId }) {
       partsName: raw.partsName || raw.partName || raw.name,
       partsCode: raw.partsCode || raw.partCode || raw.code,
       price: raw.salePrice || raw.price || '0.00',
-      quantity: raw.quantity || 1,
+      quantity: raw.planPickNumber || raw.quantity || 1,
       discountAmount: raw.discountAmount || 0,
       repairItemName: raw.name || '',
       repairItemId: raw.repairItemId, // 关联维修项目ID
