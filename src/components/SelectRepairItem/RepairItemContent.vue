@@ -564,7 +564,7 @@ defineExpose({
     flex: 1;
     overflow-y: auto;
     &-section {
-      padding: 12px 12px 0 12px;
+      padding: 12px;
       margin-top: 10px;
       background-color: #fff;
       &.border-r {

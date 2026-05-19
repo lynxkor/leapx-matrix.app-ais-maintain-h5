@@ -37,9 +37,15 @@
 }
 
 .search-header {
-  padding: 8px 12px;
+  padding: 0 12px;
   background: #ffffff;
+  .van-search {
+    padding: 6px 12px;
+  }
 
+  .van-search__content {
+    height: 30px;
+  }
   :deep(.van-search) {
     padding: 0;
     background: transparent;
@@ -59,7 +65,6 @@
     color: #888888;
   }
 }
-
 .package-list {
   padding: 0 12px;
 }
@@ -293,23 +298,21 @@
     .parts-list {
       border-top: 0.5px solid #e6e6e5;
       padding: 12px;
-      background: #fafafa;
+      background: #f4f4f4;
 
       .part-card {
-        background: #ffffff;
-        border: 0.5px solid #e6e6e5;
-        border-radius: 8px;
         margin-bottom: 8px;
         overflow: hidden;
-
+        border-bottom: 0.5px solid #e6e6e5;
         &:last-child {
           margin-bottom: 0;
+          border-bottom: none;
         }
 
         .part-card-content {
           display: flex;
           justify-content: space-between;
-          padding: 12px;
+          padding: 12px 0;
           gap: 12px;
 
           .part-left {
@@ -369,7 +372,7 @@
         }
 
         .part-card-bottom {
-          padding: 0 12px 12px 12px;
+          padding: 0 12px 12px 0;
 
           .part-info-row {
             display: flex;
@@ -401,7 +404,8 @@
       justify-content: center;
       gap: 2px;
       padding: 12px;
-      cursor: pointer;
+      border-top: 0.5px solid #e6e6e5;
+      background: #f4f4f4;
 
       .expand-text {
         font-size: 12px;
