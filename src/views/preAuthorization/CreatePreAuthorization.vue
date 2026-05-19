@@ -165,8 +165,6 @@
           </div>
           <div class="repair-item-bottom">
             <span class="repair-subtotal">¥{{ item.subtotal }}</span>
-            <span class="repair-actual">实际领料 {{ item.actualQuantity }}</span>
-            <span class="repair-return">退料 {{ item.returnQuantity }}</span>
             <span class="repair-quantity">x{{ item.quantity }}</span>
           </div>
         </div>
@@ -1140,8 +1138,8 @@ const onConstructionSelect = async(item) => {
         discount: item.discountAmount || '0',
         subtotal: item.totalAmount || '0',
         quantity: item.quantity || '0',
-        actualQuantity: item.actualQuantity || '0',
-        returnQuantity: item.returnQuantity || '0'
+        actualQuantity: item.actualPickNumber || '0',
+        returnQuantity: item.refundedNumber || '0'
       }))
     }
   } catch (error) {
