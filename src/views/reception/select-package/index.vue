@@ -864,7 +864,7 @@ onMounted(() => {
         }
       })
       .catch((err) => {
-        showToast(err.msg || '网络错误')
+        showToast({ message: err.msg || '网络错误', duration: 3000 })
       })
       .finally(() => {
         loading.value = false
@@ -926,7 +926,7 @@ const fetchListData = (tabName, searchKey = '') => {
       }
     })
     .catch((err) => {
-      showToast(err.msg || '网络错误')
+      showToast({ message: err.msg || '网络错误', duration: 3000 })
     })
     .finally(() => {
       loading.value = false
@@ -1078,7 +1078,7 @@ const onConfirmPackage = () => {
       }
     })
     .catch((err) => {
-      showToast(err.msg || '网络错误')
+      showToast({ message: err.msg || '网络错误', duration: 3000 })
       closeToast()
     })
 }
@@ -1168,7 +1168,7 @@ const onConfirmService = () => {
       }
     })
     .catch((err) => {
-      showToast(err.msg || '网络错误')
+      showToast({ message: err.msg || '网络错误', duration: 3000 })
       closeToast()
     })
     .finally(() => {
@@ -1192,7 +1192,7 @@ const onConfirmFree = () => {
       }
     })
     .catch((err) => {
-      showToast(err.msg || '网络错误')
+      showToast({ message: err.msg || '网络错误', duration: 3000 })
     })
     .finally(() => {
       freeSubmitting.value = false
@@ -1216,7 +1216,7 @@ const onConfirmMall = () => {
       }
     })
     .catch((err) => {
-      showToast(err.msg || '网络错误')
+      showToast({ message: err.msg || '网络错误', duration: 3000 })
     })
     .finally(() => {
       mallSubmitting.value = false
@@ -1260,7 +1260,7 @@ const onConfirmEquity = () => {
       }
     })
     .catch((err) => {
-      showToast(err.msg || '网络错误')
+      showToast({ message: err.msg || '网络错误', duration: 3000 })
       closeToast()
     })
     .finally(() => {
@@ -1286,7 +1286,7 @@ const onCancelPackage = () => {
       }
     })
     .catch((err) => {
-      showToast(err.msg || '网络错误')
+      showToast({ message: err.msg || '网络错误', duration: 3000 })
     })
     .finally(() => {
       packageSubmitting.value = false
@@ -1312,7 +1312,7 @@ const onCancelService = () => {
       }
     })
     .catch((err) => {
-      showToast(err.msg || '网络错误')
+      showToast({ message: err.msg || '网络错误', duration: 3000 })
       closeToast()
     })
     .finally(() => {
@@ -1337,7 +1337,7 @@ const onCancelFree = () => {
       }
     })
     .catch((err) => {
-      showToast(err.msg || '网络错误')
+      showToast({ message: err.msg || '网络错误', duration: 3000 })
     })
     .finally(() => {
       freeSubmitting.value = false
@@ -1362,7 +1362,7 @@ const onCancelMall = () => {
       }
     })
     .catch((err) => {
-      showToast(err.msg || '网络错误')
+      showToast({ message: err.msg || '网络错误', duration: 3000 })
     })
     .finally(() => {
       mallSubmitting.value = false
@@ -1387,7 +1387,7 @@ const onCancelEquity = () => {
       }
     })
     .catch((err) => {
-      showToast(err.msg || '网络错误')
+      showToast({ message: err.msg || '网络错误', duration: 3000 })
     })
     .finally(() => {
       equitySubmitting.value = false

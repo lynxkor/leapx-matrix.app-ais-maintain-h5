@@ -1181,6 +1181,8 @@ const changePlateDialog = ref(false)
 
 // 数据加载标志（用于区分用户手动操作和数据赋值）
 const isDataLoading = ref(false)
+// 程序化设置 currentFault 标志（配合 isDataLoading 防止 @change 弹窗干扰）
+const isSettingFaultProgrammatically = ref(false)
 
 // RepairItemContent 组件引用
 const repairItemContentRef = ref(null)
@@ -1571,8 +1573,11 @@ const onConfirmCancel = async() => {
 
 // 是否存在故障变更
 const onHasFaultChange = (value) => {
-  // 如果是数据加载导致的改变，不执行逻辑
-  if (isDataLoading.value) return
+  // 如果是数据加载或程序化赋值导致的改变，不执行弹窗逻辑
+  if (isDataLoading.value || isSettingFaultProgrammatically.value) {
+    isSettingFaultProgrammatically.value = false
+    return
+  }
 
   // 如果选择"否"，弹出确认框
   if (Number(value) === 0) {
@@ -1780,7 +1785,7 @@ const saveDataSnapshot = () => {
     customerComment: detail.customerComment,
     currentFault: detail.currentFault,
     customerFaultDesc: detail.customerFaultDesc,
-    businessType: computedBusinessType.value,
+    businessType: detail.businessType,
     repairPerson: detail.repairPerson,
     repairPersonPhone: detail.repairPersonPhone,
     faultModules: [...detail.faultModules],
@@ -2234,6 +2239,7 @@ const fetchDetail = async() => {
 
       // 检查是否从添加项目/零件页面返回，需要更新故障状态
       if (sessionStorage.getItem('faultDetected') === '1') {
+        isSettingFaultProgrammatically.value = true
         detail.currentFault = '1'
         sessionStorage.removeItem('faultDetected')
       }
@@ -3102,6 +3108,7 @@ const onPartsSave = async() => {
     const hasGeneralOrThreeElectric = newRepairItemTypeDetailCollect.includes('一般维修') || newRepairItemTypeDetailCollect.includes('三电维修')
     console.log('hadGeneralOrThreeElectric', hadGeneralOrThreeElectric, hasGeneralOrThreeElectric, detail.currentFault)
     if (!hadGeneralOrThreeElectric && hasGeneralOrThreeElectric && Number(detail.currentFault) === 0) {
+      isSettingFaultProgrammatically.value = true
       detail.currentFault = '1'
       // 清空默认文本
       if (detail.customerFaultDesc === '本次进店车辆无故障') {
