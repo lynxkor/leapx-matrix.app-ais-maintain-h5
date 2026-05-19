@@ -146,13 +146,15 @@
 
     <!-- 底部保存按钮 -->
     <div class="popup-footer" v-if="!isComponent">
-      <div
+      <van-button
         class="save-btn"
         :class="{ disabled: isAuditComplete }"
         @click="onSave"
+        :loading="saving"
+        loading-text="保存中"
       >
         保存
-      </div>
+      </van-button>
     </div>
 
     <!-- 套餐详情弹窗 -->
@@ -408,8 +410,10 @@ const onSaveSuccess = (data) => {
   emit('confirm', data)
 }
 
+const saving = ref(false)
 const onSave = async() => {
-  if (isAuditComplete.value) return
+  if (isAuditComplete.value || saving.value) return
+  saving.value = true
   showLoadingToast('请稍候...')
   try {
     const success = await handleSave(onSaveSuccess)
@@ -420,6 +424,8 @@ const onSave = async() => {
     }
   } catch {
     closeToast()
+  } finally {
+    saving.value = false
   }
 }
 
