@@ -44,14 +44,26 @@
           <span class="card-title">接车施工单</span>
         </div>
         <div class="card-body">
-          <div class="info-row">
+          <div class="info-row" :class="{ clickable: isEditable }" @click="isEditable && openConstructionPicker()">
             <span class="info-label">施工单号</span>
-            <span class="info-value">{{ detail.constructionNo || '--' }}</span>
+            <span class="info-value">
+              {{ detail.constructionNo || '--' }}
+              <van-icon v-if="isEditable" name="arrow" size="14" color="#888888" />
+            </span>
           </div>
-          <div class="info-row">
+          <div class="info-row" :class="{ 'auth-type-row': isEditable }">
             <span class="info-label">预授权类型</span>
-            <span class="info-value">{{ detail.authType || '--' }}</span>
+            <template v-if="isEditable">
+              <div class="type-chips">
+                <div class="type-chip" :class="{ 'type-chip-active': editAuthType === 'tech' }" @click="onAuthTypeChange('tech')">技术预授权</div>
+                <div class="type-chip" :class="{ 'type-chip-active': editAuthType === 'warranty' }" @click="onAuthTypeChange('warranty')">保修预授权</div>
+              </div>
+            </template>
+            <template v-else>
+              <span class="info-value">{{ detail.authType || '--' }}</span>
+            </template>
           </div>
+          <template v-if="showVehicleInfo">
           <div class="info-row">
             <span class="info-label">VIN</span>
             <span class="info-value">{{ detail.vin || '--' }}</span>
@@ -96,18 +108,22 @@
             <span class="info-label">预交时间</span>
             <span class="info-value">{{ detail.estimateDeliverTime || '--' }}</span>
           </div>
+          </template>
         </div>
       </div>
 
       <!-- 质量反馈报告卡片 -->
-      <div v-if="detail.qualityReport" class="info-card mt-12" >
+      <div v-if="detail.qualityReport || isEditable" class="info-card mt-12" >
         <div class="card-header">
           <span class="card-title">质量反馈报告</span>
         </div>
         <div class="card-body">
-          <div class="info-row">
+          <div class="info-row" :class="{ clickable: isEditable }" @click="isEditable && openFeedbackPicker()">
             <span class="info-label">质量反馈单号</span>
-            <span class="info-value">{{ detail.qualityReport?.reportNo || '--' }}</span>
+            <span class="info-value">
+              {{ detail.qualityReport?.reportNo || '--' }}
+              <van-icon v-if="isEditable" name="arrow" size="14" color="#888888" />
+            </span>
           </div>
           <div class="info-row expandable" :class="{ expanded: faultDescExpanded }" @click="faultDescExpanded = !faultDescExpanded">
             <span class="info-label">故障现象描述</span>
@@ -126,23 +142,17 @@
       <div class="info-card">
         <div class="card-header">
           <span class="card-title">申请原因</span>
-          <van-icon v-if="detail.status === 10 && !isEditingReason" name="edit" size="16" color="#545454" class="edit-icon" @click="startEditReason" />
         </div>
         <div class="card-body">
-          <template v-if="isEditingReason">
-            <div class="reason-textarea-wrapper">
-              <textarea
-                v-model="editableReason"
-                class="reason-textarea"
-                placeholder="请输入申请原因"
-                rows="6"
-              ></textarea>
-              <div class="reason-textarea-count">{{ editableReason.length }}/500</div>
-            </div>
-            <div class="reason-edit-actions">
-              <div class="reason-edit-btn cancel" @click="cancelEditReason">取消</div>
-              <div class="reason-edit-btn save" @click="saveEditReason">保存</div>
-            </div>
+          <template v-if="isEditable">
+            <van-field
+              v-model="detail.applyReason"
+              type="textarea"
+              placeholder="请输入申请原因"
+              :rows="6"
+              autosize
+              class="reason-textarea-field"
+            />
           </template>
           <template v-else>
             <div ref="reasonRef" class="reason-content" :class="{ collapsed: !reasonExpanded }">
@@ -316,8 +326,8 @@
       <div class="action-btn audit" @click="handleAudit">审核</div>
     </div>
 
-    <!-- 底部提交按钮 (仅未提交状态显示) -->
-    <div v-if="detail.status === 10" class="bottom-actions">
+    <!-- 底部提交按钮 (未提交或已驳回状态显示) -->
+    <div v-if="isEditable" class="bottom-actions">
       <div class="action-btn submit" @click="handleSubmit">提交申请</div>
     </div>
 
@@ -416,16 +426,119 @@
         </div>
       </template>
     </ais-popup>
+
+    <!-- 施工单选择弹窗 -->
+    <ais-popup
+      v-model:show="showConstructionPicker"
+      title="选择施工单"
+      :closeable="true"
+      position="bottom"
+      :round="true"
+    >
+      <template #content>
+        <div class="construction-popup">
+          <div class="popup-header">
+            <div class="search-box">
+              <div class="search-icon-wrap">
+                <van-icon name="search" size="16" color="#000" />
+              </div>
+              <input v-model="constructionSearchText" type="text" class="search-input" placeholder="输入车牌号/VIN" />
+              <div class="search-btn" @click="handleConstructionSearch">搜索</div>
+            </div>
+          </div>
+          <RefreshList
+            class="popup-refresh-list"
+            :requestData="constructionRequestData"
+            :has-no-data="constructionList.length === 0"
+            @setData="setConstructionData"
+          >
+            <div v-for="item in constructionList" :key="item.id" class="construction-item" @click="onConstructionSelect(item)">
+              <div class="construction-header">
+                <span class="construction-no">{{ item.code }}</span>
+                <span class="construction-status" :class="'status-' + item.status">{{ item.statusText }}</span>
+              </div>
+              <div class="construction-vehicle">
+                <span class="vehicle-plate">{{ item.carPlate }}</span>
+                <div class="vehicle-icons" v-if="item.alarmLevel">
+                  <svg class="icon" viewBox="0 0 16 16">
+                    <path :fill="getAlarmColor(item.alarmLevel)" :stroke="getAlarmColor(item.alarmLevel)" stroke-width="4" stroke-linejoin="round" d="M8 2L14 13H2Z" />
+                    <text x="8" y="12" text-anchor="middle" fill="#ffffff" font-size="9" font-weight="bold">!</text>
+                  </svg>
+                </div>
+                <template v-if="item.repairItemTypeDetailCollect">
+                  <span v-for="(tag, index) in item.repairItemTypeDetailCollect.split('&').filter(Boolean)" :key="index" class="vehicle-tag">{{ tag }}</span>
+                </template>
+              </div>
+              <div class="construction-vehicle-info">{{ item.vehModelName }} · {{ item.vehProfileVin }}</div>
+              <div class="construction-detail">
+                <div class="detail-row">
+                  <span class="detail-label">送修人</span>
+                  <span class="detail-value">{{ item.shuttleName }}</span>
+                  <span v-if="item.custType" class="customer-tag">{{ { '10': '预约客户', '20': '随到客户' }[item.custType] || item.custType }}</span>
+                </div>
+                <div class="detail-row">
+                  <span class="detail-label">客户经理</span>
+                  <span class="detail-value">{{ item.creatorName }}</span>
+                </div>
+                <div class="detail-row">
+                  <span class="detail-label">预计交车</span>
+                  <span class="detail-value">{{ item.expectFinishAt }}</span>
+                </div>
+              </div>
+            </div>
+          </RefreshList>
+        </div>
+      </template>
+    </ais-popup>
+
+    <!-- 质量反馈单号选择弹窗 -->
+    <ais-popup
+      v-model:show="showFeedbackPicker"
+      title="质量反馈报告"
+      :closeable="true"
+      position="bottom"
+      :round="true"
+    >
+      <template #content>
+        <div class="feedback-popup">
+          <div class="popup-header">
+            <div class="search-box">
+              <div class="search-icon-wrap">
+                <van-icon name="search" size="16" color="#000" />
+              </div>
+              <input v-model="feedbackSearchText" type="text" class="search-input" placeholder="反馈单号" />
+              <div class="search-btn" @click="handleFeedbackSearch">搜索</div>
+            </div>
+          </div>
+          <RefreshList
+            ref="feedbackRefreshListRef"
+            class="popup-refresh-list"
+            :requestData="feedbackRequestData"
+            :has-no-data="feedbackList.length === 0"
+            :show-reset-button="false"
+            @setData="setFeedbackData"
+          >
+            <div v-for="item in feedbackList" :key="item.id" class="feedback-select-item" @click="onFeedbackSelect(item)">
+              <div class="feedback-serial" v-html="highlightSearch(item.code, feedbackSearchText)"></div>
+              <div class="feedback-type" v-if="item.reportType">{{ qualityReportTypeMap[item.reportType] || item.reportType }}</div>
+              <div class="feedback-desc" v-if="item.title">{{ item.title }}</div>
+            </div>
+          </RefreshList>
+        </div>
+      </template>
+    </ais-popup>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, nextTick, computed } from 'vue'
+import { ref, reactive, onMounted, onUnmounted, nextTick, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { showToast, showLoadingToast, closeToast, showImagePreview } from 'vant'
 import AisPopup from '@/components/AisPopup.vue'
-import { preAuthGet, preAuthAudit, preAuthGetErrorCodeList, preAuthAddOrUpdate } from '@/api/authorization'
+import RefreshList from '@/libs/components/RefreshList.vue'
+import { preAuthGet, preAuthAudit, preAuthGetErrorCodeList, preAuthAddOrUpdate, preAuthGetConstructionList, preAuthGetPreAuthInfoDetail, preAuthGetQualityFeedbackList } from '@/api/authorization'
 import { getAttachmentList, uploadFileByUrl, deleteAttachmentConfig, getUploadConfig } from '@/libs/api/fileConfig'
+import { getEnumValue } from '@/libs/api/common'
 import { getAppImgLimit } from '@/libs/utils/nativeFn'
 import { usePageSafeArea } from '@/utils/safeArea'
 const route = useRoute()
@@ -455,9 +568,49 @@ const faultProcessExpanded = ref(false)
 const reasonExpanded = ref(false)
 const warningExpanded = ref(false)
 const reasonNeedExpand = ref(false)
-const isEditingReason = ref(false)
-const editableReason = ref('')
 const reasonRef = ref(null)
+
+// 编辑状态跟踪
+const editConstructionId = ref('')
+const editFeedbackId = ref('')
+const editAuthType = ref('')
+const hasEdited = ref(false)
+
+// 施工单选择器
+const showConstructionPicker = ref(false)
+const constructionSearchText = ref('')
+const constructionList = ref([])
+const constructionRequestData = reactive({
+  data: { pageNum: 1, pageSize: 10, appSearchKeyWord: '' },
+  api: (params) => preAuthGetConstructionList(params)
+})
+const setConstructionData = (res) => {
+  const list = res?.list || []
+  if (res?.isRefresh) {
+    constructionList.value = [...list]
+  } else {
+    constructionList.value.push(...list)
+  }
+}
+
+// 质量反馈选择器
+const showFeedbackPicker = ref(false)
+const feedbackSearchText = ref('')
+const feedbackList = ref([])
+const feedbackRefreshListRef = ref(null)
+const qualityReportTypeMap = ref({})
+const feedbackRequestData = reactive({
+  data: { pageNum: 1, pageSize: 10, appSearchKeyWord: '', serviceProxyCode: '', orderStatus: 30 },
+  api: (params) => preAuthGetQualityFeedbackList(params)
+})
+const setFeedbackData = (res) => {
+  const list = res?.list || []
+  if (res?.isRefresh) {
+    feedbackList.value = [...list]
+  } else {
+    feedbackList.value.push(...list)
+  }
+}
 const isClickScrolling = ref(false) // 标记是否点击触发的滚动
 const showAuditPopup = ref(false) // 审核弹窗显示状态
 const showErrorCodePopup = ref(false) // 错误代码选择弹窗显示状态
@@ -479,6 +632,17 @@ const auditOptions = [
   { label: '审批驳回', value: 'reject' },
   { label: '拒绝申请', value: 'refuse' }
 ]
+
+// 是否可编辑（未提交10 或 已驳回40）
+const isEditable = computed(() => {
+  return detail.value.status === 10 || detail.value.status === 40
+})
+
+// 是否展示车辆信息区域（可编辑时需要选择了施工单才展示；不可编辑时始终展示）
+const showVehicleInfo = computed(() => {
+  if (!isEditable.value) return true
+  return !!editConstructionId.value
+})
 
 // 是否为审批驳回
 const isReject = computed(() => {
@@ -672,7 +836,8 @@ const detail = ref({
   partsItems: [],
   attachments: buildEmptyAttachments(),
   isGoodWarranty: null, // 善意保修标识，true为善意保修不展示审核按钮
-  serviceProxyId: '' // 施工单ID
+  serviceProxyId: '', // 施工单ID
+  preAuthTypeValue: '' // 预授权类型数值(1=tech, 2=warranty)
 })
 
 // 切换 Tab
@@ -716,6 +881,7 @@ const switchTab = async(tabName) => {
 
 // 检测申请原因是否超出6行
 const checkReasonOverflow = () => {
+  if (isEditable.value) return
   nextTick(() => {
     const el = reasonRef.value
     if (el) {
@@ -724,28 +890,137 @@ const checkReasonOverflow = () => {
   })
 }
 
-// 编辑申请原因
-const startEditReason = () => {
-  editableReason.value = detail.value.applyReason || ''
-  isEditingReason.value = true
+// 搜索高亮
+const highlightSearch = (text, searchText) => {
+  if (!searchText || !text) return text
+  const regex = new RegExp(`(${searchText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi')
+  return text.replace(regex, '<span class="highlight-match">$1</span>')
 }
 
-const cancelEditReason = () => {
-  isEditingReason.value = false
+// 预警颜色
+const getAlarmColor = (alarmLevel) => {
+  switch (alarmLevel) {
+    case 10: return '#009100'
+    case 20: return '#C8A12B'
+    case 30: return '#B91919'
+    default: return '#009100'
+  }
 }
 
-const saveEditReason = async() => {
-  const text = editableReason.value.trim()
-  if (!text) {
-    showToast('请输入申请原因')
+// 施工单选择器
+const openConstructionPicker = () => {
+  constructionSearchText.value = ''
+  constructionList.value = []
+  showConstructionPicker.value = true
+  nextTick(() => {
+    constructionRequestData.data = { pageNum: 1, pageSize: 10, appSearchKeyWord: '', _t: Date.now() }
+  })
+}
+
+const handleConstructionSearch = () => {
+  constructionRequestData.data = { pageNum: 1, pageSize: 10, appSearchKeyWord: constructionSearchText.value, _t: Date.now() }
+}
+
+const onConstructionSelect = async(item) => {
+  try {
+    showLoadingToast({ message: '加载中...', forbidClick: true })
+    const res = await preAuthGetPreAuthInfoDetail(item.id)
+    closeToast()
+    if (res?.code !== 0 && res?.code !== 200) {
+      showToast(res?.msg || '获取信息失败')
+      editConstructionId.value = ''
+      detail.value.constructionNo = ''
+      return
+    }
+    showConstructionPicker.value = false
+    hasEdited.value = true
+    if (res?.data) {
+      detail.value.constructionNo = item.code
+      editConstructionId.value = item.id
+      const data = res.data
+      detail.value.vin = data.vehProfileVin || ''
+      detail.value.warrantyTime = data.guaranteeStartDate && data.warrantyEndTime ? `${data.guaranteeStartDate} 至 ${data.warrantyEndTime}` : ''
+      detail.value.mileage = data.mileage || ''
+      detail.value.vehicleUse = data.carPropertyLabel || ''
+      detail.value.lifetimeWarranty = data.isLifetime === 1 ? '是' : '否'
+      detail.value.serviceStore = data.dealerName || ''
+      detail.value.storeArea = data.orgName || data.dealerUnitName || ''
+      detail.value.warningInfo = data.alarmInfo || ''
+      detail.value.estimateDeliverTime = item.expectFinishAt || ''
+      editAuthType.value = data.preAuthType === 1 ? 'tech' : 'warranty'
+      detail.value.repairItems = (data.spRepairItemResps || []).map((ri) => ({
+        name: ri.repairItemName || '',
+        partNo: ri.repairItemCode || '',
+        repairItemTypeName: ri.repairItemTypeName || '',
+        checkoutTypeName: ri.checkoutTypeName || '',
+        warrantyTypeName: ri.warrantyTypeName || '',
+        price: ri.price || '0',
+        discount: ri.discountAmount || '0',
+        subtotal: ri.repairAmount || ri.totalAmount || '0',
+        quantity: ri.workHour || ri.quantity || '0'
+      }))
+      detail.value.partsItems = (data.spSparePartResps || []).map((pi) => ({
+        name: pi.partsName || '',
+        partNo: pi.partsCode || '',
+        repairItemTypeName: pi.repairItemTypeName || '',
+        checkoutTypeName: pi.checkoutTypeName || '',
+        warrantyTypeName: pi.warrantyTypeName || '',
+        tag: pi.isOemPartLabel || '',
+        price: pi.price || '0',
+        discount: pi.discountAmount || '0',
+        subtotal: pi.partsAmount || pi.totalAmount || '0',
+        quantity: pi.quantity || '0',
+        actualQuantity: pi.actualPickNumber || '0',
+        returnQuantity: pi.refundedNumber || '0'
+      }))
+      // 切换施工单后清除质量反馈
+      detail.value.qualityReport = null
+      editFeedbackId.value = ''
+    }
+  } catch {
+    closeToast()
+    showToast('获取施工单信息失败')
+  }
+}
+
+// 质量反馈选择器
+const openFeedbackPicker = () => {
+  if (!detail.value.constructionNo) {
+    showToast('请先选择施工单')
     return
   }
-  detail.value.applyReason = text
-  isEditingReason.value = false
-  reasonExpanded.value = false
-  // 检测是否需要展开按钮
-  checkReasonOverflow()
+  feedbackRequestData.data = { pageNum: 1, pageSize: 10, appSearchKeyWord: '', serviceProxyCode: detail.value.constructionNo, orderStatus: 30, _t: Date.now() }
+  feedbackSearchText.value = ''
+  feedbackList.value = []
+  showFeedbackPicker.value = true
 }
+
+const handleFeedbackSearch = () => {
+  feedbackRequestData.data = { pageNum: 1, pageSize: 10, appSearchKeyWord: feedbackSearchText.value, serviceProxyCode: detail.value.constructionNo, orderStatus: 30, _t: Date.now() }
+}
+
+const onFeedbackSelect = (item) => {
+  detail.value.qualityReport = {
+    id: item.id || '',
+    reportNo: item.code || '',
+    faultDesc: item.title || '',
+    faultProcess: item.diagnosisContent || ''
+  }
+  editFeedbackId.value = item.id || ''
+  showFeedbackPicker.value = false
+  hasEdited.value = true
+}
+
+// 预授权类型切换
+const onAuthTypeChange = (type) => {
+  editAuthType.value = type
+  hasEdited.value = true
+}
+
+// 监听申请原因变化
+watch(() => detail.value.applyReason, () => {
+  if (isEditable.value) hasEdited.value = true
+})
 
 // 审核操作
 const handleAudit = () => {
@@ -765,24 +1040,39 @@ const handleSubmit = async() => {
     showToast('缺少预授权ID')
     return
   }
-
-  if (!detail.value.serviceProxyId) {
-    showToast('缺少施工单ID')
+  if (!editConstructionId.value) {
+    showToast('请选择施工单')
+    return
+  }
+  if (!detail.value.applyReason?.trim()) {
+    showToast('请填写申请原因')
     return
   }
 
   try {
     showLoadingToast({ message: '提交中...', forbidClick: true })
+    const attachments = attachmentSections.flatMap((section) =>
+      (detail.value.attachments[section.key] || []).map((img) => ({
+        fileId: img.fileId || img.id || '',
+        fileUrl: img.fileUrl || img.url || '',
+        fileName: img.fileName || '',
+        fileType: img.fileType || '',
+        attachType: section.label,
+        configCode: PRE_AUTH_ATTACHMENT_CONFIG_CODE
+      }))
+    )
     const res = await preAuthAddOrUpdate({
       id: id,
-      serviceProxyId: detail.value.serviceProxyId,
-      saveOrSubmit: 1 // 1表示提交
+      serviceProxyId: editConstructionId.value,
+      qualityOrderReportId: editFeedbackId.value,
+      reason: detail.value.applyReason,
+      saveOrSubmit: 1,
+      attachments
     })
     closeToast()
 
     if (res.code === 200 || res.code === 0) {
       showToast('提交成功')
-      // 刷新详情
       fetchDetail()
     } else {
       showToast(res.msg || '提交失败')
@@ -1081,6 +1371,11 @@ const fetchDetail = async() => {
     const res = await preAuthGet(id)
     if (isSuccessResponse(res) && res.data) {
       Object.assign(detail.value, formatDetailData(res.data))
+      // 初始化编辑状态
+      editConstructionId.value = detail.value.serviceProxyId
+      editFeedbackId.value = detail.value.qualityReport?.id || ''
+      editAuthType.value = detail.value.preAuthTypeValue === 1 ? 'tech' : 'warranty'
+      hasEdited.value = false
       await fetchAllAttachmentLists()
       updateTabsByStatus()
       checkReasonOverflow()
@@ -1135,6 +1430,7 @@ const formatDetailData = (data) => {
 
     // 质量反馈报告 - 来自预授权主数据
     qualityReport: preAuthData.qualityOrderReportResp ? {
+      id: preAuthData.qualityOrderReportResp.id || '',
       reportNo: preAuthData.qualityOrderReportResp.code || '',
       faultDesc: preAuthData.qualityOrderReportResp.customerContent || '',
       faultProcess: preAuthData.qualityOrderReportResp.troubleshootingProcess || ''
@@ -1190,6 +1486,8 @@ const formatDetailData = (data) => {
     isGoodWarranty: preAuthData.isGoodWarranty,
     // 施工单ID - 来自施工单数据
     serviceProxyId: serviceProxy.id || '',
+    // 预授权类型数值
+    preAuthTypeValue: preAuthData.preAuthType || '',
     attachments: buildEmptyAttachments()
   }
 }
@@ -1213,6 +1511,13 @@ onMounted(() => {
   getUploadConfig({ configCode: PRE_AUTH_ATTACHMENT_CONFIG_CODE }).then((res) => {
     if (res?.code === 200 || res?.code === 0) {
       uploadConfig.value = res.data || {}
+    }
+  })
+  getEnumValue('QualityReportTypeEnum').then((res) => {
+    if (res?.code === 200) {
+      const map = {}
+      ;(res.data || []).forEach((item) => { map[item.code] = item.message })
+      qualityReportTypeMap.value = map
     }
   })
   nextTick(() => {
@@ -1548,61 +1853,18 @@ onUnmounted(() => {
 }
 
 // 编辑申请原因 textarea
-.reason-textarea-wrapper {
-  position: relative;
-  background: #f8f7f7;
-  border-radius: 6px;
-  padding: 12px;
+.reason-textarea-field {
+  padding: 0;
 
-  .reason-textarea {
-    width: 100%;
-    min-height: 120px;
-    border: none;
-    background: transparent;
+  :deep(.van-field__control) {
     font-family: 'PingFang SC';
     font-size: 14px;
     color: #191a1b;
     line-height: 1.6;
-    resize: none;
-    outline: none;
-
-    &::placeholder {
-      color: #888888;
-    }
   }
 
-  .reason-textarea-count {
-    text-align: right;
-    font-family: 'PingFang SC';
-    font-size: 12px;
+  :deep(.van-field__placeholder) {
     color: #888888;
-    margin-top: 4px;
-  }
-}
-
-.reason-edit-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-  margin-top: 12px;
-
-  .reason-edit-btn {
-    padding: 6px 20px;
-    border-radius: 4px;
-    font-family: 'PingFang SC';
-    font-size: 14px;
-    cursor: pointer;
-
-    &.cancel {
-      color: #545454;
-      background: #ffffff;
-      border: 1px solid #d8d8d8;
-    }
-
-    &.save {
-      color: #ffffff;
-      background: #009100;
-    }
   }
 }
 
@@ -2268,5 +2530,336 @@ onUnmounted(() => {
   background: #ffffff;
   border-radius: 6px;
   padding: 12px;
+}
+
+// 可点击行
+.info-row.clickable {
+  cursor: pointer;
+}
+
+.info-row.auth-type-row {
+  align-items: center;
+}
+
+// 预授权类型选择
+.type-chips {
+  display: flex;
+  gap: 6px;
+  flex: 1;
+  justify-content: flex-end;
+
+  .type-chip {
+    padding: 6px 16px;
+    border-radius: 4px;
+    font-family: 'PingFang SC';
+    font-size: 14px;
+    background: #f8f7f7;
+    color: #191a1b;
+
+    &.type-chip-active {
+      background: rgba(0, 145, 0, 0.1);
+      border: 1px solid #009100;
+      color: #009100;
+    }
+  }
+}
+
+// 高亮匹配文本
+:deep(.highlight-match) {
+  color: #009100 !important;
+}
+
+// 施工单弹窗
+.construction-popup {
+  height: 583px;
+  background: #f4f4f4;
+  display: flex;
+  flex-direction: column;
+
+  .popup-header {
+    padding-bottom: 12px;
+    flex-shrink: 0;
+
+    .search-box {
+      display: flex;
+      align-items: center;
+      height: 30px;
+      padding: 0 12px;
+      background: rgba(216, 216, 216, 0.3);
+      border-radius: 15px;
+      gap: 8px;
+    }
+
+    .search-icon-wrap {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 20px;
+      height: 20px;
+      flex-shrink: 0;
+    }
+
+    .search-input {
+      flex: 1;
+      height: 30px;
+      padding: 0;
+      border: none;
+      background: transparent;
+      font-family: 'PingFang SC';
+      font-size: 14px;
+      outline: none;
+      color: #191a1b;
+
+      &::placeholder {
+        color: #888888;
+      }
+    }
+
+    .search-btn {
+      padding: 4px 12px;
+      height: 22px;
+      background: #009100;
+      color: #ffffff;
+      border-radius: 11px;
+      font-family: 'PingFang SC';
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+  }
+
+  .popup-refresh-list {
+    flex: 1;
+    overflow-y: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+
+    &::-webkit-scrollbar {
+      display: none;
+    }
+
+    .construction-item {
+      background: #ffffff;
+      border-radius: 6px;
+      padding: 12px;
+      margin-bottom: 8px;
+
+      &:last-child {
+        margin-bottom: 0;
+      }
+
+      .construction-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border-bottom: 0.5px solid #e6e6e5;
+        padding-bottom: 12px;
+        margin-bottom: 8px;
+
+        .construction-no {
+          font-family: 'PingFang SC';
+          font-size: 14px;
+          color: #191a1b;
+        }
+
+        .construction-status {
+          font-family: 'PingFang SC';
+          font-size: 12px;
+          font-weight: 500;
+
+          &.status-pending { color: #c8a12b; }
+          &.status-processing { color: #009100; }
+          &.status-completed { color: #888888; }
+        }
+      }
+
+      .construction-vehicle {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-bottom: 8px;
+
+        .vehicle-plate {
+          font-family: 'PingFang SC';
+          font-size: 16px;
+          font-weight: 500;
+          color: #191a1b;
+        }
+
+        .vehicle-icons {
+          display: flex;
+          gap: 4px;
+
+          .icon {
+            width: 16px;
+            height: 16px;
+          }
+        }
+
+        .vehicle-tag {
+          font-family: 'PingFang SC';
+          font-size: 12px;
+          color: #191a1b;
+          border: 0.5px solid #191a1b;
+          border-radius: 4px;
+          padding: 1px 4px;
+          height: 20px;
+          line-height: 17px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+          white-space: nowrap;
+        }
+      }
+
+      .construction-vehicle-info {
+        font-family: 'PingFang SC';
+        font-size: 12px;
+        color: #545454;
+        margin-bottom: 8px;
+      }
+
+      .construction-detail {
+        .detail-row {
+          display: flex;
+          align-items: center;
+          margin-bottom: 6px;
+
+          &:last-child { margin-bottom: 0; }
+
+          .detail-label {
+            font-family: 'PingFang SC';
+            font-size: 12px;
+            color: #545454;
+            width: 56px;
+          }
+
+          .detail-value {
+            font-family: 'PingFang SC';
+            font-size: 12px;
+            color: #191a1b;
+          }
+
+          .customer-tag {
+            font-family: 'PingFang SC';
+            font-size: 12px;
+            color: #191a1b;
+            background: rgba(25, 26, 27, 0.06);
+            border-radius: 4px;
+            padding: 1px 4px;
+            margin-left: 4px;
+          }
+        }
+      }
+    }
+  }
+}
+
+// 质量反馈弹窗
+.feedback-popup {
+  height: 583px;
+  background: #f4f4f4;
+  display: flex;
+  flex-direction: column;
+
+  .popup-header {
+    padding-bottom: 12px;
+    flex-shrink: 0;
+
+    .search-box {
+      display: flex;
+      align-items: center;
+      height: 30px;
+      padding: 0 12px;
+      background: rgba(216, 216, 216, 0.3);
+      border-radius: 15px;
+      gap: 8px;
+    }
+
+    .search-icon-wrap {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 20px;
+      height: 20px;
+      flex-shrink: 0;
+    }
+
+    .search-input {
+      flex: 1;
+      height: 30px;
+      padding: 0;
+      border: none;
+      background: transparent;
+      font-family: 'PingFang SC';
+      font-size: 14px;
+      outline: none;
+      color: #191a1b;
+
+      &::placeholder {
+        color: #888888;
+      }
+    }
+
+    .search-btn {
+      padding: 4px 12px;
+      height: 22px;
+      background: #009100;
+      color: #ffffff;
+      border-radius: 11px;
+      font-family: 'PingFang SC';
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+  }
+
+  .popup-refresh-list {
+    flex: 1;
+    overflow-y: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+
+    &::-webkit-scrollbar {
+      display: none;
+    }
+
+    .feedback-select-item {
+      background: #ffffff;
+      border-radius: 6px;
+      padding: 12px;
+      margin-bottom: 8px;
+
+      &:last-child { margin-bottom: 0; }
+
+      .feedback-serial {
+        font-family: 'PingFang SC';
+        font-size: 14px;
+        color: #191a1b;
+        padding-bottom: 12px;
+        border-bottom: 0.5px solid #e6e6e5;
+        margin-bottom: 12px;
+      }
+
+      .feedback-type {
+        font-family: 'PingFang SC';
+        font-size: 14px;
+        color: #191a1b;
+        margin-bottom: 4px;
+      }
+
+      .feedback-desc {
+        font-family: 'PingFang SC';
+        font-size: 14px;
+        color: #545454;
+      }
+    }
+  }
 }
 </style>

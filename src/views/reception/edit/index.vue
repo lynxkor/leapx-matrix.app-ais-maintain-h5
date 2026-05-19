@@ -1584,7 +1584,7 @@ const onHasFaultChange = (value) => {
     // 维修类型包含一般维修或三电维修时，不允许改为"否"
     const typeCollect = detail.repairItemTypeDetailCollect || ''
     if (typeCollect.includes('一般维修') || typeCollect.includes('三电维修')) {
-      showToast('当前工单维修类型包含一般维修或三电维修，请确认是否存在故障!')
+      showToast({ message: '当前工单维修类型包含一般维修或三电维修，请确认是否存在故障!', duration: 3000 })
       // 还原为"是"
       detail.currentFault = '1'
       return
@@ -3101,6 +3101,7 @@ const onPartsSave = async() => {
       isSaved.value = true
     }
     await fetchDetail()
+    fetchRemindInfo()
 
     // 判断：原来不包含一般维修或三电维修，保存后包含了一般维修或三电维修，且本次进店是否存在故障为否
     const newRepairItemTypeDetailCollect = detail.repairItemTypeDetailCollect
@@ -3114,7 +3115,7 @@ const onPartsSave = async() => {
       if (detail.customerFaultDesc === '本次进店车辆无故障') {
         detail.customerFaultDesc = ''
       }
-      showToast('维修类型为一般维修或三电维修，系统默认调整 【本次进店是否存在故障】为是，存在故障，请填写故障模块信息!')
+      showToast({ message: '维修类型为一般维修或三电维修，系统默认调整 【本次进店是否存在故障】为是，存在故障，请填写故障模块信息!', duration: 3000 })
       // 切换tab到环检信息
       activeTab.value = 'inspection'
     }
@@ -3252,6 +3253,11 @@ const onConfirmAndSign = async() => {
   // 检查附件资料是否有重复文件
   if (hasDuplicateFileId(signatureData.attachments)) {
     showToast('附件资料存在重复文件，请检查')
+    return
+  }
+  // 如果当前故障为是，校验是否添加了故障模块
+  if (Number(detail.currentFault) === 1 && detail.faultModules.length === 0) {
+    showToast('当前存在故障，请添加故障模块')
     return
   }
 
@@ -3439,6 +3445,23 @@ const onConfirmSignatureChannel = () => {
   onConfirmAndSign()
 }
 
+// 获取提醒信息（预授权、三包预警、服务活动、差价等）
+const fetchRemindInfo = () => {
+  if (!route.query.id) return
+  getRemindInfo(route.query.id).then((res) => {
+    if (res.code === 200) {
+      const rawData = res.data || []
+      const validTypes = [RemindInfoTypeEnum.THREE_GUARANTEES, RemindInfoTypeEnum.SERVICE_ACTIVITY, RemindInfoTypeEnum.PRICE_DIFFERENCE, '5']
+      const preAuthItems = rawData.filter((item) => item.type === RemindInfoTypeEnum.PRE_AUTH)
+      const otherItems = rawData.filter((item) => validTypes.includes(item.type))
+      remindList.value = [...preAuthItems, ...otherItems]
+      if (visibleRemindList.value.length > 0) {
+        showWarrantyAlertDialog.value = true
+      }
+    }
+  })
+}
+
 onMounted(() => {
   loadInitialData()
   fetchDetail()
@@ -3454,22 +3477,7 @@ onMounted(() => {
   // 获取提醒信息
   if (route.query.id) {
     setTimeout(() => {
-      getRemindInfo(route.query.id).then((res) => {
-        if (res.code === 200) {
-          const rawData = res.data || []
-          // 只保留满足条件的提醒类型：预授权、三包预警、服务活动、车辆标识
-          const validTypes = [RemindInfoTypeEnum.THREE_GUARANTEES, RemindInfoTypeEnum.SERVICE_ACTIVITY, RemindInfoTypeEnum.PRICE_DIFFERENCE, '5']
-          // 预授权提醒：只有未创建预授权时才显示
-          const preAuthItems = rawData.filter((item) => item.type === RemindInfoTypeEnum.PRE_AUTH)
-          // 其他有效类型
-          const otherItems = rawData.filter((item) => validTypes.includes(item.type))
-          remindList.value = [...preAuthItems, ...otherItems]
-          // 只有有满足条件的提醒才弹出弹框
-          if (visibleRemindList.value.length > 0) {
-            showWarrantyAlertDialog.value = true
-          }
-        }
-      })
+      fetchRemindInfo()
     }, 1000)
   }
   // 获取上传配置
