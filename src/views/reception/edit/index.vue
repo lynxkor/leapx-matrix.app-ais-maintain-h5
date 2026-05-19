@@ -448,7 +448,7 @@
               <span class="label">开启维修直播</span>
               <van-switch v-model="signatureData.liveEnabled" size="20" active-color="#009100" />
             </div> -->
-            <div class="signature-row">
+            <div v-if="Number(detail.signStatus) === 20" class="signature-row">
               <span class="label">签字渠道</span>
 
               <div class="value-wrapper">
@@ -459,7 +459,7 @@
               </div>
             </div>
             <!-- APP/短信/零小跑渠道提示 -->
-            <div v-if="signatureData.signChannel === 'APP/短信/零小跑'" class="signature-hint">
+            <div v-if="signatureData.signChannel === 'APP/短信/零小跑' && Number(detail.signStatus) === 20" class="signature-hint">
               此操作将生成待签字施工单且需要用户签字
             </div>
             <!-- 已签字状态显示 -->
@@ -3292,7 +3292,7 @@ const handleConfirmAndSignProcess = () => {
   const isPaperSign = signatureData.signChannel === '纸质单据' || Number(detail.signChannel) === 40
   // signStatus == 10 时，纸质单据需调用接口保存，其他渠道直接跳转结算页面
   if (Number(detail.signStatus) === 10 && !isPaperSign) {
-    const settlementUrl = `https://staticres-sitb.leapmotor.com/leapx/biling/ais/constructionOrder?serviceProxyId=${detail.id}&signChannel=3`
+    const settlementUrl = `https://staticres-sit.leapmotor.com/leapx/biling/aisInner/constructionOrder?serviceProxyId=${detail.id}&signChannel=3`
     window.location.href = settlementUrl
     return
   }
@@ -3316,7 +3316,7 @@ const handleConfirmAndSignProcess = () => {
         fetchDetail()
         if (!params.signChannel) {
           // 接口成功后跳转结算页面
-          const settlementUrl = `https://staticres-sitb.leapmotor.com/leapx/biling/ais/constructionOrder?serviceProxyId=${detail.id}&signChannel=3`
+          const settlementUrl = `https://staticres-sit.leapmotor.com/leapx/biling/aisInner/constructionOrder?serviceProxyId=${detail.id}&signChannel=3`
           window.location.href = settlementUrl
         }
       } else {
