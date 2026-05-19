@@ -3,11 +3,11 @@ import axios from 'axios'
 import { showConfirmDialog, showToast } from 'vant'
 import { useUserStore } from '@/stores/user'
 import { outWebview } from '@/libs/utils/app'
-import { applyAuthHeaders } from '@/utils/authToken'
+import { applyAuthHeaders } from '../utils/authToken'
 
 const root = window.APP_AIS_H5_CONFIG.VUE_APP_WORK_ORDER_URL
 const leapx = window.APP_AIS_H5_CONFIG.VITE_LEAPX_URL
-const ais = window.APP_AIS_H5_CONFIG.VITE_AIS_URL
+// const ais = window.APP_AIS_H5_CONFIG.VITE_AIS_URL
 
 // 路由到 ais 后端的 URL 前缀列表，新增前缀只需在此添加一行
 const AIS_PREFIXES = [
@@ -20,18 +20,18 @@ const AIS_PREFIXES = [
   '/vr/',
   '/vw/',
   '/datareport/',
-  '/file/',
+  '/file/'
 ]
 
 function resolveBaseURL(url, sign) {
   if (sign) return leapx
   const target = url.startsWith('/') ? url : '/' + url
-  return AIS_PREFIXES.some((p) => target.startsWith(p)) ? ais : root
+  return AIS_PREFIXES.some((p) => target.startsWith(p)) ? root : leapx
 }
 
 // 创建axios实例
 const service = axios.create({
-  timeout: 10000, // 超时时间
+  timeout: 10000 // 超时时间
 })
 
 // 请求拦截器
@@ -45,7 +45,7 @@ service.interceptors.request.use(
   },
   (error) => {
     return Promise.reject(error)
-  },
+  }
 )
 
 // 响应拦截器
@@ -57,7 +57,7 @@ service.interceptors.response.use(
       // 登录token过期
       showConfirmDialog({
         title: '提示',
-        message: '登录已过期，请点击确定返回',
+        message: '登录已过期，请点击确定返回'
       }).then(() => {
         outWebview()
       })
@@ -84,7 +84,7 @@ service.interceptors.response.use(
     if (status === 401) {
       showConfirmDialog({
         title: '提示',
-        message: '登录已过期，请点击确定返回',
+        message: '登录已过期，请点击确定返回'
       }).then(() => {
         outWebview()
       })
@@ -97,7 +97,7 @@ service.interceptors.response.use(
     }
 
     return Promise.reject(error)
-  },
+  }
 )
 
 export function post(url, data, sign) {
@@ -106,7 +106,7 @@ export function post(url, data, sign) {
     baseURL: resolveBaseURL(url, sign),
     headers: { 'Content-Type': 'application/json' },
     method: 'post',
-    data,
+    data
   })
 }
 
@@ -116,7 +116,7 @@ export function postText(url, data, sign) {
     baseURL: resolveBaseURL(url, sign),
     headers: { 'Content-Type': 'text/plain' },
     method: 'post',
-    data,
+    data
   })
 }
 
@@ -125,7 +125,7 @@ export function get(url, params, sign) {
     url,
     baseURL: resolveBaseURL(url, sign),
     method: 'get',
-    params,
+    params
   })
 }
 
@@ -134,7 +134,7 @@ export function postJson(url, params, sign) {
     url,
     baseURL: resolveBaseURL(url, sign),
     headers: { 'Content-Type': 'application/json' },
-    method: 'post',
+    method: 'post'
   }
   // 设置transformRequest，避免对字符串进行双重JSON.stringify
   config.transformRequest = [
@@ -143,7 +143,7 @@ export function postJson(url, params, sign) {
         return data
       }
       return JSON.stringify(data)
-    },
+    }
   ]
   config.data = params
   return service(config)
