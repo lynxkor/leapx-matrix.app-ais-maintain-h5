@@ -673,7 +673,6 @@ const constructionNo = ref('')
 const constructionId = ref('')
 const authType = ref('')
 const feedbackNo = ref('')
-const feedbackId = ref('')
 const feedbackDesc = ref('')
 const feedbackProcess = ref('')
 const descExpanded = ref(false)
@@ -837,7 +836,7 @@ const validatePreAuthForm = () => {
     showToast('请选择施工单')
     return false
   }
-  if (!feedbackId.value) {
+  if (!feedbackNo.value) {
     showToast('请选择质量反馈单号')
     return false
   }
@@ -867,7 +866,7 @@ const buildAttachmentsPayload = () =>
 const buildPreAuthPayload = (saveOrSubmit, attachments = buildAttachmentsPayload()) => {
   const payload = {
     serviceProxyId: constructionId.value,
-    qualityOrderReportId: feedbackId.value,
+    qualityOrderReportId: feedbackNo.value,
     reason: applyReason.value,
     saveOrSubmit,
     attachments
@@ -1148,15 +1147,13 @@ const onConstructionSelect = async(item) => {
     }
   } catch (error) {
     closeToast()
-    console.error('获取预填充信息失败:', error)
-    showToast('获取信息失败')
+    showToast(error.msg)
     showVehicleInfo.value = true
   }
 }
 
 const onFeedbackSelect = (item) => {
   feedbackNo.value = item.code
-  feedbackId.value = item.id || item.qualityOrderReportId || ''
   feedbackDesc.value = item.title || ''
   feedbackProcess.value = item.diagnosisContent || ''
   showFeedbackPicker.value = false
