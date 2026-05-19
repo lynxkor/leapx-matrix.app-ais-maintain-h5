@@ -357,6 +357,7 @@
             class="popup-refresh-list"
             :requestData="feedbackRequestData"
             :has-no-data="feedbackList.length === 0"
+            :show-reset-button="false"
             @setData="setFeedbackData"
           >
             <div
@@ -836,10 +837,6 @@ const isSuccessResponse = (res) => res?.code === 0 || res?.code === 200
 const validatePreAuthForm = () => {
   if (!constructionId.value) {
     showToast('请选择施工单')
-    return false
-  }
-  if (!feedbackId.value) {
-    showToast('请选择质量反馈单号')
     return false
   }
   if (!applyReason.value.trim()) {
