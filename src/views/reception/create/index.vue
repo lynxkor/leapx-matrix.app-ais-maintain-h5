@@ -436,7 +436,7 @@
               <span class="label">开启维修直播</span>
               <van-switch v-model="signatureData.liveEnabled" size="20" active-color="#009100" />
             </div> -->
-            <div class="signature-row" @click="showSignatureChannelPickerHandle">
+            <div v-if="Number(detail.signStatus) === 20" class="signature-row">
               <span class="label">签字渠道</span>
 
               <div class="value-wrapper">
@@ -1562,7 +1562,7 @@ const onHasFaultChange = (value) => {
     // 维修类型包含一般维修或三电维修时，不允许改为"否"
     const typeCollect = detail.repairItemTypeDetailCollect || ''
     if (typeCollect.includes('一般维修') || typeCollect.includes('三电维修')) {
-      showToast('当前工单维修类型包含一般维修或三电维修，请确认是否存在故障!')
+      showToast({ message: '当前工单维修类型包含一般维修或三电维修，请确认是否存在故障!', duration: 3000 })
       detail.currentFault = '1'
       return
     }
@@ -2787,6 +2787,7 @@ const onPartsSave = async() => {
     saveDataSnapshot()
     // 保存成功后获取详情数据，给签字确认页面赋值（await 确保快照同步完成后再放开 loading）
     await fetchDetailForSignature()
+    fetchRemindInfo()
   } catch (error) {
     console.error('保存失败:', error)
     showToast('保存失败')
@@ -2826,6 +2827,11 @@ const onConfirmAndSign = async() => {
   // 检查附件资料是否有重复文件
   if (hasDuplicateFileId(signatureData.attachments)) {
     showToast('附件资料存在重复文件，请检查')
+    return
+  }
+  // 如果当前故障为是，校验是否添加了故障模块
+  if (Number(detail.currentFault) === 1 && detail.faultModules.length === 0) {
+    showToast('当前存在故障，请添加故障模块')
     return
   }
   // 如果已设置不需要留车提醒，直接执行后续流程
@@ -3095,13 +3101,13 @@ const onCloseDeliveryTimePicker = () => {
   showDeliveryTimePicker.value = false
 }
 
-const showSignatureChannelPickerHandle = () => {
-  if (detail.signStatus === 20) {
-    return
-  }
-  tempSignatureChannel.value = signatureData.signChannel || ''
-  showSignatureChannelPicker.value = true
-}
+// const showSignatureChannelPickerHandle = () => {
+//   if (detail.signStatus === 20) {
+//     return
+//   }
+//   tempSignatureChannel.value = signatureData.signChannel || ''
+//   showSignatureChannelPicker.value = true
+// }
 // 查看签字
 const onViewSignature = () => {
   if (detail.signUrl) {
