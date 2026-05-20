@@ -18,7 +18,7 @@
             <div class="card-header">
               <span class="order-no">{{ item.serviceProxyCode }}</span>
               <div class="status-wrapper">
-                <span class="status-text">{{ getStatusLabel(item.status) }}</span>
+                <span class="status-text">已交车</span>
                 <van-icon name="arrow" size="12" color="#6C6E6C" />
               </div>
             </div>
@@ -62,7 +62,7 @@
           <div class="info-card">
             <div class="card-header">
               <span class="order-no">{{ popupData.serviceProxyCode }}</span>
-              <span class="status-text">{{ getStatusLabel(popupData.status) }}</span>
+              <span class="status-text">已交车</span>
             </div>
             <div class="card-info-list">
               <div class="info-row">
@@ -164,24 +164,6 @@ const popupData = reactive({
   repairParts: []
 })
 const list = ref([])
-
-// 工单状态映射
-const statusMap = {
-  100: '接车预检中',
-  110: '制单中',
-  120: '待派工',
-  140: '施工中',
-  150: '待终检',
-  160: '待交车',
-  180: '已交车',
-  200: '反结算',
-  210: '已作废'
-}
-
-// 获取状态标签
-const getStatusLabel = (status) => {
-  return statusMap[status] || status
-}
 
 // 请求详情
 const fetchDetail = () => {
