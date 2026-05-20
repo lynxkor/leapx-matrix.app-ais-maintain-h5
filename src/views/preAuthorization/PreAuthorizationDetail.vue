@@ -273,8 +273,8 @@
         </div>
       </div>
     </div>
-    <!-- 审核信息 Tab (仅驳回状态显示) -->
-    <div v-if="detail.status === 40" id="tab-audit" class="tab-content-section">
+    <!-- 审核信息 Tab -->
+    <div id="tab-audit" class="tab-content-section">
       <!-- 审核信息卡片 -->
       <div class="info-card">
         <div class="card-header">
@@ -285,18 +285,36 @@
             <span class="info-label">施工单号</span>
             <span class="info-value">{{ detail.constructionNo || '--' }}</span>
           </div>
-          <div class="info-row">
-            <span class="info-label">同意工时索赔小计</span>
-            <span class="info-value">{{ detail.auditInfo?.laborSubtotal ? `¥${detail.auditInfo.laborSubtotal}` : '--' }}</span>
-          </div>
-          <div class="info-row">
-            <span class="info-label">同意零件索赔小计</span>
-            <span class="info-value">{{ detail.auditInfo?.partsSubtotal ? `¥${detail.auditInfo.partsSubtotal}` : '--' }}</span>
-          </div>
-          <div class="info-row">
-            <span class="info-label">同意其他索赔小计</span>
-            <span class="info-value">{{ detail.auditInfo?.otherSubtotal ? `¥${detail.auditInfo.otherSubtotal}` : '--' }}</span>
-          </div>
+          <template v-if="detail.isGoodWarranty">
+            <div class="info-row">
+              <span class="info-label">审批单号</span>
+              <span class="info-value">{{ detail.auditInfo?.auditNo || '--' }}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">同意工时索赔小计</span>
+              <span class="info-value">{{ detail.auditInfo?.laborSubtotal ? `¥${detail.auditInfo.laborSubtotal}` : '--' }}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">同意零件索赔小计</span>
+              <span class="info-value">{{ detail.auditInfo?.partsSubtotal ? `¥${detail.auditInfo.partsSubtotal}` : '--' }}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">同意其他索赔小计</span>
+              <span class="info-value">{{ detail.auditInfo?.otherSubtotal ? `¥${detail.auditInfo.otherSubtotal}` : '--' }}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">工时分担比例</span>
+              <span class="info-value">{{ detail.auditInfo?.laborCostRatio ? `${detail.auditInfo.laborCostRatio}%` : '--' }}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">零件分担比例</span>
+              <span class="info-value">{{ detail.auditInfo?.partsCostRatio ? `${detail.auditInfo.partsCostRatio}%` : '--' }}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">其他分担比例</span>
+              <span class="info-value">{{ detail.auditInfo?.otherCostSharingRatio ? `${detail.auditInfo.otherCostSharingRatio}%` : '--' }}</span>
+            </div>
+          </template>
 
           <!-- 分隔线 -->
           <div class="audit-divider"></div>
@@ -676,7 +694,8 @@ const canSubmit = computed(() => {
 const tabs = ref([
   { name: 'basic', title: '基础信息' },
   { name: 'parts', title: '项目零件' },
-  { name: 'attachments', title: '附件信息' }
+  { name: 'attachments', title: '附件信息' },
+  { name: 'audit', title: '审核信息' }
 ])
 
 // IntersectionObserver 实例
@@ -729,16 +748,6 @@ const getElementScrollTop = (element) => {
     return element.getBoundingClientRect().top + (window.scrollY || document.documentElement.scrollTop)
   }
   return element.getBoundingClientRect().top - container.getBoundingClientRect().top + container.scrollTop
-}
-
-// 根据状态动态添加审核信息tab
-const updateTabsByStatus = () => {
-  const hasAuditTab = tabs.value.some(tab => tab.name === 'audit')
-  if (detail.value.status === 40 && !hasAuditTab) {
-    tabs.value.push({ name: 'audit', title: '审核信息' })
-  } else if (detail.value.status !== 40 && hasAuditTab) {
-    tabs.value = tabs.value.filter(tab => tab.name !== 'audit')
-  }
 }
 
 // 监听滚动
@@ -1380,7 +1389,6 @@ const fetchDetail = async() => {
       editAuthType.value = detail.value.preAuthTypeValue === 1 ? 'tech' : 'warranty'
       hasEdited.value = false
       await fetchAllAttachmentLists()
-      updateTabsByStatus()
       checkReasonOverflow()
     } else {
       showToast(res.msg || '获取详情失败')
@@ -1443,9 +1451,13 @@ const formatDetailData = (data) => {
     auditInfo: {
       auditor: preAuthData.approver || '',
       auditTime: preAuthData.approvalOn || '',
+      auditNo: preAuthData.auditNo || '',
       laborSubtotal: preAuthData.approvedLaborClaimTotal || '',
       partsSubtotal: preAuthData.approvedPartsClaimTotal || '',
-      otherSubtotal: preAuthData.approvedOtherClaimTotal || ''
+      otherSubtotal: preAuthData.approvedOtherClaimTotal || '',
+      laborCostRatio: preAuthData.laborCostRatio || '',
+      partsCostRatio: preAuthData.partsCostRatio || '',
+      otherCostSharingRatio: preAuthData.otherCostSharingRatio || ''
     },
 
     // 审核记录 - 来自预授权主数据
@@ -1495,7 +1507,7 @@ const formatDetailData = (data) => {
   }
 }
 
-// 获取状态样式类 (approvalStatus: 10-未提交, 20-审批中, 30-已通过, 40-已驳回, 50-已作废)
+// 获取状态样式类 (approvalStatus: 10-未提交, 20-审批中, 30-已通过, 40-已驳回, 50-已作废, 70-已拒绝)
 const getStatusClass = (status) => {
   switch (status) {
     case 10: return 'status-pending'
@@ -1503,6 +1515,7 @@ const getStatusClass = (status) => {
     case 30: return 'status-approved'
     case 40: return 'status-rejected'
     case 50: return 'status-rejected'
+    case 70: return 'status-rejected'
     default: return ''
   }
 }
@@ -1623,7 +1636,7 @@ onUnmounted(() => {
     font-weight: 500;
 
     &.status-pending {
-      color: #c8a12b;
+      color: #2261dd;
     }
 
     &.status-approved {
@@ -1635,7 +1648,7 @@ onUnmounted(() => {
     }
 
     &.status-rejected {
-      color: #b91919;
+      color: #B91919;
     }
   }
 
