@@ -397,9 +397,10 @@ const checkFaultOnSave = () => {
   const hadBefore = hasType(itemsSnapshot.value.items) || hasType(itemsSnapshot.value.parts)
   const hasNow = hasType(selectedItems.value) || hasType(selectedParts.value)
   if (!hadBefore && hasNow && props.currentFault === '0') {
-    showToast({ message: '更改为一般维修或者三电维修需要确认故障', duration: 3000 })
+    showToast({ message: '更改为一般维修或者三电维修需要确认故障', duration: 3000, onClose: () => {
+      router.go(-1)
+    } })
     sessionStorage.setItem('faultDetected', '1')
-    router.go(-1)
   }
 }
 
@@ -413,7 +414,6 @@ const onSave = async() => {
   showLoadingToast('请稍候...')
   try {
     const success = await handleSave(onSaveSuccess)
-    closeToast()
     if (success) {
       searchBarRef.value?.reset()
       emit('close')

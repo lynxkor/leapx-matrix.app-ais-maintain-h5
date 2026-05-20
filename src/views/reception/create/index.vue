@@ -447,7 +447,7 @@
               </div>
             </div>
             <!-- APP/短信/零小跑渠道提示 -->
-            <div v-if="signatureData.signChannel === 'APP/短信/零小跑'" class="signature-hint">
+            <div v-if="signatureData.signChannel === 'APP/短信/零小跑' && Number(detail.signStatus) === 10" class="signature-hint">
               此操作将生成待签字施工单且需要用户签字
             </div>
             <!-- 已签字状态显示 -->
