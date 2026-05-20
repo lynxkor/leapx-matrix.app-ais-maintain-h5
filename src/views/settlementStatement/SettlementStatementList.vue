@@ -448,9 +448,7 @@ const selectDateTag = (value) => {
 const switchTab = (tab) => {
   if (activeTab.value === tab) return
   activeTab.value = tab
-  // 切换tab时重置日期筛选到今天
-  selectedDateTag.value = 'today'
-  // 切换tab时重新加载数据（updateRequestData 修改 requestData.data 会触发 RefreshList watch 自动查询，无需再手动 refreshList）
+  // 切换tab时重新加载数据
   updateRequestData()
 }
 

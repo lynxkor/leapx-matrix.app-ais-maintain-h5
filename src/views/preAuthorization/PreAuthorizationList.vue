@@ -262,7 +262,7 @@ const getStatusClass = (label) => {
   if (label === '未提交') return 'status-blue'
   if (label === '审核中') return 'status-yellow'
   if (label === '审核通过') return 'status-green'
-  if (label === '已驳回' || label === '已拒绝') return 'status-red'
+  if (label === '已驳回' || label === '已拒绝' || label === '已作废') return 'status-red'
   return ''
 }
 
@@ -414,6 +414,6 @@ const createAuthorization = () => {
 }
 
 .status-red {
-  color: #E43122;
+  color: #B91919;
 }
 </style>

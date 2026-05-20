@@ -244,7 +244,7 @@ export default function useRepairItemOperations({
         serviceProxyId: serviceProxyId
       })
       if (res?.code === 200) {
-        showToast({ message: '保存成功', 'z-index': 5100 })
+        showToast({ message: '保存成功', 'z-index': 5100, duration: 3000 })
         if (onSuccess) {
           onSuccess({
             items: selectedItems.value,
