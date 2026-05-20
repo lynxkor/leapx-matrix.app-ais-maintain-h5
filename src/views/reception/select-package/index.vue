@@ -710,7 +710,7 @@
 <script setup>
 import { ref, reactive, onMounted, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { showToast, closeToast, showLoadingToast } from 'vant'
+import { showToast, closeToast, showLoadingToast, showDialog } from 'vant'
 import AisPopup from '@/libs/components/AisPopup.vue'
 import {
   getSpecialPackageList,
@@ -723,6 +723,7 @@ import {
   getSpecialActivityDetail,
   getSpecialFreeDetail,
   specialEquityUse,
+  specialEquityRemind,
   specialGoodsUse,
   specialActivityUse,
   specialFreeUse,
@@ -1251,20 +1252,31 @@ const onConfirmEquity = () => {
   }
   specialEquityUse(params)
     .then((res) => {
-      closeToast()
       if (res.code === 200) {
         showToast('已添加')
-        // router.back()
+        specialEquityRemind({ id: serviceProxyId.value }).then((remindRes) => {
+          const remindData = remindRes.code === 200 ? remindRes.data : null
+          if (Array.isArray(remindData) && remindData.length > 0) {
+            const content = remindData.join('<br/>')
+            const message = `<div>提醒</div><div>${content}</div>`
+            showDialog({
+              title: '提示',
+              message,
+              allowHtml: true,
+              confirmButtonText: '确定',
+              showCancelButton: false
+            })
+          }
+        })
       } else {
-        showToast(res.msg || '添加失败')
+        showToast({ message: res.msg || '添加失败', duration: 3000 })
       }
     })
     .catch((err) => {
       showToast({ message: err.msg || '网络错误', duration: 3000 })
-      closeToast()
     })
     .finally(() => {
-      closeToast()
+      // closeToast()
     })
 }
 

@@ -89,6 +89,10 @@ export function specialEquityUse(data) {
 export function specialEquityReplace(data) {
   return post('/maintain/app/sp/special/equity/replace', data)
 }
+// 特殊开单--权益套餐--提醒补差价
+export function specialEquityRemind(data) {
+  return post('/maintain/app/sp/special/equity/remind', data)
+}
 // 特殊开单--商品订单--列表查询
 export function getSpecialGoodsList(data) {
   return post('/maintain/app/sp/special/eo/list', data)
