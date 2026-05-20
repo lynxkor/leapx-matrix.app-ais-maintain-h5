@@ -176,11 +176,11 @@
               <div class="repair-type">{{item.repairItemTypeName}}-{{ item.checkoutTypeName }}-{{ item.warrantyTypeName }}</div>
             </div>
             <div class="repair-item-right">
-              <div class="repair-price">¥{{ item.price }}</div>
+              <div class="repair-price">¥{{ item.subtotal }}</div>
               <div class="repair-discount">优惠 ¥{{ item.discount }}</div>
             </div>
             <div class="repair-item-bottom">
-              <span class="repair-subtotal">¥{{ item.subtotal }}</span>
+              <span class="repair-subtotal">¥{{ item.price }}</span>
               <span class="repair-quantity">x{{ item.quantity }}</span>
             </div>
           </div>
@@ -734,7 +734,7 @@ const cancelEditReason = () => {
   isEditingReason.value = false
 }
 
-const saveEditReason = async () => {
+const saveEditReason = async() => {
   const text = editableReason.value.trim()
   if (!text) {
     showToast('请输入申请原因')
