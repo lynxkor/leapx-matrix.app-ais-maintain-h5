@@ -192,7 +192,7 @@
             <span class="parts-subtotal">¥{{ item.subtotal }}</span>
             <span class="parts-actual">实际领料 {{ item.actualQuantity }}</span>
             <span class="parts-return">退料 {{ item.returnQuantity }}</span>
-            <span class="parts-quantity">x{{ item.quantity }}</span>
+            <span class="parts-quantity">x{{ item.planPickNumber }}</span>
           </div>
         </div>
       </div>
@@ -252,12 +252,13 @@
               <div class="search-btn" @click="handleConstructionSearch">搜索</div>
             </div>
           </div>
-          <RefreshList
-            ref="constructionRefreshListRef"
+          <van-list
+            v-if="constructionList.length > 0"
+            v-model:loading="constructionLoading"
+            :finished="constructionFinished"
+            finished-text=""
             class="popup-refresh-list"
-            :requestData="constructionRequestData"
-            :has-no-data="constructionList.length === 0"
-            @setData="setConstructionData"
+            @load="onConstructionLoad"
           >
             <div
               v-for="item in constructionList"
@@ -321,7 +322,13 @@
                 </div>
               </div>
             </div>
-          </RefreshList>
+          </van-list>
+          <div v-if="constructionSearched && !constructionLoading && constructionList.length === 0" class="construction-empty-wrap">
+            <div class="construction-empty">
+              <img src="@/libs/assets/image/no-data.png" alt="无搜索结果" class="construction-empty-img" />
+              <p class="construction-empty-text">没有找到相关内容</p>
+            </div>
+          </div>
         </div>
       </template>
     </AisPopup>
@@ -730,24 +737,35 @@ const showSaveConfirmDialog = ref(false)
 const hasEdited = ref(false)
 const constructionSearchText = ref('')
 const constructionList = ref([])
+const constructionLoading = ref(false)
+const constructionFinished = ref(true)
+const constructionSearched = ref(false)
+const constructionPageNum = ref(1)
+const constructionPageSize = 10
 
-// 施工单列表请求配置
-const constructionRequestData = reactive({
-  data: {
-    pageNum: 1,
-    pageSize: 10,
-    appSearchKeyWord: ''
-  },
-  api: (params) => preAuthGetConstructionList(params)
-})
-
-// 设置施工单数据
-const setConstructionData = (res) => {
-  const list = res?.list || []
-  if (res?.isRefresh) {
-    constructionList.value = [...list]
-  } else {
-    constructionList.value.push(...list)
+const onConstructionLoad = async() => {
+  try {
+    const res = await preAuthGetConstructionList({
+      pageNum: constructionPageNum.value,
+      pageSize: constructionPageSize,
+      appSearchKeyWord: constructionSearchText.value.trim()
+    })
+    const records = res?.data?.records || res?.data || []
+    if (constructionPageNum.value === 1) {
+      constructionList.value = [...records]
+    } else {
+      constructionList.value.push(...records)
+    }
+    constructionFinished.value = records.length < constructionPageSize
+    constructionSearched.value = true
+    if (!constructionFinished.value) {
+      constructionPageNum.value++
+    }
+  } catch {
+    constructionFinished.value = true
+    constructionSearched.value = true
+  } finally {
+    constructionLoading.value = false
   }
 }
 
@@ -790,12 +808,16 @@ const setFeedbackData = (res) => {
 
 // 施工单搜索按钮点击
 const handleConstructionSearch = () => {
-  constructionRequestData.data = {
-    pageNum: 1,
-    pageSize: 10,
-    appSearchKeyWord: constructionSearchText.value,
-    _t: Date.now()
+  if (!constructionSearchText.value.trim()) {
+    showToast('请输入搜索关键词')
+    return
   }
+  constructionList.value = []
+  constructionSearched.value = false
+  constructionPageNum.value = 1
+  constructionFinished.value = false
+  constructionLoading.value = true
+  onConstructionLoad()
 }
 
 // 质量反馈搜索按钮点击
@@ -1038,17 +1060,8 @@ const handleSubmit = async() => {
 const openConstructionPicker = () => {
   constructionSearchText.value = ''
   constructionList.value = []
+  constructionSearched.value = false
   showConstructionPicker.value = true
-  // 触发重新查询 - 使用随机数强制刷新
-  nextTick(() => {
-    const timestamp = Date.now()
-    constructionRequestData.data = {
-      pageNum: 1,
-      pageSize: 10,
-      appSearchKeyWord: '',
-      _t: timestamp
-    }
-  })
 }
 
 const openFeedbackPicker = () => {
@@ -1883,6 +1896,7 @@ defineExpose({
   background: #f4f4f4;
   display: flex;
   flex-direction: column;
+  position: relative;
 
   .popup-header {
     padding-bottom: 12px;
@@ -2078,6 +2092,33 @@ defineExpose({
             margin-left: 4px;
           }
         }
+      }
+    }
+  }
+
+  .construction-empty-wrap {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding-top: 55px;
+
+    .construction-empty {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+
+      .construction-empty-img {
+        width: 230px;
+        height: 142px;
+      }
+
+      .construction-empty-text {
+        font-family: 'PingFang SC';
+        font-size: 14px;
+        font-weight: 400;
+        color: #6C6E6C;
+        margin-top: 16px;
       }
     }
   }
