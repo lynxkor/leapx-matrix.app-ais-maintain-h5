@@ -101,7 +101,7 @@ import { useRouter } from 'vue-router'
 import { showToast } from 'vant'
 import ListItem from '@/components/ListItem.vue'
 import AisButton from '@/components/AisButton.vue'
-import { preAuthList } from '@/api/authorization'
+import { preAuthPage } from '@/api/authorization'
 import { callPhone } from '@/libs/utils/nativeFn'
 import { usePageSafeArea } from '@/utils/safeArea'
 
@@ -138,13 +138,13 @@ const handleSearch = async(keyword) => {
   hasSearched.value = true
 
   try {
-    const res = await preAuthList({
+    const res = await preAuthPage({
       appSearchKeyWord: keyword,
       pageNum: 1,
       pageSize: 20
     })
     // 处理接口返回的数据结构
-    searchResults.value = res?.data || []
+    searchResults.value = res?.data.records || []
   } catch (error) {
     console.error('搜索失败:', error)
     searchResults.value = []
