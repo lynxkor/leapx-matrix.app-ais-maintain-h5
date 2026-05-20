@@ -165,8 +165,6 @@
           </div>
           <div class="repair-item-bottom">
             <span class="repair-subtotal">¥{{ item.subtotal }}</span>
-            <span class="repair-actual">实际领料 {{ item.actualQuantity }}</span>
-            <span class="repair-return">退料 {{ item.returnQuantity }}</span>
             <span class="repair-quantity">x{{ item.quantity }}</span>
           </div>
         </div>
@@ -420,7 +418,7 @@ const attachmentTypeMap = {
   vehicle: '车辆信息',
   license: '行驶证',
   fault: '故障信息',
-  finalRight: '终审权益',
+  finalRight: '终身权益',
   firstMaintain: '首保凭证',
   maintainQuality: '保养质检',
   oldParts: '施工旧件',
@@ -1140,8 +1138,8 @@ const onConstructionSelect = async(item) => {
         discount: item.discountAmount || '0',
         subtotal: item.totalAmount || '0',
         quantity: item.quantity || '0',
-        actualQuantity: item.actualQuantity || '0',
-        returnQuantity: item.returnQuantity || '0'
+        actualQuantity: item.actualPickNumber || '0',
+        returnQuantity: item.refundedNumber || '0'
       }))
     }
   } catch (error) {
@@ -1510,10 +1508,14 @@ defineExpose({
       align-items: center;
       gap: 12px;
       color: #545454;
-      font-size: 12px;
+      font-size: 14px;
       font-weight: 400;
       font-family: 'PingFang SC';
-
+      .repair-subtotal {
+        font-family: 'PingFang SC';
+        font-size: 14px;
+        color: #545454;
+      }
       .repair-quantity {
         margin-left: auto;
         font-family: 'PingFang SC';

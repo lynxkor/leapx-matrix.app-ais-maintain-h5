@@ -19,7 +19,7 @@
         </div>
         <!-- 驳回原因 -->
         <div v-if="detail.status === 40" class="reject-reason">
-          {{ detail.rejectReason || '--' }}
+          {{ detail.preAuthRuleCodeDesc || '--' }}
         </div>
       </div>
 
@@ -180,18 +180,20 @@
             :key="index"
             class="repair-item"
           >
-            <div class="repair-item-left">
-              <div class="repair-name">{{ item.name }}</div>
-              <div class="repair-part-no">{{ item.partNo }}</div>
-              <div class="repair-type">{{item.repairItemTypeName}}-{{ item.checkoutTypeName }}-{{ item.warrantyTypeName }}</div>
-            </div>
-            <div class="repair-item-right">
-              <div class="repair-price">¥{{ item.subtotal }}</div>
-              <div class="repair-discount">优惠 ¥{{ item.discount }}</div>
+            <div class="repair-item-top">
+              <div class="repair-item-left">
+                <div class="repair-name">{{ item.name }}</div>
+                <div class="repair-part-no">{{ item.partNo }}</div>
+                <div class="repair-type">{{item.repairItemTypeName}}-{{ item.checkoutTypeName }}-{{ item.warrantyTypeName }}</div>
+              </div>
+              <div class="repair-item-right">
+                <div class="repair-price">¥{{ item.subtotal }}</div>
+                <div class="repair-discount">优惠 ¥{{ item.discount }}</div>
+              </div>
             </div>
             <div class="repair-item-bottom">
               <span class="repair-subtotal">¥{{ item.price }}</span>
-              <span class="repair-quantity">x{{ item.quantity }}</span>
+              <span class="repair-workHour">x{{ item.workHour }}</span>
             </div>
           </div>
         </div>
@@ -226,7 +228,7 @@
                 <span class="repair-actual">实际领料 {{ item.actualQuantity }}</span>
                 <span class="repair-return">退料 {{ item.returnQuantity }}</span>
               </div>
-              <span class="repair-quantity">x{{ item.quantity }}</span>
+              <span class="repair-workHour">x{{ item.workHour }}</span>
             </div>
           </div>
         </div>
@@ -271,8 +273,8 @@
         </div>
       </div>
     </div>
-    <!-- 审核信息 Tab (仅驳回状态显示) -->
-    <div v-if="detail.status === 40" id="tab-audit" class="tab-content-section">
+    <!-- 审核信息 Tab -->
+    <div id="tab-audit" class="tab-content-section">
       <!-- 审核信息卡片 -->
       <div class="info-card">
         <div class="card-header">
@@ -283,18 +285,36 @@
             <span class="info-label">施工单号</span>
             <span class="info-value">{{ detail.constructionNo || '--' }}</span>
           </div>
-          <div class="info-row">
-            <span class="info-label">同意工时索赔小计</span>
-            <span class="info-value">{{ detail.auditInfo?.laborSubtotal ? `¥${detail.auditInfo.laborSubtotal}` : '--' }}</span>
-          </div>
-          <div class="info-row">
-            <span class="info-label">同意零件索赔小计</span>
-            <span class="info-value">{{ detail.auditInfo?.partsSubtotal ? `¥${detail.auditInfo.partsSubtotal}` : '--' }}</span>
-          </div>
-          <div class="info-row">
-            <span class="info-label">同意其他索赔小计</span>
-            <span class="info-value">{{ detail.auditInfo?.otherSubtotal ? `¥${detail.auditInfo.otherSubtotal}` : '--' }}</span>
-          </div>
+          <template v-if="detail.isGoodWarranty">
+            <div class="info-row">
+              <span class="info-label">审批单号</span>
+              <span class="info-value">{{ detail.auditInfo?.auditNo || '--' }}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">同意工时索赔小计</span>
+              <span class="info-value">{{ detail.auditInfo?.laborSubtotal ? `¥${detail.auditInfo.laborSubtotal}` : '--' }}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">同意零件索赔小计</span>
+              <span class="info-value">{{ detail.auditInfo?.partsSubtotal ? `¥${detail.auditInfo.partsSubtotal}` : '--' }}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">同意其他索赔小计</span>
+              <span class="info-value">{{ detail.auditInfo?.otherSubtotal ? `¥${detail.auditInfo.otherSubtotal}` : '--' }}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">工时分担比例</span>
+              <span class="info-value">{{ detail.auditInfo?.laborCostRatio ? `${detail.auditInfo.laborCostRatio}%` : '--' }}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">零件分担比例</span>
+              <span class="info-value">{{ detail.auditInfo?.partsCostRatio ? `${detail.auditInfo.partsCostRatio}%` : '--' }}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">其他分担比例</span>
+              <span class="info-value">{{ detail.auditInfo?.otherCostSharingRatio ? `${detail.auditInfo.otherCostSharingRatio}%` : '--' }}</span>
+            </div>
+          </template>
 
           <!-- 分隔线 -->
           <div class="audit-divider"></div>
@@ -419,7 +439,7 @@
               :class="['error-code-item', { active: selectedErrorCode === option.label }]"
               @click="selectErrorCode(option)"
             >
-              <span class="error-code-label">{{ option.label + '【' + option.value + '】' }}</span>
+              <span class="error-code-label">{{ option.label + '【' + option.code + '】' }}</span>
               <van-icon v-if="selectedErrorCode === option.label" name="success" class="error-code-check" />
             </div>
           </van-list>
@@ -554,7 +574,7 @@ const attachmentSections = [
   { key: 'vehicle', label: '车辆信息' },
   { key: 'license', label: '行驶证' },
   { key: 'fault', label: '故障信息' },
-  { key: 'finalRight', label: '终审权益' },
+  { key: 'finalRight', label: '终身权益' },
   { key: 'firstMaintain', label: '首保凭证' },
   { key: 'maintainQuality', label: '保养质检' },
   { key: 'oldParts', label: '施工旧件' },
@@ -674,7 +694,8 @@ const canSubmit = computed(() => {
 const tabs = ref([
   { name: 'basic', title: '基础信息' },
   { name: 'parts', title: '项目零件' },
-  { name: 'attachments', title: '附件信息' }
+  { name: 'attachments', title: '附件信息' },
+  { name: 'audit', title: '审核信息' }
 ])
 
 // IntersectionObserver 实例
@@ -727,16 +748,6 @@ const getElementScrollTop = (element) => {
     return element.getBoundingClientRect().top + (window.scrollY || document.documentElement.scrollTop)
   }
   return element.getBoundingClientRect().top - container.getBoundingClientRect().top + container.scrollTop
-}
-
-// 根据状态动态添加审核信息tab
-const updateTabsByStatus = () => {
-  const hasAuditTab = tabs.value.some(tab => tab.name === 'audit')
-  if (detail.value.status === 40 && !hasAuditTab) {
-    tabs.value.push({ name: 'audit', title: '审核信息' })
-  } else if (detail.value.status !== 40 && hasAuditTab) {
-    tabs.value = tabs.value.filter(tab => tab.name !== 'audit')
-  }
 }
 
 // 监听滚动
@@ -957,7 +968,7 @@ const onConstructionSelect = async(item) => {
         price: ri.price || '0',
         discount: ri.discountAmount || '0',
         subtotal: ri.repairAmount || ri.totalAmount || '0',
-        quantity: ri.workHour || ri.quantity || '0'
+        workHour: ri.workHour || '0'
       }))
       detail.value.partsItems = (data.spSparePartResps || []).map((pi) => ({
         name: pi.partsName || '',
@@ -969,7 +980,7 @@ const onConstructionSelect = async(item) => {
         price: pi.price || '0',
         discount: pi.discountAmount || '0',
         subtotal: pi.partsAmount || pi.totalAmount || '0',
-        quantity: pi.quantity || '0',
+        workHour: pi.workHour || '0',
         actualQuantity: pi.actualPickNumber || '0',
         returnQuantity: pi.refundedNumber || '0'
       }))
@@ -1079,16 +1090,15 @@ const handleSubmit = async() => {
     }
   } catch (error) {
     closeToast()
-    console.error('提交申请失败:', error)
-    showToast('提交失败，请稍后重试')
+    showToast(error.msg)
   }
 }
 
 // 审核状态映射
 const auditStatusMap = {
   approve: 30, // 审批通过
-  reject: 40, // 审批驳回
-  refuse: 70 // 拒绝申请
+  reject: 20, // 审批驳回
+  refuse: 40 // 拒绝申请
 }
 
 const handleAuditSubmit = async() => {
@@ -1323,7 +1333,8 @@ const fetchErrorCodeList = async() => {
     if (res.code === 200 && res.data) {
       const list = res.data?.map(item => ({
         label: item.content,
-        value: item.code
+        code: item.code,
+        value: item.id
       })) || []
 
       errorCodeOptions.value = [...errorCodeOptions.value, ...list]
@@ -1377,7 +1388,6 @@ const fetchDetail = async() => {
       editAuthType.value = detail.value.preAuthTypeValue === 1 ? 'tech' : 'warranty'
       hasEdited.value = false
       await fetchAllAttachmentLists()
-      updateTabsByStatus()
       checkReasonOverflow()
     } else {
       showToast(res.msg || '获取详情失败')
@@ -1440,9 +1450,13 @@ const formatDetailData = (data) => {
     auditInfo: {
       auditor: preAuthData.approver || '',
       auditTime: preAuthData.approvalOn || '',
+      auditNo: preAuthData.auditNo || '',
       laborSubtotal: preAuthData.approvedLaborClaimTotal || '',
       partsSubtotal: preAuthData.approvedPartsClaimTotal || '',
-      otherSubtotal: preAuthData.approvedOtherClaimTotal || ''
+      otherSubtotal: preAuthData.approvedOtherClaimTotal || '',
+      laborCostRatio: preAuthData.laborCostRatio || '',
+      partsCostRatio: preAuthData.partsCostRatio || '',
+      otherCostSharingRatio: preAuthData.otherCostSharingRatio || ''
     },
 
     // 审核记录 - 来自预授权主数据
@@ -1464,7 +1478,7 @@ const formatDetailData = (data) => {
       price: item.price || '0',
       discount: item.discountAmount || '0',
       subtotal: item.repairAmount || '0',
-      quantity: item.workHour || '0'
+      workHour: item.workHour || '0'
     })),
 
     // 维修配件 - 来自预授权主数据
@@ -1478,7 +1492,7 @@ const formatDetailData = (data) => {
       price: item.price || '0',
       discount: item.discountAmount || '0',
       subtotal: item.partsAmount || '0',
-      quantity: item.quantity || '0',
+      workHour: item.workHour || '0',
       actualQuantity: item.actualPickNumber || '0',
       returnQuantity: item.refundedNumber || '0'
     })),
@@ -1492,7 +1506,7 @@ const formatDetailData = (data) => {
   }
 }
 
-// 获取状态样式类 (approvalStatus: 10-未提交, 20-审批中, 30-已通过, 40-已驳回, 50-已作废)
+// 获取状态样式类 (approvalStatus: 10-未提交, 20-审批中, 30-已通过, 40-已驳回, 50-已作废, 70-已拒绝)
 const getStatusClass = (status) => {
   switch (status) {
     case 10: return 'status-pending'
@@ -1500,6 +1514,7 @@ const getStatusClass = (status) => {
     case 30: return 'status-approved'
     case 40: return 'status-rejected'
     case 50: return 'status-rejected'
+    case 70: return 'status-rejected'
     default: return ''
   }
 }
@@ -1620,7 +1635,7 @@ onUnmounted(() => {
     font-weight: 500;
 
     &.status-pending {
-      color: #c8a12b;
+      color: #2261dd;
     }
 
     &.status-approved {
@@ -1632,7 +1647,7 @@ onUnmounted(() => {
     }
 
     &.status-rejected {
-      color: #b91919;
+      color: #B91919;
     }
   }
 
@@ -1890,15 +1905,22 @@ onUnmounted(() => {
     border-bottom: none;
   }
 
+  .repair-item-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+  }
+
   .repair-item-left {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 2px;
+    flex: 1;
 
     .repair-name-row {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 4px;
 
       .repair-name {
         font-family: 'PingFang SC';
@@ -1915,6 +1937,13 @@ onUnmounted(() => {
         padding: 1px 4px;
         border-radius: 4px;
       }
+    }
+
+    .repair-name {
+      font-family: 'PingFang SC';
+      font-size: 14px;
+      font-weight: 500;
+      color: #191a1b;
     }
 
     .repair-part-no {
@@ -1934,7 +1963,8 @@ onUnmounted(() => {
     display: flex;
     flex-direction: column;
     align-items: flex-end;
-    margin-top: -40px;
+    gap: 2px;
+    flex-shrink: 0;
 
     .repair-price {
       font-family: 'PingFang SC';
@@ -1954,7 +1984,7 @@ onUnmounted(() => {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-top: 8px;
+    margin-top: 4px;
 
     .repair-bottom-left {
       display: flex;
@@ -1975,7 +2005,7 @@ onUnmounted(() => {
       }
     }
 
-    .repair-quantity {
+    .repair-workHour {
       font-family: 'PingFang SC';
       font-size: 14px;
       color: #191a1b;
