@@ -19,7 +19,7 @@
         </div>
         <!-- 驳回原因 -->
         <div v-if="detail.status === 40" class="reject-reason">
-          {{ detail.rejectReason || '--' }}
+          {{ detail.preAuthRuleCodeDesc || '--' }}
         </div>
       </div>
 
@@ -1090,8 +1090,7 @@ const handleSubmit = async() => {
     }
   } catch (error) {
     closeToast()
-    console.error('提交申请失败:', error)
-    showToast('提交失败，请稍后重试')
+    showToast(error.msg)
   }
 }
 
