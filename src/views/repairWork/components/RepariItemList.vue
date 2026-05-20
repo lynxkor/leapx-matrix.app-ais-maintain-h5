@@ -156,7 +156,7 @@ const sortedItems = computed(() => {
     case 'dispatch':
       return items.filter(item => filterByTag(item, 0) || filterByTag(item, 1))
     case 'working': {
-      const priority = [2, 1, 3]
+      const priority = [0, 1, 2, 3]
       const prioritized = []
       const rest = []
       for (const item of items) {
