@@ -165,8 +165,6 @@
           </div>
           <div class="repair-item-bottom">
             <span class="repair-subtotal">¥{{ item.subtotal }}</span>
-            <span class="repair-actual">实际领料 {{ item.actualQuantity }}</span>
-            <span class="repair-return">退料 {{ item.returnQuantity }}</span>
             <span class="repair-quantity">x{{ item.quantity }}</span>
           </div>
         </div>
@@ -357,6 +355,7 @@
             class="popup-refresh-list"
             :requestData="feedbackRequestData"
             :has-no-data="feedbackList.length === 0"
+            :show-reset-button="false"
             @setData="setFeedbackData"
           >
             <div
@@ -419,7 +418,7 @@ const attachmentTypeMap = {
   vehicle: '车辆信息',
   license: '行驶证',
   fault: '故障信息',
-  finalRight: '终审权益',
+  finalRight: '终身权益',
   firstMaintain: '首保凭证',
   maintainQuality: '保养质检',
   oldParts: '施工旧件',
@@ -838,10 +837,6 @@ const validatePreAuthForm = () => {
     showToast('请选择施工单')
     return false
   }
-  if (!feedbackId.value) {
-    showToast('请选择质量反馈单号')
-    return false
-  }
   if (!applyReason.value.trim()) {
     showToast('请填写申请原因')
     return false
@@ -1076,7 +1071,6 @@ const openFeedbackPicker = () => {
 
 const onAuthTypeChange = (type) => {
   authType.value = type
-  showVehicleInfo.value = true
   hasEdited.value = true
 }
 
@@ -1089,6 +1083,9 @@ const onConstructionSelect = async(item) => {
 
     if (res?.code !== 0 && res?.code !== 200) {
       showToast(res?.msg || res?.message || '获取信息失败')
+      showVehicleInfo.value = false
+      constructionId.value = ''
+      constructionNo.value = ''
       return
     }
 
@@ -1096,9 +1093,9 @@ const onConstructionSelect = async(item) => {
     constructionId.value = item.id || item.serviceProxyId
     showConstructionPicker.value = false
     hasEdited.value = true
-    showVehicleInfo.value = true
 
     if (res?.data) {
+      showVehicleInfo.value = true
       const data = res.data
       // 更新车辆信息
       vehicleInfo.value = {
@@ -1141,16 +1138,14 @@ const onConstructionSelect = async(item) => {
         discount: item.discountAmount || '0',
         subtotal: item.totalAmount || '0',
         quantity: item.quantity || '0',
-        actualQuantity: item.actualQuantity || '0',
-        returnQuantity: item.returnQuantity || '0'
+        actualQuantity: item.actualPickNumber || '0',
+        returnQuantity: item.refundedNumber || '0'
       }))
-
-      showVehicleInfo.value = true
     }
   } catch (error) {
     closeToast()
     showToast(error.msg)
-    showVehicleInfo.value = true
+    showVehicleInfo.value = false
   }
 }
 
@@ -1513,10 +1508,14 @@ defineExpose({
       align-items: center;
       gap: 12px;
       color: #545454;
-      font-size: 12px;
+      font-size: 14px;
       font-weight: 400;
       font-family: 'PingFang SC';
-
+      .repair-subtotal {
+        font-family: 'PingFang SC';
+        font-size: 14px;
+        color: #545454;
+      }
       .repair-quantity {
         margin-left: auto;
         font-family: 'PingFang SC';
