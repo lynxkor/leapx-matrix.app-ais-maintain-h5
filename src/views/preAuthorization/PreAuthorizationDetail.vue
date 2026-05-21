@@ -346,6 +346,12 @@
       <div class="action-btn audit" @click="handleAudit">审核</div>
     </div>
 
+    <!-- 底部激活按钮 (已拒绝状态且非善意保修时显示) -->
+    <div v-if="detail.status === 70 && detail.isGoodWarranty !== true" class="bottom-actions">
+      <div class="action-btn back" @click="router.back()">返回</div>
+      <div class="action-btn audit" @click="handleAudit">激活</div>
+    </div>
+
     <!-- 底部提交按钮 (未提交或已驳回状态显示) -->
     <div v-if="isEditable" class="bottom-actions">
       <div class="action-btn submit" @click="handleSubmit">提交申请</div>
@@ -674,11 +680,16 @@ const errorCodePageNum = ref(1) // 错误代码当前页码
 const errorCodePageSize = 10 // 错误代码每页条数
 const currentUploadType = ref('')
 const isUploadingAttachment = ref(false)
-const auditOptions = [
-  { label: '审批通过', value: 'approve' },
-  { label: '审批驳回', value: 'reject' },
-  { label: '拒绝申请', value: 'refuse' }
-]
+const auditOptions = computed(() => {
+  const base = [
+    { label: '审批通过', value: 'approve' },
+    { label: '审批驳回', value: 'reject' }
+  ]
+  if (detail.value.status !== 70) {
+    base.push({ label: '拒绝申请', value: 'refuse' })
+  }
+  return base
+})
 
 // 是否可编辑（未提交10 或 已驳回40）
 const isEditable = computed(() => {
@@ -1197,7 +1208,7 @@ const openErrorCodePopup = () => {
 // 审核附件上传
 const handleUploadAttachment = () => {
   currentUploadType.value = 'audit'
-  const currentList = attachmentData.audit || []
+  const currentList = attachmentList.value || []
   batchUploadImageLimit(10, undefined, currentList.length + 1)
 }
 
