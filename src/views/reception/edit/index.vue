@@ -1582,13 +1582,13 @@ const onHasFaultChange = (value) => {
   // 如果选择"否"，弹出确认框
   if (Number(value) === 0) {
     // 维修类型包含一般维修或三电维修时，不允许改为"否"
-    const typeCollect = detail.repairItemTypeDetailCollect || ''
-    if (typeCollect.includes('一般维修') || typeCollect.includes('三电维修')) {
-      showToast({ message: '当前工单维修类型包含一般维修或三电维修，请确认是否存在故障!', duration: 3000 })
-      // 还原为"是"
-      detail.currentFault = '1'
-      return
-    }
+    // const typeCollect = detail.repairItemTypeDetailCollect || ''
+    // if (typeCollect.includes('一般维修') || typeCollect.includes('三电维修')) {
+    //   showToast({ message: '当前工单维修类型包含一般维修或三电维修，请确认是否存在故障!', duration: 3000 })
+    //   // 还原为"是"
+    //   detail.currentFault = '1'
+    //   return
+    // }
     // 如果已添加过故障模块或客户故障描述，弹出确认框
     if (detail.faultModules.length > 0 || detail.customerFaultDesc) {
       pendingFaultValue.value = value
@@ -3115,7 +3115,7 @@ const onPartsSave = async() => {
       if (detail.customerFaultDesc === '本次进店车辆无故障') {
         detail.customerFaultDesc = ''
       }
-      showToast({ message: '维修类型为一般维修或三电维修，系统默认调整 【本次进店是否存在故障】为是，存在故障，请填写故障模块信息!', duration: 3000 })
+      showToast({ message: '更改为一般维修或三电保修需要确认故障!', duration: 3000 })
       // 切换tab到环检信息
       activeTab.value = 'inspection'
     }

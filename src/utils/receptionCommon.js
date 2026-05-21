@@ -147,10 +147,10 @@ export function validateRepairPerson(
       showToast('请输入送修人手机号')
       return false
     }
-    if (!/^1[3-9]\d{9}$/.test(repairPersonPhoneInput.trim())) {
-      showToast('请输入正确的手机号')
-      return false
-    }
+  }
+  if (repairPersonPhoneInput?.trim() && !/^1[3-9]\d{9}$/.test(repairPersonPhoneInput.trim())) {
+    showToast('请输入正确的手机号')
+    return false
   }
   return true
 }
