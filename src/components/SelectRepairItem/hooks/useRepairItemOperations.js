@@ -89,6 +89,7 @@ export default function useRepairItemOperations({
         el.isBindltem = 1
         const res = normalizePart(el)
         Object.assign(res, {
+          repairItemDisabled: rawItem.repairItemDisabled,
           repairItemTypeId: rawItem.repairItemTypeId || res.repairItemTypeId,
           repairItemTypeName: rawItem.repairItemTypeName || res.repairItemTypeName
         })
