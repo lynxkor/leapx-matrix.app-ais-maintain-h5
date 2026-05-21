@@ -827,7 +827,7 @@ const detail = ref({
   status: 0,
   approvalStatusLabel: '',
   statusClass: '',
-  rejectReason: '',
+  preAuthRuleCodeDesc: '',
   constructionNo: '',
   authType: '',
   vin: '',
@@ -1412,7 +1412,7 @@ const formatDetailData = (data) => {
     status: preAuthData.approvalStatus,
     approvalStatusLabel: preAuthData.approvalStatusLabel || '',
     statusClass: getStatusClass(preAuthData.approvalStatus),
-    rejectReason: preAuthData.rejectReason || '',
+    preAuthRuleCodeDesc: preAuthData.preAuthRuleCodeDesc || '',
     // 施工单信息 - 来自施工单数据
     constructionNo: serviceProxy.code || '',
     // 预授权类型 - 来自预授权主数据
