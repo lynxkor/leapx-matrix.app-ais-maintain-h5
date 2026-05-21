@@ -447,9 +447,9 @@
               </div>
             </div>
             <!-- APP/短信/零小跑渠道提示 -->
-            <div v-if="signatureData.signChannel === 'APP/短信/零小跑' && Number(detail.signStatus) === 10" class="signature-hint">
+            <!-- <div v-if="signatureData.signChannel === 'APP/短信/零小跑' && Number(detail.signStatus) === 20" class="signature-hint">
               此操作将生成待签字施工单且需要用户签字
-            </div>
+            </div> -->
             <!-- 已签字状态显示 -->
             <!-- <div class="signature-row" v-if="detail.signStatus == 20">
               <span class="label">签字状态</span>
@@ -547,7 +547,7 @@
       </template>
       <template v-else-if="activeTab === 'signature'">
         <span
-          v-if="detail.orderStatus === 110"
+          v-if="detail.orderStatus === 110 && Number(detail.signStatus) === 20"
           :class="['complete-btn', { disabled: isConfirmAndSignDisabled }]"
           @click="onConfirmAndSign"
           >制单确认并签字</span
@@ -1025,11 +1025,15 @@
       <div class="warranty-alert-content">
         <template v-for="item in remindList" :key="item.type">
           <!-- 预授权提醒 -->
-          <template v-if="item.type === RemindInfoTypeEnum.PRE_AUTH">
+           <template v-if="item.type === RemindInfoTypeEnum.PRE_AUTH">
             <div v-if="detail.isCreatePreAuth !== 1" class="alert-section">
               <div class="section-title">{{ item.typeLabel }}</div>
               <div class="section-message">{{ item.content || '暂无提醒信息' }}</div>
               <div class="section-action-btn" @click="onGenerateAuthorization">生成预授权</div>
+            </div>
+            <div v-else>
+              <div class="info-title">{{ item.typeLabel }}</div>
+            <div class="info-content">{{ item.content || '暂无提醒信息' }}</div>
             </div>
           </template>
 
