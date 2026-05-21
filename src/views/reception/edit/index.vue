@@ -459,9 +459,9 @@
               </div>
             </div>
             <!-- APP/短信/零小跑渠道提示 -->
-            <div v-if="signatureData.signChannel === 'APP/短信/零小跑' && Number(detail.signStatus) === 10" class="signature-hint">
+            <!-- <div v-if="signatureData.signChannel === 'APP/短信/零小跑' && Number(detail.signStatus) === 20" class="signature-hint">
               此操作将生成待签字施工单且需要用户签字
-            </div>
+            </div> -->
             <!-- 已签字状态显示 -->
             <!-- <div class="signature-row" v-if="Number(detail.signStatus) === 20">
               <span class="label">签字状态</span>
@@ -570,7 +570,7 @@
           >保存</span
         > -->
         <span
-          v-if="detail.orderStatus == 110"
+          v-if="detail.orderStatus == 110 && Number(detail.signStatus) === 20"
           :class="['complete-btn', { disabled: isConfirmAndSignDisabled }]"
           @click="onConfirmAndSignClick"
           >制单确认并签字</span
@@ -1233,21 +1233,21 @@ const showWarrantyAlertDialog = ref(false)
 const remindList = ref([])
 
 // 过滤出实际会渲染可见内容的提醒项（与模板 v-if/v-else-if 条件保持一致）
-const visibleRemindList = computed(() => {
-  return remindList.value.filter((item) => {
-    // 预授权：已创建预授权时内层 v-if 会隐藏内容
-    if (item.type === RemindInfoTypeEnum.PRE_AUTH && detail.isCreatePreAuth === 1) return false
-    // 已识别的类型都会渲染
-    const knownTypes = [
-      RemindInfoTypeEnum.PRE_AUTH,
-      RemindInfoTypeEnum.THREE_GUARANTEES,
-      RemindInfoTypeEnum.SERVICE_ACTIVITY,
-      RemindInfoTypeEnum.PRICE_DIFFERENCE,
-      '5'
-    ]
-    return knownTypes.includes(item.type)
-  })
-})
+// const visibleRemindList = computed(() => {
+//   return remindList.value.filter((item) => {
+//     // 预授权：已创建预授权时内层 v-if 会隐藏内容
+//     if (item.type === RemindInfoTypeEnum.PRE_AUTH && detail.isCreatePreAuth === 1) return false
+//     // 已识别的类型都会渲染
+//     const knownTypes = [
+//       RemindInfoTypeEnum.PRE_AUTH,
+//       RemindInfoTypeEnum.THREE_GUARANTEES,
+//       RemindInfoTypeEnum.SERVICE_ACTIVITY,
+//       RemindInfoTypeEnum.PRICE_DIFFERENCE,
+//       '5'
+//     ]
+//     return knownTypes.includes(item.type)
+//   })
+// })
 
 const onGenerateAuthorization = async() => {
   // 生成预授权
@@ -3455,7 +3455,7 @@ const fetchRemindInfo = () => {
       const preAuthItems = rawData.filter((item) => item.type === RemindInfoTypeEnum.PRE_AUTH)
       const otherItems = rawData.filter((item) => validTypes.includes(item.type))
       remindList.value = [...preAuthItems, ...otherItems]
-      if (visibleRemindList.value.length > 0) {
+      if (remindList.value.length > 0) {
         showWarrantyAlertDialog.value = true
       }
     }

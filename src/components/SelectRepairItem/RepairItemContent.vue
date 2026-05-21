@@ -169,7 +169,7 @@
 
 <script setup>
 import { ref, computed, watch, onMounted, nextTick } from 'vue'
-import { showToast, closeToast, showLoadingToast } from 'vant'
+import { showToast, closeToast, showLoadingToast, showDialog } from 'vant'
 import Empty from '@/views/repairWork/components/Empty.vue'
 import SearchBar from './SearchBar.vue'
 import RepairItemCard from './RepairItemCard.vue'
@@ -218,6 +218,7 @@ const props = defineProps({
 const emit = defineEmits(['close', 'confirm', 'replace', 'delete'])
 
 import { useRouter } from 'vue-router'
+import { getRemindInfo } from '@/api/reception'
 // UI 状态
 const searchBarRef = ref(null)
 const activeTab = ref('item')
@@ -423,6 +424,22 @@ const onSave = async() => {
   try {
     const success = await handleSave(onSaveSuccess)
     if (success) {
+      getRemindInfo(props.serviceProxyId).then((remindRes) => {
+        if (remindRes.code === 200) {
+          const remindData = remindRes.data || []
+          const preAuthItems = remindData.filter((item) => item.type === '3')
+          if (preAuthItems.length > 0) {
+            const messages = preAuthItems.map((item) => item.content || '暂无提醒信息').join('<br/>')
+            showDialog({
+              title: '提醒',
+              message: messages,
+              allowHtml: true,
+              confirmButtonText: '确定',
+              showCancelButton: false
+            })
+          }
+        }
+      })
       searchBarRef.value?.reset()
       emit('close')
     }
