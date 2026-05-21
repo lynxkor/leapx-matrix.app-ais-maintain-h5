@@ -886,6 +886,7 @@ const buildPreAuthPayload = (saveOrSubmit, attachments = buildAttachmentsPayload
   const payload = {
     serviceProxyId: constructionId.value,
     qualityOrderReportId: feedbackId.value,
+    qualityOrderReport: feedbackNo.value,
     reason: applyReason.value,
     saveOrSubmit,
     attachments

@@ -1110,6 +1110,7 @@ const handleSubmit = async() => {
       id: id,
       serviceProxyId: editConstructionId.value,
       qualityOrderReportId: editFeedbackId.value,
+      qualityOrderReport: detail.value.qualityReport?.reportNo || '',
       reason: detail.value.applyReason,
       saveOrSubmit: 1,
       attachments
