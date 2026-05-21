@@ -358,6 +358,12 @@
               <span class="label">签字状态</span>
               <span class="value">{{ signatureData.signStatusLabel || '-' }}</span>
             </div>
+            <div
+              class="signature-action-row"
+              v-if="Number(signatureData.signStatus) === 20 && signatureData.signChannel != 40"
+            >
+              <van-button type="primary" size="small" @click="onViewSignature">查看签字</van-button>
+            </div>
           </div>
 
           <!-- 附件信息 -->
@@ -654,6 +660,7 @@ const signatureData = reactive({
   expectFinishAt: '',
   isLive: false,
   signChannel: '',
+  signStatus: '',
   signStatusLabel: '',
   attachments: []
 })
