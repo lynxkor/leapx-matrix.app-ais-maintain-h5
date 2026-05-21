@@ -235,6 +235,12 @@ export default function useRepairItemOperations({
     // 善意保修只能单独开单
     if (!validateGoodWillWarranty()) return false
 
+    // 如果数量为0，不允许保存
+    if (selectedItems.value.some(i => i.quantity <= 0) || selectedParts.value.some(i => i.quantity <= 0)) {
+      showToast({ message: '数量必须要大于0', 'z-index': 5100 })
+      return false
+    }
+
     try {
       saving.value = true
       const res = await saveRepairItemInfo({
@@ -244,7 +250,7 @@ export default function useRepairItemOperations({
         serviceProxyId: serviceProxyId
       })
       if (res?.code === 200) {
-        showToast({ message: '保存成功', 'z-index': 5100, duration: 3000 })
+        showToast({ message: '保存成功', 'z-index': 5100 })
         if (onSuccess) {
           onSuccess({
             items: selectedItems.value,
@@ -253,12 +259,12 @@ export default function useRepairItemOperations({
         }
         return true
       } else {
-        showToast({ message: res?.message || '保存失败', 'z-index': 5100, duration: 3000 })
+        showToast({ message: res?.message || '保存失败', 'z-index': 5100 })
         return false
       }
     } catch (error) {
       console.error('保存失败:', error)
-      showToast({ message: '保存失败', 'z-index': 5100 })
+      showToast({ message: error.msg || '保存失败', 'z-index': 5100 })
       return false
     } finally {
       saving.value = false

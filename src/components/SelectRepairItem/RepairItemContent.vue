@@ -346,6 +346,10 @@ const repairItemContentReplace = (content) => {
     part.name = part.partsName || part.name
     part.code = part.partsCode || part.code
 
+    // 原零件信息，如果不存在，证明是第一次替换，需要带上
+    part.originPartsId = part.originPartsId || part.partsId
+    part.originPartsCode = part.originPartsCode || part.partsCode
+
     // 双向替换：在替换件列表中找到新零件对应项，替换为旧零件信息
     const list = part.replaceSparePartRespList
     if (list && list.length > 0) {

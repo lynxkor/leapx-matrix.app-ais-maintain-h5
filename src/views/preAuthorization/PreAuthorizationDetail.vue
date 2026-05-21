@@ -324,16 +324,11 @@
           <div class="audit-records-list">
             <div v-for="(record, index) in detail.auditRecords" :key="index" class="audit-record-item">
               <div class="audit-record-header">
-                <span class="audit-time">{{ record.time }}</span>
-                <span class="audit-status" :class="record.status">{{ record.statusText }}</span>
+                <span class="audit-user-time">{{ record.operatorName }}<span style="display:inline-block;width:4px"></span>{{ record.time }}</span>
+                <span class="audit-status" :class="getAuditRecordStatusClass(record.statusText)">{{ record.statusText }}</span>
               </div>
-              <div class="audit-record-content">
-                <p class="audit-comment">{{ record.comment }}</p>
-                <div v-if="record.images && record.images.length > 0" class="audit-images">
-                  <div v-for="(img, imgIndex) in record.images" :key="imgIndex" class="audit-image-item">
-                    <img :src="img" class="audit-img" />
-                  </div>
-                </div>
+              <div v-if="record.comment" class="audit-record-content">
+                {{ record.comment }}
               </div>
             </div>
           </div>
@@ -344,6 +339,12 @@
     <div v-if="detail.status === 20 && detail.isGoodWarranty !== true" class="bottom-actions">
       <div class="action-btn back" @click="router.back()">返回</div>
       <div class="action-btn audit" @click="handleAudit">审核</div>
+    </div>
+
+    <!-- 底部激活按钮 (已拒绝状态且非善意保修时显示) -->
+    <div v-if="detail.status === 70 && detail.isGoodWarranty !== true" class="bottom-actions">
+      <div class="action-btn back" @click="router.back()">返回</div>
+      <div class="action-btn audit" @click="handleAudit">激活</div>
     </div>
 
     <!-- 底部提交按钮 (未提交或已驳回状态显示) -->
@@ -466,11 +467,13 @@
               <div class="search-btn" @click="handleConstructionSearch">搜索</div>
             </div>
           </div>
-          <RefreshList
+          <van-list
+            v-if="constructionList.length > 0"
+            v-model:loading="constructionLoading"
+            :finished="constructionFinished"
+            finished-text=""
             class="popup-refresh-list"
-            :requestData="constructionRequestData"
-            :has-no-data="constructionList.length === 0"
-            @setData="setConstructionData"
+            @load="onConstructionLoad"
           >
             <div v-for="item in constructionList" :key="item.id" class="construction-item" @click="onConstructionSelect(item)">
               <div class="construction-header">
@@ -506,7 +509,13 @@
                 </div>
               </div>
             </div>
-          </RefreshList>
+          </van-list>
+          <div v-if="constructionSearched && !constructionLoading && constructionList.length === 0" class="construction-empty-wrap">
+            <div class="construction-empty">
+              <img src="@/libs/assets/image/no-data.png" alt="无搜索结果" class="construction-empty-img" />
+              <p class="construction-empty-text">没有找到相关内容</p>
+            </div>
+          </div>
         </div>
       </template>
     </ais-popup>
@@ -559,7 +568,7 @@ import RefreshList from '@/libs/components/RefreshList.vue'
 import { preAuthGet, preAuthAudit, preAuthGetErrorCodeList, preAuthAddOrUpdate, preAuthGetConstructionList, preAuthGetPreAuthInfoDetail, preAuthGetQualityFeedbackList } from '@/api/authorization'
 import { getAttachmentList, uploadFileByUrl, deleteAttachmentConfig, getUploadConfig } from '@/libs/api/fileConfig'
 import { getEnumValue } from '@/libs/api/common'
-import { getAppImgLimit } from '@/libs/utils/nativeFn'
+import { batchUploadImageLimit } from '@/libs/utils/nativeFn'
 import { usePageSafeArea } from '@/utils/safeArea'
 const route = useRoute()
 const router = useRouter()
@@ -600,16 +609,35 @@ const hasEdited = ref(false)
 const showConstructionPicker = ref(false)
 const constructionSearchText = ref('')
 const constructionList = ref([])
-const constructionRequestData = reactive({
-  data: { pageNum: 1, pageSize: 10, appSearchKeyWord: '' },
-  api: (params) => preAuthGetConstructionList(params)
-})
-const setConstructionData = (res) => {
-  const list = res?.list || []
-  if (res?.isRefresh) {
-    constructionList.value = [...list]
-  } else {
-    constructionList.value.push(...list)
+const constructionLoading = ref(false)
+const constructionFinished = ref(true)
+const constructionSearched = ref(false)
+const constructionPageNum = ref(1)
+const constructionPageSize = 10
+
+const onConstructionLoad = async() => {
+  try {
+    const res = await preAuthGetConstructionList({
+      pageNum: constructionPageNum.value,
+      pageSize: constructionPageSize,
+      appSearchKeyWord: constructionSearchText.value.trim()
+    })
+    const records = res?.data?.records || res?.data || []
+    if (constructionPageNum.value === 1) {
+      constructionList.value = [...records]
+    } else {
+      constructionList.value.push(...records)
+    }
+    constructionFinished.value = records.length < constructionPageSize
+    constructionSearched.value = true
+    if (!constructionFinished.value) {
+      constructionPageNum.value++
+    }
+  } catch {
+    constructionFinished.value = true
+    constructionSearched.value = true
+  } finally {
+    constructionLoading.value = false
   }
 }
 
@@ -647,11 +675,16 @@ const errorCodePageNum = ref(1) // 错误代码当前页码
 const errorCodePageSize = 10 // 错误代码每页条数
 const currentUploadType = ref('')
 const isUploadingAttachment = ref(false)
-const auditOptions = [
-  { label: '审批通过', value: 'approve' },
-  { label: '审批驳回', value: 'reject' },
-  { label: '拒绝申请', value: 'refuse' }
-]
+const auditOptions = computed(() => {
+  const base = [
+    { label: '审批通过', value: 'approve' },
+    { label: '审批驳回', value: 'reject' }
+  ]
+  if (detail.value.status !== 70) {
+    base.push({ label: '拒绝申请', value: 'refuse' })
+  }
+  return base
+})
 
 // 是否可编辑（未提交10 或 已驳回40）
 const isEditable = computed(() => {
@@ -922,14 +955,21 @@ const getAlarmColor = (alarmLevel) => {
 const openConstructionPicker = () => {
   constructionSearchText.value = ''
   constructionList.value = []
+  constructionSearched.value = false
   showConstructionPicker.value = true
-  nextTick(() => {
-    constructionRequestData.data = { pageNum: 1, pageSize: 10, appSearchKeyWord: '', _t: Date.now() }
-  })
 }
 
 const handleConstructionSearch = () => {
-  constructionRequestData.data = { pageNum: 1, pageSize: 10, appSearchKeyWord: constructionSearchText.value, _t: Date.now() }
+  if (!constructionSearchText.value.trim()) {
+    showToast('请输入搜索关键词')
+    return
+  }
+  constructionList.value = []
+  constructionSearched.value = false
+  constructionPageNum.value = 1
+  constructionFinished.value = false
+  constructionLoading.value = true
+  onConstructionLoad()
 }
 
 const onConstructionSelect = async(item) => {
@@ -1076,6 +1116,7 @@ const handleSubmit = async() => {
       id: id,
       serviceProxyId: editConstructionId.value,
       qualityOrderReportId: editFeedbackId.value,
+      qualityOrderReport: detail.value.qualityReport?.reportNo || '',
       reason: detail.value.applyReason,
       saveOrSubmit: 1,
       attachments
@@ -1162,7 +1203,8 @@ const openErrorCodePopup = () => {
 // 审核附件上传
 const handleUploadAttachment = () => {
   currentUploadType.value = 'audit'
-  getAppImgLimit(10)
+  const currentList = attachmentList.value || []
+  batchUploadImageLimit(10, undefined, currentList.length + 1)
 }
 
 const isSuccessResponse = (res) => res?.code === 0 || res?.code === 200
@@ -1219,28 +1261,41 @@ const uploadAttachment = (type) => {
   }
   currentUploadType.value = type
   const maxSize = config.maxSize || 10
-  getAppImgLimit(maxSize)
+  batchUploadImageLimit(maxSize, maxNum, currentList.length + 1)
 }
 
 const handleNativeImage = async(rawFileUrl) => {
   const uploadType = currentUploadType.value
   const businessId = route.params.id
-  const fileUrl = typeof rawFileUrl === 'string'
-    ? rawFileUrl
-    : rawFileUrl?.fileUrl || rawFileUrl?.url || ''
-
   currentUploadType.value = ''
 
   if (!uploadType) return
-  if (!fileUrl) {
-    showToast('未获取到图片地址')
+
+  let urlList = []
+  if (typeof rawFileUrl === 'string') {
+    if (rawFileUrl.startsWith('[')) {
+      try {
+        urlList = JSON.parse(rawFileUrl)
+      } catch {
+        urlList = [rawFileUrl]
+      }
+    } else {
+      urlList = [rawFileUrl]
+    }
+  } else if (Array.isArray(rawFileUrl)) {
+    urlList = rawFileUrl
+  } else {
     return
   }
+
+  if (!urlList.length) return
   if (isUploadingAttachment.value) return
 
   // 审核附件：直接收集图片信息，不走文件服务上传
   if (uploadType === 'audit') {
-    attachmentList.value.push({ url: fileUrl, fileUrl })
+    urlList.forEach((url) => {
+      attachmentList.value.push({ url, fileUrl: url })
+    })
     return
   }
 
@@ -1260,12 +1315,14 @@ const handleNativeImage = async(rawFileUrl) => {
     isUploadingAttachment.value = true
     showLoadingToast({ message: '上传中...', forbidClick: true })
 
-    const uploadRes = await uploadFileByUrl([{
-      fileUrl,
+    const uploadItems = urlList.map((url) => ({
+      fileUrl: url,
       businessId,
       configCode: PRE_AUTH_ATTACHMENT_CONFIG_CODE,
       attachType
-    }])
+    }))
+
+    const uploadRes = await uploadFileByUrl(uploadItems)
 
     if (!isSuccessResponse(uploadRes)) {
       closeToast()
@@ -1461,11 +1518,11 @@ const formatDetailData = (data) => {
 
     // 审核记录 - 来自预授权主数据
     auditRecords: (preAuthData.supportApprovalResps || []).map(item => ({
+      operatorName: item.approver || '',
       time: item.approvalOn || '',
       status: item.approvalResult,
-      statusText: item.approvalResultLabel || '',
-      comment: item.content || '',
-      images: []
+      statusText: item.approvalResult || '',
+      comment: item.content || ''
     })),
 
     // 维修项目 - 来自预授权主数据
@@ -1519,8 +1576,15 @@ const getStatusClass = (status) => {
   }
 }
 
+const getAuditRecordStatusClass = (label) => {
+  if (!label) return ''
+  if (label === '通过' || label === '审批通过') return 'status-approved'
+  if (label === '提交审批') return 'status-pending'
+  return 'status-rejected'
+}
+
 onMounted(() => {
-  window.getImage = handleNativeImage
+  window.getScanResult = handleNativeImage
   console.log('预授权详情页加载，ID:', route.params.id)
   fetchDetail()
   getUploadConfig({ configCode: PRE_AUTH_ATTACHMENT_CONFIG_CODE }).then((res) => {
@@ -1541,8 +1605,8 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
-  if (window.getImage === handleNativeImage) {
-    window.getImage = null
+  if (window.getScanResult === handleNativeImage) {
+    window.getScanResult = null
   }
   if (clickScrollCleanup) {
     clickScrollCleanup()
@@ -2229,21 +2293,16 @@ onUnmounted(() => {
   background: #f8f7f7;
   border-radius: 4px;
   padding: 8px;
-  margin-bottom: 8px;
-
-  &:last-child {
-    margin-bottom: 0;
-  }
 
   .audit-record-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 8px;
 
-    .audit-time {
+    .audit-user-time {
       font-family: 'PingFang SC';
       font-size: 14px;
+      font-weight: 400;
       color: #545454;
     }
 
@@ -2251,44 +2310,28 @@ onUnmounted(() => {
       font-family: 'PingFang SC';
       font-size: 12px;
       font-weight: 500;
+      flex-shrink: 0;
 
-      &.approved {
+      &.status-approved {
         color: #009100;
       }
 
-      &.rejected {
-        color: #b91919;
+      &.status-pending {
+        color: #2261DD;
+      }
+
+      &.status-rejected {
+        color: #B91919;
       }
     }
   }
 
   .audit-record-content {
-    .audit-comment {
-      font-family: 'PingFang SC';
-      font-size: 14px;
-      color: #191a1b;
-      line-height: 1.5;
-      margin: 0 0 8px 0;
-    }
-
-    .audit-images {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 4px 8px;
-
-      .audit-image-item {
-        width: 60px;
-        height: 60px;
-        border-radius: 4px;
-        overflow: hidden;
-
-        .audit-img {
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-        }
-      }
-    }
+    font-family: 'PingFang SC';
+    font-size: 14px;
+    font-weight: 400;
+    color: #191a1b;
+    margin-top: 8px;
   }
 }
 
@@ -2605,6 +2648,7 @@ onUnmounted(() => {
   background: #f4f4f4;
   display: flex;
   flex-direction: column;
+  position: relative;
 
   .popup-header {
     padding-bottom: 12px;
@@ -2784,6 +2828,33 @@ onUnmounted(() => {
             margin-left: 4px;
           }
         }
+      }
+    }
+  }
+
+  .construction-empty-wrap {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding-top: 55px;
+
+    .construction-empty {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+
+      .construction-empty-img {
+        width: 230px;
+        height: 142px;
+      }
+
+      .construction-empty-text {
+        font-family: 'PingFang SC';
+        font-size: 14px;
+        font-weight: 400;
+        color: #6C6E6C;
+        margin-top: 16px;
       }
     }
   }
