@@ -457,6 +457,16 @@
                 <span class="value signed">已签字</span>
               </div>
             </div> -->
+            <div class="signature-row" v-if="Number(detail.signStatus) === 10">
+              <span class="label">签字状态</span>
+              <div class="value-wrapper">
+                <div
+                  class="signature-action-row"
+                >
+                  <van-button type="primary" size="small" @click="onConfirmAndSign">邀请客户签字</van-button>
+                </div>
+              </div>
+            </div>
             <div
               class="signature-action-row"
               v-if="detail.signStatus == 20 && detail.signChannel != 40"
@@ -547,9 +557,9 @@
       </template>
       <template v-else-if="activeTab === 'signature'">
         <span
-          v-if="detail.orderStatus === 110 && (Number(detail.signStatus) === 10 || !detail.signStatus)"
+          v-if="detail.orderStatus === 110 && ((Number(detail.signStatus) !== 10 && Number(detail.signStatus) !== 20) || !detail.signStatus)"
           :class="['complete-btn', { disabled: isConfirmAndSignDisabled }]"
-          @click="onConfirmAndSign"
+          @click="onConfirmAndSignClick"
           >制单确认并签字</span
         >
       </template>
@@ -2817,6 +2827,32 @@ const handlePartsDelete = (data) => {
 // 留车检查返回数据
 const checkFaultData = ref(null)
 
+// 点击制单确认并签字，先查询最新状态，再弹出签字渠道选择
+const onConfirmAndSignClick = async() => {
+  const id = detail.id
+  if (!id) return
+  showLoadingToast({ message: '请稍候...', forbidClick: true })
+  try {
+    const prevSignStatus = String(detail.signStatus)
+    const res = await getDetail(id)
+    if (res.code === 200 && res.data) {
+      const newSignStatus = String(res.data.signStatus)
+      if (prevSignStatus !== '20' && newSignStatus === '20') {
+        closeToast()
+        showToast('工单状态已更新')
+        await fetchDetail()
+        return
+      }
+    }
+    closeToast()
+  } catch (e) {
+    closeToast()
+    console.error('查询工单状态失败:', e)
+  }
+  tempSignatureChannel.value = signatureData.signChannel || ''
+  showSignatureChannelPicker.value = true
+}
+
 // 制单确认并签字
 const onConfirmAndSign = async() => {
   if (isConfirmAndSignDisabled.value) {
@@ -3138,6 +3174,7 @@ const onConfirmSignatureChannel = () => {
   }
   signatureData.signChannel = tempSignatureChannel.value
   showSignatureChannelPicker.value = false
+  onConfirmAndSign()
 }
 // 更多操作
 const onMore = () => {
