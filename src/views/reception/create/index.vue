@@ -547,7 +547,7 @@
       </template>
       <template v-else-if="activeTab === 'signature'">
         <span
-          v-if="detail.orderStatus === 110 && Number(detail.signStatus) === 20"
+          v-if="detail.orderStatus === 110 && (Number(detail.signStatus) === 20 || !detail.signStatus)"
           :class="['complete-btn', { disabled: isConfirmAndSignDisabled }]"
           @click="onConfirmAndSign"
           >制单确认并签字</span

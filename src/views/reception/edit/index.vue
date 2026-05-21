@@ -570,7 +570,7 @@
           >保存</span
         > -->
         <span
-          v-if="detail.orderStatus == 110 && Number(detail.signStatus) === 20"
+          v-if="detail.orderStatus == 110 && (Number(detail.signStatus) === 20 || !detail.signStatus)"
           :class="['complete-btn', { disabled: isConfirmAndSignDisabled }]"
           @click="onConfirmAndSignClick"
           >制单确认并签字</span
