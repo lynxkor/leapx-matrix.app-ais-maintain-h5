@@ -1564,12 +1564,12 @@ const onHasFaultChange = (value) => {
   // 如果选择"否"，弹出确认框
   if (value === '0') {
     // 维修类型包含一般维修或三电维修时，不允许改为"否"
-    const typeCollect = detail.repairItemTypeDetailCollect || ''
-    if (typeCollect.includes('一般维修') || typeCollect.includes('三电维修')) {
-      showToast({ message: '当前工单维修类型包含一般维修或三电维修，请确认是否存在故障!', duration: 3000 })
-      detail.currentFault = '1'
-      return
-    }
+    // const typeCollect = detail.repairItemTypeDetailCollect || ''
+    // if (typeCollect.includes('一般维修') || typeCollect.includes('三电维修')) {
+    //   showToast({ message: '当前工单维修类型包含一般维修或三电维修，请确认是否存在故障!', duration: 3000 })
+    //   detail.currentFault = '1'
+    //   return
+    // }
     // 如果已添加过故障模块或客户故障描述，弹出确认框
     if (detail.faultModules.length > 0 || detail.customerFaultDesc) {
       pendingFaultValue.value = value
