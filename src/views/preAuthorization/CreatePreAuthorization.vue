@@ -409,7 +409,7 @@ import {
   preAuthGetQualityFeedbackList
 } from '@/api/authorization'
 import { uploadFileByUrl, deleteAttachmentConfig, getUploadConfig } from '@/libs/api/fileConfig'
-import { getAppImgLimit } from '@/libs/utils/nativeFn'
+import { batchUploadImageLimit } from '@/libs/utils/nativeFn'
 import { usePageSafeArea } from '@/utils/safeArea'
 import { getEnumValue } from '@/libs/api/common'
 
@@ -524,7 +524,7 @@ const getTabsNavHeight = () => {
 }
 
 onMounted(async() => {
-  window.getImage = handleNativeImage
+  window.getScanResult = handleNativeImage
   await nextTick()
   setupScrollListener()
   getUploadConfig({ configCode: PRE_AUTH_ATTACHMENT_CONFIG_CODE }).then((res) => {
@@ -545,8 +545,8 @@ onMounted(async() => {
 })
 
 onUnmounted(() => {
-  if (window.getImage === handleNativeImage) {
-    window.getImage = null
+  if (window.getScanResult === handleNativeImage) {
+    window.getScanResult = null
   }
   if (clickScrollCleanup) {
     clickScrollCleanup()
@@ -978,17 +978,28 @@ const normalizeUploadResult = (item, attachType) =>
 
 const handleNativeImage = async(rawFileUrl) => {
   const uploadType = currentUploadType.value
-  const fileData = typeof rawFileUrl === 'string'
-    ? { fileUrl: rawFileUrl }
-    : rawFileUrl
-
   currentUploadType.value = ''
 
   if (!uploadType) return
-  if (!fileData.fileUrl) {
-    showToast('未获取到图片地址')
+
+  let urlList = []
+  if (typeof rawFileUrl === 'string') {
+    if (rawFileUrl.startsWith('[')) {
+      try {
+        urlList = JSON.parse(rawFileUrl)
+      } catch {
+        urlList = [rawFileUrl]
+      }
+    } else {
+      urlList = [rawFileUrl]
+    }
+  } else if (Array.isArray(rawFileUrl)) {
+    urlList = rawFileUrl
+  } else {
     return
   }
+
+  if (!urlList.length) return
   if (!constructionId.value) {
     showToast('请先选择施工单')
     return
@@ -1003,15 +1014,15 @@ const handleNativeImage = async(rawFileUrl) => {
 
   try {
     isUploadingAttachment.value = true
-
     showLoadingToast({ message: '上传中...', forbidClick: true })
 
-    // 1. 上传文件
-    const uploadRes = await uploadFileByUrl([{
-      fileUrl: fileData.fileUrl,
+    const uploadItems = urlList.map((url) => ({
+      fileUrl: url,
       configCode: PRE_AUTH_ATTACHMENT_CONFIG_CODE,
       attachType
-    }])
+    }))
+
+    const uploadRes = await uploadFileByUrl(uploadItems)
 
     if (!isSuccessResponse(uploadRes)) {
       closeToast()
@@ -1019,7 +1030,6 @@ const handleNativeImage = async(rawFileUrl) => {
       return
     }
 
-    // 2. 获取上传返回的文件信息，并更新本地附件列表（提交时平铺传 attachments）
     const uploadData = uploadRes?.data
     const uploadedFiles = Array.isArray(uploadData) ? uploadData : (uploadData ? [uploadData] : [])
     if (!uploadedFiles.length) {
@@ -1183,7 +1193,8 @@ const uploadAttachment = (type) => {
   }
   currentUploadType.value = type
   const maxSize = config.maxSize || 10
-  getAppImgLimit(maxSize)
+  const hasUploadNumber = (attachmentData[type] || []).length + 1
+  batchUploadImageLimit(maxSize, maxNum, hasUploadNumber)
   hasEdited.value = true
 }
 

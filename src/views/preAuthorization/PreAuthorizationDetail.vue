@@ -567,7 +567,7 @@ import RefreshList from '@/libs/components/RefreshList.vue'
 import { preAuthGet, preAuthAudit, preAuthGetErrorCodeList, preAuthAddOrUpdate, preAuthGetConstructionList, preAuthGetPreAuthInfoDetail, preAuthGetQualityFeedbackList } from '@/api/authorization'
 import { getAttachmentList, uploadFileByUrl, deleteAttachmentConfig, getUploadConfig } from '@/libs/api/fileConfig'
 import { getEnumValue } from '@/libs/api/common'
-import { getAppImgLimit } from '@/libs/utils/nativeFn'
+import { batchUploadImageLimit } from '@/libs/utils/nativeFn'
 import { usePageSafeArea } from '@/utils/safeArea'
 const route = useRoute()
 const router = useRouter()
@@ -1197,7 +1197,8 @@ const openErrorCodePopup = () => {
 // 审核附件上传
 const handleUploadAttachment = () => {
   currentUploadType.value = 'audit'
-  getAppImgLimit(10)
+  const currentList = attachmentData.audit || []
+  batchUploadImageLimit(10, undefined, currentList.length + 1)
 }
 
 const isSuccessResponse = (res) => res?.code === 0 || res?.code === 200
@@ -1254,28 +1255,41 @@ const uploadAttachment = (type) => {
   }
   currentUploadType.value = type
   const maxSize = config.maxSize || 10
-  getAppImgLimit(maxSize)
+  batchUploadImageLimit(maxSize, maxNum, currentList.length + 1)
 }
 
 const handleNativeImage = async(rawFileUrl) => {
   const uploadType = currentUploadType.value
   const businessId = route.params.id
-  const fileUrl = typeof rawFileUrl === 'string'
-    ? rawFileUrl
-    : rawFileUrl?.fileUrl || rawFileUrl?.url || ''
-
   currentUploadType.value = ''
 
   if (!uploadType) return
-  if (!fileUrl) {
-    showToast('未获取到图片地址')
+
+  let urlList = []
+  if (typeof rawFileUrl === 'string') {
+    if (rawFileUrl.startsWith('[')) {
+      try {
+        urlList = JSON.parse(rawFileUrl)
+      } catch {
+        urlList = [rawFileUrl]
+      }
+    } else {
+      urlList = [rawFileUrl]
+    }
+  } else if (Array.isArray(rawFileUrl)) {
+    urlList = rawFileUrl
+  } else {
     return
   }
+
+  if (!urlList.length) return
   if (isUploadingAttachment.value) return
 
   // 审核附件：直接收集图片信息，不走文件服务上传
   if (uploadType === 'audit') {
-    attachmentList.value.push({ url: fileUrl, fileUrl })
+    urlList.forEach((url) => {
+      attachmentList.value.push({ url, fileUrl: url })
+    })
     return
   }
 
@@ -1295,12 +1309,14 @@ const handleNativeImage = async(rawFileUrl) => {
     isUploadingAttachment.value = true
     showLoadingToast({ message: '上传中...', forbidClick: true })
 
-    const uploadRes = await uploadFileByUrl([{
-      fileUrl,
+    const uploadItems = urlList.map((url) => ({
+      fileUrl: url,
       businessId,
       configCode: PRE_AUTH_ATTACHMENT_CONFIG_CODE,
       attachType
-    }])
+    }))
+
+    const uploadRes = await uploadFileByUrl(uploadItems)
 
     if (!isSuccessResponse(uploadRes)) {
       closeToast()
@@ -1555,7 +1571,7 @@ const getStatusClass = (status) => {
 }
 
 onMounted(() => {
-  window.getImage = handleNativeImage
+  window.getScanResult = handleNativeImage
   console.log('预授权详情页加载，ID:', route.params.id)
   fetchDetail()
   getUploadConfig({ configCode: PRE_AUTH_ATTACHMENT_CONFIG_CODE }).then((res) => {
@@ -1576,8 +1592,8 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
-  if (window.getImage === handleNativeImage) {
-    window.getImage = null
+  if (window.getScanResult === handleNativeImage) {
+    window.getScanResult = null
   }
   if (clickScrollCleanup) {
     clickScrollCleanup()
