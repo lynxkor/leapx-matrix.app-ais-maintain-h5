@@ -2413,6 +2413,7 @@ const cancelLoading = ref(false)
 
 const onSave = async() => {
   console.log('保存:', detail)
+  if (savingLoading.value) return
   if (!validateRepairPerson()) return
   // 如果currentFault为"1"，客户故障描述必填
   if (Number(detail.currentFault) === 1 && !detail.customerFaultDesc.trim()) {
@@ -2512,8 +2513,8 @@ const onSave = async() => {
       }))
     })
     if (res.code === 200) {
-      showToast('保存成功')
       closeToast()
+      showToast('保存成功')
       isSaved.value = true
       // 新建时保存返回的施工单id，同步设置 detail.id 防止后续编辑保存时丢失
       if (res.data) {
@@ -2532,8 +2533,8 @@ const onSave = async() => {
       showToast(res.msg || '保存失败')
     }
   } catch {
-    showToast('保存失败')
     closeToast()
+    showToast('保存失败')
   } finally {
     savingLoading.value = false
   }
