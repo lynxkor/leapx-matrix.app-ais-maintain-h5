@@ -324,16 +324,11 @@
           <div class="audit-records-list">
             <div v-for="(record, index) in detail.auditRecords" :key="index" class="audit-record-item">
               <div class="audit-record-header">
-                <span class="audit-time">{{ record.time }}</span>
-                <span class="audit-status" :class="record.status">{{ record.statusText }}</span>
+                <span class="audit-user-time">{{ record.operatorName }}<span style="display:inline-block;width:4px"></span>{{ record.time }}</span>
+                <span class="audit-status" :class="getAuditRecordStatusClass(record.statusText)">{{ record.statusText }}</span>
               </div>
-              <div class="audit-record-content">
-                <p class="audit-comment">{{ record.comment }}</p>
-                <div v-if="record.images && record.images.length > 0" class="audit-images">
-                  <div v-for="(img, imgIndex) in record.images" :key="imgIndex" class="audit-image-item">
-                    <img :src="img" class="audit-img" />
-                  </div>
-                </div>
+              <div v-if="record.comment" class="audit-record-content">
+                {{ record.comment }}
               </div>
             </div>
           </div>
@@ -1523,11 +1518,11 @@ const formatDetailData = (data) => {
 
     // 审核记录 - 来自预授权主数据
     auditRecords: (preAuthData.supportApprovalResps || []).map(item => ({
+      operatorName: item.approver || '',
       time: item.approvalOn || '',
       status: item.approvalResult,
-      statusText: item.approvalResultLabel || '',
-      comment: item.content || '',
-      images: []
+      statusText: item.approvalResult || '',
+      comment: item.content || ''
     })),
 
     // 维修项目 - 来自预授权主数据
@@ -1579,6 +1574,13 @@ const getStatusClass = (status) => {
     case 70: return 'status-rejected'
     default: return ''
   }
+}
+
+const getAuditRecordStatusClass = (label) => {
+  if (!label) return ''
+  if (label === '通过' || label === '审批通过') return 'status-approved'
+  if (label === '提交审批') return 'status-pending'
+  return 'status-rejected'
 }
 
 onMounted(() => {
@@ -2291,21 +2293,16 @@ onUnmounted(() => {
   background: #f8f7f7;
   border-radius: 4px;
   padding: 8px;
-  margin-bottom: 8px;
-
-  &:last-child {
-    margin-bottom: 0;
-  }
 
   .audit-record-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 8px;
 
-    .audit-time {
+    .audit-user-time {
       font-family: 'PingFang SC';
       font-size: 14px;
+      font-weight: 400;
       color: #545454;
     }
 
@@ -2313,44 +2310,28 @@ onUnmounted(() => {
       font-family: 'PingFang SC';
       font-size: 12px;
       font-weight: 500;
+      flex-shrink: 0;
 
-      &.approved {
+      &.status-approved {
         color: #009100;
       }
 
-      &.rejected {
-        color: #b91919;
+      &.status-pending {
+        color: #2261DD;
+      }
+
+      &.status-rejected {
+        color: #B91919;
       }
     }
   }
 
   .audit-record-content {
-    .audit-comment {
-      font-family: 'PingFang SC';
-      font-size: 14px;
-      color: #191a1b;
-      line-height: 1.5;
-      margin: 0 0 8px 0;
-    }
-
-    .audit-images {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 4px 8px;
-
-      .audit-image-item {
-        width: 60px;
-        height: 60px;
-        border-radius: 4px;
-        overflow: hidden;
-
-        .audit-img {
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-        }
-      }
-    }
+    font-family: 'PingFang SC';
+    font-size: 14px;
+    font-weight: 400;
+    color: #191a1b;
+    margin-top: 8px;
   }
 }
 
