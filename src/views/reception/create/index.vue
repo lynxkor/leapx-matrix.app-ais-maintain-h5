@@ -1668,7 +1668,7 @@ const detail = reactive({
   testResult: '',
   // 新增字段
   code: '',
-  dataSource: '',
+  dataSource: 180,
   orderStatus: '',
   warrantyTypeCollect: '',
   custType: '',
@@ -2458,6 +2458,7 @@ const onSave = async() => {
   try {
     const res = await serviceAddOrUpdate({
       id: undefined,
+      dataSource: 180, // 170零小跑PC端; 180零小跑APP端,
       customerName: detail.owner,
       customerPhone: detail.ownerPhone,
       vehModelName: detail.vehicleModelName,

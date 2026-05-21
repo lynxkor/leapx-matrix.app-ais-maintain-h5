@@ -160,10 +160,12 @@ export async function showFaultCheckDialog(serviceProxyId, onRefresh, workOrder)
       })
       // 确认无故障，清空故障信息
       try {
+        // 签字弹框确认：用户点击【准确】后，门店修改本次是否因故障进店，由是修改成否，不用清空【客户故障描述】字段内容
+        const newCustomerContent = workOrder.confirmFaultLabel === 1 ? workOrder.customerContent : '本次进店车辆无故障' // 1 为准确 2 为不准确
         const res = await updateFaultAlertRecord({
           id: serviceProxyId,
           currentFault: 0,
-          customerContent: '本次进店车辆无故障'
+          customerContent: newCustomerContent
         })
         if (res.code === 200) {
           showToast('已确认无故障')
