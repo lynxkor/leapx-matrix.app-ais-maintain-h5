@@ -4,7 +4,7 @@
       <!-- 筛选搜索头部 -->
       <FilterHeader
         placeholder="输入工单号/车牌号/VIN/车主"
-        :showScan="true"
+        :showScan="false"
         :showSort="false"
         :filterList="filterList"
         @filterSearch="onFilterSearch"
