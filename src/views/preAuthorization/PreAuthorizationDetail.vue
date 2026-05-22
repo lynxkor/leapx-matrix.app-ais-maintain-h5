@@ -44,11 +44,11 @@
           <span class="card-title">接车施工单</span>
         </div>
         <div class="card-body">
-          <div class="info-row" :class="{ clickable: isEditable }" @click="isEditable && openConstructionPicker()">
+          <div class="info-row" :class="{ clickable: canEditConstruction }" @click="canEditConstruction && openConstructionPicker()">
             <span class="info-label">施工单号</span>
             <span class="info-value">
               {{ detail.constructionNo || '--' }}
-              <van-icon v-if="isEditable" name="arrow" size="14" color="#888888" />
+              <van-icon v-if="canEditConstruction" name="arrow" size="14" color="#888888" />
             </span>
           </div>
           <div class="info-row" :class="{ 'auth-type-row': isEditable }">
@@ -121,19 +121,19 @@
           <div class="info-row" :class="{ clickable: isEditable }" @click="isEditable && openFeedbackPicker()">
             <span class="info-label">质量反馈单号</span>
             <span class="info-value">
-              {{ detail.qualityReport?.reportNo || '--' }}
+              {{ detail.qualityReport?.reportNo  }}
               <van-icon v-if="isEditable" name="arrow" size="14" color="#888888" />
             </span>
           </div>
           <div class="info-row expandable" :class="{ expanded: faultDescExpanded }" @click="faultDescExpanded = !faultDescExpanded">
             <span class="info-label">故障现象描述</span>
-            <span class="info-value" :class="{ collapsed: !faultDescExpanded }">{{ detail.qualityReport?.faultDesc || '--' }}</span>
-            <van-icon name="arrow" size="12" color="#888888" class="arrow-icon" />
+            <span class="info-value" :class="{ collapsed: !faultDescExpanded }">{{ detail.qualityReport?.faultDesc }}</span>
+            <van-icon v-if="detail.qualityReport?.faultDesc" name="arrow" size="12" color="#888888" class="arrow-icon" />
           </div>
           <div class="info-row expandable" :class="{ expanded: faultProcessExpanded }" @click="faultProcessExpanded = !faultProcessExpanded">
             <span class="info-label">故障排查流程</span>
-            <span class="info-value" :class="{ collapsed: !faultProcessExpanded }">{{ detail.qualityReport?.faultProcess || '--' }}</span>
-            <van-icon name="arrow" size="12" color="#888888" class="arrow-icon" />
+            <span class="info-value" :class="{ collapsed: !faultProcessExpanded }">{{ detail.qualityReport?.faultProcess }}</span>
+            <van-icon v-if="detail.qualityReport?.faultProcess" name="arrow" size="12" color="#888888" class="arrow-icon" />
           </div>
         </div>
       </div>
@@ -210,17 +210,19 @@
             :key="index"
             class="repair-item"
           >
-            <div class="repair-item-left">
-              <div class="repair-name-row">
-                <span class="repair-name">{{ item.name }}</span>
-                <span v-if="item.tag" class="parts-tag">{{ item.tag }}</span>
+            <div class="repair-item-top">
+              <div class="repair-item-left">
+                <div class="repair-name-row">
+                  <span class="repair-name">{{ item.name }}</span>
+                  <span v-if="item.tag" class="parts-tag">{{ item.tag }}</span>
+                </div>
+                <div class="repair-part-no">{{ item.partNo }}</div>
+                <div class="repair-type">{{item.repairItemTypeName}}-{{ item.checkoutTypeName }}-{{ item.warrantyTypeName }}</div>
               </div>
-              <div class="repair-part-no">{{ item.partNo }}</div>
-              <div class="repair-type">{{item.repairItemTypeName}}-{{ item.checkoutTypeName }}-{{ item.warrantyTypeName }}</div>
-            </div>
-            <div class="repair-item-right">
-              <div class="repair-price">¥{{ item.price }}</div>
-              <div class="repair-discount">优惠 ¥{{ item.discount }}</div>
+              <div class="repair-item-right">
+                <div class="repair-price">¥{{ item.price }}</div>
+                <div class="repair-discount">优惠 ¥{{ item.discount }}</div>
+              </div>
             </div>
             <div class="repair-item-bottom">
               <div class="repair-bottom-left">
@@ -690,6 +692,9 @@ const auditOptions = computed(() => {
 const isEditable = computed(() => {
   return detail.value.status === 10 || detail.value.status === 40
 })
+
+// 是否可编辑施工单号（仅未提交时可编辑，已驳回时不可修改）
+const canEditConstruction = computed(() => detail.value.status === 10)
 
 // 是否展示车辆信息区域（可编辑时需要选择了施工单才展示；不可编辑时始终展示）
 const showVehicleInfo = computed(() => {

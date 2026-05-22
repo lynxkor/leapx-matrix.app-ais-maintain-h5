@@ -1565,7 +1565,7 @@ defineExpose({
   }
 
   .parts-item {
-    padding: 15px 12px;
+    padding: 12px;
     border-bottom: 0.5px solid #e6e6e5;
 
     &:last-child {
@@ -1576,14 +1576,12 @@ defineExpose({
       display: flex;
       justify-content: space-between;
       align-items: flex-start;
-      margin-bottom: 4px;
 
       .parts-item-left {
         .parts-item-top {
           display: flex;
           align-items: center;
-          gap: 4px;
-          margin-bottom: 2px;
+          gap: 8px;
 
           .parts-name {
             font-family: 'PingFang SC';
@@ -1595,9 +1593,9 @@ defineExpose({
           .parts-tag {
             font-family: 'PingFang SC';
             font-size: 12px;
-            color: #191a1b;
-            background: rgba(25, 26, 27, 0.06);
-            padding: 1px 4px;
+            color: #009100;
+            background: rgba(0, 145, 0, 0.1);
+            padding: 2px 6px;
             border-radius: 4px;
           }
         }
@@ -1612,7 +1610,7 @@ defineExpose({
         .parts-type {
           font-family: 'PingFang SC';
           font-size: 12px;
-          color: #545454;
+          color: #888888;
         }
       }
 
@@ -1639,11 +1637,10 @@ defineExpose({
       display: flex;
       align-items: center;
       gap: 8px;
-      padding-top: 4px;
 
       .parts-subtotal {
         font-family: 'PingFang SC';
-        font-size: 12px;
+        font-size: 14px;
         color: #545454;
       }
 
