@@ -214,7 +214,7 @@
               <div class="repair-item-left">
                 <div class="repair-name-row">
                   <span class="repair-name">{{ item.name }}</span>
-                  <span v-if="item.tag" class="parts-tag">{{ item.tag }}</span>
+                  <span v-if="item.tag" class="parts-tag">{{ item.tag === 1 ? '原厂件' : '副厂件' }}</span>
                 </div>
                 <div class="repair-part-no">{{ item.partNo }}</div>
                 <div class="repair-type">{{item.repairItemTypeName}}-{{ item.checkoutTypeName }}-{{ item.warrantyTypeName }}</div>
@@ -1021,7 +1021,7 @@ const onConstructionSelect = async(item) => {
         repairItemTypeName: pi.repairItemTypeName || '',
         checkoutTypeName: pi.checkoutTypeName || '',
         warrantyTypeName: pi.warrantyTypeName || '',
-        tag: pi.isOemPartLabel || '',
+        tag: pi.isOemPart || '',
         price: pi.price || '0',
         discount: pi.discountAmount || '0',
         subtotal: pi.partsAmount || pi.totalAmount || '0',
@@ -1550,7 +1550,7 @@ const formatDetailData = (data) => {
       repairItemTypeName: item.repairItemTypeName || '',
       checkoutTypeName: item.checkoutTypeName || '',
       warrantyTypeName: item.warrantyTypeName || '',
-      tag: item.isOemPartLabel || '',
+      tag: item.isOemPart || '',
       price: item.price || '0',
       discount: item.discountAmount || '0',
       subtotal: item.partsAmount || '0',
@@ -1788,7 +1788,7 @@ onUnmounted(() => {
   overflow: hidden;
 
   .card-header {
-    padding: 4px 12px;
+    padding: 12px 12px 4px 12px;
     display: flex;
     justify-content: space-between;
     align-items: center;

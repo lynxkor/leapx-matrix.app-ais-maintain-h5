@@ -77,7 +77,7 @@
             <div class="card-body">
               <!-- 车牌行 -->
               <div class="plate-row">
-                <span class="plate-number">{{ item.carPlate }}</span>
+                <span class="plate-number">{{ item.carPlate  || '无车牌'}}</span>
                 <!-- 预警图标 - 根据 alarmLevelList 数组显示多个图标: 10=绿色, 20=橙色, 30=红色 -->
                 <template v-if="item.alarmLevelList && item.alarmLevelList.length > 0">
                   <svg
@@ -96,13 +96,15 @@
                   </svg>
                 </template>
                 <!-- 业务类型标签 -->
-                <template v-if="item.repairItemTypeDetailCollect">
-                  <span
-                    v-for="(tag, index) in item.repairItemTypeDetailCollect.split('&').filter(Boolean)"
-                    :key="index"
-                    class="svc-tag"
-                  >{{ tag }}</span>
-                </template>
+                  <template v-if="item.repairItemTypeDetailCollect">
+                    <div>
+                      <span
+                        v-for="(tag, index) in item.repairItemTypeDetailCollect.split('/').filter(Boolean)"
+                        :key="index"
+                        class="svc-tag"
+                      >{{ tag }}</span>
+                    </div>
+                  </template>
               </div>
 
               <!-- VIN -->
@@ -879,7 +881,7 @@ const goToUpload = () => {
           border-radius: 4px;
           flex-shrink: 0;
           white-space: nowrap;
-          margin-left: 12px;
+          margin: 0 3px;
         }
       }
 
