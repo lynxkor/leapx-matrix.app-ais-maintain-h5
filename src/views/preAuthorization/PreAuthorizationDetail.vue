@@ -549,7 +549,7 @@
             :show-reset-button="false"
             @setData="setFeedbackData"
           >
-            <div v-for="item in feedbackList" :key="item.id" class="feedback-select-item" @click="onFeedbackSelect(item)">
+            <div v-for="item in feedbackList" :key="item.id" :class="['feedback-select-item', { selected: item.id === selectedFeedbackId }]" @click="onFeedbackSelect(item)">
               <div class="feedback-serial" v-html="highlightSearch(item.code, feedbackSearchText)"></div>
               <div class="feedback-type" v-if="item.reportType">{{ qualityReportTypeMap[item.reportType] || item.reportType }}</div>
               <div class="feedback-desc" v-if="item.title">{{ item.title }}</div>
@@ -647,6 +647,7 @@ const onConstructionLoad = async() => {
 const showFeedbackPicker = ref(false)
 const feedbackSearchText = ref('')
 const feedbackList = ref([])
+const selectedFeedbackId = ref('')
 const feedbackRefreshListRef = ref(null)
 const qualityReportTypeMap = ref({})
 const feedbackRequestData = reactive({
@@ -879,6 +880,7 @@ const detail = ref({
   applyReason: '',
   estimateDeliverTime: '',
   qualityReport: null,
+  qualityOrderReportId: '',
   auditInfo: {},
   auditRecords: [],
   repairItems: [],
@@ -1025,12 +1027,13 @@ const onConstructionSelect = async(item) => {
         price: pi.price || '0',
         discount: pi.discountAmount || '0',
         subtotal: pi.partsAmount || pi.totalAmount || '0',
-        workHour: pi.workHour || '0',
+        workHour: pi.quantity || '0',
         actualQuantity: pi.actualPickNumber || '0',
         returnQuantity: pi.refundedNumber || '0'
       }))
       // 切换施工单后清除质量反馈
       detail.value.qualityReport = null
+      detail.value.qualityOrderReportId = ''
       editFeedbackId.value = ''
     }
   } catch {
@@ -1048,6 +1051,7 @@ const openFeedbackPicker = () => {
   feedbackRequestData.data = { pageNum: 1, pageSize: 10, appSearchKeyWord: '', serviceProxyCode: detail.value.constructionNo, orderStatus: 30, _t: Date.now() }
   feedbackSearchText.value = ''
   feedbackList.value = []
+  selectedFeedbackId.value = detail.value.qualityOrderReportId || ''
   showFeedbackPicker.value = true
 }
 
@@ -1056,13 +1060,25 @@ const handleFeedbackSearch = () => {
 }
 
 const onFeedbackSelect = (item) => {
+  const itemId = item.id || ''
+  // 点击已选中项则取消选中
+  if (selectedFeedbackId.value === itemId) {
+    selectedFeedbackId.value = ''
+    editFeedbackId.value = ''
+    detail.value.qualityOrderReportId = ''
+    detail.value.qualityReport = { id: '', reportNo: '', faultDesc: '', faultProcess: '' }
+    return
+  }
+  // 选中新项
+  selectedFeedbackId.value = itemId
+  editFeedbackId.value = itemId
+  detail.value.qualityOrderReportId = itemId
   detail.value.qualityReport = {
-    id: item.id || '',
+    id: itemId,
     reportNo: item.code || '',
     faultDesc: item.title || '',
     faultProcess: item.diagnosisContent || ''
   }
-  editFeedbackId.value = item.id || ''
   showFeedbackPicker.value = false
   hasEdited.value = true
 }
@@ -1501,6 +1517,7 @@ const formatDetailData = (data) => {
     estimateDeliverTime: serviceProxy.expectFinishAt || '',
 
     // 质量反馈报告 - 来自预授权主数据
+    qualityOrderReportId: preAuthData.qualityOrderReportId || '',
     qualityReport: preAuthData.qualityOrderReportResp ? {
       id: preAuthData.qualityOrderReportResp.id || '',
       reportNo: preAuthData.qualityOrderReportResp.code || '',
@@ -1554,7 +1571,7 @@ const formatDetailData = (data) => {
       price: item.price || '0',
       discount: item.discountAmount || '0',
       subtotal: item.partsAmount || '0',
-      workHour: item.workHour || '0',
+      workHour: item.quantity || '0',
       actualQuantity: item.actualPickNumber || '0',
       returnQuantity: item.refundedNumber || '0'
     })),
@@ -2941,6 +2958,12 @@ onUnmounted(() => {
       border-radius: 6px;
       padding: 12px;
       margin-bottom: 8px;
+      width: 99%;
+
+      &.selected {
+        background: #eaf7ea;
+        border: 0.5px solid #009100;
+      }
 
       &:last-child { margin-bottom: 0; }
 

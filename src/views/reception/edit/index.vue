@@ -3115,7 +3115,7 @@ const onPartsSave = async() => {
       if (detail.customerFaultDesc === '本次进店车辆无故障') {
         detail.customerFaultDesc = ''
       }
-      showToast({ message: '更改为一般维修或三电保修需要确认故障!', duration: 3000 })
+      showToast({ message: '一般维修或三电保修需要确认故障!', duration: 3000 })
       // 切换tab到环检信息
       activeTab.value = 'inspection'
     }
@@ -3258,6 +3258,7 @@ const onConfirmAndSign = async() => {
   // 如果当前故障为是，校验是否添加了故障模块
   if (Number(detail.currentFault) === 1 && detail.faultModules.length === 0) {
     showToast('当前存在故障，请添加故障模块')
+    activeTab.value = 'inspection'
     return
   }
 
