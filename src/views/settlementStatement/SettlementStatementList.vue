@@ -429,6 +429,14 @@ const getReasonOptions = async() => {
 
 onMounted(() => {
   getReasonOptions()
+  const savedTab = sessionStorage.getItem('settlementTab')
+  if (savedTab && (savedTab === 'pending' || savedTab === 'completed')) {
+    if (activeTab.value !== savedTab) {
+      activeTab.value = savedTab
+      sessionStorage.removeItem('settlementTab')
+      updateRequestData()
+    }
+  }
 })
 
 // 日期筛选标签
@@ -545,6 +553,7 @@ const goToDetail = (item) => {
     return
   }
 
+  sessionStorage.setItem('settlementTab', activeTab.value)
   router.push({
     path: '/settlement-statement/after-sales',
     query: {

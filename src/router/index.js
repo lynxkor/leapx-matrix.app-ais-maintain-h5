@@ -208,7 +208,7 @@ const router = createRouter({
           component: () => import('../views/settlementStatement/SettlementStatementList.vue'),
           meta: {
             title: '结算交车',
-            keepAlive: true
+            keepAlive: false
           }
         },
         {
