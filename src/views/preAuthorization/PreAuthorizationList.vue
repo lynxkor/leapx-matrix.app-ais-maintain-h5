@@ -98,6 +98,7 @@ import RefreshList from '@/libs/components/RefreshList.vue'
 import ListItem from '@/components/ListItem.vue'
 import AisButton from '@/components/AisButton.vue'
 import { preAuthPage, preAuthGetStoreArea } from '@/api/authorization'
+import { getEnumValue } from '@/libs/api/common'
 import { callPhone } from '@/libs/utils/nativeFn'
 import { usePageSafeArea } from '@/utils/safeArea'
 
@@ -152,6 +153,13 @@ const filterList = ref([
       { label: '技术预授权', value: 1 },
       { label: '保修预授权', value: 2 }
     ]
+  },
+  {
+    title: '状态',
+    key: 'approvalStatusList',
+    nodeType: 'multiple',
+    default: [],
+    options: []
   }
 ])
 
@@ -170,8 +178,24 @@ const getStoreAreaOptions = async() => {
   }
 }
 
+// 获取审核状态枚举
+const getAuditStatusOptions = async() => {
+  try {
+    const res = await getEnumValue('AuditStatusEnum')
+    if (res?.data) {
+      filterList.value[2].options = res.data.map((item) => ({
+        label: item.message,
+        value: item.code
+      }))
+    }
+  } catch (error) {
+    console.error('获取审核状态枚举失败', error)
+  }
+}
+
 onMounted(() => {
   getStoreAreaOptions()
+  getAuditStatusOptions()
 })
 
 // 当从其他页面返回时（keepAlive），滚动到顶部并刷新列表
@@ -197,6 +221,7 @@ const requestData = reactive({
     pageSize: 10,
     dealerUnitIdList: [],
     preAuthTypeList: [],
+    approvalStatusList: [],
     appSearchKeyWord: ''
   },
   api: (params) => preAuthPage(params)
@@ -245,6 +270,7 @@ const handleResetFilter = () => {
     pageSize: 10,
     dealerUnitIdList: [],
     preAuthTypeList: [],
+    approvalStatusList: [],
     appSearchKeyWord: ''
   }
   showEmpty.value = false
@@ -260,7 +286,7 @@ const handleResetFilter = () => {
 const getStatusClass = (label) => {
   if (!label) return ''
   if (label === '未提交') return 'status-blue'
-  if (label === '审核中') return 'status-yellow'
+  if (label === '审核中' || label === '已过期') return 'status-yellow'
   if (label === '审核通过') return 'status-green'
   if (label === '已驳回' || label === '已拒绝' || label === '已作废') return 'status-red'
   return ''
