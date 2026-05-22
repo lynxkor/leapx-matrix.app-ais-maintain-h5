@@ -44,7 +44,10 @@
 
         <template v-else>
         <!-- 客户签字模块：按签字规则展示 -->
-        <div v-if="showSignSection" class="sign-section" @click="handleSignClick">
+
+        <!-- 结算信息卡片 -->
+        <div class="settle-info-card">
+          <div v-if="showSignSection" class="sign-section" @click="handleSignClick">
           <div class="sign-header">
             <span class="sign-title">客户签字</span>
             <div class="sign-status">
@@ -62,9 +65,6 @@
           </div>
           <div class="sign-desc">{{ signDescription }}</div>
         </div>
-
-        <!-- 结算信息卡片 -->
-        <div class="settle-info-card">
           <div class="info-title">结算信息</div>
           <div class="info-rows">
             <div class="info-row">
@@ -1119,7 +1119,7 @@ const handlePaymentSubmit = async() => {
     border-radius: 6px;
     padding: 12px;
     margin-bottom: 12px;
-    margin-top: 12px;
+    // margin-top: 12px;
 
     .info-title {
       font-family: 'PingFang SC';
@@ -1190,8 +1190,11 @@ const handlePaymentSubmit = async() => {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
-    padding: 12px 0;
-    border-bottom: 0.5px solid #e6e6e5;
+    margin-top: 12px;
+
+    &:first-of-type {
+      margin-top: 0;
+    }
 
     &.special {
       .repair-left {
@@ -1251,11 +1254,12 @@ const handlePaymentSubmit = async() => {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 8px 0 12px;
     border-bottom: 0.5px solid #e6e6e5;
+    padding-bottom: 10px;
 
     &:last-child {
       border-bottom: none;
+      padding-bottom: 0;
     }
 
     .original-price {
@@ -1275,8 +1279,11 @@ const handlePaymentSubmit = async() => {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
-    padding: 12px 0;
-    border-bottom: 0.5px solid #e6e6e5;
+    margin-top: 14px;
+
+    &:first-of-type {
+      margin-top: 0;
+    }
 
     &.special {
       .part-left {
@@ -1371,11 +1378,12 @@ const handlePaymentSubmit = async() => {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 8px 0 12px;
+    padding-bottom: 10px;
     border-bottom: 0.5px solid #e6e6e5;
 
     &:last-child {
       border-bottom: none;
+      padding-bottom: 0;
     }
 
     .original-price {
@@ -1455,7 +1463,7 @@ const handlePaymentSubmit = async() => {
       font-size: 14px;
       font-weight: 500;
       color: #191a1b;
-      margin-bottom: 12px;
+      // margin-bottom: 12px;
     }
 
     .payment-record-item {

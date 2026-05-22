@@ -292,7 +292,7 @@ const goToDetail = (item) => {
 
     .order-no {
       font-family: 'PingFang SC';
-      font-size: 16px;
+      font-size: 15px;
       font-weight: 500;
       color: #191a1b;
     }
@@ -364,7 +364,6 @@ const goToDetail = (item) => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
   padding: 40px;
 
   .no-results-content {
@@ -373,8 +372,7 @@ const goToDetail = (item) => {
     .no-results-img {
       width: 230px;
       height: 142px;
-      margin-bottom: 16px;
-      margin-top: 228px;
+      margin-top: 150px;
     }
 
     .no-results-text {

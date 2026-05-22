@@ -538,7 +538,7 @@
     <div class="bottom-bar">
       <span v-if="serviceProxyId" class="more-btn" @click="onMore">更多</span>
       <template v-if="activeTab === 'inspection'">
-        <span v-if="!isSaved && !serviceProxyId" class="save-btn" @click="onSave">保存</span>
+        <span v-if="!isSaved && !serviceProxyId" :class="['save-btn', { disabled: savingLoading }]" @click="onSave">保存</span>
         <template v-else>
           <span
             :class="['save-btn', { disabled: isInspectionSaveDisabled }]"
@@ -2424,46 +2424,57 @@ const cancelLoading = ref(false)
 const onSave = async() => {
   console.log('保存:', detail)
   if (savingLoading.value) return
-  if (!validateRepairPerson()) return
+  savingLoading.value = true
+  if (!validateRepairPerson()) {
+    savingLoading.value = false
+    return
+  }
   // 如果currentFault为"1"，客户故障描述必填
   if (Number(detail.currentFault) === 1 && !detail.customerFaultDesc.trim()) {
     showToast('请输入客户故障描述')
+    savingLoading.value = false
     return
   }
   // 如果currentFault为"1"，必须添加故障模块
   if (Number(detail.currentFault) === 1 && detail.faultModules.length === 0) {
     showToast('请添加故障模块')
+    savingLoading.value = false
     return
   }
   // 照片校验（根据配置判断是否必填）
   if (interiorConfig.value.required === '1' && detail.interiorImages.length === 0) {
     showToast('请上传车内照片')
+    savingLoading.value = false
     return
   }
   if (exteriorConfig.value.required === '1' && detail.exteriorImages.length === 0) {
     showToast('请上传车外照片')
+    savingLoading.value = false
     return
   }
   // 检查车内、车外照片是否有重复文件
   if (hasDuplicateFileId(detail.interiorImages)) {
     showToast('车内照片存在重复文件，请检查')
+    savingLoading.value = false
     return
   }
   if (hasDuplicateFileId(detail.exteriorImages)) {
     showToast('车外照片存在重复文件，请检查')
+    savingLoading.value = false
     return
   }
   // 异常描述
   if (!detail.abnormalDesc) {
     showToast('请输入异常描述')
+    savingLoading.value = false
     return
   }
   // 经理建议
   if (!detail.testResult) {
     showToast('请输入客户经理建议')
+    savingLoading.value = false
     return
   }
-  savingLoading.value = true
   showLoadingToast('正在保存...')
   try {
     const res = await serviceAddOrUpdate({

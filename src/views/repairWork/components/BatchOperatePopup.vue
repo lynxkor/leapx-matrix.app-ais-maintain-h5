@@ -2,7 +2,7 @@
   <van-popup
     v-model:show="visible"
     position="bottom"
-    :style="{ height: '90%' }"
+    :style="{ height: '70%' }"
     round
     teleport="body"
     @close="handleClose"
