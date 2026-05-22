@@ -121,19 +121,19 @@
           <div class="info-row" :class="{ clickable: isEditable }" @click="isEditable && openFeedbackPicker()">
             <span class="info-label">质量反馈单号</span>
             <span class="info-value">
-              {{ detail.qualityReport?.reportNo || '--' }}
+              {{ detail.qualityReport?.reportNo  }}
               <van-icon v-if="isEditable" name="arrow" size="14" color="#888888" />
             </span>
           </div>
           <div class="info-row expandable" :class="{ expanded: faultDescExpanded }" @click="faultDescExpanded = !faultDescExpanded">
             <span class="info-label">故障现象描述</span>
-            <span class="info-value" :class="{ collapsed: !faultDescExpanded }">{{ detail.qualityReport?.faultDesc || '--' }}</span>
-            <van-icon name="arrow" size="12" color="#888888" class="arrow-icon" />
+            <span class="info-value" :class="{ collapsed: !faultDescExpanded }">{{ detail.qualityReport?.faultDesc }}</span>
+            <van-icon v-if="detail.qualityReport?.faultDesc" name="arrow" size="12" color="#888888" class="arrow-icon" />
           </div>
           <div class="info-row expandable" :class="{ expanded: faultProcessExpanded }" @click="faultProcessExpanded = !faultProcessExpanded">
             <span class="info-label">故障排查流程</span>
-            <span class="info-value" :class="{ collapsed: !faultProcessExpanded }">{{ detail.qualityReport?.faultProcess || '--' }}</span>
-            <van-icon name="arrow" size="12" color="#888888" class="arrow-icon" />
+            <span class="info-value" :class="{ collapsed: !faultProcessExpanded }">{{ detail.qualityReport?.faultProcess }}</span>
+            <van-icon v-if="detail.qualityReport?.faultProcess" name="arrow" size="12" color="#888888" class="arrow-icon" />
           </div>
         </div>
       </div>
