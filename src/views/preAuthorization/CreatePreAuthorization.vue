@@ -247,7 +247,7 @@
                 v-model="constructionSearchText"
                 type="text"
                 class="search-input"
-                placeholder="输入车牌号/VIN"
+                placeholder="输入施工单号/车牌号/VIN"
               />
               <div class="search-btn" @click="handleConstructionSearch">搜索</div>
             </div>
