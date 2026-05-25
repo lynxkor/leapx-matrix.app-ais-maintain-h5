@@ -429,13 +429,30 @@ const getReasonOptions = async() => {
 
 onMounted(() => {
   getReasonOptions()
-  const savedTab = sessionStorage.getItem('settlementTab')
-  if (savedTab && (savedTab === 'pending' || savedTab === 'completed')) {
-    if (activeTab.value !== savedTab) {
-      activeTab.value = savedTab
-      sessionStorage.removeItem('settlementTab')
-      updateRequestData()
+  const savedFilter = sessionStorage.getItem('settlementFilter')
+  if (savedFilter) {
+    try {
+      const parsed = JSON.parse(savedFilter)
+      if (parsed.tab && (parsed.tab === 'pending' || parsed.tab === 'completed')) {
+        if (activeTab.value !== parsed.tab) {
+          activeTab.value = parsed.tab
+        }
+      }
+      if (parsed.dateTag && ['today', 'week', 'all'].includes(parsed.dateTag)) {
+        if (selectedDateTag.value !== parsed.dateTag) {
+          selectedDateTag.value = parsed.dateTag
+        }
+      }
+    } catch {
+      // 兼容旧格式（纯字符串）
+      if (savedFilter === 'pending' || savedFilter === 'completed') {
+        if (activeTab.value !== savedFilter) {
+          activeTab.value = savedFilter
+        }
+      }
     }
+    sessionStorage.removeItem('settlementFilter')
+    updateRequestData()
   }
 })
 
@@ -553,12 +570,14 @@ const goToDetail = (item) => {
     return
   }
 
-  sessionStorage.setItem('settlementTab', activeTab.value)
+  const filterParams = { tab: activeTab.value, dateTag: selectedDateTag.value }
+  sessionStorage.setItem('settlementFilter', JSON.stringify(filterParams))
   router.push({
     path: '/settlement-statement/after-sales',
     query: {
       serviceProxyId,
       status: activeTab.value,
+      dateTag: selectedDateTag.value,
       serviceProxyCode: item.serviceProxyCode || item.code || '',
       vehProfileVin: item.vehProfileVin || ''
     }

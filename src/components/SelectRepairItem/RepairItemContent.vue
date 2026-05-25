@@ -404,7 +404,7 @@ const checkFaultOnSave = () => {
   const hadBefore = hasType(itemsSnapshot.value.items) || hasType(itemsSnapshot.value.parts)
   const hasNow = hasType(selectedItems.value) || hasType(selectedParts.value)
   if (!hadBefore && hasNow && props.currentFault === '0') {
-    showToast({ message: '一般维修或者三电维修需要确认故障', duration: 3000, onClose: () => {
+    showToast({ message: '维修类型为一般维修或三电维修，系统默认调整 【本次进店是否存在故障】为是，存在故障，请填写故障模块信息!', duration: 3000, onClose: () => {
       router.go(-1)
     } })
     sessionStorage.setItem('faultDetected', '1')

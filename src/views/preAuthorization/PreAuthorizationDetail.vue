@@ -332,6 +332,15 @@
               <div v-if="record.comment" class="audit-record-content">
                 {{ record.comment }}
               </div>
+              <div v-if="record.attachments && record.attachments.length > 0" class="audit-record-images">
+                <img
+                  v-for="(img, imgIndex) in record.attachments"
+                  :key="imgIndex"
+                  :src="img.url"
+                  class="audit-record-img"
+                  @click="showImg(img.url)"
+                />
+              </div>
             </div>
           </div>
         </div>
@@ -1271,6 +1280,30 @@ const fetchAllAttachmentLists = async() => {
   await Promise.all(tasks)
 }
 
+const fetchAuditRecordAttachments = async() => {
+  const records = detail.value.auditRecords
+  if (!records || records.length === 0) return
+
+  const promises = records.map(async(record) => {
+    if (!record.id) return
+    try {
+      const res = await getAttachmentList({ businessId: record.id })
+      if (res?.code === 200 || res?.code === 0) {
+        const data = res?.data
+        const list = Array.isArray(data) ? data : (data?.records || data?.list || [])
+        record.attachments = list.map(item => ({
+          url: item.fileUrl || item.url || '',
+          fileId: item.fileId || item.id || ''
+        }))
+      }
+    } catch (e) {
+      console.error('获取审核记录附件失败:', e)
+    }
+  })
+
+  await Promise.all(promises)
+}
+
 const uploadAttachment = (type) => {
   const currentList = detail.value.attachments[type] || []
   const attachType = getAttachmentTypeLabel(type)
@@ -1466,6 +1499,7 @@ const fetchDetail = async() => {
       editAuthType.value = detail.value.preAuthTypeValue === 1 ? 'tech' : 'warranty'
       hasEdited.value = false
       await fetchAllAttachmentLists()
+      fetchAuditRecordAttachments()
       checkReasonOverflow()
     } else {
       showToast(res.msg || '获取详情失败')
@@ -1544,7 +1578,9 @@ const formatDetailData = (data) => {
       time: item.approvalOn || '',
       status: item.approvalResult,
       statusText: item.approvalResult || '',
-      comment: item.content || ''
+      comment: item.content || '',
+      id: item.id || '',
+      attachments: []
     })),
 
     // 维修项目 - 来自预授权主数据
@@ -2354,6 +2390,21 @@ onUnmounted(() => {
     font-weight: 400;
     color: #191a1b;
     margin-top: 8px;
+  }
+
+  .audit-record-images {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 8px;
+
+    .audit-record-img {
+      width: 64px;
+      height: 64px;
+      border-radius: 4px;
+      object-fit: cover;
+      border: 1px solid #e6e6e5;
+    }
   }
 }
 
