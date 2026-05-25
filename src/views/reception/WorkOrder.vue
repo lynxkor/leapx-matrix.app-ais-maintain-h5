@@ -221,9 +221,9 @@ const onListError = (msg) => {
 
 // 卡片点击
 const onCardClick = (item) => {
-  // 已交车(180)或已作废(210), 已生成结算单(1)跳转到详情页，其他跳转到编辑页
+  // 已交车(180)或已作废(210)跳转到详情页，其他（含已生成结算单）跳转到编辑页
   const path =
-    item.orderStatus === 180 || item.orderStatus === 210 || item.isCreateStatementInfo === 1
+    item.orderStatus === 180 || item.orderStatus === 210
       ? '/reception/work-order/detail'
       : '/reception/work-order/edit'
   router.push({
