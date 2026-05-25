@@ -2429,6 +2429,8 @@ const onSave = async() => {
     savingLoading.value = false
     return
   }
+  // 里程校验
+  validateMileage(detail.mileage, detail.lastMileage, detail.networkMileageTotal)
   // 如果currentFault为"1"，客户故障描述必填
   if (Number(detail.currentFault) === 1 && !detail.customerFaultDesc.trim()) {
     showToast('请输入客户故障描述')

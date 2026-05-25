@@ -2852,6 +2852,8 @@ const onInspectionSave = async(type) => {
 
   // 环检信息页需要校验
   if (!validateRepairPerson()) return { code: -1 }
+  // 里程校验
+  validateMileage(detail.mileage, detail.lastMileage, detail.networkMileageTotal)
   // 如果currentFault为1，客户故障描述必填
   if (Number(detail.currentFault) === 1 && !detail.customerFaultDesc.trim()) {
     showToast('请输入客户故障描述')
