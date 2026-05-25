@@ -2846,6 +2846,10 @@ const checkFaultData = ref(null)
 const onConfirmAndSignClick = async() => {
   const id = detail.id
   if (!id) return
+  if (!signatureData.expectFinishAt) {
+    showToast('请选择预计交车时间')
+    return
+  }
   showLoadingToast({ message: '请稍候...', forbidClick: true })
   try {
     const prevSignStatus = String(detail.signStatus)

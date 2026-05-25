@@ -1085,8 +1085,8 @@ const onFeedbackSelect = (item) => {
   detail.value.qualityReport = {
     id: itemId,
     reportNo: item.code || '',
-    faultDesc: item.title || '',
-    faultProcess: item.diagnosisContent || ''
+    faultDesc: item.customerContent || '',
+    faultProcess: item.troubleshootingProcess || ''
   }
   showFeedbackPicker.value = false
   hasEdited.value = true

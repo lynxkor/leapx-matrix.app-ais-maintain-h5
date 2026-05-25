@@ -6,7 +6,7 @@
         <span class="plate-no">{{ detail.plateNo }}</span>
         <span class="appointment-tag">{{ detail.custTypeLabel || '随到客户' }}</span>
         <span
-          v-if="detail.orderStatus == 100"
+          v-if="!isSettled && detail.orderStatus == 100"
           class="edit-plate edit-plate-after"
           @click="onChangeCar"
         >
@@ -187,7 +187,7 @@
             <div class="card-container marginB1">
               <div class="card-info-title marginB1">
                 车内照片
-                <span v-if="interiorConfig.required === '1'" style="color: #b91919; font-size: 15px"
+                <span v-if="!isSettled && interiorConfig.required === '1'" style="color: #b91919; font-size: 15px"
                   >*</span
                 >
               </div>
@@ -203,14 +203,15 @@
                     @click="showImg(getFilePreviewUrl(file))"
                   />
                   <img
+                    v-if="!isSettled"
                     class="delete_icon"
                     src="@/assets/image/delete_icon.png"
                     @click="handleInteriorDelete(file)"
                   />
                 </div>
                 <div
+                  v-if="!isSettled && detail.interiorImages.length < (interiorConfig.maxNum || 3)"
                   class="upload-box upload-placeholder"
-                  v-if="detail.interiorImages.length < (interiorConfig.maxNum || 3)"
                   @click="uploadGeneric('interior')"
                 >
                   <svg class="icon upload-img" aria-hidden="true">
@@ -224,7 +225,7 @@
             <div class="card-container marginB1">
               <div class="card-info-title marginB1">
                 车外照片
-                <span v-if="exteriorConfig.required === '1'" style="color: #b91919; font-size: 15px"
+                <span v-if="!isSettled && exteriorConfig.required === '1'" style="color: #b91919; font-size: 15px"
                   >*</span
                 >
               </div>
@@ -240,14 +241,15 @@
                     @click="showImg(getFilePreviewUrl(file))"
                   />
                   <img
+                    v-if="!isSettled"
                     class="delete_icon"
                     src="@/assets/image/delete_icon.png"
                     @click="handleExteriorDelete(file)"
                   />
                 </div>
                 <div
+                  v-if="!isSettled && detail.exteriorImages.length < (exteriorConfig.maxNum || 3)"
                   class="upload-box upload-placeholder"
-                  v-if="detail.exteriorImages.length < (exteriorConfig.maxNum || 3)"
                   @click="uploadGeneric('exterior')"
                 >
                   <svg class="icon upload-img" aria-hidden="true">
@@ -307,7 +309,10 @@
             <div class="section-card">
               <div class="fault-header">
                 <span class="title">本次是否因故障进店</span>
-                <div class="radio-group">
+                <template v-if="isFaultReadonly">
+                  <span class="fault-status-text">{{ detail.currentFault === '1' ? '是' : '否' }}</span>
+                </template>
+                <div v-else class="radio-group">
                   <van-radio-group
                     v-model="detail.currentFault"
                     direction="horizontal"
@@ -321,7 +326,7 @@
 
               <!-- 故障模块列表 -->
               <div class="fault-modules" v-if="Number(detail.currentFault) === 1">
-                <div class="add-module" @click="onAddFaultModule">
+                <div v-if="!isFaultReadonly" class="add-module" @click="onAddFaultModule">
                   <van-icon name="plus" />
                   <span>添加故障模块</span>
                 </div>
@@ -336,7 +341,7 @@
                     <span class="module-name">{{
                       module.vrtName + '-' + module.vfgName + '-' + module.cccName
                     }}</span>
-                    <img v-if="detail.isCreateStatementInfo != 1" src="@/assets/images/trash.svg"  @click="onDeleteFaultModule(module)"/>
+                    <img v-if="!isFaultReadonly" src="@/assets/images/trash.svg"  @click="onDeleteFaultModule(module)"/>
                   </div>
                 </div>
 
@@ -355,9 +360,13 @@
             <!-- 客户故障描述 -->
             <div class="section-card">
               <div class="section-title" style="justify-content: flex-start">
-                <span v-if="Number(detail.currentFault) === 1" class="required">*</span>客户故障描述
+                <span v-if="!isFaultReadonly && Number(detail.currentFault) === 1" class="required">*</span>客户故障描述
               </div>
+              <template v-if="isFaultReadonly">
+                <div class="fault-desc-text">{{ detail.customerFaultDesc || '无' }}</div>
+              </template>
               <van-field
+                v-else
                 v-model="detail.customerFaultDesc"
                 type="textarea"
                 placeholder="请输入客户故障描述"
@@ -401,8 +410,64 @@
             </div>
           </div>
 
-          <!-- 维修项目零件内容 - 使用 RepairItemContent 组件 -->
-          <div style="height: calc(42vh - 10px)">
+          <!-- 维修项目零件内容 - 已生成结算单时按 detail 格式只读展示 -->
+          <template v-if="isSettled">
+            <div style="padding: 0 12px">
+              <!-- 维修项目列表（非套餐） -->
+              <div v-if="nonPackageItems.length > 0">
+                <div class="section-title" style="margin-bottom: 8px">维修项目</div>
+                <div
+                  v-for="(item, i) in nonPackageItems"
+                  :key="'item-' + i"
+                  class="parts-item-card"
+                >
+                  <div class="item-main">
+                    <div class="item-left">
+                      <div class="item-name">{{ item.repairItemName || item.name }}</div>
+                      <div class="item-code">{{ item.repairItemCode || item.code }}</div>
+                      <div class="item-code">
+                        {{ item.repairItemTypeName }}-{{ item.checkoutTypeName }}-{{ item.warrantyTypeName }}
+                      </div>
+                    </div>
+                    <div class="item-right">
+                      <div class="item-amount">¥{{ item.price }} × {{ item.quantity || item.workHour }}</div>
+                      <div v-if="item.discountAmount" class="item-discount">-¥{{ item.discountAmount }}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <!-- 维修配件列表（非套餐） -->
+              <div v-if="nonPackageParts.length > 0">
+                <div class="section-title" style="margin: 12px 0 8px">维修配件</div>
+                <div
+                  v-for="(item, i) in nonPackageParts"
+                  :key="'part-' + i"
+                  class="parts-item-card"
+                >
+                  <div class="item-main">
+                    <div class="item-left">
+                      <div class="item-name">{{ item.partsName || item.name }}</div>
+                      <div class="item-code">{{ item.partsCode || item.code }}</div>
+                      <div class="item-code">
+                        {{ item.repairItemTypeName }}-{{ item.checkoutTypeName }}-{{ item.warrantyTypeName }}
+                      </div>
+                    </div>
+                    <div class="item-right">
+                      <div class="item-amount">¥{{ item.price }} × {{ item.quantity }}</div>
+                      <div v-if="item.discountAmount" class="item-discount">-¥{{ item.discountAmount }}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div
+                v-if="nonPackageItems.length === 0 && nonPackageParts.length === 0"
+                class="empty-state"
+              >
+                暂无项目零件数据
+              </div>
+            </div>
+          </template>
+          <div v-else style="height: calc(42vh - 10px)">
             <RepairItemContent
               ref="repairItemContentRef"
               :service-proxy-id="route.query.id"
@@ -470,7 +535,7 @@
               </div>
             </div> -->
             <!-- 待签字状态显示 -->
-            <div class="signature-row" v-if="Number(detail.signStatus) === 10">
+            <div class="signature-row" v-if="!isSettled && Number(detail.signStatus) === 10">
               <span class="label">签字状态</span>
               <div class="value-wrapper">
                 <div
@@ -499,7 +564,7 @@
           <div class="card-container marginB1">
             <div class="card-info-title marginB1">
               附件资料
-              <span v-if="attachmentConfig.required === '1'" style="color: #b91919; font-size: 15px"
+              <span v-if="!isSettled && attachmentConfig.required === '1'" style="color: #b91919; font-size: 15px"
                 >*</span
               >
             </div>
@@ -515,14 +580,15 @@
                   @click="showImg(getFilePreviewUrl(file))"
                 />
                 <img
+                  v-if="!isSettled"
                   class="delete_icon"
                   src="@/assets/image/delete_icon.png"
                   @click="handleAttachmentDelete(file)"
                 />
               </div>
               <div
+                v-if="!isSettled && signatureData.attachments.length < (attachmentConfig.maxNum || 20)"
                 class="upload-box upload-placeholder"
-                v-if="signatureData.attachments.length < (attachmentConfig.maxNum || 20)"
                 @click="uploadGeneric('attachment')"
               >
                 <svg class="icon upload-img" aria-hidden="true">
@@ -536,7 +602,7 @@
     </van-tabs>
 
     <!-- 添加零件浮动栏 -->
-    <div v-if="activeTab === 'parts'" class="add-parts-bar">
+    <div v-if="!isSettled && activeTab === 'parts'" class="add-parts-bar">
       <div class="add-btn" @click="onAddParts">
         <van-icon name="plus" />
         <span>添加项目/零件</span>
@@ -549,28 +615,28 @@
 
     <!-- 底部操作栏 -->
     <div class="bottom-bar">
-      <span v-if="activeTab === 'inspection'" class="more-btn" @click="onMore">更多</span>
+      <span v-if="!isSettled && activeTab === 'inspection'" class="more-btn" @click="onMore">更多</span>
       <template v-if="activeTab === 'inspection'">
         <span
           :class="['save-btn', { disabled: isInspectionSaveDisabled }]"
           @click="onInspectionSave"
           >保存</span
         >
-        <span v-if="!detail.previewingFinishAt" class="complete-btn" @click="onComplete"
+        <span v-if="!isSettled && !detail.previewingFinishAt" class="complete-btn" @click="onComplete"
           >预检确认</span
         >
       </template>
       <template v-else-if="activeTab === 'parts'">
-        <span :class="['save-btn', { disabled: isPartsSaveDisabled }]" @click="onPartsSave"
+        <span
+          v-if="!isSettled"
+          :class="['save-btn', { disabled: isPartsSaveDisabled }]"
+          @click="onPartsSave"
           >保存</span
         >
       </template>
       <template v-else-if="activeTab === 'signature'">
-        <!-- <span :class="['save-btn', { disabled: isSignatureSaveDisabled }]" @click="onSignatureSave"
-          >保存</span
-        > -->
         <span
-          v-if="detail.orderStatus == 110 && ((Number(detail.signStatus) !== 10 && Number(detail.signStatus) !== 20) || !detail.signStatus)"
+          v-if="!isSettled && detail.orderStatus == 110 && ((Number(detail.signStatus) !== 10 && Number(detail.signStatus) !== 20) || !detail.signStatus)"
           :class="['complete-btn', { disabled: isConfirmAndSignDisabled }]"
           @click="onConfirmAndSignClick"
           >制单确认并签字</span
@@ -1932,10 +1998,10 @@ const isInspectionSaveDisabled = computed(() => {
   if (!detail.battery) return true
   // 送修人信息
   if (!detail.repairPerson || !detail.repairPersonPhone) return true
-  // 车内照片（根据配置判断是否必填）
-  if (interiorConfig.value.required === '1' && detail.interiorImages.length === 0) return true
-  // 车外照片（根据配置判断是否必填）
-  if (exteriorConfig.value.required === '1' && detail.exteriorImages.length === 0) return true
+  // 车内照片（已生成结算单时不再必填）
+  if (!isSettled.value && interiorConfig.value.required === '1' && detail.interiorImages.length === 0) return true
+  // 车外照片（已生成结算单时不再必填）
+  if (!isSettled.value && exteriorConfig.value.required === '1' && detail.exteriorImages.length === 0) return true
   // 异常描述
   if (!detail.abnormalDesc) return true
   // 经理建议
@@ -2782,6 +2848,22 @@ const repairPersonInputLabel = computed(() => {
   return '送修人'
 })
 
+// 故障模块是否只读（已生成结算单、已作废、已交车不可修改）
+const isFaultReadonly = computed(() =>
+  detail.isCreateStatementInfo === 1 || detail.orderStatus === 180 || detail.orderStatus === 210
+)
+
+// 已生成结算单但未交车/未作废，部分字段仍可编辑
+const isSettled = computed(() => detail.isCreateStatementInfo === 1)
+
+// 已生成结算单时，只读展示的非套餐项目/零件
+const nonPackageItems = computed(() =>
+  (partsData.repairItemRespList || []).filter(item => !item.packageType)
+)
+const nonPackageParts = computed(() =>
+  (partsData.sparePartRespList || []).filter(item => !item.packageType)
+)
+
 // 选择送修人类型
 const onSelectRepairPersonType = (type) => {
   repairPersonType.value = type
@@ -2854,24 +2936,27 @@ const onInspectionSave = async(type) => {
   if (!validateRepairPerson()) return { code: -1 }
   // 里程校验
   validateMileage(detail.mileage, detail.lastMileage, detail.networkMileageTotal)
-  // 如果currentFault为1，客户故障描述必填
-  if (Number(detail.currentFault) === 1 && !detail.customerFaultDesc.trim()) {
-    showToast('请输入客户故障描述')
-    return { code: -1 }
-  }
-  // 如果currentFault为1，必须添加故障模块
-  if (Number(detail.currentFault) === 1 && detail.faultModules.length === 0) {
-    showToast('请添加故障模块')
-    return { code: -1 }
-  }
-  // 照片校验（根据配置判断是否必填）
-  if (interiorConfig.value.required === '1' && detail.interiorImages.length === 0) {
-    showToast('请上传车内照片')
-    return { code: -1 }
-  }
-  if (exteriorConfig.value.required === '1' && detail.exteriorImages.length === 0) {
-    showToast('请上传车外照片')
-    return { code: -1 }
+  // 已生成结算单时跳过故障和照片校验
+  if (!isSettled.value) {
+    // 如果currentFault为1，客户故障描述必填
+    if (Number(detail.currentFault) === 1 && !detail.customerFaultDesc.trim()) {
+      showToast('请输入客户故障描述')
+      return { code: -1 }
+    }
+    // 如果currentFault为1，必须添加故障模块
+    if (Number(detail.currentFault) === 1 && detail.faultModules.length === 0) {
+      showToast('请添加故障模块')
+      return { code: -1 }
+    }
+    // 照片校验（根据配置判断是否必填）
+    if (interiorConfig.value.required === '1' && detail.interiorImages.length === 0) {
+      showToast('请上传车内照片')
+      return { code: -1 }
+    }
+    if (exteriorConfig.value.required === '1' && detail.exteriorImages.length === 0) {
+      showToast('请上传车外照片')
+      return { code: -1 }
+    }
   }
   // 异常描述
   if (!detail.abnormalDesc) {
@@ -3408,6 +3493,10 @@ const onCloseDeliveryTimePicker = () => {
 const onConfirmAndSignClick = async() => {
   const id = route.query.id
   if (!id) return
+  if (!signatureData.expectFinishAt) {
+    showToast('请选择预计交车时间')
+    return
+  }
   showLoadingToast({ message: '请稍候...', forbidClick: true })
   try {
     // 记录查询前的 signStatus，用于判断是否发生变化
