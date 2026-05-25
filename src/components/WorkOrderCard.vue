@@ -32,7 +32,15 @@
           </span>
         </div>
       </div>
-      <div class="vehicle-model">{{ item.vehModelName }} · {{ item.vehProfileVin }}</div>
+      <div class="vehicle-model">
+        {{ item.vehModelName }} · {{ item.vehProfileVin }}
+        <img
+          v-if="item.vehProfileVin"
+          :src="copyIcon"
+          class="copy-icon"
+          @click.stop="handleCopyVin(item.vehProfileVin)"
+        />
+      </div>
     </div>
 
     <!-- 详细信息 -->
@@ -63,6 +71,8 @@
 
 <script setup>
 import { defineProps, defineEmits } from 'vue'
+import { copyText } from '@/libs/utils'
+import copyIcon from '@/libs/assets/image/copy_icon.svg'
 
 // 定义 props
 const props = defineProps({
@@ -75,6 +85,10 @@ const props = defineProps({
 
 // 定义 emits
 const emit = defineEmits(['click'])
+
+const handleCopyVin = (vin) => {
+  copyText(vin)
+}
 
 // 卡片点击事件
 const onCardClick = () => {
@@ -150,6 +164,16 @@ const onCardClick = () => {
     .vehicle-model {
       font-size: 12px;
       color: #545454;
+      display: flex;
+      align-items: center;
+
+      .copy-icon {
+        width: 14px;
+        height: 14px;
+        margin-left: 2px;
+        cursor: pointer;
+        flex-shrink: 0;
+      }
     }
   }
 

@@ -42,7 +42,15 @@
             <van-row class="card-info">
               <van-col span="24" class="card-info-col">
                 <span class="card-info-title">VIN</span>
-                <span class="card-info-des">{{ item.vehProfileVin }}</span>
+                <span class="card-info-des">
+                  {{ item.vehProfileVin }}
+                  <img
+                    v-if="item.vehProfileVin"
+                    :src="copyIcon"
+                    class="copy-icon"
+                    @click.stop="handleCopyVin(item.vehProfileVin)"
+                  />
+                </span>
               </van-col>
               <van-col span="24" class="card-info-col">
                 <span class="card-info-title">门店名称</span>
@@ -100,6 +108,8 @@ import AisButton from '@/components/AisButton.vue'
 import { preAuthPage, preAuthGetStoreArea } from '@/api/authorization'
 import { getEnumValue } from '@/libs/api/common'
 import { callPhone } from '@/libs/utils/nativeFn'
+import { copyText } from '@/libs/utils'
+import copyIcon from '@/libs/assets/image/copy_icon.svg'
 import { usePageSafeArea } from '@/utils/safeArea'
 
 const router = useRouter()
@@ -292,6 +302,10 @@ const getStatusClass = (label) => {
   return ''
 }
 
+const handleCopyVin = (vin) => {
+  copyText(vin)
+}
+
 const handleContact = (item) => {
   const phone = item.creatorMobile
   if (phone) {
@@ -396,6 +410,16 @@ const createAuthorization = () => {
         flex: 1;
         word-break: break-all;
         margin-left: 12px;
+        display: flex;
+        align-items: center;
+
+        .copy-icon {
+          width: 14px;
+          height: 14px;
+          margin-left: 2px;
+          cursor: pointer;
+          flex-shrink: 0;
+        }
       }
     }
   }
