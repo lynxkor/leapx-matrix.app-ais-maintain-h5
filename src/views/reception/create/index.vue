@@ -2782,9 +2782,11 @@ const onPartsSave = async() => {
     showToast('数据未变更，无需保存')
     return
   }
-  // 从 RepairItemContent 组件获取数据
-  const items = repairItemContentRef.value?.selectedItems || []
-  const parts = repairItemContentRef.value?.selectedParts || []
+  // 从 RepairItemContent 组件获取数据，组件未挂载时回退到 partsData（服务端已保存数据）
+  const componentItems = repairItemContentRef.value?.selectedItems
+  const componentParts = repairItemContentRef.value?.selectedParts
+  const items = componentItems && componentItems.length > 0 ? componentItems : partsData.repairItemRespList
+  const parts = componentParts && componentParts.length > 0 ? componentParts : partsData.sparePartRespList
 
   // 校验项目及零件不可为空
   if (items.length === 0 && parts.length === 0) {
@@ -2869,9 +2871,11 @@ const onConfirmAndSign = async() => {
   if (isConfirmAndSignDisabled.value) {
     return
   }
-  // 从 RepairItemContent 组件获取数据
-  const items = repairItemContentRef.value?.selectedItems || []
-  const parts = repairItemContentRef.value?.selectedParts || []
+  // 从 RepairItemContent 组件获取数据，组件未挂载时回退到 partsData（服务端已保存数据）
+  const componentItems = repairItemContentRef.value?.selectedItems
+  const componentParts = repairItemContentRef.value?.selectedParts
+  const items = componentItems && componentItems.length > 0 ? componentItems : partsData.repairItemRespList
+  const parts = componentParts && componentParts.length > 0 ? componentParts : partsData.sparePartRespList
   // 校验维修项目或零件有值（有一个有值即可）
   if (items.length === 0 && parts.length === 0) {
     showToast('项目或零件不可为空，请先添加维修项目或零件')

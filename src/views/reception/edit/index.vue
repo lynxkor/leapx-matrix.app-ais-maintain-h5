@@ -3007,8 +3007,6 @@ const onInspectionSave = async(type) => {
     earlyServiceProxy: detail.earlyServiceProxy
   }
   console.log('保存参数:', params)
-  console.log('exteriorPhotoList', params.exteriorPhotoList, params.exteriorPhotoList.length)
-  console.log('interiorPhotoList', params.interiorPhotoList, params.interiorPhotoList.length)
   try {
     const res = await serviceAddOrUpdate(params)
     savingLoading.value = false
@@ -3115,7 +3113,7 @@ const onPartsSave = async() => {
       if (detail.customerFaultDesc === '本次进店车辆无故障') {
         detail.customerFaultDesc = ''
       }
-      showToast({ message: '一般维修或三电保修需要确认故障!', duration: 3000 })
+      showToast({ message: '维修类型为一般维修或三电维修，系统默认调整 【本次进店是否存在故障】为是，存在故障，请填写故障模块信息!', duration: 3000 })
       // 切换tab到环检信息
       activeTab.value = 'inspection'
     }
