@@ -39,7 +39,7 @@
           <span class="info-value">{{ workOrder.expectFinishAt || '-' }}</span>
         </div>
         <div class="info-row">
-          <span class="info-label">创建时间</span>
+          <span class="info-label">开单时间</span>
           <span class="info-value">{{ workOrder.createTime }}</span>
         </div>
       </div>

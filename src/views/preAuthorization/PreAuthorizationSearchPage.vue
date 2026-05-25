@@ -7,7 +7,7 @@
         v-model="localSearchValue"
         shape="round"
         :autofocus="true"
-        placeholder="输入预授权单号/预警信息/门店名称"
+        placeholder="请输入门店名称/预授权单号/VIN"
         @search="onLocalSearch"
         class="page-search-input"
       >

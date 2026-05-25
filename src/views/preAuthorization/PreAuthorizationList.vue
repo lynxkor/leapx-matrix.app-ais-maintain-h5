@@ -6,7 +6,7 @@
         ref="filterHeaderRef"
         :showSort="false"
         :showScan="false"
-        :placeholder="'请输入预授权单号/预警信息/门店名称'"
+        :placeholder="'请输入门店名称/预授权单号/VIN'"
         :filter-list="filterList"
         :search-page-route="'preAuthorizationSearch'"
         @search="onSearch"
@@ -67,7 +67,7 @@
                 <span class="card-info-des">{{ item.creatorName }}</span>
               </van-col>
               <van-col span="24" class="card-info-col">
-                <span class="card-info-title">预交时间</span>
+                <span class="card-info-title">预计交车</span>
                 <span class="card-info-des">{{ item.expectFinishAt }}</span>
               </van-col>
             </van-row>

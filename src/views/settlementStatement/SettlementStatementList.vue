@@ -132,6 +132,10 @@
                   <span class="info-value">{{ item.creatorName }}</span>
                 </div>
                 <div class="info-row">
+                  <span class="info-label">预计交车</span>
+                  <span class="info-value">{{ item.expectFinishAt }}</span>
+                </div>
+                <div class="info-row">
                   <span class="info-label">开单时间</span>
                   <span class="info-value">{{ item.createTime }}</span>
                 </div>
