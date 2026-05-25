@@ -21,6 +21,12 @@
         <div class="vehicle-model">
           {{ workOrder.vehModelName
           }}<template v-if="workOrder.vehProfileVin"> · {{ workOrder.vehProfileVin }}</template>
+          <img
+            v-if="workOrder.vehProfileVin"
+            :src="copyIcon"
+            class="copy-icon"
+            @click.stop="handleCopyVin(workOrder.vehProfileVin)"
+          />
         </div>
       </div>
 
@@ -39,7 +45,7 @@
           <span class="info-value">{{ workOrder.expectFinishAt || '-' }}</span>
         </div>
         <div class="info-row">
-          <span class="info-label">创建时间</span>
+          <span class="info-label">开单时间</span>
           <span class="info-value">{{ workOrder.createTime }}</span>
         </div>
       </div>
@@ -85,6 +91,8 @@ import RepariItemList from './RepariItemList.vue'
 import RepairWorkActions from './RepairWorkActions.vue'
 import BatchOperatePopup from './BatchOperatePopup.vue'
 import { RepairOrderStatusEnum, AlarmLevelEnum } from '../constant'
+import { copyText } from '@/libs/utils'
+import copyIcon from '@/libs/assets/image/copy_icon.svg'
 
 const props = defineProps({
   workOrder: {
@@ -135,6 +143,10 @@ const getStatusClass = (orderStatus) => {
   if (orderStatus >= RepairOrderStatusEnum.DELIVERED) return 'status-finished'
   if (orderStatus >= RepairOrderStatusEnum.UNDER_CONSTRUCTION) return 'status-working'
   return 'status-pending'
+}
+
+const handleCopyVin = (vin) => {
+  copyText(vin)
 }
 
 const handleRefresh = () => emit('refresh')
@@ -248,6 +260,16 @@ const handleRefresh = () => emit('refresh')
         font-size: 12px;
         font-weight: 400;
         line-height: 17px;
+        display: flex;
+        align-items: center;
+
+        .copy-icon {
+          width: 14px;
+          height: 14px;
+          margin-left: 2px;
+          cursor: pointer;
+          flex-shrink: 0;
+        }
       }
     }
 

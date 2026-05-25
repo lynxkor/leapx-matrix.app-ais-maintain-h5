@@ -105,7 +105,7 @@
             </div>
           </div>
           <div class="info-row">
-            <span class="info-label">预交时间</span>
+            <span class="info-label">预计交车</span>
             <span class="info-value">{{ detail.estimateDeliverTime || '--' }}</span>
           </div>
           </template>
@@ -1547,7 +1547,7 @@ const formatDetailData = (data) => {
     warningInfo: preAuthData.alarmInfo || '',
     // 申请原因 - 来自预授权主数据
     applyReason: preAuthData.reason || '',
-    // 预交时间 - 来自施工单数据
+    // 预计交车 - 来自施工单数据
     estimateDeliverTime: serviceProxy.expectFinishAt || '',
 
     // 质量反馈报告 - 来自预授权主数据

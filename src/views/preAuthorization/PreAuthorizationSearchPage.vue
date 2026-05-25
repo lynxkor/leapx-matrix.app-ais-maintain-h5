@@ -7,7 +7,7 @@
         v-model="localSearchValue"
         shape="round"
         :autofocus="true"
-        placeholder="输入预授权单号/预警信息/门店名称"
+        placeholder="请输入门店名称/预授权单号/VIN"
         @search="onLocalSearch"
         class="page-search-input"
       >
@@ -43,7 +43,15 @@
             <van-row class="card-info">
               <van-col span="24" class="card-info-col">
                 <span class="card-info-title">VIN</span>
-                <span class="card-info-des">{{ item.vehProfileVin }}</span>
+                <span class="card-info-des">
+                  {{ item.vehProfileVin }}
+                  <img
+                    v-if="item.vehProfileVin"
+                    :src="copyIcon"
+                    class="copy-icon"
+                    @click.stop="handleCopyVin(item.vehProfileVin)"
+                  />
+                </span>
               </van-col>
               <van-col span="24" class="card-info-col">
                 <span class="card-info-title">门店名称</span>
@@ -103,6 +111,8 @@ import ListItem from '@/components/ListItem.vue'
 import AisButton from '@/components/AisButton.vue'
 import { preAuthPage } from '@/api/authorization'
 import { callPhone } from '@/libs/utils/nativeFn'
+import { copyText } from '@/libs/utils'
+import copyIcon from '@/libs/assets/image/copy_icon.svg'
 import { usePageSafeArea } from '@/utils/safeArea'
 
 const router = useRouter()
@@ -161,6 +171,10 @@ const getStatusClass = (label) => {
   if (label === '审核通过') return 'status-green'
   if (label === '已驳回' || label === '已拒绝' || label === '已作废') return 'status-red'
   return ''
+}
+
+const handleCopyVin = (vin) => {
+  copyText(vin)
 }
 
 const handleContact = (item) => {
@@ -329,6 +343,16 @@ const goToDetail = (item) => {
         flex: 1;
         margin-left: 12px;
         word-break: break-all;
+        display: flex;
+        align-items: center;
+
+        .copy-icon {
+          width: 14px;
+          height: 14px;
+          margin-left: 2px;
+          cursor: pointer;
+          flex-shrink: 0;
+        }
       }
     }
   }
