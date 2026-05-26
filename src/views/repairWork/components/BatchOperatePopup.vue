@@ -21,6 +21,7 @@
       <AddRepairItem
         v-model:visible="showAddRepairPopup"
         :service-proxy-id="workOrder.serviceProxyId"
+        :current-fault="workOrder.currentFault"
         @confirm="handleAddRepairConfirm"
         mode="popup"
       />
