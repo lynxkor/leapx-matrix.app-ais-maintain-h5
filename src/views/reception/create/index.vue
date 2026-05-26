@@ -164,6 +164,8 @@
                     type="number"
                     placeholder="请输入"
                     :border="false"
+                    max="100"
+                    min="0"
                   >
                     <template #button>
                       <span class="unit">%</span>
@@ -443,7 +445,6 @@
                 <span :class="['value', { placeholder: !signatureData.signChannel }]">
                   {{ signatureData.signChannel || '请选择' }}
                 </span>
-                <van-icon v-if="detail.signStatus != 20" name="arrow" size="12" color="#545454" />
               </div>
             </div>
             <!-- APP/短信/零小跑渠道提示 -->
@@ -2963,7 +2964,7 @@ const handleConfirmAndSignProcess = () => {
     .then((res) => {
       if (res.code === 200) {
         showToast('操作成功')
-        fetchDetail()
+        fetchDetailForSignature()
         if (!params.signChannel) {
           // 接口成功后跳转结算页面
           const settlementUrl = `https://staticres-sitb.leapmotor.com/leapx/biling/aisInner/constructionOrder?serviceProxyId=${detail.id}&signChannel=3`

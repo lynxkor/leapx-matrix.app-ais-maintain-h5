@@ -172,6 +172,8 @@
                     type="number"
                     placeholder="请输入"
                     :border="false"
+                    max="100"
+                    min="0"
                   >
                     <template #button>
                       <span class="unit">%</span>
@@ -502,10 +504,11 @@
                   {{ signatureData.expectFinishAt || '请选择' }}
                 </span>
                 <van-icon
-                  v-if="!signatureData.isDeliveryTimeFromApi"
+                  v-if="detail.orderStatus !== 180 && detail.orderStatus !== 210"
                   name="arrow"
                   size="12"
                   color="#545454"
+                  style="height: 9px;"
                 />
               </div>
             </div>
@@ -3454,8 +3457,8 @@ const onViewSignature = () => {
 
 // 打开预计交车时间选择器
 const onOpenDeliveryTimePicker = () => {
-  // 如果是接口返回的交车时间，不允许点击
-  if (signatureData.isDeliveryTimeFromApi) {
+  // 已交车或已作废不允许修改交车时间
+  if (detail.orderStatus === 180 || detail.orderStatus === 210) {
     return
   }
   // 如果没有值，默认选中第一个日期和第一个时间
@@ -3466,6 +3469,10 @@ const onOpenDeliveryTimePicker = () => {
     if (deliveryTimeList.value.length > 0) {
       selectedDeliveryTime.value = deliveryTimeList.value[0].value
     }
+  }
+  if (signatureData.expectFinishAt) {
+    selectedDeliveryDate.value = signatureData.expectFinishAt.split(' ')[0] || ''
+    selectedDeliveryTime.value = signatureData.expectFinishAt.split(' ')[1] || ''
   }
   showDeliveryTimePicker.value = true
 }
