@@ -5,6 +5,7 @@
     :style="{ width: '100vw', height: '100%' }"
     teleport="body"
     position="bottom"
+    z-index="5055"
     @close="handleClose"
   >
     <div class="fault-info-page">
@@ -103,7 +104,7 @@
 import { ref, watch } from 'vue'
 import { showToast, showSuccessToast } from 'vant'
 import AddFaultInfoPopup from './AddFaultInfoPopup.vue'
-import { updateFaultAlertRecord } from '../../../api/repairWork'
+import { updateFaultRecord } from '../../../api/repairWork'
 
 const props = defineProps({
   modelValue: {
@@ -167,22 +168,50 @@ const handleModuleSelect = (module) => {
 
 // 提交保存
 const handleSubmit = async() => {
+  if (!faultModules.value.length) {
+    showToast({
+      message: '请选择故障模块',
+      'z-index': 5100
+    })
+    return
+  }
+  if (!faultDescription.value) {
+    showToast({
+      message: '请填写故障描述',
+      'z-index': 5100
+    })
+    return
+  }
   try {
-    const res = await updateFaultAlertRecord({
-      ...props.order,
-      faultAlertRecordParams: faultModules.value,
+    const faultModulesArr = faultModules.value.map(item => {
+      delete item.id
+      return {
+        ...item
+      }
+    })
+    const res = await updateFaultRecord({
+      faultAlertRecordParams: faultModulesArr,
       customerContent: faultDescription.value,
       id: props.serviceProxyId
     })
     if (res.code === 200) {
-      showSuccessToast('保存成功')
+      showSuccessToast({
+        message: '保存成功',
+        'z-index': 5100
+      })
       emit('refresh')
       handleClose()
     } else {
-      showToast(res.message)
+      showToast({
+        message: res.message,
+        'z-index': 5100
+      })
     }
   } catch {
-    showToast('保存失败')
+    showToast({
+      message: '保存失败',
+      'z-index': 5100
+    })
   }
 }
 

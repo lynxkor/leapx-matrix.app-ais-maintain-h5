@@ -65,7 +65,7 @@ const route = useRoute()
 
 // 车辆信息
 const vehicleInfo = reactive({
-  vin: '',
+  vin: ''
 })
 
 // Tab 状态
@@ -79,9 +79,9 @@ const requestData = reactive({
   data: {
     rightsTypeList: [1, 3],
     serviceProxyId: route.query.id,
-    status: 2,
+    status: 2
   },
-  api: getRightsList,
+  api: getRightsList
 })
 
 // Tab 切换

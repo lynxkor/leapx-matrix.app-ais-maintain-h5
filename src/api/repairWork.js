@@ -195,11 +195,19 @@ export function getBatteryUnitList(data) {
 }
 
 /**
- * 更新故障模块
+ * 更新故障模块, 只支持重置
  * @param {Object} data
  */
 export function updateFaultAlertRecord(data) {
   return post(prefix + '/addFaultRecord', data)
+}
+
+/**
+ * 更新故障模块
+ * @param {Object} data
+ */
+export function updateFaultRecord(data) {
+  return post(prefix + '/updateFaultRecord', data)
 }
 
 /**
@@ -240,4 +248,12 @@ export function getRepairItemTypeMap() {
  */
 export function getDealerPermission(data) {
   return post('maintain/app/common/dealer/permission/list', data)
+}
+
+/**
+ * 保存电池和追溯信息
+ * @param data
+ */
+export function saveTraceRecord(data) {
+  return post('maintain/app/sp/serviceProxy/saveTraceRecord', data)
 }

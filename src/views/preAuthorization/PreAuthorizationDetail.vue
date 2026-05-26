@@ -1,5 +1,5 @@
 <template>
-  <div class="pre-auth-detail" :class="{ 'has-reject-reason': detail.status === 40 }">
+  <div class="pre-auth-detail">
     <!-- 加载状态 -->
     <div v-if="detailLoading" class="loading-overlay">
       <van-loading type="circular" color="#009100" />
@@ -19,7 +19,7 @@
         </div>
         <!-- 驳回原因 -->
         <div v-if="detail.status === 40" class="reject-reason">
-          {{ detail.rejectReason || '--' }}
+          {{ detail.preAuthRuleCodeDesc || '--' }}
         </div>
       </div>
 
@@ -39,19 +39,31 @@
     <!-- 基础信息 Tab -->
     <div id="tab-basic" class="tab-content-section">
       <!-- 接车施工单卡片 -->
-      <div class="info-card">
+      <div class="info-card mt-12">
         <div class="card-header">
           <span class="card-title">接车施工单</span>
         </div>
         <div class="card-body">
-          <div class="info-row">
+          <div class="info-row" :class="{ clickable: canEditConstruction }" @click="canEditConstruction && openConstructionPicker()">
             <span class="info-label">施工单号</span>
-            <span class="info-value">{{ detail.constructionNo || '--' }}</span>
+            <span class="info-value">
+              {{ detail.constructionNo || '--' }}
+              <van-icon v-if="canEditConstruction" name="arrow" size="14" color="#888888" />
+            </span>
           </div>
-          <div class="info-row">
+          <div class="info-row" :class="{ 'auth-type-row': isEditable }">
             <span class="info-label">预授权类型</span>
-            <span class="info-value">{{ detail.authType || '--' }}</span>
+            <template v-if="isEditable">
+              <div class="type-chips">
+                <div class="type-chip" :class="{ 'type-chip-active': editAuthType === 'tech' }" @click="onAuthTypeChange('tech')">技术预授权</div>
+                <div class="type-chip" :class="{ 'type-chip-active': editAuthType === 'warranty' }" @click="onAuthTypeChange('warranty')">保修预授权</div>
+              </div>
+            </template>
+            <template v-else>
+              <span class="info-value">{{ detail.authType || '--' }}</span>
+            </template>
           </div>
+          <template v-if="showVehicleInfo">
           <div class="info-row">
             <span class="info-label">VIN</span>
             <span class="info-value">{{ detail.vin || '--' }}</span>
@@ -80,39 +92,48 @@
             <span class="info-label">门店所属区域</span>
             <span class="info-value">{{ detail.storeArea || '--' }}</span>
           </div>
-          <div class="info-row">
+          <div class="info-row warning-item" @click="warningExpanded = !warningExpanded">
             <span class="info-label">预警信息</span>
-            <span class="info-value warning">
-              {{ detail.warningInfo || '--' }}
-              <van-icon name="arrow" size="12" color="#888888" />
-            </span>
+            <div class="info-value-wrap">
+              <span class="info-value" :class="{ 'text-collapsed': !warningExpanded }">{{ detail.warningInfo || '--' }}</span>
+              <van-icon
+                v-if="detail.warningInfo && detail.warningInfo.length > 20"
+                :name="warningExpanded ? 'arrow-up' : 'arrow-down'"
+                size="16"
+                color="#888888"
+              />
+            </div>
           </div>
           <div class="info-row">
-            <span class="info-label">预交时间</span>
+            <span class="info-label">预计交车</span>
             <span class="info-value">{{ detail.estimateDeliverTime || '--' }}</span>
           </div>
+          </template>
         </div>
       </div>
 
       <!-- 质量反馈报告卡片 -->
-      <div v-if="detail.qualityReport" class="info-card">
+      <div v-if="detail.qualityReport || isEditable" class="info-card mt-12" >
         <div class="card-header">
           <span class="card-title">质量反馈报告</span>
         </div>
         <div class="card-body">
-          <div class="info-row">
+          <div class="info-row" :class="{ clickable: isEditable }" @click="isEditable && openFeedbackPicker()">
             <span class="info-label">质量反馈单号</span>
-            <span class="info-value">{{ detail.qualityReport?.reportNo || '--' }}</span>
+            <span class="info-value">
+              {{ detail.qualityReport?.reportNo  }}
+              <van-icon v-if="isEditable" name="arrow" size="14" color="#888888" />
+            </span>
           </div>
           <div class="info-row expandable" :class="{ expanded: faultDescExpanded }" @click="faultDescExpanded = !faultDescExpanded">
             <span class="info-label">故障现象描述</span>
-            <span class="info-value" :class="{ collapsed: !faultDescExpanded }">{{ detail.qualityReport?.faultDesc || '--' }}</span>
-            <van-icon name="arrow" size="12" color="#888888" class="arrow-icon" />
+            <span class="info-value" :class="{ collapsed: !faultDescExpanded }">{{ detail.qualityReport?.faultDesc }}</span>
+            <van-icon v-if="detail.qualityReport?.faultDesc" name="arrow" size="12" color="#888888" class="arrow-icon" />
           </div>
           <div class="info-row expandable" :class="{ expanded: faultProcessExpanded }" @click="faultProcessExpanded = !faultProcessExpanded">
             <span class="info-label">故障排查流程</span>
-            <span class="info-value" :class="{ collapsed: !faultProcessExpanded }">{{ detail.qualityReport?.faultProcess || '--' }}</span>
-            <van-icon name="arrow" size="12" color="#888888" class="arrow-icon" />
+            <span class="info-value" :class="{ collapsed: !faultProcessExpanded }">{{ detail.qualityReport?.faultProcess }}</span>
+            <van-icon v-if="detail.qualityReport?.faultProcess" name="arrow" size="12" color="#888888" class="arrow-icon" />
           </div>
         </div>
       </div>
@@ -123,12 +144,25 @@
           <span class="card-title">申请原因</span>
         </div>
         <div class="card-body">
-          <div class="reason-content" :class="{ collapsed: !reasonExpanded }">
-            {{ detail.applyReason || '--' }}
-          </div>
-          <div v-if="reasonNeedExpand" class="expand-btn" @click="reasonExpanded = !reasonExpanded">
-            {{ reasonExpanded ? '收起' : '展开' }}
-          </div>
+          <template v-if="isEditable">
+            <van-field
+              v-model="detail.applyReason"
+              type="textarea"
+              placeholder="请输入申请原因"
+              :rows="6"
+              autosize
+              class="reason-textarea-field"
+            />
+          </template>
+          <template v-else>
+            <div ref="reasonRef" class="reason-content" :class="{ collapsed: !reasonExpanded }">
+              {{ detail.applyReason || '--' }}
+            </div>
+            <div v-if="reasonNeedExpand" class="expand-btn" @click="reasonExpanded = !reasonExpanded">
+              {{ reasonExpanded ? '收起' : '展开' }}
+              <van-icon :name="reasonExpanded ? 'arrow-up' : 'arrow-down'" size="12" color="#009100" />
+            </div>
+          </template>
         </div>
       </div>
     </div>
@@ -146,18 +180,20 @@
             :key="index"
             class="repair-item"
           >
-            <div class="repair-item-left">
-              <div class="repair-name">{{ item.name }}</div>
-              <div class="repair-part-no">{{ item.partNo }}</div>
-              <div class="repair-type">{{item.repairItemTypeName}}-{{ item.checkoutTypeName }}-{{ item.warrantyTypeName }}</div>
-            </div>
-            <div class="repair-item-right">
-              <div class="repair-price">¥{{ item.price }}</div>
-              <div class="repair-discount">优惠 ¥{{ item.discount }}</div>
+            <div class="repair-item-top">
+              <div class="repair-item-left">
+                <div class="repair-name">{{ item.name }}</div>
+                <div class="repair-part-no">{{ item.partNo }}</div>
+                <div class="repair-type">{{item.repairItemTypeName}}-{{ item.checkoutTypeName }}-{{ item.warrantyTypeName }}</div>
+              </div>
+              <div class="repair-item-right">
+                <div class="repair-price">¥{{ item.subtotal }}</div>
+                <div class="repair-discount">优惠 ¥{{ item.discount }}</div>
+              </div>
             </div>
             <div class="repair-item-bottom">
-              <span class="repair-subtotal">¥{{ item.subtotal }}</span>
-              <span class="repair-quantity">x{{ item.quantity }}</span>
+              <span class="repair-subtotal">¥{{ item.price }}</span>
+              <span class="repair-workHour">x{{ item.workHour }}</span>
             </div>
           </div>
         </div>
@@ -174,17 +210,19 @@
             :key="index"
             class="repair-item"
           >
-            <div class="repair-item-left">
-              <div class="repair-name-row">
-                <span class="repair-name">{{ item.name }}</span>
-                <span v-if="item.tag" class="parts-tag">{{ item.tag }}</span>
+            <div class="repair-item-top">
+              <div class="repair-item-left">
+                <div class="repair-name-row">
+                  <span class="repair-name">{{ item.name }}</span>
+                  <span v-if="item.tag" class="parts-tag">{{ item.tag === 1 ? '原厂件' : '副厂件' }}</span>
+                </div>
+                <div class="repair-part-no">{{ item.partNo }}</div>
+                <div class="repair-type">{{item.repairItemTypeName}}-{{ item.checkoutTypeName }}-{{ item.warrantyTypeName }}</div>
               </div>
-              <div class="repair-part-no">{{ item.partNo }}</div>
-              <div class="repair-type">{{item.repairItemTypeName}}-{{ item.checkoutTypeName }}-{{ item.warrantyTypeName }}</div>
-            </div>
-            <div class="repair-item-right">
-              <div class="repair-price">¥{{ item.price }}</div>
-              <div class="repair-discount">优惠 ¥{{ item.discount }}</div>
+              <div class="repair-item-right">
+                <div class="repair-price">¥{{ item.price }}</div>
+                <div class="repair-discount">优惠 ¥{{ item.discount }}</div>
+              </div>
             </div>
             <div class="repair-item-bottom">
               <div class="repair-bottom-left">
@@ -192,7 +230,7 @@
                 <span class="repair-actual">实际领料 {{ item.actualQuantity }}</span>
                 <span class="repair-return">退料 {{ item.returnQuantity }}</span>
               </div>
-              <span class="repair-quantity">x{{ item.quantity }}</span>
+              <span class="repair-workHour">x{{ item.workHour }}</span>
             </div>
           </div>
         </div>
@@ -219,10 +257,13 @@
                 :key="img.fileId || index"
                 class="attachments-image-item"
               >
-                <img :src="img.url" class="attached-img" />
+                <img :src="img.url" class="attached-img" @click="showImg(img.url)" />
+                <div class="attachment-delete" @click="deleteAttachment(section.key, index)">
+                  <van-icon name="cross" size="16" color="#ffffff" />
+                </div>
               </div>
               <div
-                v-if="detail.attachments[section.key].length < MAX_ATTACHMENT_COUNT"
+                v-if="getAttachConfig(section.label).maxNum == null || detail.attachments[section.key].length < getAttachConfig(section.label).maxNum"
                 class="attachments-upload-item"
                 @click="uploadAttachment(section.key)"
               >
@@ -234,8 +275,8 @@
         </div>
       </div>
     </div>
-    <!-- 审核信息 Tab (仅驳回状态显示) -->
-    <div v-if="detail.status === 40" id="tab-audit" class="tab-content-section">
+    <!-- 审核信息 Tab -->
+    <div id="tab-audit" class="tab-content-section">
       <!-- 审核信息卡片 -->
       <div class="info-card">
         <div class="card-header">
@@ -246,18 +287,36 @@
             <span class="info-label">施工单号</span>
             <span class="info-value">{{ detail.constructionNo || '--' }}</span>
           </div>
-          <div class="info-row">
-            <span class="info-label">同意工时索赔小计</span>
-            <span class="info-value">{{ detail.auditInfo?.laborSubtotal ? `¥${detail.auditInfo.laborSubtotal}` : '--' }}</span>
-          </div>
-          <div class="info-row">
-            <span class="info-label">同意零件索赔小计</span>
-            <span class="info-value">{{ detail.auditInfo?.partsSubtotal ? `¥${detail.auditInfo.partsSubtotal}` : '--' }}</span>
-          </div>
-          <div class="info-row">
-            <span class="info-label">同意其他索赔小计</span>
-            <span class="info-value">{{ detail.auditInfo?.otherSubtotal ? `¥${detail.auditInfo.otherSubtotal}` : '--' }}</span>
-          </div>
+          <template v-if="detail.isGoodWarranty">
+            <div class="info-row">
+              <span class="info-label">审批单号</span>
+              <span class="info-value">{{ detail.auditInfo?.auditNo || '--' }}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">同意工时索赔小计</span>
+              <span class="info-value">{{ detail.auditInfo?.laborSubtotal ? `¥${detail.auditInfo.laborSubtotal}` : '--' }}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">同意零件索赔小计</span>
+              <span class="info-value">{{ detail.auditInfo?.partsSubtotal ? `¥${detail.auditInfo.partsSubtotal}` : '--' }}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">同意其他索赔小计</span>
+              <span class="info-value">{{ detail.auditInfo?.otherSubtotal ? `¥${detail.auditInfo.otherSubtotal}` : '--' }}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">工时分担比例</span>
+              <span class="info-value">{{ detail.auditInfo?.laborCostRatio ? `${detail.auditInfo.laborCostRatio}%` : '--' }}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">零件分担比例</span>
+              <span class="info-value">{{ detail.auditInfo?.partsCostRatio ? `${detail.auditInfo.partsCostRatio}%` : '--' }}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">其他分担比例</span>
+              <span class="info-value">{{ detail.auditInfo?.otherCostSharingRatio ? `${detail.auditInfo.otherCostSharingRatio}%` : '--' }}</span>
+            </div>
+          </template>
 
           <!-- 分隔线 -->
           <div class="audit-divider"></div>
@@ -267,26 +326,41 @@
           <div class="audit-records-list">
             <div v-for="(record, index) in detail.auditRecords" :key="index" class="audit-record-item">
               <div class="audit-record-header">
-                <span class="audit-time">{{ record.time }}</span>
-                <span class="audit-status" :class="record.status">{{ record.statusText }}</span>
+                <span class="audit-user-time">{{ record.operatorName }}<span style="display:inline-block;width:4px"></span>{{ record.time }}</span>
+                <span class="audit-status" :class="getAuditRecordStatusClass(record.statusText)">{{ record.statusText }}</span>
               </div>
-              <div class="audit-record-content">
-                <p class="audit-comment">{{ record.comment }}</p>
-                <div v-if="record.images && record.images.length > 0" class="audit-images">
-                  <div v-for="(img, imgIndex) in record.images" :key="imgIndex" class="audit-image-item">
-                    <img :src="img" class="audit-img" />
-                  </div>
-                </div>
+              <div v-if="record.comment" class="audit-record-content">
+                {{ record.comment }}
+              </div>
+              <div v-if="record.attachments && record.attachments.length > 0" class="audit-record-images">
+                <img
+                  v-for="(img, imgIndex) in record.attachments"
+                  :key="imgIndex"
+                  :src="img.url"
+                  class="audit-record-img"
+                  @click="showImg(img.url)"
+                />
               </div>
             </div>
           </div>
         </div>
       </div>
     </div>
-    <div style="height: 50vh;"></div>
-    <!-- 底部审核按钮 (仅审批中状态显示) -->
-    <div v-if="detail.status === 20" class="bottom-actions">
+    <!-- 底部审核按钮 (仅审批中状态且非善意保修时显示) -->
+    <div v-if="detail.status === 20 && detail.isGoodWarranty !== true" class="bottom-actions">
+      <div class="action-btn back" @click="router.back()">返回</div>
       <div class="action-btn audit" @click="handleAudit">审核</div>
+    </div>
+
+    <!-- 底部激活按钮 (已拒绝状态且非善意保修时显示) -->
+    <div v-if="detail.status === 70 && detail.isGoodWarranty !== true" class="bottom-actions">
+      <div class="action-btn back" @click="router.back()">返回</div>
+      <div class="action-btn audit" @click="handleAudit">激活</div>
+    </div>
+
+    <!-- 底部提交按钮 (未提交或已驳回状态显示) -->
+    <div v-if="isEditable" class="bottom-actions">
+      <div class="action-btn submit" @click="handleSubmit">提交申请</div>
     </div>
 
     <!-- 审核弹窗 -->
@@ -310,7 +384,7 @@
           <!-- 错误内容（审批驳回时显示） -->
           <div v-if="isReject" class="audit-error-code-section">
             <div class="audit-error-code-header" @click="openErrorCodePopup">
-              <span class="audit-error-code-title">错误内容<span class="required">*</span></span>
+              <span class="audit-error-code-title">错误代码及内容<span class="required">*</span></span>
               <div class="audit-error-code-selector">
                 <span :class="['audit-error-code-text', { placeholder: !selectedErrorCode }]">
                   {{ selectedErrorCode || '请选择' }}
@@ -336,16 +410,19 @@
           <!-- 附件信息（审批驳回时显示） -->
           <div v-if="isReject" class="audit-attachment-section">
             <div class="audit-section-title">附件信息</div>
-            <div class="audit-attachment-list">
-              <div v-for="(img, index) in attachmentList" :key="index" class="audit-attachment-item">
-                <img :src="img" class="attachment-img" />
-                <van-icon name="close" class="attachment-delete" @click="removeAttachment(index)" />
-              </div>
-              <div v-if="attachmentList.length < 5" class="audit-attachment-upload" @click="handleUploadAttachment">
-                <div class="audit-attachment-icon">
-                  <van-icon name="photograph" />
+            <div class="attachments-image-list">
+              <div v-for="(img, index) in attachmentList" :key="index" class="attachments-image-item">
+                <img :src="img.url || img.fileUrl" class="attached-img" @click="showImg(img.url || img.fileUrl)" />
+                <div class="attachment-delete" @click="removeAttachment(index)">
+                  <van-icon name="cross" size="16" color="#ffffff" />
                 </div>
-                <span class="audit-attachment-text">上传</span>
+              </div>
+              <div
+                class="attachments-upload-item"
+                @click="handleUploadAttachment"
+              >
+                <van-icon name="photograph" size="24" color="#d8d8d8" />
+                <span class="attachments-upload-text">上传</span>
               </div>
             </div>
           </div>
@@ -374,10 +451,119 @@
               :class="['error-code-item', { active: selectedErrorCode === option.label }]"
               @click="selectErrorCode(option)"
             >
-              <span class="error-code-label">{{ option.label }}</span>
+              <span class="error-code-label">{{ option.label + '【' + option.code + '】' }}</span>
               <van-icon v-if="selectedErrorCode === option.label" name="success" class="error-code-check" />
             </div>
           </van-list>
+        </div>
+      </template>
+    </ais-popup>
+
+    <!-- 施工单选择弹窗 -->
+    <ais-popup
+      v-model:show="showConstructionPicker"
+      title="选择施工单"
+      :closeable="true"
+      position="bottom"
+      :round="true"
+    >
+      <template #content>
+        <div class="construction-popup">
+          <div class="popup-header">
+            <div class="search-box">
+              <div class="search-icon-wrap">
+                <van-icon name="search" size="16" color="#000" />
+              </div>
+              <input v-model="constructionSearchText" type="text" class="search-input" placeholder="输入车牌号/VIN" />
+              <div class="search-btn" @click="handleConstructionSearch">搜索</div>
+            </div>
+          </div>
+          <van-list
+            v-if="constructionList.length > 0"
+            v-model:loading="constructionLoading"
+            :finished="constructionFinished"
+            finished-text=""
+            class="popup-refresh-list"
+            @load="onConstructionLoad"
+          >
+            <div v-for="item in constructionList" :key="item.id" class="construction-item" @click="onConstructionSelect(item)">
+              <div class="construction-header">
+                <span class="construction-no">{{ item.code }}</span>
+                <span class="construction-status" :class="'status-' + item.status">{{ item.statusText }}</span>
+              </div>
+              <div class="construction-vehicle">
+                <span class="vehicle-plate">{{ item.carPlate }}</span>
+                <div class="vehicle-icons" v-if="item.alarmLevel">
+                  <svg class="icon" viewBox="0 0 16 16">
+                    <path :fill="getAlarmColor(item.alarmLevel)" :stroke="getAlarmColor(item.alarmLevel)" stroke-width="4" stroke-linejoin="round" d="M8 2L14 13H2Z" />
+                    <text x="8" y="12" text-anchor="middle" fill="#ffffff" font-size="9" font-weight="bold">!</text>
+                  </svg>
+                </div>
+                <template v-if="item.repairItemTypeDetailCollect">
+                  <span v-for="(tag, index) in item.repairItemTypeDetailCollect.split('&').filter(Boolean)" :key="index" class="vehicle-tag">{{ tag }}</span>
+                </template>
+              </div>
+              <div class="construction-vehicle-info">{{ item.vehModelName }} · {{ item.vehProfileVin }}</div>
+              <div class="construction-detail">
+                <div class="detail-row">
+                  <span class="detail-label">送修人</span>
+                  <span class="detail-value">{{ item.shuttleName }}</span>
+                  <span v-if="item.custType" class="customer-tag">{{ { '10': '预约客户', '20': '随到客户' }[item.custType] || item.custType }}</span>
+                </div>
+                <div class="detail-row">
+                  <span class="detail-label">客户经理</span>
+                  <span class="detail-value">{{ item.creatorName }}</span>
+                </div>
+                <div class="detail-row">
+                  <span class="detail-label">预计交车</span>
+                  <span class="detail-value">{{ item.expectFinishAt }}</span>
+                </div>
+              </div>
+            </div>
+          </van-list>
+          <div v-if="constructionSearched && !constructionLoading && constructionList.length === 0" class="construction-empty-wrap">
+            <div class="construction-empty">
+              <img src="@/libs/assets/image/no-data.png" alt="无搜索结果" class="construction-empty-img" />
+              <p class="construction-empty-text">没有找到相关内容</p>
+            </div>
+          </div>
+        </div>
+      </template>
+    </ais-popup>
+
+    <!-- 质量反馈单号选择弹窗 -->
+    <ais-popup
+      v-model:show="showFeedbackPicker"
+      title="质量反馈报告"
+      :closeable="true"
+      position="bottom"
+      :round="true"
+    >
+      <template #content>
+        <div class="feedback-popup">
+          <div class="popup-header">
+            <div class="search-box">
+              <div class="search-icon-wrap">
+                <van-icon name="search" size="16" color="#000" />
+              </div>
+              <input v-model="feedbackSearchText" type="text" class="search-input" placeholder="反馈单号" />
+              <div class="search-btn" @click="handleFeedbackSearch">搜索</div>
+            </div>
+          </div>
+          <RefreshList
+            ref="feedbackRefreshListRef"
+            class="popup-refresh-list"
+            :requestData="feedbackRequestData"
+            :has-no-data="feedbackList.length === 0"
+            :show-reset-button="false"
+            @setData="setFeedbackData"
+          >
+            <div v-for="item in feedbackList" :key="item.id" :class="['feedback-select-item', { selected: item.id === selectedFeedbackId }]" @click="onFeedbackSelect(item)">
+              <div class="feedback-serial" v-html="highlightSearch(item.code, feedbackSearchText)"></div>
+              <div class="feedback-type" v-if="item.reportType">{{ qualityReportTypeMap[item.reportType] || item.reportType }}</div>
+              <div class="feedback-desc" v-if="item.title">{{ item.title }}</div>
+            </div>
+          </RefreshList>
         </div>
       </template>
     </ais-popup>
@@ -385,22 +571,30 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, nextTick, computed } from 'vue'
-import { useRoute } from 'vue-router'
-import { showToast, showLoadingToast, closeToast } from 'vant'
+import { ref, reactive, onMounted, onUnmounted, nextTick, computed, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { showToast, showLoadingToast, closeToast, showImagePreview } from 'vant'
 import AisPopup from '@/components/AisPopup.vue'
-import { preAuthGet, preAuthAudit, preAuthGetErrorCodeList } from '@/api/authorization'
-import { getAttachmentList, uploadFileByUrl, deleteAttachmentConfig } from '@/libs/api/fileConfig'
-import { getAppImg } from '@/libs/utils/nativeFn'
-
+import RefreshList from '@/libs/components/RefreshList.vue'
+import { preAuthGet, preAuthAudit, preAuthGetErrorCodeList, preAuthAddOrUpdate, preAuthGetConstructionList, preAuthGetPreAuthInfoDetail, preAuthGetQualityFeedbackList } from '@/api/authorization'
+import { getAttachmentList, uploadFileByUrl, deleteAttachmentConfig, getUploadConfig } from '@/libs/api/fileConfig'
+import { getEnumValue } from '@/libs/api/common'
+import { batchUploadImageLimit } from '@/libs/utils/nativeFn'
+import { usePageSafeArea } from '@/utils/safeArea'
 const route = useRoute()
+const router = useRouter()
+usePageSafeArea({ bodyClass: 'ais-page-nav-safe-area' })
 const PRE_AUTH_ATTACHMENT_CONFIG_CODE = 'mcs_preauth'
-const MAX_ATTACHMENT_COUNT = 3
+const uploadConfig = ref({})
+const getAttachConfig = (attachType) => {
+  const detailList = uploadConfig.value?.detailList || []
+  return detailList.find((item) => item.attachType === attachType) || {}
+}
 const attachmentSections = [
   { key: 'vehicle', label: '车辆信息' },
   { key: 'license', label: '行驶证' },
   { key: 'fault', label: '故障信息' },
-  { key: 'finalRight', label: '终审权益' },
+  { key: 'finalRight', label: '终身权益' },
   { key: 'firstMaintain', label: '首保凭证' },
   { key: 'maintainQuality', label: '保养质检' },
   { key: 'oldParts', label: '施工旧件' },
@@ -412,7 +606,71 @@ const activeTab = ref('basic')
 const faultDescExpanded = ref(false)
 const faultProcessExpanded = ref(false)
 const reasonExpanded = ref(false)
-const reasonNeedExpand = ref(true)
+const warningExpanded = ref(false)
+const reasonNeedExpand = ref(false)
+const reasonRef = ref(null)
+
+// 编辑状态跟踪
+const editConstructionId = ref('')
+const editFeedbackId = ref('')
+const editAuthType = ref('')
+const hasEdited = ref(false)
+
+// 施工单选择器
+const showConstructionPicker = ref(false)
+const constructionSearchText = ref('')
+const constructionList = ref([])
+const constructionLoading = ref(false)
+const constructionFinished = ref(true)
+const constructionSearched = ref(false)
+const constructionPageNum = ref(1)
+const constructionPageSize = 10
+
+const onConstructionLoad = async() => {
+  try {
+    const res = await preAuthGetConstructionList({
+      pageNum: constructionPageNum.value,
+      pageSize: constructionPageSize,
+      appSearchKeyWord: constructionSearchText.value.trim()
+    })
+    const records = res?.data?.records || res?.data || []
+    if (constructionPageNum.value === 1) {
+      constructionList.value = [...records]
+    } else {
+      constructionList.value.push(...records)
+    }
+    constructionFinished.value = records.length < constructionPageSize
+    constructionSearched.value = true
+    if (!constructionFinished.value) {
+      constructionPageNum.value++
+    }
+  } catch {
+    constructionFinished.value = true
+    constructionSearched.value = true
+  } finally {
+    constructionLoading.value = false
+  }
+}
+
+// 质量反馈选择器
+const showFeedbackPicker = ref(false)
+const feedbackSearchText = ref('')
+const feedbackList = ref([])
+const selectedFeedbackId = ref('')
+const feedbackRefreshListRef = ref(null)
+const qualityReportTypeMap = ref({})
+const feedbackRequestData = reactive({
+  data: { pageNum: 1, pageSize: 10, appSearchKeyWord: '', serviceProxyCode: '', orderStatus: 30 },
+  api: (params) => preAuthGetQualityFeedbackList(params)
+})
+const setFeedbackData = (res) => {
+  const list = res?.list || []
+  if (res?.isRefresh) {
+    feedbackList.value = [...list]
+  } else {
+    feedbackList.value.push(...list)
+  }
+}
 const isClickScrolling = ref(false) // 标记是否点击触发的滚动
 const showAuditPopup = ref(false) // 审核弹窗显示状态
 const showErrorCodePopup = ref(false) // 错误代码选择弹窗显示状态
@@ -429,11 +687,30 @@ const errorCodePageNum = ref(1) // 错误代码当前页码
 const errorCodePageSize = 10 // 错误代码每页条数
 const currentUploadType = ref('')
 const isUploadingAttachment = ref(false)
-const auditOptions = [
-  { label: '审批通过', value: 'approve' },
-  { label: '审批驳回', value: 'reject' },
-  { label: '拒绝申请', value: 'refuse' }
-]
+const auditOptions = computed(() => {
+  const base = [
+    { label: '审批通过', value: 'approve' },
+    { label: '审批驳回', value: 'reject' }
+  ]
+  if (detail.value.status !== 70) {
+    base.push({ label: '拒绝申请', value: 'refuse' })
+  }
+  return base
+})
+
+// 是否可编辑（未提交10 或 已驳回40）
+const isEditable = computed(() => {
+  return detail.value.status === 10 || detail.value.status === 40
+})
+
+// 是否可编辑施工单号（仅未提交时可编辑，已驳回时不可修改）
+const canEditConstruction = computed(() => detail.value.status === 10)
+
+// 是否展示车辆信息区域（可编辑时需要选择了施工单才展示；不可编辑时始终展示）
+const showVehicleInfo = computed(() => {
+  if (!isEditable.value) return true
+  return !!editConstructionId.value
+})
 
 // 是否为审批驳回
 const isReject = computed(() => {
@@ -465,11 +742,13 @@ const canSubmit = computed(() => {
 const tabs = ref([
   { name: 'basic', title: '基础信息' },
   { name: 'parts', title: '项目零件' },
-  { name: 'attachments', title: '附件信息' }
+  { name: 'attachments', title: '附件信息' },
+  { name: 'audit', title: '审核信息' }
 ])
 
 // IntersectionObserver 实例
 let scrollContainer = null
+let clickScrollCleanup = null
 const buildEmptyAttachments = () => attachmentSections.reduce((acc, item) => {
   acc[item.key] = []
   return acc
@@ -511,14 +790,12 @@ const scrollToPosition = (targetScrollTop, behavior = 'smooth') => {
   }
 }
 
-// 根据状态动态添加审核信息tab
-const updateTabsByStatus = () => {
-  const hasAuditTab = tabs.value.some(tab => tab.name === 'audit')
-  if (detail.value.status === 40 && !hasAuditTab) {
-    tabs.value.push({ name: 'audit', title: '审核信息' })
-  } else if (detail.value.status !== 40 && hasAuditTab) {
-    tabs.value = tabs.value.filter(tab => tab.name !== 'audit')
+const getElementScrollTop = (element) => {
+  const container = getScrollContainer()
+  if (container === window) {
+    return element.getBoundingClientRect().top + (window.scrollY || document.documentElement.scrollTop)
   }
+  return element.getBoundingClientRect().top - container.getBoundingClientRect().top + container.scrollTop
 }
 
 // 监听滚动
@@ -532,12 +809,8 @@ const setupScrollListener = () => {
 }
 
 const handleScroll = () => {
-  // 只有非点击触发的滚动才移除 active-section 类，并同步切换 tab
+  // 只有非点击触发的滚动才同步切换 tab
   if (!isClickScrolling.value) {
-    document.querySelectorAll('.tab-content-section').forEach(el => {
-      el.classList.remove('active-section')
-    })
-    // 根据滚动位置同步切换 tab
     syncTabByScroll()
   }
 }
@@ -559,7 +832,7 @@ let scrollSyncTimeout = null
 const syncTabByScroll = () => {
   const scrollTop = getScrollTop()
   const stickyHeaderHeight = getStickyHeaderHeight()
-  const offset = stickyHeaderHeight + 20
+  const offset = stickyHeaderHeight + 12
 
   // 判断滚动方向
   const isScrollingDown = scrollTop > lastScrollTop
@@ -577,7 +850,7 @@ const syncTabByScroll = () => {
     const tabEl = document.getElementById(`tab-${tabList[i].name}`)
     if (!tabEl) continue
 
-    const tabTop = tabEl.offsetTop
+    const tabTop = getElementScrollTop(tabEl)
     if (scrollTop + offset >= tabTop) {
       targetTab = tabList[i].name
       break
@@ -602,7 +875,7 @@ const detail = ref({
   status: 0,
   approvalStatusLabel: '',
   statusClass: '',
-  rejectReason: '',
+  preAuthRuleCodeDesc: '',
   constructionNo: '',
   authType: '',
   vin: '',
@@ -616,11 +889,15 @@ const detail = ref({
   applyReason: '',
   estimateDeliverTime: '',
   qualityReport: null,
+  qualityOrderReportId: '',
   auditInfo: {},
   auditRecords: [],
   repairItems: [],
   partsItems: [],
-  attachments: buildEmptyAttachments()
+  attachments: buildEmptyAttachments(),
+  isGoodWarranty: null, // 善意保修标识，true为善意保修不展示审核按钮
+  serviceProxyId: '', // 施工单ID
+  preAuthTypeValue: '' // 预授权类型数值(1=tech, 2=warranty)
 })
 
 // 切换 Tab
@@ -629,24 +906,15 @@ const switchTab = async(tabName) => {
   const targetEl = document.getElementById(`tab-${tabName}`)
   if (!targetEl) return
 
-  const stickyHeaderHeight = getStickyHeaderHeight() // 状态栏 + Tab导航实际高度
+  const stickyHeaderHeight = getStickyHeaderHeight()
 
   // 标记为点击触发的滚动
+  if (clickScrollCleanup) {
+    clickScrollCleanup()
+    clickScrollCleanup = null
+  }
   isClickScrolling.value = true
-
-  // 给目标 section 添加 active-section 类，增加顶部间距
-  document.querySelectorAll('.tab-content-section').forEach(el => {
-    el.classList.remove('active-section')
-  })
-  targetEl.classList.add('active-section')
-
-  // 强制同步更新 DOM
-  await nextTick()
-
-  // 计算目标滚动位置
-  // offsetTop 包含了 active-section 添加的 36px padding，所以直接用 offsetTop - stickyHeaderHeight
-  const targetOffsetTop = targetEl.offsetTop
-  const finalScrollTop = Math.max(0, targetOffsetTop - stickyHeaderHeight)
+  const finalScrollTop = Math.max(0, getElementScrollTop(targetEl) - stickyHeaderHeight - 12)
 
   // 使用 scrollTo 并监听滚动结束事件
   const container = getScrollContainer()
@@ -656,12 +924,184 @@ const switchTab = async(tabName) => {
     scrollEndTimer = setTimeout(() => {
       container.removeEventListener('scroll', onScrollEnd)
       isClickScrolling.value = false
+      clickScrollCleanup = null
     }, 150)
   }
 
   container.addEventListener('scroll', onScrollEnd)
+  clickScrollCleanup = () => {
+    if (scrollEndTimer) {
+      clearTimeout(scrollEndTimer)
+    }
+    container.removeEventListener('scroll', onScrollEnd)
+    isClickScrolling.value = false
+  }
   scrollToPosition(finalScrollTop, 'smooth')
 }
+
+// 检测申请原因是否超出6行
+const checkReasonOverflow = () => {
+  if (isEditable.value) return
+  nextTick(() => {
+    const el = reasonRef.value
+    if (el) {
+      reasonNeedExpand.value = el.scrollHeight > el.clientHeight + 2
+    }
+  })
+}
+
+// 搜索高亮
+const highlightSearch = (text, searchText) => {
+  if (!searchText || !text) return text
+  const regex = new RegExp(`(${searchText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi')
+  return text.replace(regex, '<span class="highlight-match">$1</span>')
+}
+
+// 预警颜色
+const getAlarmColor = (alarmLevel) => {
+  switch (alarmLevel) {
+    case 10: return '#009100'
+    case 20: return '#C8A12B'
+    case 30: return '#B91919'
+    default: return '#009100'
+  }
+}
+
+// 施工单选择器
+const openConstructionPicker = () => {
+  constructionSearchText.value = ''
+  constructionList.value = []
+  constructionSearched.value = false
+  showConstructionPicker.value = true
+}
+
+const handleConstructionSearch = () => {
+  if (!constructionSearchText.value.trim()) {
+    showToast('请输入搜索关键词')
+    return
+  }
+  constructionList.value = []
+  constructionSearched.value = false
+  constructionPageNum.value = 1
+  constructionFinished.value = false
+  constructionLoading.value = true
+  onConstructionLoad()
+}
+
+const onConstructionSelect = async(item) => {
+  try {
+    showLoadingToast({ message: '加载中...', forbidClick: true })
+    const res = await preAuthGetPreAuthInfoDetail(item.id)
+    closeToast()
+    if (res?.code !== 0 && res?.code !== 200) {
+      showToast(res?.msg || '获取信息失败')
+      editConstructionId.value = ''
+      detail.value.constructionNo = ''
+      return
+    }
+    showConstructionPicker.value = false
+    hasEdited.value = true
+    if (res?.data) {
+      detail.value.constructionNo = item.code
+      editConstructionId.value = item.id
+      const data = res.data
+      detail.value.vin = data.vehProfileVin || ''
+      detail.value.warrantyTime = data.guaranteeStartDate && data.warrantyEndTime ? `${data.guaranteeStartDate} 至 ${data.warrantyEndTime}` : ''
+      detail.value.mileage = data.mileage || ''
+      detail.value.vehicleUse = data.carPropertyLabel || ''
+      detail.value.lifetimeWarranty = data.isLifetime === 1 ? '是' : '否'
+      detail.value.serviceStore = data.dealerName || ''
+      detail.value.storeArea = data.orgName || data.dealerUnitName || ''
+      detail.value.warningInfo = data.alarmInfo || ''
+      detail.value.estimateDeliverTime = item.expectFinishAt || ''
+      editAuthType.value = data.preAuthType === 1 ? 'tech' : 'warranty'
+      detail.value.repairItems = (data.spRepairItemResps || []).map((ri) => ({
+        name: ri.repairItemName || '',
+        partNo: ri.repairItemCode || '',
+        repairItemTypeName: ri.repairItemTypeName || '',
+        checkoutTypeName: ri.checkoutTypeName || '',
+        warrantyTypeName: ri.warrantyTypeName || '',
+        price: ri.price || '0',
+        discount: ri.discountAmount || '0',
+        subtotal: ri.repairAmount || ri.totalAmount || '0',
+        workHour: ri.workHour || '0'
+      }))
+      detail.value.partsItems = (data.spSparePartResps || []).map((pi) => ({
+        name: pi.partsName || '',
+        partNo: pi.partsCode || '',
+        repairItemTypeName: pi.repairItemTypeName || '',
+        checkoutTypeName: pi.checkoutTypeName || '',
+        warrantyTypeName: pi.warrantyTypeName || '',
+        tag: pi.isOemPart || '',
+        price: pi.price || '0',
+        discount: pi.discountAmount || '0',
+        subtotal: pi.partsAmount || pi.totalAmount || '0',
+        workHour: pi.quantity || '0',
+        actualQuantity: pi.actualPickNumber || '0',
+        returnQuantity: pi.refundedNumber || '0'
+      }))
+      // 切换施工单后清除质量反馈
+      detail.value.qualityReport = null
+      detail.value.qualityOrderReportId = ''
+      editFeedbackId.value = ''
+    }
+  } catch {
+    closeToast()
+    showToast('获取施工单信息失败')
+  }
+}
+
+// 质量反馈选择器
+const openFeedbackPicker = () => {
+  if (!detail.value.constructionNo) {
+    showToast('请先选择施工单')
+    return
+  }
+  feedbackRequestData.data = { pageNum: 1, pageSize: 10, appSearchKeyWord: '', serviceProxyCode: detail.value.constructionNo, orderStatus: 30, _t: Date.now() }
+  feedbackSearchText.value = ''
+  feedbackList.value = []
+  selectedFeedbackId.value = detail.value.qualityOrderReportId || ''
+  showFeedbackPicker.value = true
+}
+
+const handleFeedbackSearch = () => {
+  feedbackRequestData.data = { pageNum: 1, pageSize: 10, appSearchKeyWord: feedbackSearchText.value, serviceProxyCode: detail.value.constructionNo, orderStatus: 30, _t: Date.now() }
+}
+
+const onFeedbackSelect = (item) => {
+  const itemId = item.id || ''
+  // 点击已选中项则取消选中
+  if (selectedFeedbackId.value === itemId) {
+    selectedFeedbackId.value = ''
+    editFeedbackId.value = ''
+    detail.value.qualityOrderReportId = ''
+    detail.value.qualityReport = { id: '', reportNo: '', faultDesc: '', faultProcess: '' }
+    return
+  }
+  // 选中新项
+  selectedFeedbackId.value = itemId
+  editFeedbackId.value = itemId
+  detail.value.qualityOrderReportId = itemId
+  detail.value.qualityReport = {
+    id: itemId,
+    reportNo: item.code || '',
+    faultDesc: item.customerContent || '',
+    faultProcess: item.troubleshootingProcess || ''
+  }
+  showFeedbackPicker.value = false
+  hasEdited.value = true
+}
+
+// 预授权类型切换
+const onAuthTypeChange = (type) => {
+  editAuthType.value = type
+  hasEdited.value = true
+}
+
+// 监听申请原因变化
+watch(() => detail.value.applyReason, () => {
+  if (isEditable.value) hasEdited.value = true
+})
 
 // 审核操作
 const handleAudit = () => {
@@ -674,11 +1114,62 @@ const handleAudit = () => {
   attachmentList.value = []
 }
 
+// 提交申请操作
+const handleSubmit = async() => {
+  const id = route.params.id
+  if (!id) {
+    showToast('缺少预授权ID')
+    return
+  }
+  if (!editConstructionId.value) {
+    showToast('请选择施工单')
+    return
+  }
+  if (!detail.value.applyReason?.trim()) {
+    showToast('请填写申请原因')
+    return
+  }
+
+  try {
+    showLoadingToast({ message: '提交中...', forbidClick: true })
+    const attachments = attachmentSections.flatMap((section) =>
+      (detail.value.attachments[section.key] || []).map((img) => ({
+        fileId: img.fileId || img.id || '',
+        fileUrl: img.fileUrl || img.url || '',
+        fileName: img.fileName || '',
+        fileType: img.fileType || '',
+        attachType: section.label,
+        configCode: PRE_AUTH_ATTACHMENT_CONFIG_CODE
+      }))
+    )
+    const res = await preAuthAddOrUpdate({
+      id: id,
+      serviceProxyId: editConstructionId.value,
+      qualityOrderReportId: editFeedbackId.value,
+      qualityOrderReport: detail.value.qualityReport?.reportNo || '',
+      reason: detail.value.applyReason,
+      saveOrSubmit: 1,
+      attachments
+    })
+    closeToast()
+
+    if (res.code === 200 || res.code === 0) {
+      showToast('提交成功')
+      fetchDetail()
+    } else {
+      showToast(res.msg || '提交失败')
+    }
+  } catch (error) {
+    closeToast()
+    showToast(error.msg)
+  }
+}
+
 // 审核状态映射
 const auditStatusMap = {
   approve: 30, // 审批通过
-  reject: 40, // 审批驳回
-  refuse: 70 // 拒绝申请
+  reject: 20, // 审批驳回
+  refuse: 40 // 拒绝申请
 }
 
 const handleAuditSubmit = async() => {
@@ -702,15 +1193,7 @@ const handleAuditSubmit = async() => {
     params.preAuthRuleCodeId = selectedErrorCodeValue.value
     // 附件（审批驳回时必传，空数组或有数据都可以）
     params.attachments = attachmentList.value.map(item => ({
-      fileId: item.fileId,
-      businessId: item.businessId,
-      fileName: item.fileName,
-      fileUrl: item.fileUrl,
-      fileSize: item.fileSize,
-      fileType: item.fileType,
-      attachType: item.attachType,
-      configId: item.configId,
-      configCode: item.configCode
+      fileUrl: item.fileUrl || item.url || ''
     }))
   }
 
@@ -747,12 +1230,11 @@ const openErrorCodePopup = () => {
   })
 }
 
-// 上传附件
+// 审核附件上传
 const handleUploadAttachment = () => {
-  if (attachmentList.value.length >= 5) {
-    showToast('最多上传5个附件')
-    return
-  }
+  currentUploadType.value = 'audit'
+  const currentList = attachmentList.value || []
+  batchUploadImageLimit(10, undefined, currentList.length + 1)
 }
 
 const isSuccessResponse = (res) => res?.code === 0 || res?.code === 200
@@ -798,35 +1280,84 @@ const fetchAllAttachmentLists = async() => {
   await Promise.all(tasks)
 }
 
+const fetchAuditRecordAttachments = async() => {
+  const records = detail.value.auditRecords
+  if (!records || records.length === 0) return
+
+  const promises = records.map(async(record) => {
+    if (!record.id) return
+    try {
+      const res = await getAttachmentList({ businessId: record.id })
+      if (res?.code === 200 || res?.code === 0) {
+        const data = res?.data
+        const list = Array.isArray(data) ? data : (data?.records || data?.list || [])
+        record.attachments = list.map(item => ({
+          url: item.fileUrl || item.url || '',
+          fileId: item.fileId || item.id || ''
+        }))
+      }
+    } catch (e) {
+      console.error('获取审核记录附件失败:', e)
+    }
+  })
+
+  await Promise.all(promises)
+}
+
 const uploadAttachment = (type) => {
   const currentList = detail.value.attachments[type] || []
-  if (currentList.length >= MAX_ATTACHMENT_COUNT) {
-    showToast(`最多上传${MAX_ATTACHMENT_COUNT}个附件`)
+  const attachType = getAttachmentTypeLabel(type)
+  const config = getAttachConfig(attachType)
+  const maxNum = config.maxNum
+  if (maxNum != null && currentList.length >= maxNum) {
+    showToast(`最多上传${maxNum}个附件`)
     return
   }
   currentUploadType.value = type
-  getAppImg()
+  const maxSize = config.maxSize || 10
+  batchUploadImageLimit(maxSize, maxNum, currentList.length + 1)
 }
 
 const handleNativeImage = async(rawFileUrl) => {
   const uploadType = currentUploadType.value
   const businessId = route.params.id
-  const fileUrl = typeof rawFileUrl === 'string'
-    ? rawFileUrl
-    : rawFileUrl?.fileUrl || rawFileUrl?.url || ''
-
   currentUploadType.value = ''
 
   if (!uploadType) return
+
+  let urlList = []
+  if (typeof rawFileUrl === 'string') {
+    if (rawFileUrl.startsWith('[')) {
+      try {
+        urlList = JSON.parse(rawFileUrl)
+      } catch {
+        urlList = [rawFileUrl]
+      }
+    } else {
+      urlList = [rawFileUrl]
+    }
+  } else if (Array.isArray(rawFileUrl)) {
+    urlList = rawFileUrl
+  } else {
+    return
+  }
+
+  if (!urlList.length) return
+  if (isUploadingAttachment.value) return
+
+  // 审核附件：直接收集图片信息，不走文件服务上传
+  if (uploadType === 'audit') {
+    urlList.forEach((url) => {
+      attachmentList.value.push({ url, fileUrl: url })
+    })
+    return
+  }
+
+  // 附件信息Tab：走正常上传流程
   if (!businessId) {
     showToast('缺少预授权ID')
     return
   }
-  if (!fileUrl) {
-    showToast('未获取到图片地址')
-    return
-  }
-  if (isUploadingAttachment.value) return
 
   const attachType = getAttachmentTypeLabel(uploadType)
   if (!attachType) {
@@ -838,16 +1369,26 @@ const handleNativeImage = async(rawFileUrl) => {
     isUploadingAttachment.value = true
     showLoadingToast({ message: '上传中...', forbidClick: true })
 
-    const uploadRes = await uploadFileByUrl([{
-      fileUrl,
+    const uploadItems = urlList.map((url) => ({
+      fileUrl: url,
       businessId,
       configCode: PRE_AUTH_ATTACHMENT_CONFIG_CODE,
       attachType
-    }])
+    }))
+
+    const uploadRes = await uploadFileByUrl(uploadItems)
 
     if (!isSuccessResponse(uploadRes)) {
       closeToast()
       showToast(uploadRes?.msg || '上传失败')
+      return
+    }
+
+    const uploadData = uploadRes?.data
+    const uploadedFiles = Array.isArray(uploadData) ? uploadData : (uploadData ? [uploadData] : [])
+    if (!uploadedFiles.length) {
+      closeToast()
+      showToast('上传返回数据异常')
       return
     }
 
@@ -863,33 +1404,29 @@ const handleNativeImage = async(rawFileUrl) => {
   }
 }
 
-// 删除附件
-const removeAttachment = async(index) => {
-  const item = attachmentList.value[index]
+// 图片预览
+const showImg = (url) => {
+  showImagePreview([url])
+}
+
+// 删除审核弹窗附件（本地图片，无需调用接口）
+const removeAttachment = (index) => {
+  attachmentList.value.splice(index, 1)
+}
+
+// 删除附件信息Tab的附件
+const deleteAttachment = async(type, index) => {
+  const item = detail.value.attachments[type]?.[index]
   if (!item) return
 
-  try {
-    showLoadingToast({ message: '删除中...', forbidClick: true })
+  detail.value.attachments[type].splice(index, 1)
 
-    // 调用删除接口
-    const res = await deleteAttachmentConfig({
-      id: item.id || item.fileId
-    })
-
-    closeToast()
-
-    if (res?.code !== 0 && res?.code !== 200) {
-      showToast(res?.msg || '删除失败')
-      return
+  if (item?.id || item?.fileId) {
+    try {
+      await deleteAttachmentConfig([item.id || item.fileId])
+    } catch (error) {
+      console.error('删除附件失败:', error)
     }
-
-    // 从列表中移除
-    attachmentList.value.splice(index, 1)
-    showToast('删除成功')
-  } catch (error) {
-    closeToast()
-    console.error('删除附件失败:', error)
-    showToast('删除失败，请稍后重试')
   }
 }
 
@@ -907,11 +1444,11 @@ const fetchErrorCodeList = async() => {
     if (res.code === 200 && res.data) {
       const list = res.data?.map(item => ({
         label: item.content,
+        code: item.code,
         value: item.id
       })) || []
 
       errorCodeOptions.value = [...errorCodeOptions.value, ...list]
-      console.log('当前错误代码列表:', errorCodeOptions.value)
 
       // 判断是否还有更多数据
       if (list.length === 0 || list.length < errorCodePageSize) {
@@ -956,8 +1493,14 @@ const fetchDetail = async() => {
     const res = await preAuthGet(id)
     if (isSuccessResponse(res) && res.data) {
       Object.assign(detail.value, formatDetailData(res.data))
+      // 初始化编辑状态
+      editConstructionId.value = detail.value.serviceProxyId
+      editFeedbackId.value = detail.value.qualityReport?.id || ''
+      editAuthType.value = detail.value.preAuthTypeValue === 1 ? 'tech' : 'warranty'
+      hasEdited.value = false
       await fetchAllAttachmentLists()
-      updateTabsByStatus()
+      fetchAuditRecordAttachments()
+      checkReasonOverflow()
     } else {
       showToast(res.msg || '获取详情失败')
     }
@@ -981,7 +1524,7 @@ const formatDetailData = (data) => {
     status: preAuthData.approvalStatus,
     approvalStatusLabel: preAuthData.approvalStatusLabel || '',
     statusClass: getStatusClass(preAuthData.approvalStatus),
-    rejectReason: preAuthData.rejectReason || '',
+    preAuthRuleCodeDesc: preAuthData.preAuthRuleCodeDesc || '',
     // 施工单信息 - 来自施工单数据
     constructionNo: serviceProxy.code || '',
     // 预授权类型 - 来自预授权主数据
@@ -1004,11 +1547,13 @@ const formatDetailData = (data) => {
     warningInfo: preAuthData.alarmInfo || '',
     // 申请原因 - 来自预授权主数据
     applyReason: preAuthData.reason || '',
-    // 预交时间 - 来自施工单数据
+    // 预计交车 - 来自施工单数据
     estimateDeliverTime: serviceProxy.expectFinishAt || '',
 
     // 质量反馈报告 - 来自预授权主数据
+    qualityOrderReportId: preAuthData.qualityOrderReportId || '',
     qualityReport: preAuthData.qualityOrderReportResp ? {
+      id: preAuthData.qualityOrderReportResp.id || '',
       reportNo: preAuthData.qualityOrderReportResp.code || '',
       faultDesc: preAuthData.qualityOrderReportResp.customerContent || '',
       faultProcess: preAuthData.qualityOrderReportResp.troubleshootingProcess || ''
@@ -1018,18 +1563,24 @@ const formatDetailData = (data) => {
     auditInfo: {
       auditor: preAuthData.approver || '',
       auditTime: preAuthData.approvalOn || '',
+      auditNo: preAuthData.auditNo || '',
       laborSubtotal: preAuthData.approvedLaborClaimTotal || '',
       partsSubtotal: preAuthData.approvedPartsClaimTotal || '',
-      otherSubtotal: preAuthData.approvedOtherClaimTotal || ''
+      otherSubtotal: preAuthData.approvedOtherClaimTotal || '',
+      laborCostRatio: preAuthData.laborCostRatio || '',
+      partsCostRatio: preAuthData.partsCostRatio || '',
+      otherCostSharingRatio: preAuthData.otherCostSharingRatio || ''
     },
 
     // 审核记录 - 来自预授权主数据
     auditRecords: (preAuthData.supportApprovalResps || []).map(item => ({
+      operatorName: item.approver || '',
       time: item.approvalOn || '',
       status: item.approvalResult,
-      statusText: item.approvalResultLabel || '',
+      statusText: item.approvalResult || '',
       comment: item.content || '',
-      images: []
+      id: item.id || '',
+      attachments: []
     })),
 
     // 维修项目 - 来自预授权主数据
@@ -1042,7 +1593,7 @@ const formatDetailData = (data) => {
       price: item.price || '0',
       discount: item.discountAmount || '0',
       subtotal: item.repairAmount || '0',
-      quantity: item.workHour || '0'
+      workHour: item.workHour || '0'
     })),
 
     // 维修配件 - 来自预授权主数据
@@ -1052,19 +1603,25 @@ const formatDetailData = (data) => {
       repairItemTypeName: item.repairItemTypeName || '',
       checkoutTypeName: item.checkoutTypeName || '',
       warrantyTypeName: item.warrantyTypeName || '',
-      tag: item.isOemPartLabel || '',
+      tag: item.isOemPart || '',
       price: item.price || '0',
       discount: item.discountAmount || '0',
       subtotal: item.partsAmount || '0',
-      quantity: item.quantity || '0',
+      workHour: item.quantity || '0',
       actualQuantity: item.actualPickNumber || '0',
       returnQuantity: item.refundedNumber || '0'
     })),
+    // 善意保修标识 - 来自预授权主数据
+    isGoodWarranty: preAuthData.isGoodWarranty,
+    // 施工单ID - 来自施工单数据
+    serviceProxyId: serviceProxy.id || '',
+    // 预授权类型数值
+    preAuthTypeValue: preAuthData.preAuthType || '',
     attachments: buildEmptyAttachments()
   }
 }
 
-// 获取状态样式类 (approvalStatus: 10-未提交, 20-审批中, 30-已通过, 40-已驳回, 50-已作废)
+// 获取状态样式类 (approvalStatus: 10-未提交, 20-审批中, 30-已通过, 40-已驳回, 50-已作废, 70-已拒绝)
 const getStatusClass = (status) => {
   switch (status) {
     case 10: return 'status-pending'
@@ -1072,23 +1629,49 @@ const getStatusClass = (status) => {
     case 30: return 'status-approved'
     case 40: return 'status-rejected'
     case 50: return 'status-rejected'
+    case 70: return 'status-rejected'
     default: return ''
   }
 }
 
+const getAuditRecordStatusClass = (label) => {
+  if (!label) return ''
+  if (label === '通过' || label === '审批通过') return 'status-approved'
+  if (label === '提交审批') return 'status-pending'
+  return 'status-rejected'
+}
+
 onMounted(() => {
-  window.getImage = handleNativeImage
+  window.getScanResult = handleNativeImage
   console.log('预授权详情页加载，ID:', route.params.id)
   fetchDetail()
-
+  getUploadConfig({ configCode: PRE_AUTH_ATTACHMENT_CONFIG_CODE }).then((res) => {
+    if (res?.code === 200 || res?.code === 0) {
+      uploadConfig.value = res.data || {}
+    }
+  })
+  getEnumValue('QualityReportTypeEnum').then((res) => {
+    if (res?.code === 200) {
+      const map = {}
+      ;(res.data || []).forEach((item) => { map[item.code] = item.message })
+      qualityReportTypeMap.value = map
+    }
+  })
   nextTick(() => {
     setupScrollListener()
   })
 })
 
 onUnmounted(() => {
-  if (window.getImage === handleNativeImage) {
-    window.getImage = null
+  if (window.getScanResult === handleNativeImage) {
+    window.getScanResult = null
+  }
+  if (clickScrollCleanup) {
+    clickScrollCleanup()
+    clickScrollCleanup = null
+  }
+  if (scrollSyncTimeout) {
+    clearTimeout(scrollSyncTimeout)
   }
   const container = getScrollContainer()
   if (container === window) {
@@ -1101,14 +1684,11 @@ onUnmounted(() => {
 
 <style lang="scss" scoped>
 .pre-auth-detail {
-  min-height: 100vh;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
   background: #f5f5f5;
-  padding-bottom: calc(76px + env(safe-area-inset-bottom));
-  padding-top: 84px;
-
-  &.has-reject-reason {
-    padding-top: 137px;
-  }
+  padding-bottom: calc(83px + env(safe-area-inset-bottom));
 }
 
 // 加载状态
@@ -1134,10 +1714,8 @@ onUnmounted(() => {
 
 // 置顶区域容器
 .sticky-header {
-  position: fixed;
-  top: 42px;
-  left: 0;
-  right: 0;
+  position: sticky;
+  top: 0;
   z-index: 100;
   background: #f5f5f5;
 }
@@ -1179,7 +1757,7 @@ onUnmounted(() => {
     font-weight: 500;
 
     &.status-pending {
-      color: #c8a12b;
+      color: #2261dd;
     }
 
     &.status-approved {
@@ -1191,7 +1769,7 @@ onUnmounted(() => {
     }
 
     &.status-rejected {
-      color: #b91919;
+      color: #B91919;
     }
   }
 
@@ -1253,22 +1831,20 @@ onUnmounted(() => {
 // 内容区域
 .tab-content-section {
   padding: 0 12px;
-
-  &.active-section {
-    padding-top: 36px;
-  }
 }
 
 // 信息卡片
 .info-card {
-  margin-top: 12px;
   background: #ffffff;
   border-radius: 8px;
   margin-bottom: 12px;
   overflow: hidden;
 
   .card-header {
-    padding: 4px 12px;
+    padding: 12px 12px 4px 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 
     .card-title {
       font-family: 'PingFang SC';
@@ -1276,13 +1852,19 @@ onUnmounted(() => {
       font-weight: 500;
       color: #191a1b;
     }
+
+    .edit-icon {
+      cursor: pointer;
+    }
   }
 
   .card-body {
     padding: 4px 12px 12px;
   }
 }
-
+.mt-12 {
+  margin-top: 12px;
+}
 // 信息行
 .info-row {
   display: flex;
@@ -1306,8 +1888,33 @@ onUnmounted(() => {
     margin-left: 16px;
     width: 196px;
 
+    .svc-tag {
+      font-family: 'PingFang SC';
+      font-size: 12px;
+      font-style: normal;
+      color: #191a1b;
+      background: #ffffff;
+      border: 0.5px solid #191a1b;
+      border-radius: 4px;
+      padding: 1px 4px;
+      height: 20px;
+      line-height: 17px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      white-space: nowrap;
+      margin-left: 6px;
+    }
+
     &.warning {
       color: #ee0a24;
+    }
+
+    &.text-collapsed {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     &.collapsed {
@@ -1316,6 +1923,28 @@ onUnmounted(() => {
       -webkit-box-orient: vertical;
       overflow: hidden;
       text-overflow: ellipsis;
+    }
+  }
+
+  &.warning-item {
+    align-items: flex-start;
+
+    .info-value-wrap {
+      display: flex;
+      align-items: flex-start;
+      justify-content: flex-end;
+      gap: 2px;
+      flex: 1;
+      margin-left: 23px;
+      min-width: 0;
+      overflow: hidden;
+    }
+
+    .info-value {
+      flex: 1;
+      min-width: 0;
+      margin-left: 0;
+      width: auto;
     }
   }
 }
@@ -1353,10 +1982,26 @@ onUnmounted(() => {
 
   &.collapsed {
     display: -webkit-box;
-    -webkit-line-clamp: 5;
+    -webkit-line-clamp: 6;
     -webkit-box-orient: vertical;
     overflow: hidden;
     text-overflow: ellipsis;
+  }
+}
+
+// 编辑申请原因 textarea
+.reason-textarea-field {
+  padding: 0;
+
+  :deep(.van-field__control) {
+    font-family: 'PingFang SC';
+    font-size: 14px;
+    color: #191a1b;
+    line-height: 1.6;
+  }
+
+  :deep(.van-field__placeholder) {
+    color: #888888;
   }
 }
 
@@ -1366,6 +2011,9 @@ onUnmounted(() => {
   font-size: 14px;
   color: #009100;
   padding: 8px 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
 // 维修项目
@@ -1379,15 +2027,22 @@ onUnmounted(() => {
     border-bottom: none;
   }
 
+  .repair-item-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+  }
+
   .repair-item-left {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 2px;
+    flex: 1;
 
     .repair-name-row {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 4px;
 
       .repair-name {
         font-family: 'PingFang SC';
@@ -1404,6 +2059,13 @@ onUnmounted(() => {
         padding: 1px 4px;
         border-radius: 4px;
       }
+    }
+
+    .repair-name {
+      font-family: 'PingFang SC';
+      font-size: 14px;
+      font-weight: 500;
+      color: #191a1b;
     }
 
     .repair-part-no {
@@ -1423,7 +2085,8 @@ onUnmounted(() => {
     display: flex;
     flex-direction: column;
     align-items: flex-end;
-    margin-top: -40px;
+    gap: 2px;
+    flex-shrink: 0;
 
     .repair-price {
       font-family: 'PingFang SC';
@@ -1443,7 +2106,7 @@ onUnmounted(() => {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-top: 8px;
+    margin-top: 4px;
 
     .repair-bottom-left {
       display: flex;
@@ -1464,7 +2127,7 @@ onUnmounted(() => {
       }
     }
 
-    .repair-quantity {
+    .repair-workHour {
       font-family: 'PingFang SC';
       font-size: 14px;
       color: #191a1b;
@@ -1610,11 +2273,27 @@ onUnmounted(() => {
     height: 80px;
     border-radius: 6px;
     overflow: hidden;
+    position: relative;
 
     .attached-img {
       width: 100%;
       height: 100%;
       object-fit: cover;
+    }
+
+    .attachment-delete {
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 24px;
+      height: 24px;
+      background: rgba(0, 0, 0, 0.4);
+      border-radius: 0 7px 0 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 5;
+      cursor: pointer;
     }
   }
 
@@ -1672,21 +2351,16 @@ onUnmounted(() => {
   background: #f8f7f7;
   border-radius: 4px;
   padding: 8px;
-  margin-bottom: 8px;
-
-  &:last-child {
-    margin-bottom: 0;
-  }
 
   .audit-record-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 8px;
 
-    .audit-time {
+    .audit-user-time {
       font-family: 'PingFang SC';
       font-size: 14px;
+      font-weight: 400;
       color: #545454;
     }
 
@@ -1694,43 +2368,42 @@ onUnmounted(() => {
       font-family: 'PingFang SC';
       font-size: 12px;
       font-weight: 500;
+      flex-shrink: 0;
 
-      &.approved {
+      &.status-approved {
         color: #009100;
       }
 
-      &.rejected {
-        color: #b91919;
+      &.status-pending {
+        color: #2261DD;
+      }
+
+      &.status-rejected {
+        color: #B91919;
       }
     }
   }
 
   .audit-record-content {
-    .audit-comment {
-      font-family: 'PingFang SC';
-      font-size: 14px;
-      color: #191a1b;
-      line-height: 1.5;
-      margin: 0 0 8px 0;
-    }
+    font-family: 'PingFang SC';
+    font-size: 14px;
+    font-weight: 400;
+    color: #191a1b;
+    margin-top: 8px;
+  }
 
-    .audit-images {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 4px 8px;
+  .audit-record-images {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 8px;
 
-      .audit-image-item {
-        width: 60px;
-        height: 60px;
-        border-radius: 4px;
-        overflow: hidden;
-
-        .audit-img {
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-        }
-      }
+    .audit-record-img {
+      width: 64px;
+      height: 64px;
+      border-radius: 4px;
+      object-fit: cover;
+      border: 1px solid #e6e6e5;
     }
   }
 }
@@ -1766,6 +2439,12 @@ onUnmounted(() => {
       background: #009100;
     }
 
+    &.back {
+      color: #545454;
+      background: #ffffff;
+      border: 1px solid #d8d8d8;
+    }
+
     &.reject {
       color: #191a1b;
       background: #f5f5f5;
@@ -1776,11 +2455,18 @@ onUnmounted(() => {
       color: #ffffff;
       background: #009100;
     }
+
+    &.submit {
+      color: #ffffff;
+      background: #009100;
+    }
   }
 }
 
 // 审核弹窗内容
 .audit-popup-content {
+  max-height: 60vh;
+  overflow-y: auto;
 
   .audit-result-section {
     margin-bottom: 12px;
@@ -1984,78 +2670,376 @@ onUnmounted(() => {
   }
 }
 
-// 附件上传
+// 附件上传（审核弹窗）
 .audit-attachment-section {
   margin-bottom: 12px;
   background: #ffffff;
   border-radius: 6px;
   padding: 12px;
+}
 
-  .audit-attachment-list {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
+// 可点击行
+.info-row.clickable {
+  cursor: pointer;
+}
+
+.info-row.auth-type-row {
+  align-items: center;
+}
+
+// 预授权类型选择
+.type-chips {
+  display: flex;
+  gap: 6px;
+  flex: 1;
+  justify-content: flex-end;
+
+  .type-chip {
+    padding: 6px 16px;
+    border-radius: 4px;
+    font-family: 'PingFang SC';
+    font-size: 14px;
+    background: #f8f7f7;
+    color: #191a1b;
+
+    &.type-chip-active {
+      background: rgba(0, 145, 0, 0.1);
+      border: 1px solid #009100;
+      color: #009100;
+    }
   }
+}
 
-  .audit-attachment-item {
-    width: 80px;
-    height: 80px;
-    border-radius: 6px;
-    overflow: hidden;
-    position: relative;
+// 高亮匹配文本
+:deep(.highlight-match) {
+  color: #009100 !important;
+}
 
-    .attachment-img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
+// 施工单弹窗
+.construction-popup {
+  height: 583px;
+  background: #f4f4f4;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+
+  .popup-header {
+    padding-bottom: 12px;
+    flex-shrink: 0;
+
+    .search-box {
+      display: flex;
+      align-items: center;
+      height: 30px;
+      padding: 0 12px;
+      background: rgba(216, 216, 216, 0.3);
+      border-radius: 15px;
+      gap: 8px;
     }
 
-    .attachment-delete {
-      position: absolute;
-      top: 4px;
-      right: 4px;
-      width: 18px;
-      height: 18px;
-      background: rgba(0, 0, 0, 0.5);
-      border-radius: 50%;
+    .search-icon-wrap {
       display: flex;
       align-items: center;
       justify-content: center;
+      width: 20px;
+      height: 20px;
+      flex-shrink: 0;
+    }
+
+    .search-input {
+      flex: 1;
+      height: 30px;
+      padding: 0;
+      border: none;
+      background: transparent;
+      font-family: 'PingFang SC';
+      font-size: 14px;
+      outline: none;
+      color: #191a1b;
+
+      &::placeholder {
+        color: #888888;
+      }
+    }
+
+    .search-btn {
+      padding: 4px 12px;
+      height: 22px;
+      background: #009100;
       color: #ffffff;
-      font-size: 12px;
-      cursor: pointer;
-    }
-  }
-
-  .audit-attachment-upload {
-    width: 80px;
-    height: 80px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    background: #f5f5f5;
-    border-radius: 6px;
-    cursor: pointer;
-
-    .audit-attachment-icon {
-      font-size: 24px;
-      color: #d8d8d8;
-      margin-bottom: 4px;
-    }
-
-    .audit-attachment-text {
+      border-radius: 11px;
       font-family: 'PingFang SC';
       font-size: 12px;
-      color: #888888;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
     }
   }
 
-  .audit-attachment-tip {
-    margin-top: 8px;
-    font-family: 'PingFang SC';
-    font-size: 12px;
-    color: #888888;
+  .popup-refresh-list {
+    flex: 1;
+    overflow-y: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+
+    &::-webkit-scrollbar {
+      display: none;
+    }
+
+    .construction-item {
+      background: #ffffff;
+      border-radius: 6px;
+      padding: 12px;
+      margin-bottom: 8px;
+
+      &:last-child {
+        margin-bottom: 0;
+      }
+
+      .construction-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border-bottom: 0.5px solid #e6e6e5;
+        padding-bottom: 12px;
+        margin-bottom: 8px;
+
+        .construction-no {
+          font-family: 'PingFang SC';
+          font-size: 14px;
+          color: #191a1b;
+        }
+
+        .construction-status {
+          font-family: 'PingFang SC';
+          font-size: 12px;
+          font-weight: 500;
+
+          &.status-pending { color: #c8a12b; }
+          &.status-processing { color: #009100; }
+          &.status-completed { color: #888888; }
+        }
+      }
+
+      .construction-vehicle {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-bottom: 8px;
+
+        .vehicle-plate {
+          font-family: 'PingFang SC';
+          font-size: 16px;
+          font-weight: 500;
+          color: #191a1b;
+        }
+
+        .vehicle-icons {
+          display: flex;
+          gap: 4px;
+
+          .icon {
+            width: 16px;
+            height: 16px;
+          }
+        }
+
+        .vehicle-tag {
+          font-family: 'PingFang SC';
+          font-size: 12px;
+          color: #191a1b;
+          border: 0.5px solid #191a1b;
+          border-radius: 4px;
+          padding: 1px 4px;
+          height: 20px;
+          line-height: 17px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+          white-space: nowrap;
+        }
+      }
+
+      .construction-vehicle-info {
+        font-family: 'PingFang SC';
+        font-size: 12px;
+        color: #545454;
+        margin-bottom: 8px;
+      }
+
+      .construction-detail {
+        .detail-row {
+          display: flex;
+          align-items: center;
+          margin-bottom: 6px;
+
+          &:last-child { margin-bottom: 0; }
+
+          .detail-label {
+            font-family: 'PingFang SC';
+            font-size: 12px;
+            color: #545454;
+            width: 56px;
+          }
+
+          .detail-value {
+            font-family: 'PingFang SC';
+            font-size: 12px;
+            color: #191a1b;
+          }
+
+          .customer-tag {
+            font-family: 'PingFang SC';
+            font-size: 12px;
+            color: #191a1b;
+            background: rgba(25, 26, 27, 0.06);
+            border-radius: 4px;
+            padding: 1px 4px;
+            margin-left: 4px;
+          }
+        }
+      }
+    }
+  }
+
+  .construction-empty-wrap {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding-top: 55px;
+
+    .construction-empty {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+
+      .construction-empty-img {
+        width: 230px;
+        height: 142px;
+      }
+
+      .construction-empty-text {
+        font-family: 'PingFang SC';
+        font-size: 14px;
+        font-weight: 400;
+        color: #6C6E6C;
+        margin-top: 16px;
+      }
+    }
+  }
+}
+
+// 质量反馈弹窗
+.feedback-popup {
+  height: 583px;
+  background: #f4f4f4;
+  display: flex;
+  flex-direction: column;
+
+  .popup-header {
+    padding-bottom: 12px;
+    flex-shrink: 0;
+
+    .search-box {
+      display: flex;
+      align-items: center;
+      height: 30px;
+      padding: 0 12px;
+      background: rgba(216, 216, 216, 0.3);
+      border-radius: 15px;
+      gap: 8px;
+    }
+
+    .search-icon-wrap {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 20px;
+      height: 20px;
+      flex-shrink: 0;
+    }
+
+    .search-input {
+      flex: 1;
+      height: 30px;
+      padding: 0;
+      border: none;
+      background: transparent;
+      font-family: 'PingFang SC';
+      font-size: 14px;
+      outline: none;
+      color: #191a1b;
+
+      &::placeholder {
+        color: #888888;
+      }
+    }
+
+    .search-btn {
+      padding: 4px 12px;
+      height: 22px;
+      background: #009100;
+      color: #ffffff;
+      border-radius: 11px;
+      font-family: 'PingFang SC';
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+  }
+
+  .popup-refresh-list {
+    flex: 1;
+    overflow-y: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+
+    &::-webkit-scrollbar {
+      display: none;
+    }
+
+    .feedback-select-item {
+      background: #ffffff;
+      border-radius: 6px;
+      padding: 12px;
+      margin-bottom: 8px;
+      width: 99%;
+
+      &.selected {
+        background: #eaf7ea;
+        border: 0.5px solid #009100;
+      }
+
+      &:last-child { margin-bottom: 0; }
+
+      .feedback-serial {
+        font-family: 'PingFang SC';
+        font-size: 14px;
+        color: #191a1b;
+        padding-bottom: 12px;
+        border-bottom: 0.5px solid #e6e6e5;
+        margin-bottom: 12px;
+      }
+
+      .feedback-type {
+        font-family: 'PingFang SC';
+        font-size: 14px;
+        color: #191a1b;
+        margin-bottom: 4px;
+      }
+
+      .feedback-desc {
+        font-family: 'PingFang SC';
+        font-size: 14px;
+        color: #545454;
+      }
+    }
   }
 }
 </style>

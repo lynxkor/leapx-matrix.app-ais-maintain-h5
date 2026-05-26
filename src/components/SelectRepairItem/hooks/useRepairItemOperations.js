@@ -1,7 +1,7 @@
 import { ref } from 'vue'
 import { showToast, showConfirmDialog, closeToast, showLoadingToast } from 'vant'
 import { filterRepairItems, filterRepairParts, saveRepairItemInfo } from '@/api/repairWork'
-import { WarrantyTypeEnum, UNIVERSAL_LABOR_HOUR_ITEM_ID, WorkRecordStatusEnum } from '@/views/repairWork/constant'
+import { WarrantyTypeEnum, UNIVERSAL_LABOR_HOUR_ITEM_ID, WorkRecordStatusEnum, PackageTypeEnum } from '@/views/repairWork/constant'
 
 /**
  * 维修项目和零件的增删改查操作 Hook
@@ -37,7 +37,7 @@ export default function useRepairItemOperations({
    * 执行搜索
    * @param {string} keyword - 搜索关键词
    */
-  const performSearch = async (keyword) => {
+  const performSearch = async(keyword) => {
     showLoadingToast('请稍候...')
     try {
       const apiFn = activeTab.value === 'item' ? filterRepairItems : filterRepairParts
@@ -78,6 +78,8 @@ export default function useRepairItemOperations({
       }
       rawItem.repairItemId = rawItem.id
       delete rawItem.id
+      // 如果有自带的维修类型，增加不允许修改标志位
+      rawItem.repairItemDisabled = !!rawItem.repairItemTypeId
       const projectItem = normalizeItem(rawItem)
       selectedItems.value.push(projectItem)
 
@@ -87,6 +89,7 @@ export default function useRepairItemOperations({
         el.isBindltem = 1
         const res = normalizePart(el)
         Object.assign(res, {
+          repairItemDisabled: rawItem.repairItemDisabled,
           repairItemTypeId: rawItem.repairItemTypeId || res.repairItemTypeId,
           repairItemTypeName: rawItem.repairItemTypeName || res.repairItemTypeName
         })
@@ -136,16 +139,33 @@ export default function useRepairItemOperations({
    * @param {Object} item - 要移除的项目/零件
    * @param {string} type - 类型 'item' | 'part'
    */
-  const removeItem = (item, type) => {
+  const removeItem = (item, type, successCallback) => {
     const list = type === 'item' ? selectedItems : selectedParts
     const idx = list.value.indexOf(item)
     if (idx === -1) return
 
+    // 如果删除的是维修项目，同步删除关联的维修配件
+    if (type === 'item') {
+      const repairItemTypeId = item.id
+      // 删除 repairItemTypeId 等于该维修项目 id 的配件
+      selectedParts.value = selectedParts.value.filter(
+        (part) => part.repairItemTypeId !== repairItemTypeId
+      )
+    }
     // 如果是套餐内的项目或零件，需要确认删除整个套餐
     if (item.packageId) {
+      const packageTypeLabelMap = {
+        [PackageTypeEnum.REPAIR]: '维修套餐',
+        [PackageTypeEnum.EQUITY]: '权益套餐',
+        [PackageTypeEnum.STORE]: '商城订单',
+        [PackageTypeEnum.FREE]: '免保项目',
+        [PackageTypeEnum.TECH_ACTIVITY]: '技术服务活动',
+        [PackageTypeEnum.CARE_ACTIVITY]: '关爱服务活动'
+      }
+      const packageLabel = packageTypeLabelMap[item.packageType] || '权益'
       showConfirmDialog({
         title: '提示',
-        message: '本操作视为您取消核销本次权益套餐，请确认',
+        message: `本操作视为您取消核销本次${packageLabel}，请确认`,
         confirmButtonText: '确认',
         cancelButtonText: '取消',
         'z-index': 5100
@@ -154,12 +174,20 @@ export default function useRepairItemOperations({
         const packageId = item.packageId
         selectedItems.value = selectedItems.value.filter(i => i.packageId !== packageId)
         selectedParts.value = selectedParts.value.filter(i => i.packageId !== packageId)
+        successCallback && successCallback({
+          selectedItems: selectedItems.value,
+          selectedParts: selectedParts.value
+        })
       }).catch(() => {
         // 取消删除，不做任何操作
       })
     } else {
       // 普通项目/零件，直接删除
       list.value.splice(idx, 1)
+      successCallback && successCallback({
+        selectedItems: selectedItems.value,
+        selectedParts: selectedParts.value
+      })
     }
   }
 
@@ -198,14 +226,21 @@ export default function useRepairItemOperations({
    * @param {Function} onSuccess - 成功回调
    * @returns {Promise<boolean>} 是否保存成功
    */
-  const handleSave = async (onSuccess) => {
-    if (selectedItems.value.length === 0 && selectedParts.value.length === 0) return false
+  const handleSave = async(onSuccess) => {
+    // 允许清空
+    // if (selectedItems.value.length === 0 && selectedParts.value.length === 0) return false
 
     // 售前保修只能单独开单
     if (!validatePreSaleWarranty()) return false
 
     // 善意保修只能单独开单
     if (!validateGoodWillWarranty()) return false
+
+    // 如果数量为0，不允许保存
+    if (selectedItems.value.some(i => i.quantity <= 0) || selectedParts.value.some(i => i.quantity <= 0)) {
+      showToast({ message: '数量必须要大于0', 'z-index': 5100 })
+      return false
+    }
 
     try {
       saving.value = true
@@ -230,7 +265,7 @@ export default function useRepairItemOperations({
       }
     } catch (error) {
       console.error('保存失败:', error)
-      showToast({ message: '保存失败', 'z-index': 5100 })
+      showToast({ message: error.msg || '保存失败', 'z-index': 5100 })
       return false
     } finally {
       saving.value = false

@@ -80,8 +80,8 @@
                 <div class="form-label">去向单位</div>
                 <div class="form-field">
                   <SearchDropdown
-                    v-model="part.batteryUnitId"
-                    :search-keyword="part.batteryUnitName"
+                    v-model="part.targetUnitId"
+                    :search-keyword="part.targetUnitName"
                     :options="batteryUnitOptions"
                     placeholder="请搜索去向单位"
                     @onSearch="searchBatteryUnit"
@@ -94,7 +94,7 @@
               <div class="part-form-item">
                 <div class="form-label">去向单位统一代码</div>
                 <van-field
-                  v-model="part.targetUnitCode"
+                  v-model="part.buinessLicense"
                   placeholder="选填，请输入"
                   :border="false"
                   input-align="right"
@@ -126,17 +126,18 @@
 
       <!-- 底部按钮 -->
       <div class="popup-footer">
-        <div class="footer-bar"></div>
-        <van-button
-          type="primary"
-          color="var(--leap-color-primary)"
-          round
-          block
-          :disabled="!canSubmit"
-          @click="handleSubmit"
-        >
-          提交
-        </van-button>
+        <div class="footer-bar">
+          <van-button
+            type="primary"
+            color="var(--leap-color-primary)"
+            round
+            block
+            :disabled="!canSubmit"
+            @click="handleSubmit"
+          >
+            提交
+          </van-button>
+        </div>
       </div>
     </div>
   </van-popup>
@@ -146,7 +147,7 @@
 import { ref, computed, watch } from 'vue'
 import { showToast } from 'vant'
 import SearchDropdown from '@/libs/components/SearchDropdown.vue'
-import { finalInspectionDetail, getBatteryUnitList, finalInspection } from '../../../api/repairWork'
+import { finalInspectionDetail, getBatteryUnitList, finalInspection, saveTraceRecord } from '../../../api/repairWork'
 import { formatDateTime } from '@/libs/utils'
 import { useUserStore } from '@/stores/user'
 
@@ -287,6 +288,8 @@ const handlePartUnitClear = (part) => {
   part.targetUnitId = ''
   part.targetUnitName = ''
   part.targetUnitCode = ''
+  part.batteryUnitId = ''
+  part.batteryUnitName = ''
 }
 
 // 是否可以提交
@@ -297,7 +300,7 @@ const canSubmit = computed(() => {
 
   // 配件追溯必填项（如果展示了追溯区域）
   const partsValid = !detailData.value?.tranceFlag ||
-    partsList.value.every((part) => part.beforeChangeCode && part.afterChangeCode)
+    partsList.value.every((part) => part.beforeChangeCode && part.afterChangeCode && part.targetUnitId && part.targetUnitName)
 
   return batteryValid && partsValid
 })
@@ -305,6 +308,13 @@ const canSubmit = computed(() => {
 // 关闭弹窗
 const handleClose = () => {
   visible.value = false
+  formData.value = {
+    batteryUnitId: '',
+    batteryUnitName: '',
+    targetUnitCode: '',
+    beforeChangeCode: '',
+    afterChangeCode: ''
+  }
 }
 
 // 提交
@@ -313,13 +323,13 @@ const handleSubmit = () => {
   const userStore = useUserStore()
 
   const submitData = {
-    id: props.serviceProxyId,
-    finalCheckAt: formatDateTime(new Date()),
-    finalCheckerId: userStore.userId,
-    finalChecker: userStore.userName,
+    id: props.serviceProxyId
+    // finalCheckAt: formatDateTime(new Date()),
+    // finalCheckerId: userStore.userId,
+    // finalChecker: userStore.userName,
     // faultAlertRecordParams: detailData.value.faultAlertRecordResps || [],
-    repairWorkRecordResps: detailData.value.repairWorkRecordResps || [],
-    currentFault: detailData.value.faultFlag === 1 ? 0 : 1
+    // repairWorkRecordResps: detailData.value.repairWorkRecordResps || [],
+    // currentFault: detailData.value.faultFlag ? 1 : 0
   }
 
   // 电池信息
@@ -336,13 +346,33 @@ const handleSubmit = () => {
     submitData.traceRecordParams = partsList.value
   }
 
-  finalInspection(submitData).then(target => {
+  saveTraceRecord(submitData).then(target => {
     if (target.code === 200) {
-      showToast('终检成功')
-      emit('refresh')
-      emit('update:modelValue', false)
+      Object.assign(submitData, {
+        finalCheckAt: formatDateTime(new Date()),
+        finalCheckerId: userStore.userId,
+        finalChecker: userStore.userName,
+        faultAlertRecordParams: detailData.value.faultAlertRecordResps || [],
+        repairWorkRecordResps: detailData.value.repairWorkRecordResps || [],
+        currentFault: detailData.value.faultFlag ? 1 : 0
+      })
+      finalInspection(submitData).then(res => {
+        if (res.code === 200) {
+          showToast('终检成功')
+          emit('refresh')
+          emit('update:modelValue', false)
+        } else {
+          showToast(res.msg || '终检失败')
+        }
+      }).catch(err => {
+        showToast(err.msg || '终检失败')
+        emit('refresh')
+      })
     } else {
-      showToast(target.message)
+      showToast({
+        message: target.message,
+        duration: 5000
+      })
     }
   }).catch(res => {
     showToast(res.message)
@@ -565,7 +595,7 @@ const handleSubmit = () => {
     display: flex;
     flex-direction: column;
     justify-content: flex-end;
-    padding: 0 12px 7px;
+    padding: 0 12px 34px 12px;
     flex-shrink: 0;
 
     .footer-bar {

@@ -4,7 +4,7 @@
       <!-- 筛选搜索头部 -->
       <FilterHeader
         placeholder="输入工单号/车牌号/VIN/车主"
-        :showScan="true"
+        :showScan="false"
         :showSort="false"
         :filterList="filterList"
         @filterSearch="onFilterSearch"
@@ -68,12 +68,14 @@ import { useGlobalStore } from '@/stores/global'
 import ListItem from '@/components/ListItem.vue'
 import RefreshList from '@/libs/components/RefreshList.vue'
 import WorkOrderCard from '@/components/WorkOrderCard.vue'
-import { getList, getEquityList } from '@/api/reception'
+import { getList } from '@/api/reception'
+import { usePageSafeArea } from '@/utils/safeArea'
 defineOptions({
   name: 'receptionWorkOrder'
 })
 const router = useRouter()
 const globalStore = useGlobalStore()
+usePageSafeArea({ bodyClass: 'ais-page-nav-safe-area' })
 globalStore.getEnumData()
 const needRefresh = ref(false)
 const loading = ref(false)
@@ -142,11 +144,12 @@ const requestData = computed(() => {
   const data = {
     pageNum: 1,
     pageSize: 10,
+    itemFlag: 1,
     sortColumns: [
-      {
-        column: 'order_status',
-        sort: 'ASC'
-      },
+      // {
+      //   column: 'order_status',
+      //   sort: 'ASC'
+      // },
       {
         column: 'create_time',
         sort: 'DESC'
@@ -218,9 +221,9 @@ const onListError = (msg) => {
 
 // 卡片点击
 const onCardClick = (item) => {
-  // 已交车(180)或已作废(210), 已生成结算单(1)跳转到详情页，其他跳转到编辑页
+  // 已交车(180)或已作废(210)跳转到详情页，其他（含已生成结算单）跳转到编辑页
   const path =
-    item.orderStatus === 180 || item.orderStatus === 210 || item.isCreateStatementInfo === 1
+    item.orderStatus === 180 || item.orderStatus === 210
       ? '/reception/work-order/detail'
       : '/reception/work-order/edit'
   router.push({
@@ -235,9 +238,7 @@ const onCreateOrder = () => {
 }
 
 onMounted(() => {
-  getEquityList().then((res) => {
-    console.log(res)
-  })
+
 })
 </script>
 
@@ -247,13 +248,11 @@ onMounted(() => {
   flex-direction: column;
   height: 100%;
   background: #f7f7f7;
+  overflow: hidden;
 
   .sticky-header {
-    position: sticky;
-    top: 0;
-    z-index: 10;
-    background: #ffffff;
     flex-shrink: 0;
+    background: #ffffff;
   }
 
   :deep(.van-tabs) {
@@ -269,6 +268,15 @@ onMounted(() => {
     min-height: 0;
     overflow-y: auto;
     padding-bottom: 12px;
+
+    :deep(.pull-refresh-content) {
+      min-height: 100%;
+    }
+
+    :deep(.van-list-content) {
+      // 确保底部留白，最后一张卡片能完整展示
+      padding-bottom: 12px;
+    }
   }
 }
 
@@ -395,7 +403,7 @@ onMounted(() => {
   background: #ffffff;
   display: flex;
   justify-content: center;
-  padding: 7px 12px calc(12px + env(safe-area-inset-bottom));
+  padding: 7px 12px calc(40px + env(safe-area-inset-bottom));
 
   .create-btn {
     width: 100%;

@@ -21,6 +21,12 @@
         <div class="vehicle-model">
           {{ workOrder.vehModelName
           }}<template v-if="workOrder.vehProfileVin"> · {{ workOrder.vehProfileVin }}</template>
+          <img
+            v-if="workOrder.vehProfileVin"
+            :src="copyIcon"
+            class="copy-icon"
+            @click.stop="handleCopyVin(workOrder.vehProfileVin)"
+          />
         </div>
       </div>
 
@@ -39,11 +45,20 @@
           <span class="info-value">{{ workOrder.expectFinishAt || '-' }}</span>
         </div>
         <div class="info-row">
-          <span class="info-label">创建时间</span>
+          <span class="info-label">开单时间</span>
           <span class="info-value">{{ workOrder.createTime }}</span>
         </div>
       </div>
     </div>
+
+    <!-- 批量操作弹窗 -->
+    <BatchOperatePopup
+      v-model="showBatchOperate"
+      :work-order="workOrder"
+      :repair-items="repairItems"
+      :default-tag-index="batchDefaultTagIndex"
+      @refresh="handleBatchRefresh"
+    />
 
     <!-- 维修项目列表 -->
     <RepariItemList
@@ -52,7 +67,9 @@
       :service-proxy-id="workOrder.serviceProxyId"
       :order-no="workOrder.serviceProxyCode"
       :has-fault="hasFault"
+      :active-tab="activeTab"
       @refresh="handleRefresh"
+      @view-all="handleViewAll"
     />
 
     <!-- 底部操作按钮 -->
@@ -62,16 +79,20 @@
         :work-order="workOrder"
         :repair-items="repairItems"
         @refresh="handleRefresh"
+        @open-batch-operate="handleOpenBatchOperate"
       />
     </div>
   </div>
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import RepariItemList from './RepariItemList.vue'
 import RepairWorkActions from './RepairWorkActions.vue'
+import BatchOperatePopup from './BatchOperatePopup.vue'
 import { RepairOrderStatusEnum, AlarmLevelEnum } from '../constant'
+import { copyText } from '@/libs/utils'
+import copyIcon from '@/libs/assets/image/copy_icon.svg'
 
 const props = defineProps({
   workOrder: {
@@ -85,6 +106,26 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['refresh'])
+
+// 批量操作弹窗
+const showBatchOperate = ref(false)
+const batchDefaultTagIndex = ref(0)
+
+const handleViewAll = () => {
+  const tabTagMap = { dispatch: 0, working: 2, inspection: 4 }
+  batchDefaultTagIndex.value = tabTagMap[props.activeTab] ?? 0
+  showBatchOperate.value = true
+}
+
+const handleOpenBatchOperate = (tagIndex) => {
+  batchDefaultTagIndex.value = tagIndex
+  showBatchOperate.value = true
+}
+
+const handleBatchRefresh = () => {
+  showBatchOperate.value = false
+  emit('refresh')
+}
 
 // 维修项目列表
 const repairItems = computed(() => {
@@ -102,6 +143,10 @@ const getStatusClass = (orderStatus) => {
   if (orderStatus >= RepairOrderStatusEnum.DELIVERED) return 'status-finished'
   if (orderStatus >= RepairOrderStatusEnum.UNDER_CONSTRUCTION) return 'status-working'
   return 'status-pending'
+}
+
+const handleCopyVin = (vin) => {
+  copyText(vin)
 }
 
 const handleRefresh = () => emit('refresh')
@@ -215,6 +260,16 @@ const handleRefresh = () => emit('refresh')
         font-size: 12px;
         font-weight: 400;
         line-height: 17px;
+        display: flex;
+        align-items: center;
+
+        .copy-icon {
+          width: 14px;
+          height: 14px;
+          margin-left: 2px;
+          cursor: pointer;
+          flex-shrink: 0;
+        }
       }
     }
 
@@ -270,6 +325,7 @@ const handleRefresh = () => emit('refresh')
 
   .card-actions {
     padding-top: 12px;
+    border-top: 0.5px solid var(--leap-color-default-light-4);
   }
 }
 </style>

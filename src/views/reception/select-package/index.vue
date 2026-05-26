@@ -66,7 +66,7 @@
             >
               <div class="item-info">
                 <div class="item-name">
-                  {{ item.rightsName }}({{ item.usedTimes }}/{{ item.totalRemainTimes }})
+                  {{ item.rightsName }}({{ item.remainTimes }}/{{ item.totalRemainTimes }})
                 </div>
                 <div class="item-code">{{ item.rightsCode }}</div>
               </div>
@@ -142,6 +142,7 @@
                 <div class="item-name">{{ item.repairItemName }}</div>
                 <div class="item-code">{{ item.repairItemCode }}</div>
               </div>
+              <div v-if="item.used" class="item-status used">已使用</div>
             </div>
             <div v-if="freeList.length === 0 && !loading" class="no-data">
               <img src="@/assets/image/noList.png" alt="" />
@@ -203,6 +204,7 @@
       close-icon-position="top-left"
       title="维修套餐"
       @close="showPackageDetail = false"
+      style="height: 80vh"
     >
       <van-overlay :show="packageSubmitting" style="z-index: 100">
         <div class="loading-wrapper">
@@ -312,7 +314,7 @@
       close-icon-position="top-left"
       title="服务活动"
       @close="showServiceDetail = false"
-      style="max-height: 80vh"
+      style="height: 80vh"
     >
       <van-overlay :show="serviceSubmitting" style="z-index: 100">
         <div class="loading-wrapper">
@@ -442,7 +444,7 @@
       close-icon-position="top-left"
       title="免保项目"
       @close="showFreeDetail = false"
-      style="max-height: 80vh"
+      style="height: 80vh"
     >
       <van-overlay :show="freeSubmitting" style="z-index: 100">
         <div class="loading-wrapper">
@@ -495,6 +497,7 @@
       close-icon-position="top-left"
       title="商城订单"
       @close="showMallDetail = false"
+      style="height: 80vh"
     >
       <van-overlay :show="mallSubmitting" style="z-index: 100">
         <div class="loading-wrapper">
@@ -604,7 +607,7 @@
       close-icon-position="top-left"
       title="权益套餐"
       @close="showEquityDetail = false"
-      style="max-height: 80vh"
+      style="height: 80vh"
     >
       <van-overlay :show="equitySubmitting" style="z-index: 100">
         <div class="loading-wrapper">
@@ -707,7 +710,7 @@
 <script setup>
 import { ref, reactive, onMounted, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { showToast } from 'vant'
+import { showToast, closeToast, showLoadingToast, showDialog } from 'vant'
 import AisPopup from '@/libs/components/AisPopup.vue'
 import {
   getSpecialPackageList,
@@ -720,11 +723,12 @@ import {
   getSpecialActivityDetail,
   getSpecialFreeDetail,
   specialEquityUse,
+  specialEquityRemind,
   specialGoodsUse,
   specialActivityUse,
   specialFreeUse,
   specialPackageUse,
-  cancelSelect,
+  cancelSelect
 } from '@/api/reception'
 import './select-package.scss'
 
@@ -788,28 +792,29 @@ const selectedPackage = reactive({
   code: '',
   packageType: '10',
   totalPrice: '0.00',
-  itemRespList: [],
+  itemRespList: []
 })
 
 // 选中的服务活动
 const selectedService = reactive({
   id: '',
+  activityId: '',
   packageType: '50',
   activityResponse: {},
   itemResponseList: [],
-  partResponseList: [],
+  partResponseList: []
 })
 
 // 选中的免保项目
 const selectedFree = reactive({
   data: {},
   packageType: '40',
-  partDetailList: [],
+  partDetailList: []
 })
 
 // 选中的商城订单
 const selectedMall = ref({
-  packageType: '30',
+  packageType: '30'
 })
 
 // 选中的权益套餐
@@ -817,7 +822,7 @@ const selectedEquity = reactive({
   data: {},
   packageType: '20',
   repairItemList: [],
-  repairPartList: [],
+  repairPartList: []
 })
 
 // 当前权益是否已选
@@ -853,14 +858,14 @@ onMounted(() => {
         if (res.code === 200 && res.data) {
           packageList.value = res.data.map((item) => ({
             ...item,
-            selected: false,
+            selected: false
           }))
         } else {
           showToast(res.message || '请求失败')
         }
       })
-      .catch(() => {
-        showToast('网络错误')
+      .catch((err) => {
+        showToast({ message: err.msg || '网络错误', duration: 3000 })
       })
       .finally(() => {
         loading.value = false
@@ -921,8 +926,8 @@ const fetchListData = (tabName, searchKey = '') => {
         showToast(res.message || '请求失败')
       }
     })
-    .catch(() => {
-      showToast('网络错误')
+    .catch((err) => {
+      showToast({ message: err.msg || '网络错误', duration: 3000 })
     })
     .finally(() => {
       loading.value = false
@@ -947,6 +952,10 @@ const onSearchClear = () => {
 
 // 点击维修套餐
 const onPackageClick = (item) => {
+  if (item.used) {
+    showToast('已使用')
+    return
+  }
   getSpecialPackageDetail({ id: serviceProxyId.value, packageId: item.id }).then((res) => {
     if (res.code === 200) {
       const data = res.data
@@ -975,9 +984,13 @@ const onEquityClick = (item) => {
 
 // 点击商城订单
 const onMallClick = (item) => {
+  if (item.used) {
+    showToast('已使用')
+    return
+  }
   getSpecialGoodsDetail({
     id: serviceProxyId.value,
-    packageId: item.id,
+    packageId: item.id
   }).then((res) => {
     if (res.code === 200) {
       const data = res.data
@@ -990,9 +1003,13 @@ const onMallClick = (item) => {
 
 // 点击免保项目
 const onFreeClick = (item) => {
+  if (item.used) {
+    showToast('已使用')
+    return
+  }
   getSpecialFreeDetail({
     id: serviceProxyId.value,
-    packageId: item.id,
+    packageId: item.id
   }).then((res) => {
     if (res.code === 200) {
       const data = res.data
@@ -1007,53 +1024,63 @@ const onFreeClick = (item) => {
 
 // 点击服务活动
 const onServiceClick = (item) => {
+  if (item.used) {
+    showToast('已使用')
+    return
+  }
+  showLoadingToast('请稍候...')
   getSpecialActivityDetail({
     activityId: item.activityId,
     id: serviceProxyId.value,
-    packageId: item.id,
+    packageId: item.id
   }).then((res) => {
+    closeToast()
     if (res.code === 200) {
       const data = res.data
       selectedService.id = data.id
+      selectedService.activityId = data.activityId
       selectedService.activityResponse = data.activityResponse || {}
       // 根据activityType判断packageType: 4->50, 其他->60
-      selectedService.packageType = data.activityResponse?.activityType == 4 ? '50' : '60'
+      selectedService.packageType = Number(data.activityResponse?.activityType) === 4 ? '50' : '60'
       // 为每个项目和配件添加selected字段，默认false
       selectedService.itemResponseList = (data.itemResponseList || []).map((item) => ({
         ...item,
-        selected: false,
+        selected: false
       }))
       selectedService.partResponseList = (data.partResponseList || []).map((part) => ({
         ...part,
-        selected: part.allowDelete == 0, // allowDelete == 0 时默认选中
+        selected: Number(part.allowDelete) === 0 // allowDelete == 0 时默认选中
       }))
       isServiceSelected.value = item.used
       showServiceDetail.value = true
+    } else {
+      showToast(res.msg || '获取详情失败')
     }
+  }).catch(() => {
+    closeToast()
   })
 }
 
-// 确认选择套餐
+// 确认选择维修套餐
 const onConfirmPackage = () => {
-  packageSubmitting.value = true
+  showLoadingToast('请稍候...')
   specialPackageUse({
     id: serviceProxyId.value,
-    packageId: selectedPackage.id,
+    packageId: selectedPackage.id
   })
     .then((res) => {
+      closeToast()
       if (res.code === 200) {
-        showToast('已添加: ' + selectedPackage.packageName)
+        showToast('已添加')
         showPackageDetail.value = false
         router.back()
       } else {
-        showToast(res.message || '添加失败')
+        showToast({ message: res.msg || '保存失败', duration: 3000 })
       }
     })
-    .catch(() => {
-      showToast('网络错误')
-    })
-    .finally(() => {
-      packageSubmitting.value = false
+    .catch((err) => {
+      showToast({ message: err.msg || '网络错误', duration: 3000 })
+      closeToast()
     })
 }
 
@@ -1065,7 +1092,7 @@ const onToggleItem = (item) => {
 // 勾选/取消勾选配件
 const onTogglePart = (part) => {
   // allowDelete == 0 时不可编辑
-  if (part.allowDelete == 0) return
+  if (Number(part.allowDelete) === 0) return
   part.selected = !part.selected
 }
 
@@ -1081,44 +1108,71 @@ const onConfirmService = () => {
   // 补充 itemList 缺少的字段
   const enrichedItems = selectedItems.map((item) => ({
     ...item,
+    id: null,
+    serviceProxyId: serviceProxyId.value,
     checkoutTypeId: activityResp.checkoutTypeId || '',
     checkoutTypeName: activityResp.checkoutTypeName || '',
+    warrantyTypeId: activityResp.repairItemTypeId,
+    warrantyTypeName: activityResp.repairItemTypeName,
     workHour: item.workHour || 1,
+    price: item.amount,
+    packageType: String(activityResp.activityType) === '4' ? '60' : '50',
+    packageId: selectedService.activityId + '#' + selectedService.id,
+    packageCode: activityResp.activityCode,
+    packageName: activityResp.activityName
   }))
 
   // 补充 partsList 缺少的字段
   const enrichedParts = selectedParts.map((part) => ({
     ...part,
-    partsName: part.partName || '', // 零件名称
+    id: null,
+    serviceProxyId: serviceProxyId.value,
     isOemPart: activityResp.isOemPart || 1, // 是否OEM件
     partsId: part.partId || part.oldPartId || '', // 零件代码id
+    partsName: part.partName || '', // 零件名称
+    partsCode: part.partCode || part.oldPartCode || '', // 零件代码
     checkoutTypeId: activityResp.checkoutTypeId || '',
     checkoutTypeName: activityResp.checkoutTypeName || '',
-    partsCode: part.partCode || part.oldPartCode || '', // 零件代码
+    planPickNumber: part.quantity,
+    quantity: part.quantity,
+    discountAmount: part.discountAmount || 0,
+    spRepairItemId: part.serviceActivityItemId,
+    repairItemId: part.serviceActivityItemId,
+    repairItemCode: part.repairItemCode || '',
+    repairItemName: part.repairItemName || '',
+    packageType: String(activityResp.activityType) === '4' ? '60' : '50',
+    packageId: selectedService.activityId + '#' + selectedService.id,
+    packageCode: activityResp.activityCode,
+    packageName: activityResp.activityName,
+    isOutstock: 0, // 新零件默认为0，下同
+    actualPickNumber: 0,
+    refundedNumber: 0
   }))
 
-  serviceSubmitting.value = true
-  specialActivityUse({
+  const params = {
     id: serviceProxyId.value,
     packageId: selectedService.id,
     activityId: activityResp.id,
     itemList: enrichedItems,
-    partsList: enrichedParts,
-  })
+    partsList: enrichedParts
+  }
+  showLoadingToast('请稍候...')
+  specialActivityUse(params)
     .then((res) => {
+      closeToast()
       if (res.code === 200) {
-        showToast('已添加: ' + selectedService.activityResponse.activityName)
+        showToast('已添加')
         showServiceDetail.value = false
         router.back()
       } else {
-        showToast(res.message || '添加失败')
+        showToast({ message: res.msg || '保存失败', duration: 3000 })
       }
     })
-    .catch(() => {
-      showToast('网络错误')
+    .catch((err) => {
+      showToast({ message: err.msg || '网络错误', duration: 3000 })
+      closeToast()
     })
     .finally(() => {
-      serviceSubmitting.value = false
     })
 }
 
@@ -1127,19 +1181,19 @@ const onConfirmFree = () => {
   freeSubmitting.value = true
   specialFreeUse({
     id: serviceProxyId.value,
-    packageId: selectedFree.data.id,
+    packageId: selectedFree.data.id
   })
     .then((res) => {
       if (res.code === 200) {
-        showToast('已添加: ' + selectedFree.data.policyName)
+        showToast('已添加')
         showFreeDetail.value = false
         router.back()
       } else {
-        showToast(res.message || '添加失败')
+        showToast({ message: res.msg || '保存失败', duration: 3000 })
       }
     })
-    .catch(() => {
-      showToast('网络错误')
+    .catch((err) => {
+      showToast({ message: err.msg || '网络错误', duration: 3000 })
     })
     .finally(() => {
       freeSubmitting.value = false
@@ -1151,19 +1205,19 @@ const onConfirmMall = () => {
   mallSubmitting.value = true
   specialGoodsUse({
     id: serviceProxyId.value,
-    packageId: selectedMall.value.id,
+    packageId: selectedMall.value.id
   })
     .then((res) => {
       if (res.code === 200) {
-        showToast('已添加: ' + selectedMall.value.interestsGoodsName)
+        showToast('已添加')
         showMallDetail.value = false
         // router.back()
       } else {
-        showToast(res.message || '添加失败')
+        showToast({ message: res.msg || '保存失败', duration: 3000 })
       }
     })
-    .catch(() => {
-      showToast('网络错误')
+    .catch((err) => {
+      showToast({ message: err.msg || '网络错误', duration: 3000 })
     })
     .finally(() => {
       mallSubmitting.value = false
@@ -1173,6 +1227,7 @@ const onConfirmMall = () => {
 // 替换零件
 // 确认选择权益套餐
 const onConfirmEquity = () => {
+  showLoadingToast('请稍候...')
   const params = {
     id: serviceProxyId.value,
     equityUseId: selectedEquity.data.useId,
@@ -1180,19 +1235,48 @@ const onConfirmEquity = () => {
     equityCode: selectedEquity.data.rightsCode,
     repairItemList: selectedEquity.data.repairItemList,
     repairPartList: selectedEquity.data.repairPartList,
+
+    // equityDistributionId: selectedEquity.data.equityDistributionId,
+    verificationEquityCode: selectedEquity.data.rightsGrantCode,
+    verificationCityLevel: selectedEquity.data.writeOffCityLevel,
+    // name: selectedEquity.data.rightsName,
+    purchaseCityLevel: selectedEquity.data.cityLevel,
+    remainingUsageCount: selectedEquity.data.remainTimes,
+    // equityUsageStatus: selectedEquity.data.equityUsageStatus,
+    spreadType: selectedEquity.data.compensationMode,
+    suggestedSpreadPrice: selectedEquity.data.suggestedSpreadPrice,
+    // partsCode: selectedEquity.data.partsCode,
+    // equityList: selectedEquity.data.equityList,
+    totalRemainingUsage: selectedEquity.data.totalRemainTimes,
+    totalUsedCount: selectedEquity.data.usedTimes
   }
   specialEquityUse(params)
     .then((res) => {
       if (res.code === 200) {
-        showToast('已添加: ' + selectedEquity.data.rightsName)
-        showEquityDetail.value = false
-        // router.back()
+        showToast('已添加')
+        specialEquityRemind({ id: serviceProxyId.value }).then((remindRes) => {
+          const remindData = remindRes.code === 200 ? remindRes.data : null
+          if (Array.isArray(remindData) && remindData.length > 0) {
+            const content = remindData.join('<br/>')
+            const message = `<div>提醒</div><div>${content}</div>`
+            showDialog({
+              title: '提示',
+              message,
+              allowHtml: true,
+              confirmButtonText: '确定',
+              showCancelButton: false
+            })
+          }
+        })
       } else {
-        showToast(res.msg || '添加失败')
+        showToast({ message: res.msg || '添加失败', duration: 3000 })
       }
     })
-    .catch(() => {
-      showToast(res.msg || '网络错误')
+    .catch((err) => {
+      showToast({ message: err.msg || '网络错误', duration: 3000 })
+    })
+    .finally(() => {
+      // closeToast()
     })
 }
 
@@ -1202,7 +1286,7 @@ const onCancelPackage = () => {
   cancelSelect({
     id: serviceProxyId.value,
     packageId: selectedPackage.id,
-    packageType: selectedPackage.packageType,
+    packageType: selectedPackage.packageType
   })
     .then((res) => {
       if (res.code === 200) {
@@ -1213,8 +1297,8 @@ const onCancelPackage = () => {
         showToast(res.msg || '取消失败')
       }
     })
-    .catch(() => {
-      showToast('网络错误')
+    .catch((err) => {
+      showToast({ message: err.msg || '网络错误', duration: 3000 })
     })
     .finally(() => {
       packageSubmitting.value = false
@@ -1223,13 +1307,14 @@ const onCancelPackage = () => {
 
 // 取消选择服务活动
 const onCancelService = () => {
-  serviceSubmitting.value = true
+  showLoadingToast('请稍候...')
   cancelSelect({
     id: serviceProxyId.value,
-    packageId: selectedService.id,
-    packageType: selectedService.packageType,
+    packageId: selectedService.activityId + '#' + selectedService.id,
+    packageType: '50'
   })
     .then((res) => {
+      closeToast()
       if (res.code === 200) {
         showToast('已取消选择')
         showServiceDetail.value = false
@@ -1238,11 +1323,11 @@ const onCancelService = () => {
         showToast(res.msg || '取消失败')
       }
     })
-    .catch(() => {
-      showToast('网络错误')
+    .catch((err) => {
+      showToast({ message: err.msg || '网络错误', duration: 3000 })
+      closeToast()
     })
     .finally(() => {
-      serviceSubmitting.value = false
     })
 }
 
@@ -1252,7 +1337,7 @@ const onCancelFree = () => {
   cancelSelect({
     id: serviceProxyId.value,
     packageId: selectedFree.data.id,
-    packageType: selectedFree.packageType,
+    packageType: selectedFree.packageType
   })
     .then((res) => {
       if (res.code === 200) {
@@ -1263,8 +1348,8 @@ const onCancelFree = () => {
         showToast(res.msg || '取消失败')
       }
     })
-    .catch(() => {
-      showToast('网络错误')
+    .catch((err) => {
+      showToast({ message: err.msg || '网络错误', duration: 3000 })
     })
     .finally(() => {
       freeSubmitting.value = false
@@ -1277,7 +1362,7 @@ const onCancelMall = () => {
   cancelSelect({
     id: serviceProxyId.value,
     packageId: selectedMall.value.id,
-    packageType: selectedMall.value.packageType,
+    packageType: selectedMall.value.packageType
   })
     .then((res) => {
       if (res.code === 200) {
@@ -1288,8 +1373,8 @@ const onCancelMall = () => {
         showToast(res.msg || '取消失败')
       }
     })
-    .catch(() => {
-      showToast('网络错误')
+    .catch((err) => {
+      showToast({ message: err.msg || '网络错误', duration: 3000 })
     })
     .finally(() => {
       mallSubmitting.value = false
@@ -1302,7 +1387,7 @@ const onCancelEquity = () => {
   cancelSelect({
     id: serviceProxyId.value,
     packageId: selectedEquity.data.useId,
-    packageType: selectedEquity.packageType,
+    packageType: selectedEquity.packageType
   })
     .then((res) => {
       if (res.code === 200) {
@@ -1313,8 +1398,8 @@ const onCancelEquity = () => {
         showToast(res.msg || '取消失败')
       }
     })
-    .catch(() => {
-      showToast('网络错误')
+    .catch((err) => {
+      showToast({ message: err.msg || '网络错误', duration: 3000 })
     })
     .finally(() => {
       equitySubmitting.value = false

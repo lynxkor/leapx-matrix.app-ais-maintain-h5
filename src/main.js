@@ -1,5 +1,6 @@
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
+import { mountWithToken } from '@/libs/utils/tokenWaiter'
 import { List, Cell, Search, NavBar, PullRefresh, Image as VanImage, Lazyload, Swipe, SwipeItem, ActionSheet, ActionBar, ActionBarButton, Button, Form, Field, CellGroup, Icon, Dialog, Popup, DatePicker, TimePicker, Tabs, Tab, Loading, Row, Col, RadioGroup, Radio, Highlight, Stepper, Switch, NumberKeyboard, Collapse, CollapseItem, Overlay, Sticky, Cascader } from 'vant'
 import * as Sentry from '@sentry/vue'
 
@@ -94,4 +95,4 @@ import('vconsole').then(({ default: VConsole }) => {
 })
 // }
 
-app.mount('#app')
+mountWithToken(app)

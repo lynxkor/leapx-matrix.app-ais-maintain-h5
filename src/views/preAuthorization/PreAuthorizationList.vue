@@ -6,7 +6,7 @@
         ref="filterHeaderRef"
         :showSort="false"
         :showScan="false"
-        :placeholder="'请输入预授权单号/预警信息/门店名称'"
+        :placeholder="'请输入门店名称/预授权单号/VIN'"
         :filter-list="filterList"
         :search-page-route="'preAuthorizationSearch'"
         @search="onSearch"
@@ -16,22 +16,12 @@
 
     <!-- 预授权列表 -->
     <div class="list-container">
-      <!-- 空状态 -->
-      <div v-if="showEmpty" class="empty-state">
-        <img class="empty-image" src="@/libs/assets/image/no-data.png" alt="没有数据" />
-        <p class="empty-text">没有找到相关内容</p>
-        <van-button plain type="primary" size="normal" class="reset-btn" @click="handleResetFilter">
-          重置筛选
-        </van-button>
-      </div>
-
       <RefreshList
-        v-else
         ref="refreshListRef"
         :requestData="requestData"
         :has-no-data="dataList.length === 0"
         @setData="setData"
-        @resetFilters="resetFilters"
+        @resetFilters="handleResetFilter"
       >
         <ListItem
           v-for="item in dataList"
@@ -52,7 +42,15 @@
             <van-row class="card-info">
               <van-col span="24" class="card-info-col">
                 <span class="card-info-title">VIN</span>
-                <span class="card-info-des">{{ item.vehProfileVin }}</span>
+                <span class="card-info-des">
+                  {{ item.vehProfileVin }}
+                  <img
+                    v-if="item.vehProfileVin"
+                    :src="copyIcon"
+                    class="copy-icon"
+                    @click.stop="handleCopyVin(item.vehProfileVin)"
+                  />
+                </span>
               </van-col>
               <van-col span="24" class="card-info-col">
                 <span class="card-info-title">门店名称</span>
@@ -77,8 +75,8 @@
                 <span class="card-info-des">{{ item.creatorName }}</span>
               </van-col>
               <van-col span="24" class="card-info-col">
-                <span class="card-info-title">预交时间</span>
-                <span class="card-info-des">{{ item.estimateDeliverTime }}</span>
+                <span class="card-info-title">预计交车</span>
+                <span class="card-info-des">{{ item.expectFinishAt }}</span>
               </van-col>
             </van-row>
           </template>
@@ -108,9 +106,15 @@ import RefreshList from '@/libs/components/RefreshList.vue'
 import ListItem from '@/components/ListItem.vue'
 import AisButton from '@/components/AisButton.vue'
 import { preAuthPage, preAuthGetStoreArea } from '@/api/authorization'
+import { getEnumValue } from '@/libs/api/common'
 import { callPhone } from '@/libs/utils/nativeFn'
+import { copyText } from '@/libs/utils'
+import copyIcon from '@/libs/assets/image/copy_icon.svg'
+import { usePageSafeArea } from '@/utils/safeArea'
 
 const router = useRouter()
+
+usePageSafeArea({ bodyClass: 'ais-page-nav-safe-area' })
 
 // 定义 onBeforeBack，点击返回时直接退出 WebView
 const onBeforeBack = () => {
@@ -159,6 +163,13 @@ const filterList = ref([
       { label: '技术预授权', value: 1 },
       { label: '保修预授权', value: 2 }
     ]
+  },
+  {
+    title: '状态',
+    key: 'approvalStatusList',
+    nodeType: 'multiple',
+    default: [],
+    options: []
   }
 ])
 
@@ -177,8 +188,24 @@ const getStoreAreaOptions = async() => {
   }
 }
 
+// 获取审核状态枚举
+const getAuditStatusOptions = async() => {
+  try {
+    const res = await getEnumValue('AuditStatusEnum')
+    if (res?.data) {
+      filterList.value[2].options = res.data.map((item) => ({
+        label: item.message,
+        value: item.code
+      }))
+    }
+  } catch (error) {
+    console.error('获取审核状态枚举失败', error)
+  }
+}
+
 onMounted(() => {
   getStoreAreaOptions()
+  getAuditStatusOptions()
 })
 
 // 当从其他页面返回时（keepAlive），滚动到顶部并刷新列表
@@ -204,6 +231,7 @@ const requestData = reactive({
     pageSize: 10,
     dealerUnitIdList: [],
     preAuthTypeList: [],
+    approvalStatusList: [],
     appSearchKeyWord: ''
   },
   api: (params) => preAuthPage(params)
@@ -245,18 +273,6 @@ const setData = (res) => {
   showEmpty.value = dataList.value.length === 0
 }
 
-const resetFilters = () => {
-  activeTab.value = 'all'
-  requestData.data = {
-    pageNum: 1,
-    pageSize: 10,
-    dealerUnitIdList: [],
-    preAuthTypeList: [],
-    appSearchKeyWord: ''
-  }
-  showEmpty.value = false
-}
-
 const handleResetFilter = () => {
   activeTab.value = 'all'
   requestData.data = {
@@ -264,6 +280,7 @@ const handleResetFilter = () => {
     pageSize: 10,
     dealerUnitIdList: [],
     preAuthTypeList: [],
+    approvalStatusList: [],
     appSearchKeyWord: ''
   }
   showEmpty.value = false
@@ -271,15 +288,22 @@ const handleResetFilter = () => {
   if (filterHeaderRef.value) {
     filterHeaderRef.value.resetFilters()
   }
+  nextTick(() => {
+    refreshListRef.value?.search(requestData.data)
+  })
 }
 
 const getStatusClass = (label) => {
   if (!label) return ''
   if (label === '未提交') return 'status-blue'
-  if (label === '审核中') return 'status-yellow'
+  if (label === '审核中' || label === '已过期') return 'status-yellow'
   if (label === '审核通过') return 'status-green'
-  if (label === '已驳回' || label === '已拒绝') return 'status-red'
+  if (label === '已驳回' || label === '已拒绝' || label === '已作废') return 'status-red'
   return ''
+}
+
+const handleCopyVin = (vin) => {
+  copyText(vin)
 }
 
 const handleContact = (item) => {
@@ -302,18 +326,21 @@ const createAuthorization = () => {
 
 <style lang="scss" scoped>
 .pre-auth-list {
-  padding-bottom: 89px;
-  min-height: 100vh;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
   background-color: #f5f5f5;
+  overflow: hidden;
+  height: 100%;
+  min-height: 0;
+  overscroll-behavior: contain;
 
   &::-webkit-scrollbar {
     display: none;
   }
 
   .filter-fixed {
-    position: sticky;
-    top: 0;
-    z-index: 100;
+    flex-shrink: 0;
     background: #fff;
   }
 
@@ -326,36 +353,16 @@ const createAuthorization = () => {
   }
 
   .list-container {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
     padding: 12px 12px 77px 12px;
+    overscroll-behavior-y: contain;
+    -webkit-overflow-scrolling: touch;
   }
 
-  .empty-state {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 66px 0;
-
-    .empty-image {
-      width: 230px;
-      height: 142px;
-      margin-bottom: 16px;
-    }
-
-    .empty-text {
-      font-family: 'PingFang SC';
-      font-size: 14px;
-      color: #6c6e6c;
-      margin: 0 0 20px 0;
-    }
-
-    .reset-btn {
-      width: 88px;
-      height: 32px;
-      font-size: 14px;
-      color: #009100 !important;
-      border: 1px solid #009100 !important;
-      border-radius: 4px;
-    }
+  :deep(.pull-refresh-content) {
+    min-height: 100%;
   }
 
   .item-header {
@@ -403,6 +410,16 @@ const createAuthorization = () => {
         flex: 1;
         word-break: break-all;
         margin-left: 12px;
+        display: flex;
+        align-items: center;
+
+        .copy-icon {
+          width: 14px;
+          height: 14px;
+          margin-left: 2px;
+          cursor: pointer;
+          flex-shrink: 0;
+        }
       }
     }
   }
@@ -447,6 +464,6 @@ const createAuthorization = () => {
 }
 
 .status-red {
-  color: #E43122;
+  color: #B91919;
 }
 </style>

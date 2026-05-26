@@ -81,7 +81,9 @@ export const RemindInfoTypeEnum = {
   /** 三包预警 */
   THREE_GUARANTEES: '2',
   /** 预授权提醒 */
-  PRE_AUTH: '3'
+  PRE_AUTH: '3',
+  /** 差价提醒 */
+  PRICE_DIFFERENCE: '4'
 }
 
 // 三包预警等级枚举
@@ -214,3 +216,17 @@ export const CheckoutTypeList = [
   }
 ]
 
+export const PackageTypeEnum = {
+  /** 维修套餐 */
+  REPAIR: '10',
+  /** 权益套餐 */
+  EQUITY: '20',
+  /** 商城订单 */
+  STORE: '30',
+  /** 免保项目 */
+  FREE: '40',
+  /** 技术服务活动 */
+  TECH_ACTIVITY: '50',
+  /** 关爱服务活动 */
+  CARE_ACTIVITY: '60'
+}

@@ -147,9 +147,10 @@ export default function useRepairItemData({ serviceProxyId }) {
       name: raw.repairItemName || raw.name,
       code: raw.repairItemCode || raw.code,
       price: raw.workhourPrice || raw.price || '0.00',
-      quantity: raw.workHour || 1,
+      quantity: raw.workhour || raw.workHour || 1,
+      originalQuantity: raw.workhour || raw.workHour || 1,
       discountAmount: raw.discountAmount || 0,
-      workHour: raw.workHour || 1,
+      workHour: raw.workhour || raw.workHour || 1,
       repairItemName: raw.repairItemName || raw.name,
       repairItemCode: raw.repairItemCode || raw.code,
       repairItemId: raw.repairItemId || raw.id,
@@ -198,7 +199,7 @@ export default function useRepairItemData({ serviceProxyId }) {
       repairItemName: raw.name || '',
       repairItemId: raw.repairItemId, // 关联维修项目ID
       repairitemcode: raw.code,
-      isOemPart: raw.isOemPart || 0,
+      isOemPart: raw.isOemPart || raw.oemPart || 0,
       // 已保存数据保留其类型
       ...(raw.repairItemTypeId ? { repairItemTypeId: raw.repairItemTypeId, repairItemTypeName: raw.repairItemTypeName } : {}),
       ...(raw.checkoutTypeId ? { checkoutTypeId: raw.checkoutTypeId, checkoutTypeName: raw.checkoutTypeName } : {}),

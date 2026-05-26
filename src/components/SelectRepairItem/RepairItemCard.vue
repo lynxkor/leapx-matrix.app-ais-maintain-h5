@@ -16,20 +16,23 @@
         <!-- 左列 -->
         <div class="info-left">
           <div class="name-row">
-            <span class="card-name">{{ item.name }}</span>
-            <img
-              v-if="nameEditable && !disabled"
-              :src="icon_edit"
-              class="edit-icon"
-              alt=""
-              @click="openNameEditPopup"
-            />
-            <span
-              v-if="item.ifReplace == 1 && isReplace"
-              class="replace-tag"
-              @click="onReplaceTagClick(item)"
-              >替<van-icon name="exchange" size="13px"
-            /></span>
+            <span class="card-name">
+              <span class="card-tag" v-if="item.isOemPart == 1">原厂件</span>
+              <span class="card-tag" v-else-if="item.partsId">副厂件</span>
+              <span
+                v-if="item.replaceSparePartRespList && item.replaceSparePartRespList.length > 0 && isReplace"
+                class="replace-tag"
+                @click="onReplaceTagClick(item)"
+                >替<van-icon name="exchange" size="13px"
+              /></span>{{ item.name }}
+              <img
+                v-if="nameEditable && !disabled"
+                :src="icon_edit"
+                class="edit-icon"
+                alt=""
+                @click="openNameEditPopup"
+              />
+            </span>
           </div>
           <div class="code-row">
             <span class="card-code">{{ item.code }}</span>
@@ -67,13 +70,17 @@
                 @keydown.enter="saveDiscountAmount"
               />
             </template>
-            <span v-else class="discount-tag-amount">¥{{ item.discountAmount || 0 }}</span>
+            <span v-else class="discount-tag-amount">¥{{ (+item.discountAmount || 0).toFixed(2) }}</span>
           </div>
         </div>
       </div>
       <!-- 下半区：原价 + 步进器 -->
       <div class="card-bottom-row">
-        <span class="original-price">¥{{ item.price || '0.00' }}</span>
+        <span class="original-price">
+          <em>¥{{ item.price || '0.00' }}</em>
+          <em v-if="item.partsId">实际领料 {{ Number(item.actualPickNumber) || 0 }}</em>
+          <em v-if="item.partsId">退料 {{ Number(item.refundedNumber) || 0 }}</em>
+        </span>
         <van-stepper
           v-if="!stepperDisabled && !disabled"
           :model-value="item.quantity"
@@ -81,7 +88,7 @@
           class="card-stepper"
           input-width="32px"
           button-size="32px"
-          @change="(val) => emit('update-item', item, { quantity: val })"
+          @change="(val) => emit('update-item', item, { quantity: val, workHour: val })"
         />
         <span v-else class="static-quantity">{{ item.quantity }}</span>
       </div>
@@ -96,6 +103,7 @@
             ref="nameInputRef"
             v-model="tempName"
             placeholder="请输入维修项目名称"
+            maxlength="100"
             clearable
           />
         </div>
@@ -125,11 +133,13 @@
             <div class="current-part-info">
               <span class="current-part-name">{{ item.name }}</span>
               <span class="original-tag" v-if="item.isOemPart == 1">原厂件</span>
+              <span class="original-tag" v-else>副厂件</span>
             </div>
             <div class="check-icon">
               <van-icon name="success" size="16" color="#009100" />
             </div>
           </div>
+          <div class="replace-divider">替换件</div>
           <!-- 替换件列表 -->
           <div class="replace-scroll-list">
             <div
@@ -145,9 +155,8 @@
               <div class="replace-item-content">
                 <div class="replace-info">
                   <div class="replace-name">
-                    {{ part.partsName }}-{{ part.quantity }}-¥{{ part.price }}
+                   {{ part.partsCode }} {{ part.partsName }}-库存: {{ part.stockCount || 0 }}-¥{{ part.price }}
                   </div>
-                  <div class="replace-code">{{ part.partsCode }}</div>
                 </div>
               </div>
               <!-- 选中状态图标 -->
@@ -159,7 +168,7 @@
         </div>
       </template>
       <template #footer>
-        <div class="confirm-btn" @click="onConfirmReplace">确定</div>
+        <div :class="['confirm-btn', !selectedReplacePart?.partsCode ? 'disabled': '']" @click="onConfirmReplace">确定</div>
       </template>
     </ais-popup>
   </div>
@@ -175,32 +184,36 @@ import AisPopup from '@/libs/components/AisPopup.vue'
 const props = defineProps({
   item: {
     type: Object,
-    required: true,
+    required: true
   },
   stepperDisabled: {
     type: Boolean,
-    default: false,
+    default: false
   },
   discountDisabled: {
     type: Boolean,
-    default: false,
+    default: false
   },
   nameEditable: {
     type: Boolean,
-    default: false,
+    default: false
   },
   deletable: {
     type: Boolean,
-    default: true,
+    default: true
   },
   disabled: {
     type: Boolean,
-    default: false,
+    default: false
   },
   isReplace: {
     type: Boolean,
-    default: false,
+    default: false
   },
+  selectedPartsCodes: {
+    type: Array,
+    default: () => []
+  }
 })
 
 const emit = defineEmits(['delete', 'update-item', 'replace'])
@@ -233,8 +246,12 @@ const onReplaceTagClick = (item) => {
 }
 
 const onSelectReplacePart = (part) => {
-  if (part.isOutstock == 1) {
+  if (Number(part.isOutstock) === 1) {
     showToast('该零件已出库')
+    return
+  }
+  if (props.selectedPartsCodes.includes(part.partsCode)) {
+    showToast('该零件已在列表中，请勿重复添加')
     return
   }
   selectedReplacePart.value = part
@@ -245,9 +262,13 @@ const onConfirmReplace = () => {
     showToast('请选择替换件')
     return
   }
+  if (selectedReplacePart.value.partsCode === props.item.partsCode) {
+    showToast('替换件与原零件相同，请重新选择')
+    return
+  }
   emit('replace', {
     oldPart: props.item,
-    newPart: selectedReplacePart.value,
+    newPart: selectedReplacePart.value
   })
   showReplacePopup.value = false
 }
@@ -304,7 +325,7 @@ const cancelNameEdit = () => {
 const saveName = () => {
   const name = tempName.value.trim()
   if (name) {
-    emit('update-item', props.item, { name })
+    emit('update-item', props.item, { name, repairItemName: name })
   }
   showNameEditPopup.value = false
   tempName.value = ''
@@ -376,32 +397,40 @@ const openCascaderPopup = () => {
 
       // 左列：名称、代码、结算类型
       .info-left {
-        display: flex;
-        flex-direction: column;
-        gap: 2px;
-
         .name-row {
-          display: flex;
-          align-items: center;
-          gap: 4px;
-          height: 20px;
-
           .card-name {
             font-size: 14px;
+            line-height: 20px;
             font-weight: 500;
             color: var(--leap-color-default);
-            line-height: 20px;
             cursor: pointer;
+            max-width: 210px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            -webkit-line-clamp: 2;
+            display: -webkit-box;
+            -webkit-box-orient: vertical;
+          }
+          .card-tag {
+            font-size: 12px;
+            color: #191a1b;
+            background: #f2f2f2;
+            padding: 2px 4px;
+            border-radius: 4px;
+            width:44px;
+            margin-right: 4px;
           }
 
           .edit-icon {
             flex-shrink: 0;
             cursor: pointer;
+            vertical-align: middle;
           }
 
           .replace-tag {
+            margin-right: 4px;
             flex-shrink: 0;
-            font-size: 11px;
+            font-size: 12px;
             color: #191a1b;
             background: #f2f2f2;
             padding: 1px 3px;
@@ -410,7 +439,7 @@ const openCascaderPopup = () => {
         }
 
         .code-row {
-          margin: 2px 0;
+          margin: 4px 0;
           .card-code {
             font-size: 12px;
             color: var(--leap-color-default-light-1);
@@ -419,7 +448,7 @@ const openCascaderPopup = () => {
         }
 
         .checkout-row {
-          display: flex;
+          display: inline-block;
           align-items: center;
           height: 20px;
           padding: 2px 4px;
@@ -514,6 +543,10 @@ const openCascaderPopup = () => {
       .original-price {
         font-size: 12px;
         color: var(--leap-color-default-light-1);
+        em {
+          font-style: normal;
+          margin-right: 8px;
+        }
       }
 
       .static-quantity {
@@ -626,10 +659,14 @@ const openCascaderPopup = () => {
 
 // 替换件列表
 .replace-list {
-  background: #fff;
   border-radius: 8px;
   overflow: hidden;
-
+  .replace-divider {
+    background: #f4f4f4;
+    margin: 8px 0;
+    color: #191a1b;
+    font-size:14px;
+  }
   // 当前零件行
   .current-part {
     display: flex;
@@ -637,6 +674,8 @@ const openCascaderPopup = () => {
     justify-content: space-between;
     padding: 12px;
     border-bottom: 0.5px solid #e6e6e5;
+    background: #fff;
+    border-radius: 8px;
 
     .current-part-info {
       display: flex;
@@ -665,6 +704,8 @@ const openCascaderPopup = () => {
 
   // 可滚动替换件列表
   .replace-scroll-list {
+    background: #fff;
+    border-radius: 8px;
     max-height: 40vh;
     overflow-y: auto;
     padding: 4px 12px;
@@ -674,7 +715,6 @@ const openCascaderPopup = () => {
     position: relative;
     display: flex;
     align-items: center;
-    height: 60px;
     padding: 10px 0;
     border-bottom: 0.5px solid #e6e6e5;
 
@@ -746,5 +786,9 @@ const openCascaderPopup = () => {
   border-radius: 8px;
   margin: 12px;
   cursor: pointer;
+  &.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
 }
 </style>

@@ -7,7 +7,7 @@ import {
   finalInspection,
   finalInspectionDetail,
   qualityInspection,
-  addOrUpdate
+  updateFaultAlertRecord
 } from '@/api/repairWork'
 import { formatDateTime } from '@/libs/utils'
 import { useUserStore } from '@/stores/user'
@@ -160,12 +160,12 @@ export async function showFaultCheckDialog(serviceProxyId, onRefresh, workOrder)
       })
       // 确认无故障，清空故障信息
       try {
-        const res = await addOrUpdate({
-          ...workOrder,
-          serviceProxyId,
-          faultAlertRecordRespList: [],
+        // 签字弹框确认：用户点击【准确】后，门店修改本次是否因故障进店，由是修改成否，不用清空【客户故障描述】字段内容
+        const newCustomerContent = workOrder.confirmFaultLabel === 1 ? workOrder.customerContent : '本次进店车辆无故障' // 1 为准确 2 为不准确
+        const res = await updateFaultAlertRecord({
+          id: serviceProxyId,
           currentFault: 0,
-          customerContent: ''
+          customerContent: newCustomerContent
         })
         if (res.code === 200) {
           showToast('已确认无故障')
@@ -291,7 +291,7 @@ export async function handleFinalCheckFlow({ serviceProxyId, workOrder, onRefres
           repairWorkRecordResps: res.repairWorkRecordResps,
           faultAlertRecordParams: res.faultAlertRecordResps,
           traceRecordParams: res.partsTraceRecordResps,
-          currentFault: res.faultFlag === 1 ? 0 : 1,
+          currentFault: res.faultFlag ? 1 : 0,
           id: serviceProxyId,
           finalCheckAt: formatDateTime(new Date()),
           finalCheckerId: userStore.userId,
@@ -303,7 +303,10 @@ export async function handleFinalCheckFlow({ serviceProxyId, workOrder, onRefres
             showToast('终检成功')
             onRefresh?.()
           } else {
-            showToast(fres.message)
+            showToast({
+              message: fres.message,
+              duration: 5000
+            })
             onRefresh?.()
           }
         } catch (e) {

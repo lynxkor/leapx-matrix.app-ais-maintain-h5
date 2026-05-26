@@ -1,31 +1,31 @@
 <template>
   <div class="repair-work-page">
     <!-- 顶部标签页 -->
-     <van-sticky offset-top="44">
-       <van-tabs v-model:active="activeTab" class="work-tabs">
-         <van-tab title="派工" name="dispatch" />
-         <van-tab title="施工" name="working" />
-         <van-tab title="终检" name="inspection" />
-       </van-tabs>
-       <!-- 筛选条件 + 搜索 -->
-       <div class="filter-bar">
-         <div class="filter-tabs">
-           <div
-             v-for="filter in filters"
-             :key="filter.value"
-             class="filter-tab"
-             :class="{ active: activeFilter === filter.value }"
-             @click="handleFilterChange(filter.value)"
-           >
-             {{ filter.label }}
-           </div>
-         </div>
-         <div class="search-box" @click="handleSearch">
-           <van-icon name="search" size="16" color="#191A1B" />
-           <span class="search-text">搜索</span>
-         </div>
-       </div>
-     </van-sticky>
+    <van-sticky :offset-top="navBarOffsetTop">
+      <van-tabs v-model:active="activeTab" class="work-tabs">
+        <van-tab title="派工" name="dispatch" />
+        <van-tab title="施工" name="working" />
+        <van-tab title="终检" name="inspection" />
+      </van-tabs>
+      <!-- 筛选条件 + 搜索 -->
+      <div class="filter-bar">
+        <div class="filter-tabs">
+          <div
+            v-for="filter in filters"
+            :key="filter.value"
+            class="filter-tab"
+            :class="{ active: activeFilter === filter.value }"
+            @click="handleFilterChange(filter.value)"
+          >
+            {{ filter.label }}
+          </div>
+        </div>
+        <div class="search-box" @click="handleSearch">
+          <van-icon name="search" size="16" color="#191A1B" />
+          <span class="search-text">搜索</span>
+        </div>
+      </div>
+    </van-sticky>
 
     <!-- 下拉刷新 + 列表 -->
     <van-pull-refresh v-model="refreshing" @refresh="onRefresh" class="refresh-container">
@@ -38,7 +38,7 @@
         <div class="card-list">
           <RepairWorkCard
             v-for="item in workOrderList"
-            :key="item.id"
+            :key="item.serviceProxyId"
             :work-order="item"
             :active-tab="activeTab"
             @refresh="onRefresh"
@@ -61,11 +61,35 @@ import Empty from './components/Empty.vue'
 import { getRecord } from '../../api/repairWork'
 import { TabStatusMap, PAGESIZE } from './constant'
 import { formatDateTime } from '@/libs/utils'
+import { usePageSafeArea } from '@/utils/safeArea'
 
 const router = useRouter()
+const { navBarOffsetTop } = usePageSafeArea({ bodyClass: 'ais-page-nav-safe-area' })
 
 // 标签页
 const activeTab = ref('dispatch')
+
+// 定义 onBeforeBack，点击返回时直接退出 WebView
+const onBeforeBack = () => {
+  // 调用原生方法退出 WebView
+  const navigatorType = navigator.userAgent.toLowerCase()
+  if (navigatorType.includes('android')) {
+    if (window.Android && window.Android.goback) {
+      window.Android.goback()
+    }
+  } else if (navigatorType.includes('iphone') || navigatorType.includes('ipad')) {
+    if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.revert) {
+      window.webkit.messageHandlers.revert.postMessage(null)
+    }
+  } else {
+    window.close()
+  }
+}
+
+// 暴露给 baseLayout
+defineExpose({
+  onBeforeBack
+})
 
 // 筛选条件
 const filters = [
@@ -127,12 +151,8 @@ const loadData = async(isRefresh = false) => {
       itemFlag: 1,
       sortColumns: [
         {
-          'column': 'order_status',
-          'sort': 'ASC'
-        },
-        {
-          'column': 'create_time',
-          'sort': 'DESC'
+          column: 'create_time',
+          sort: 'DESC'
         }
       ],
       ...getFilterParams(activeFilter.value)
@@ -190,7 +210,7 @@ const handleFilterChange = (value) => {
 
 // 搜索
 const handleSearch = () => {
-  router.push('/repairWork/search')
+  router.push({ path: '/repairWork/search', query: { tab: activeTab.value }})
 }
 
 // 监听标签页切换
@@ -201,7 +221,12 @@ watch(activeTab, () => {
 
 <style lang="scss" scoped>
 .repair-work-page {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
   background-color: #f5f5f5;
+  overflow: hidden;
+  height: 100%;
 
   :deep(.work-tabs) {
     .van-tab {
@@ -230,9 +255,7 @@ watch(activeTab, () => {
     align-items: center;
     padding: 12px;
     background-color: #fff;
-    position: sticky;
-    top: 44px;
-    z-index: 99;
+    flex-shrink: 0;
 
     .filter-tabs {
       display: flex;
@@ -289,7 +312,8 @@ watch(activeTab, () => {
   }
 
   .refresh-container {
-    min-height: calc(100vh - 140px);
+    flex: 1;
+    overflow-y: auto;
     padding: 12px;
 
     .card-list {

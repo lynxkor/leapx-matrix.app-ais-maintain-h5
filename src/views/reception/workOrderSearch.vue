@@ -44,8 +44,8 @@
       <!-- 无搜索结果 -->
       <div class="no-results-wrapper" v-else-if="hasSearched">
         <div class="no-results-content">
-          <img src="../../libs/assets/image/no-data.png" alt="无搜索结果" class="no-results-img" />
-          <p class="no-results-text">没有找到相关内容</p>
+          <img src="@/assets/image/noList.png" alt="无搜索结果" class="no-results-img" />
+          <!-- <p class="no-results-text">没有找到相关内容</p> -->
         </div>
       </div>
     </div>
@@ -53,16 +53,17 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { useGlobalStore } from '@/stores/global'
 import { getVehicleInfo } from '@/api/reception'
 import { showToast } from 'vant'
+import { usePageSafeArea } from '@/utils/safeArea'
 // 列表项显示文本：车牌号/VIN/姓名
 const getResultText = (item) => {
   const plateNo = item.vehiclePlateNo || '无车牌'
   const vin = item.vin || ''
-  const name = item.vehicleProfileOwnerResp.customerName || ''
+  const name = item.vehicleProfileOwnerResp.ownerName || ''
   return `${plateNo}/${vin}/${name}`
 }
 
@@ -74,9 +75,9 @@ const highlightKeyword = (text) => {
   return text.replace(regex, '<span style="color:#009100">$1</span>')
 }
 
-const route = useRoute()
 const router = useRouter()
 const globalStore = useGlobalStore()
+usePageSafeArea()
 
 // 返回上一页
 const goBack = () => {
@@ -90,7 +91,7 @@ const searchLoading = ref(false)
 const hasSearched = ref(false)
 
 // 页面加载时
-onMounted(async () => {
+onMounted(async() => {
   globalStore.setTitle('')
 })
 
@@ -110,7 +111,7 @@ const onLocalSearch = (val) => {
 }
 
 // 搜索处理
-const handleSearch = async (keyword) => {
+const handleSearch = async(keyword) => {
   if (!keyword) return
 
   searchLoading.value = true
@@ -119,7 +120,7 @@ const handleSearch = async (keyword) => {
 
   try {
     const res = await getVehicleInfo({
-      searchVin: keyword,
+      searchVin: keyword
     })
     if (res.code === 200) {
       searchResults.value = res.data || []
@@ -136,32 +137,43 @@ const handleSearch = async (keyword) => {
 }
 
 const onCardClick = (item) => {
-  // 使用 params 传递整个 item 对象
+  // 使用 params 传递整个 item 对象// 将车辆信息存到sessionStorage
+  sessionStorage.setItem('vehicleInfo', JSON.stringify(item))
+  // 跳转到新建施工单页面
   router.push({
     name: 'workOrderCreate',
     query: {
-      id: item.id,
-    },
-    params: {
-      vehicleInfo: JSON.stringify(item),
-    },
+      id: item.id
+    }
+    // params: {
+    //   vehicleInfo: JSON.stringify(item)
+    // }
   })
 }
 </script>
 
 <style lang="scss" scoped>
+.search-page-wrapper {
+  --search-header-height: 44px;
+  --safe-area-top: var(--page-safe-area-top, env(safe-area-inset-top, 0px));
+  min-height: 100%;
+}
+
 // 自定义搜索头部样式
 .search-header {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
-  height: 44px;
+  height: calc(var(--search-header-height) + var(--safe-area-top));
+  padding-top: var(--safe-area-top);
   background-color: #fff;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 7px 12px;
+  padding-left: 12px;
+  padding-right: 12px;
+  padding-bottom: 7px;
   box-sizing: border-box;
   z-index: 6000;
 
@@ -225,7 +237,8 @@ const onCardClick = (item) => {
   // background-color: #ffffff;
   display: flex;
   flex-direction: column;
-  padding-top: 44px;
+  box-sizing: border-box;
+  padding-top: calc(var(--search-header-height) + var(--safe-area-top));
 }
 
 // 搜索加载状态
@@ -255,22 +268,19 @@ const onCardClick = (item) => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
   padding: 40px;
 
   .no-results-content {
-    text-align: center;
 
     .no-results-img {
       width: 230px;
-      height: 142px;
+      height: 180px;
       margin-bottom: 16px;
-      margin-top: 228px;
     }
 
     .no-results-text {
-      font-size: 16px;
-      color: #666;
+      font-size: 14px;
+      color: #6C6E6C;
       margin-bottom: 8px;
     }
 

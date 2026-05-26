@@ -51,17 +51,7 @@
 
     <!-- 列表区域 -->
     <div class="list-container">
-      <!-- 空状态（筛选导致） -->
-      <div v-if="showEmpty" class="empty-state">
-        <img class="empty-image" src="@/libs/assets/image/no-data.png" alt="没有数据" />
-        <p class="empty-text">没有找到相关内容</p>
-        <van-button plain type="primary" size="normal" class="reset-btn" @click="resetAll">
-          重置筛选
-        </van-button>
-      </div>
-
       <RefreshList
-        v-else
         ref="refreshListRef"
         :requestData="requestData"
         :has-no-data="dataList.length === 0"
@@ -87,7 +77,7 @@
             <div class="card-body">
               <!-- 车牌行 -->
               <div class="plate-row">
-                <span class="plate-number">{{ item.carPlate }}</span>
+                <span class="plate-number">{{ item.carPlate  || '无车牌'}}</span>
                 <!-- 预警图标 - 根据 alarmLevelList 数组显示多个图标: 10=绿色, 20=橙色, 30=红色 -->
                 <template v-if="item.alarmLevelList && item.alarmLevelList.length > 0">
                   <svg
@@ -106,13 +96,15 @@
                   </svg>
                 </template>
                 <!-- 业务类型标签 -->
-                <template v-if="item.warrantyTypeCollect">
-                  <span
-                    v-for="(tag, index) in item.warrantyTypeCollect.split('&')"
-                    :key="index"
-                    class="svc-tag"
-                  >{{ tag }}</span>
-                </template>
+                  <template v-if="item.repairItemTypeDetailCollect">
+                    <div>
+                      <span
+                        v-for="(tag, index) in item.repairItemTypeDetailCollect.split('/').filter(Boolean)"
+                        :key="index"
+                        class="svc-tag"
+                      >{{ tag }}</span>
+                    </div>
+                  </template>
               </div>
 
               <!-- VIN -->
@@ -120,17 +112,28 @@
                 {{ item.vehModelName }}
                 ·
                 {{ item.vehProfileVin }}
+                <img
+                  v-if="item.vehProfileVin"
+                  :src="copyIcon"
+                  class="copy-icon"
+                  @click.stop="handleCopyVin(item.vehProfileVin)"
+                />
               </div>
 
               <!-- 信息行 -->
               <div class="info-rows">
                 <div class="info-row">
                   <span class="info-label">车主</span>
-                  <span class="info-value">{{ item.creatorName }}</span>
+                  <span class="info-value">{{ item.customerName }}</span>
+                  <span v-if="item.custType" class="cust-type-tag">{{ { '10': '预约客户', '20': '随到客户' }[item.custType] || item.custType }}</span>
                 </div>
                 <div class="info-row">
                   <span class="info-label">客户经理</span>
-                  <span class="info-value">{{ item.serviceOwnerName }}</span>
+                  <span class="info-value">{{ item.creatorName }}</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">预计交车</span>
+                  <span class="info-value">{{ item.expectFinishAt }}</span>
                 </div>
                 <div class="info-row">
                   <span class="info-label">开单时间</span>
@@ -163,10 +166,9 @@
       </RefreshList>
     </div>
 
-    <!-- 结算确认弹窗 -->
+    <!-- 结算确认弹窗（存在故障） -->
     <AisPopup v-model:show="showSettlePopup" title="结算" position="bottom" round>
       <template #content>
-        <!-- 问题卡片 -->
         <div class="question-card">
           <div class="question-text">客户反馈故障是否全部解决</div>
           <div class="option-row">
@@ -204,7 +206,6 @@
         </div>
       </template>
       <template #footer>
-        <!-- 底部拖动条 + 提交按钮 -->
         <div class="settle-footer">
           <div class="submit-btn" @click="confirmSettle">确认结算</div>
         </div>
@@ -295,7 +296,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, nextTick } from 'vue'
+import { ref, reactive, nextTick, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { showToast } from 'vant'
 import dayjs from 'dayjs'
@@ -308,8 +309,14 @@ import {
   addServiceProxyStatement
 } from '@/api/settlementStatement'
 import { callPhone } from '@/libs/utils/nativeFn'
+import { copyText } from '@/libs/utils'
+import copyIcon from '@/libs/assets/image/copy_icon.svg'
+import { getEnumValue } from '@/libs/api/common'
+import { usePageSafeArea } from '@/utils/safeArea'
 
 const router = useRouter()
+
+usePageSafeArea({ bodyClass: 'ais-page-nav-safe-area' })
 
 // 定义 onBeforeBack，点击返回时直接退出 WebView
 const onBeforeBack = () => {
@@ -386,7 +393,8 @@ const requestData = reactive({
     orderStatus: statusMap['pending'],
     appSearchKeyWord: '',
     createTimeStart: '',
-    createTimeEnd: ''
+    createTimeEnd: '',
+    sortColumns: [{ 'column': 'create_time', 'sort': 'DESC' }]
   },
   api: getSettlementStatementPage
 })
@@ -407,18 +415,50 @@ const updateRequestData = () => {
 updateRequestData()
 
 // 未解决原因选项
-const reasonOptions = [
-  { label: '需求不明确', value: '10' },
-  { label: '技术方案待确认', value: '20' },
-  { label: '依赖第三方接口未联调', value: '30' },
-  { label: '测试环境异常', value: '40' },
-  { label: '数据缺失或错误', value: '50' },
-  { label: '优先级较低暂未处理', value: '60' },
-  { label: '涉及多部门协作未对齐', value: '70' },
-  { label: '代码修复后未验证', value: '80' },
-  { label: '硬件资源不足', value: '90' },
-  { label: '其他原因', value: '99' }
-]
+const reasonOptions = ref([])
+
+const getReasonOptions = async() => {
+  try {
+    const res = await getEnumValue('UnresolvedIssueReasonEnum')
+    if (res?.data) {
+      reasonOptions.value = res.data.map((item) => ({
+        label: item.message,
+        value: item.code
+      }))
+    }
+  } catch (error) {
+    console.error('获取未解决原因枚举失败', error)
+  }
+}
+
+onMounted(() => {
+  getReasonOptions()
+  const savedFilter = sessionStorage.getItem('settlementFilter')
+  if (savedFilter) {
+    try {
+      const parsed = JSON.parse(savedFilter)
+      if (parsed.tab && (parsed.tab === 'pending' || parsed.tab === 'completed')) {
+        if (activeTab.value !== parsed.tab) {
+          activeTab.value = parsed.tab
+        }
+      }
+      if (parsed.dateTag && ['today', 'week', 'all'].includes(parsed.dateTag)) {
+        if (selectedDateTag.value !== parsed.dateTag) {
+          selectedDateTag.value = parsed.dateTag
+        }
+      }
+    } catch {
+      // 兼容旧格式（纯字符串）
+      if (savedFilter === 'pending' || savedFilter === 'completed') {
+        if (activeTab.value !== savedFilter) {
+          activeTab.value = savedFilter
+        }
+      }
+    }
+    sessionStorage.removeItem('settlementFilter')
+    updateRequestData()
+  }
+})
 
 // 日期筛选标签
 const dateTags = [
@@ -429,20 +469,18 @@ const dateTags = [
 
 // 切换日期标签
 const selectDateTag = (value) => {
+  if (selectedDateTag.value === value) return
   selectedDateTag.value = value
-  // 切换日期筛选时重新加载数据
+  // 切换日期筛选时重新加载数据（updateRequestData 修改 requestData.data 会触发 RefreshList watch 自动查询）
   updateRequestData()
-  refreshList()
 }
 
 // 切换标签页
 const switchTab = (tab) => {
+  if (activeTab.value === tab) return
   activeTab.value = tab
-  // 切换tab时重置日期筛选到今天
-  selectedDateTag.value = 'today'
   // 切换tab时重新加载数据
   updateRequestData()
-  refreshList()
 }
 
 // 跳转搜索页
@@ -483,9 +521,8 @@ const setData = (res) => {
 const resetAll = () => {
   searchValue.value = ''
   selectedDateTag.value = 'today'
-  // 更新请求参数并刷新列表
+  // 更新请求参数（修改 requestData.data 会触发 RefreshList watch 自动查询）
   updateRequestData()
-  refreshList()
 }
 
 const getStatusClass = (status) => {
@@ -519,6 +556,10 @@ const showCancelBtn = (item) => {
   return true
 }
 
+const handleCopyVin = (vin) => {
+  copyText(vin)
+}
+
 const goToDetail = (item) => {
   // 待交车且未生成结算单时，不能进入详情页
   if (activeTab.value === 'pending' && item.isCreateStatementInfo === 0) {
@@ -533,11 +574,14 @@ const goToDetail = (item) => {
     return
   }
 
+  const filterParams = { tab: activeTab.value, dateTag: selectedDateTag.value }
+  sessionStorage.setItem('settlementFilter', JSON.stringify(filterParams))
   router.push({
     path: '/settlement-statement/after-sales',
     query: {
       serviceProxyId,
       status: activeTab.value,
+      dateTag: selectedDateTag.value,
       serviceProxyCode: item.serviceProxyCode || item.code || '',
       vehProfileVin: item.vehProfileVin || ''
     }
@@ -580,7 +624,7 @@ const executeCancel = async() => {
 }
 
 const handleContact = (item) => {
-  const phone = item.customerPhone
+  const phone = item.shuttlePhone
   if (phone) {
     callPhone(phone)
   } else {
@@ -588,15 +632,27 @@ const handleContact = (item) => {
   }
 }
 
+const currentFault = ref(0)
+
 const handleSettle = (item) => {
   currentItem.value = item
+  currentFault.value = item.currentFault ?? 0
   settleOption.value = 'resolved'
   selectedReason.value = ''
-  showSettlePopup.value = true
+  if (currentFault.value === 1) {
+    showSettlePopup.value = true
+  } else {
+    showConfirmPopup.value = true
+  }
 }
 
 const confirmSettle = () => {
-  // 如果是未解决且没有选择原因，提示并阻止
+  // 非故障进店：直接弹出确认对话框
+  if (currentFault.value !== 1) {
+    showConfirmPopup.value = true
+    return
+  }
+  // 存在故障：校验未解决原因
   if (settleOption.value === 'unresolved' && !selectedReason.value) {
     showToast('请选择未解决原因')
     return
@@ -648,9 +704,14 @@ const goToUpload = () => {
 
 <style lang="scss" scoped>
 .settlement-statement-list {
-  min-height: 100vh;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
   background-color: #f5f5f5;
-  overflow-y: auto;
+  overflow: hidden;
+  height: 100%;
+  min-height: 0;
+  overscroll-behavior: contain;
 
   &::-webkit-scrollbar {
     display: none;
@@ -671,9 +732,7 @@ const goToUpload = () => {
   }
 
   .header-fixed {
-    position: sticky;
-    top: 0;
-    z-index: 100;
+    flex-shrink: 0;
     background: #ffffff;
   }
 
@@ -767,36 +826,16 @@ const goToUpload = () => {
   }
 
   .list-container {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
     padding: 12px 12px 20px;
+    overscroll-behavior-y: contain;
+    -webkit-overflow-scrolling: touch;
   }
 
-  .empty-state {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 66px 0;
-
-    .empty-image {
-      width: 230px;
-      height: 142px;
-      margin-bottom: 16px;
-    }
-
-    .empty-text {
-      font-family: 'PingFang SC';
-      font-size: 14px;
-      color: #6c6e6c;
-      margin: 0 0 20px 0;
-    }
-
-    .reset-btn {
-      width: 88px;
-      height: 32px;
-      font-size: 14px;
-      color: #009100 !important;
-      border: 1px solid #009100 !important;
-      border-radius: 4px;
-    }
+  :deep(.pull-refresh-content) {
+    min-height: 100%;
   }
 
   .list-item-container {
@@ -874,7 +913,7 @@ const goToUpload = () => {
           border-radius: 4px;
           flex-shrink: 0;
           white-space: nowrap;
-          margin-left: 12px;
+          margin: 0 3px;
         }
       }
 
@@ -885,6 +924,14 @@ const goToUpload = () => {
         margin-bottom: 8px;
         display: flex;
         align-items: center;
+
+        .copy-icon {
+          width: 14px;
+          height: 14px;
+          margin-left: 2px;
+          cursor: pointer;
+          flex-shrink: 0;
+        }
       }
 
       .info-rows {
@@ -914,6 +961,15 @@ const goToUpload = () => {
           .info-value {
             color: #191a1b;
             margin-left: 12px;
+          }
+
+          .cust-type-tag {
+            padding: 1px 4px;
+            font-family: 'PingFang SC';
+            font-size: 12px;
+            color: #191a1b;
+            background: rgba(25, 26, 27, 0.06);
+            border-radius: 4px;
           }
         }
       }

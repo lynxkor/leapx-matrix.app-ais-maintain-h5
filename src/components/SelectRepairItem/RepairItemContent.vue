@@ -5,7 +5,7 @@
     isComponent
   />
   初始化数据：contentRef.value?.loadInitialData()
-  保存方法： contentRef.value?.save()
+  保存方法： contentRef.value?.onSave()
   数据： contentRef.value?.selectedItems、contentRef.value?.selectedParts
 -->
 <template>
@@ -35,6 +35,7 @@
           ? '输入维修项目代码、名称、拼音简码'
           : '输入维修零件代码、名称、拼音简码'
       "
+      :activeTab="activeTab"
       @search="performSearch"
       @add-item-with-parts="handleAddItemWithParts"
       @update-item="handleItemUpdateWrapper"
@@ -44,7 +45,7 @@
 
     <!-- 内容区域 -->
     <div class="content-area">
-      <div class="content-area-section" v-if="selectedItems.length > 0">
+      <div :class="`content-area-section ${isComponent ? '': 'border-r'}`" v-if="selectedItems.length > 0">
         <div class="section-title">维修项目</div>
         <div
           v-for="group in packageItemGroups"
@@ -81,7 +82,7 @@
         />
       </div>
 
-      <div class="content-area-section" v-if="selectedParts.length > 0">
+      <div :class="`content-area-section ${isComponent ? '': 'border-r'}`" v-if="selectedParts.length > 0">
         <div class="section-title">维修配件</div>
         <div
           v-for="group in packagePartGroups"
@@ -101,6 +102,7 @@
             :deletable="isPartDeletable(item)"
             :disabled="isAuditComplete"
             :isReplace="isReplace"
+            :selected-parts-codes="selectedPartsCodes"
             @delete="removeItem(item, 'part')"
             @update-item="handleItemUpdateWrapper"
             @replace="repairItemContentReplace"
@@ -116,6 +118,7 @@
           :deletable="isPartDeletable(item)"
           :disabled="isAuditComplete"
           :isReplace="isReplace"
+          :selected-parts-codes="selectedPartsCodes"
           @delete="removeItem(item, 'part')"
           @update-item="handleItemUpdateWrapper"
           @replace="repairItemContentReplace"
@@ -138,18 +141,20 @@
           ? `${editingItem.repairItemTypeId || ''}-${editingItem.checkoutTypeId || ''}-${editingItem.warrantyTypeId || ''}`
           : ''
       "
-      @confirm="onCheckoutConfirm"
+      @confirm="onCheckoutConfirmWrapper"
     />
 
     <!-- 底部保存按钮 -->
     <div class="popup-footer" v-if="!isComponent">
-      <div
+      <van-button
         class="save-btn"
-        :class="{ disabled: !hasAnySelectedItems || isAuditComplete }"
+        :class="{ disabled: isAuditComplete }"
         @click="onSave"
+        :loading="saving"
+        loading-text="保存中"
       >
         保存
-      </div>
+      </van-button>
     </div>
 
     <!-- 套餐详情弹窗 -->
@@ -163,8 +168,8 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted } from 'vue'
-import { showToast, closeToast, showLoadingToast } from 'vant'
+import { ref, computed, watch, onMounted, nextTick } from 'vue'
+import { showToast, closeToast, showDialog } from 'vant'
 import Empty from '@/views/repairWork/components/Empty.vue'
 import SearchBar from './SearchBar.vue'
 import RepairItemCard from './RepairItemCard.vue'
@@ -174,45 +179,51 @@ import {
   useRepairItemData,
   useRepairItemBusinessRules,
   useRepairItemOperations,
-  useRepairItemList,
+  useRepairItemList
 } from './hooks'
 
 const props = defineProps({
   serviceProxyId: {
     type: String,
-    default: '',
+    default: ''
   },
   showHeader: {
     type: Boolean,
-    default: false,
+    default: false
   },
   isComponent: {
     type: Boolean,
-    default: false,
+    default: false
   },
   // 外部传入的维修项目数据
   initialItems: {
     type: Array,
-    default: null,
+    default: null
   },
   // 外部传入的维修零件数据
   initialParts: {
     type: Array,
-    default: null,
+    default: null
   },
   isReplace: {
     type: Boolean,
-    default: false,
+    default: true
   },
+  currentFault: {
+    type: [String, Number],
+    default: ''
+  }
 })
 
-const emit = defineEmits(['close', 'confirm', 'replace'])
+const emit = defineEmits(['close', 'confirm', 'replace', 'delete'])
 
+import { useRouter } from 'vue-router'
+import { getRemindInfo } from '@/api/reception'
 // UI 状态
 const searchBarRef = ref(null)
 const activeTab = ref('item')
 const isAuditComplete = computed(() => extraInfo.value.isAuditComplete)
-
+const router = useRouter()
 // 数据管理 Hook
 const {
   rawCheckoutTypes,
@@ -226,7 +237,7 @@ const {
   normalizePart,
   getPermFilteredDefaults,
   loadInitialData,
-  resetData,
+  resetData
 } = useRepairItemData({ serviceProxyId: props.serviceProxyId })
 
 // 业务规则 Hook
@@ -241,18 +252,18 @@ const {
   editingItem,
   showCheckoutPicker,
   openCheckoutPicker,
-  onCheckoutConfirm,
+  onCheckoutConfirm
 } = useRepairItemBusinessRules({
   dealerPermission,
   rawMaintenanceTypes,
   rawCheckoutTypes,
   rawRepairItemTypes,
   selectedItems,
-  selectedParts,
+  selectedParts
 })
 
 // 操作 Hook
-const { performSearch, handleAddItemWithParts, handleItemUpdate, removeItem, handleSave } =
+const { performSearch, handleAddItemWithParts, handleItemUpdate, removeItem: originalRemoveItem, handleSave } =
   useRepairItemOperations({
     serviceProxyId: props.serviceProxyId,
     selectedItems,
@@ -261,12 +272,42 @@ const { performSearch, handleAddItemWithParts, handleItemUpdate, removeItem, han
     normalizePart,
     getPermFilteredDefaults,
     activeTab,
-    searchBarRef,
+    searchBarRef
   })
 
 // 列表分组 Hook
-const { hasAnySelectedItems, regularItems, packageItemGroups, regularParts, packagePartGroups } =
+const { regularItems, packageItemGroups, regularParts, packagePartGroups } =
   useRepairItemList({ selectedItems, selectedParts })
+
+// 已选配件编码列表，用于替换件重复校验
+const selectedPartsCodes = computed(() => selectedParts.value.map((p) => p.partsCode).filter(Boolean))
+
+// 删除操作包装函数 - 删除后通知父组件
+const removeItem = (item, type) => {
+  originalRemoveItem(item, type, data => {
+    emit('delete', data)
+  })
+  nextTick(() => {
+    emit('delete', {
+      selectedItems: selectedItems.value,
+      selectedParts: selectedParts.value
+    })
+  })
+}
+
+// 结算类型确认选择 - 包装函数，通知父组件数据变化
+const onCheckoutConfirmWrapper = (params) => {
+  onCheckoutConfirm(params)
+  // 只在组件模式下通知父组件
+  if (props.isComponent) {
+    nextTick(() => {
+      emit('replace', {
+        selectedItems: selectedItems.value,
+        selectedParts: selectedParts.value
+      })
+    })
+  }
+}
 
 // 事件处理
 const handleItemUpdateWrapper = (item, updates) => {
@@ -275,45 +316,69 @@ const handleItemUpdateWrapper = (item, updates) => {
     return
   }
   handleItemUpdate(item, updates)
+  nextTick(() => {
+    emit('replace', {
+      selectedItems: selectedItems.value,
+      selectedParts: selectedParts.value
+    })
+  })
 }
 
 const repairItemContentReplace = (content) => {
-  console.log('repairItemContentReplace 收到数据:', content)
   const { oldPart, newPart } = content
 
   // 在 selectedParts 中查找并替换
   const index = selectedParts.value.findIndex(
-    (part) => part.partsId === oldPart.partsId || part.partsCode === oldPart.partsCode,
+    (part) => part.partsId === oldPart.partsId || part.partsCode === oldPart.partsCode
   )
 
-  console.log('找到索引:', index, '原零件:', oldPart)
-
   if (index !== -1) {
-    // 保留原零件的一些属性（如 packageId、isBindltem 等）
-    const preservedProps = ['packageId', 'isBindltem', 'repairItemTypeId', 'repairItemTypeName']
+    // 需要替换零件的一些属性（如 packageId、isBindltem 等）
+    const replacedProps = ['partsCode', 'partsId', 'price', 'partsName', 'isOemPart']
 
-    // 先对 newPart 进行标准化处理，确保有所有必要的字段
-    const normalizedNewPart = normalizePart(newPart)
-    console.log('标准化后的新零件:', normalizedNewPart)
-
-    // 将原零件的关联属性复制到新零件上
-    preservedProps.forEach((prop) => {
-      if (oldPart[prop] !== undefined) {
-        normalizedNewPart[prop] = oldPart[prop]
+    const part = JSON.parse(JSON.stringify(oldPart))
+    replacedProps.forEach((prop) => {
+      if (newPart[prop] !== undefined) {
+        part[prop] = newPart[prop]
       }
     })
+    // 同步派生字段
+    part.name = part.partsName || part.name
+    part.code = part.partsCode || part.code
+
+    // 原零件信息，如果不存在，证明是第一次替换，需要带上
+    part.originPartsId = part.originPartsId || part.partsId
+    part.originPartsCode = part.originPartsCode || part.partsCode
+
+    // 双向替换：在替换件列表中找到新零件对应项，替换为旧零件信息
+    const list = part.replaceSparePartRespList
+    if (list && list.length > 0) {
+      const idx = list.findIndex(
+        (r) => r.partsCode === newPart.partsCode || r.partsId === newPart.partsId
+      )
+      const oldPartInfo = {
+        partsId: oldPart.partsId,
+        partsCode: oldPart.partsCode,
+        partsName: oldPart.partsName || oldPart.name,
+        price: oldPart.price,
+        stockCount: oldPart.stockCount,
+        isOutstock: oldPart.isOutstock,
+        isOemPart: oldPart.isOemPart
+      }
+      if (idx !== -1) {
+        list.splice(idx, 1, oldPartInfo)
+      } else {
+        list.push(oldPartInfo)
+      }
+    }
 
     // 替换零件
-    selectedParts.value.splice(index, 1, normalizedNewPart)
-    console.log('替换后的列表:', selectedParts.value)
-
+    selectedParts.value.splice(index, 1, part)
     // 通知父组件发生了替换操作，传递更新后的零件列表
     emit('replace', {
       selectedItems: selectedItems.value,
-      selectedParts: selectedParts.value,
+      selectedParts: selectedParts.value
     })
-
-    showToast({ message: '替换成功', 'z-index': 5100 })
   } else {
     showToast({ message: '未找到要替换的零件', 'z-index': 5100 })
   }
@@ -322,22 +387,68 @@ const onSearchDone = () => {
   searchBarRef.value?.reset()
 }
 
+// 项目零件初始快照（用于保存后比较维修类型变化）
+const itemsSnapshot = ref({ items: [], parts: [] })
+
+const saveItemsSnapshot = () => {
+  itemsSnapshot.value = {
+    items: JSON.parse(JSON.stringify(selectedItems.value)),
+    parts: JSON.parse(JSON.stringify(selectedParts.value))
+  }
+}
+
+// 保存后检查：原来不含一般维修/三电维修，保存后包含了，且currentFault为否
+const checkFaultOnSave = (flag) => {
+  const targetTypes = ['一般维修', '三电维修']
+  const hasType = (list) => list.some((item) => targetTypes.includes(item.repairItemTypeName))
+  const hadBefore = hasType(itemsSnapshot.value.items) || hasType(itemsSnapshot.value.parts)
+  const hasNow = hasType(selectedItems.value) || hasType(selectedParts.value)
+  if (!hadBefore && hasNow && String(props.currentFault) === '0') {
+    showToast({ message: '维修类型为一般维修或三电维修，系统默认调整 【本次进店是否存在故障】为是，存在故障，请填写故障模块信息!', duration: 3000, onClose: () => {
+      if (!flag) {
+        router.go(-1)
+      }
+    } })
+    sessionStorage.setItem('faultDetected', '1')
+  }
+}
+
 const onSaveSuccess = (data) => {
+  checkFaultOnSave()
   emit('confirm', data)
 }
 
-const onSave = async () => {
-  if (isAuditComplete.value) return
-  showLoadingToast('请稍候...')
+const saving = ref(false)
+const onSave = async() => {
+  if (isAuditComplete.value || saving.value) return
+  saving.value = true
+  checkFaultOnSave(true)
   try {
     const success = await handleSave(onSaveSuccess)
-    closeToast()
     if (success) {
+      getRemindInfo(props.serviceProxyId).then((remindRes) => {
+        if (remindRes.code === 200) {
+          const remindData = remindRes.data || []
+          const preAuthItems = remindData.filter((item) => item.type === '3')
+          if (preAuthItems.length > 0) {
+            const messages = preAuthItems.map((item) => item.content || '暂无提醒信息').join('<br/>')
+            showDialog({
+              title: '提醒',
+              message: messages,
+              allowHtml: true,
+              confirmButtonText: '确定',
+              showCancelButton: false
+            })
+          }
+        }
+      })
       searchBarRef.value?.reset()
       emit('close')
     }
-  } catch (error) {
+  } catch {
     closeToast()
+  } finally {
+    saving.value = false
   }
 }
 
@@ -346,7 +457,7 @@ const showPackageDetail = ref(false)
 const selectedPackageDetail = ref({
   name: '',
   code: '',
-  itemRespList: [],
+  itemRespList: []
 })
 const currentPackageGroup = ref(null)
 
@@ -355,7 +466,7 @@ const openPackageDetail = (group) => {
   selectedPackageDetail.value = {
     name: group.title || '',
     code: group.key || '',
-    itemRespList: group.items || [],
+    itemRespList: group.items || []
   }
   showPackageDetail.value = true
 }
@@ -369,11 +480,12 @@ watch(activeTab, () => {
 watch(
   () => props.initialItems,
   (newItems) => {
+    console.log('RepairItemContent mounted', newItems)
     if (newItems && newItems.length > 0) {
       selectedItems.value = newItems.map(normalizeItem)
     }
   },
-  { immediate: true },
+  { immediate: true }
 )
 
 watch(
@@ -383,11 +495,11 @@ watch(
       selectedParts.value = newParts.map(normalizePart)
     }
   },
-  { immediate: true },
+  { immediate: true }
 )
 
 // 组件挂载时，如果有外部数据则使用外部数据，否则加载枚举数据
-onMounted(async () => {
+onMounted(async() => {
   if (props.isComponent && (props.initialItems || props.initialParts)) {
     // 有外部数据时，只加载枚举数据（用于分类选择器）
     await loadInitialData()
@@ -405,6 +517,7 @@ defineExpose({
   selectedItems,
   selectedParts,
   onSave,
+  saveItemsSnapshot
 })
 </script>
 
@@ -414,6 +527,8 @@ defineExpose({
   flex-direction: column;
   height: 100%;
   background: var(--leap-color-default-light-5);
+  --safe-area-top: env(safe-area-inset-top, 0px);
+  padding-top: var(--safe-area-top);
 
   // 标题栏
   .popup-header {
@@ -480,10 +595,12 @@ defineExpose({
     flex: 1;
     overflow-y: auto;
     &-section {
-      padding: 12px 12px 0 12px;
+      padding: 12px;
       margin-top: 10px;
       background-color: #fff;
-      border-radius: 12px;
+      &.border-r {
+        border-radius: 12px;
+      }
     }
 
     .section-title {

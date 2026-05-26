@@ -197,7 +197,8 @@ const router = createRouter({
           name: 'preAuthorizationSearch',
           component: () => import('../views/preAuthorization/PreAuthorizationSearchPage.vue'),
           meta: {
-            title: ''
+            title: '',
+            hideHeader: true
           }
         },
         // 结算报表模块路由
@@ -207,7 +208,7 @@ const router = createRouter({
           component: () => import('../views/settlementStatement/SettlementStatementList.vue'),
           meta: {
             title: '结算交车',
-            keepAlive: true
+            keepAlive: false
           }
         },
         {

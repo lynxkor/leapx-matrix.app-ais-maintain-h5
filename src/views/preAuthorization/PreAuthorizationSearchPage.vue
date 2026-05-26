@@ -7,7 +7,7 @@
         v-model="localSearchValue"
         shape="round"
         :autofocus="true"
-        placeholder="输入预授权单号/预警信息/门店名称"
+        placeholder="请输入门店名称/预授权单号/VIN"
         @search="onLocalSearch"
         class="page-search-input"
       >
@@ -43,7 +43,15 @@
             <van-row class="card-info">
               <van-col span="24" class="card-info-col">
                 <span class="card-info-title">VIN</span>
-                <span class="card-info-des">{{ item.vehProfileVin }}</span>
+                <span class="card-info-des">
+                  {{ item.vehProfileVin }}
+                  <img
+                    v-if="item.vehProfileVin"
+                    :src="copyIcon"
+                    class="copy-icon"
+                    @click.stop="handleCopyVin(item.vehProfileVin)"
+                  />
+                </span>
               </van-col>
               <van-col span="24" class="card-info-col">
                 <span class="card-info-title">门店名称</span>
@@ -101,10 +109,15 @@ import { useRouter } from 'vue-router'
 import { showToast } from 'vant'
 import ListItem from '@/components/ListItem.vue'
 import AisButton from '@/components/AisButton.vue'
-import { preAuthList } from '@/api/authorization'
+import { preAuthPage } from '@/api/authorization'
 import { callPhone } from '@/libs/utils/nativeFn'
+import { copyText } from '@/libs/utils'
+import copyIcon from '@/libs/assets/image/copy_icon.svg'
+import { usePageSafeArea } from '@/utils/safeArea'
 
 const router = useRouter()
+
+usePageSafeArea()
 
 // 返回上一页
 const goBack = () => {
@@ -135,13 +148,13 @@ const handleSearch = async(keyword) => {
   hasSearched.value = true
 
   try {
-    const res = await preAuthList({
+    const res = await preAuthPage({
       appSearchKeyWord: keyword,
       pageNum: 1,
       pageSize: 20
     })
     // 处理接口返回的数据结构
-    searchResults.value = res?.data || []
+    searchResults.value = res?.data.records || []
   } catch (error) {
     console.error('搜索失败:', error)
     searchResults.value = []
@@ -156,8 +169,12 @@ const getStatusClass = (label) => {
   if (label === '未提交') return 'status-blue'
   if (label === '审核中') return 'status-yellow'
   if (label === '审核通过') return 'status-green'
-  if (label === '已驳回' || label === '已拒绝') return 'status-red'
+  if (label === '已驳回' || label === '已拒绝' || label === '已作废') return 'status-red'
   return ''
+}
+
+const handleCopyVin = (vin) => {
+  copyText(vin)
 }
 
 const handleContact = (item) => {
@@ -175,17 +192,26 @@ const goToDetail = (item) => {
 </script>
 
 <style lang="scss" scoped>
+.search-page-wrapper {
+  --search-header-height: 44px;
+  --safe-area-top: var(--page-safe-area-top, env(safe-area-inset-top, 0px));
+  min-height: 100%;
+}
+
 // 自定义搜索头部样式
 .search-header {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
-  height: 44px;
+  height: calc(var(--search-header-height) + var(--safe-area-top));
+  padding-top: var(--safe-area-top);
   background-color: #fff;
   display: flex;
   align-items: center;
-  padding: 7px 12px;
+  padding-left: 12px;
+  padding-right: 12px;
+  padding-bottom: 7px;
   box-sizing: border-box;
   z-index: 6000;
 
@@ -247,6 +273,8 @@ const goToDetail = (item) => {
   background-color: #f7f7f7;
   display: flex;
   flex-direction: column;
+  box-sizing: border-box;
+  padding-top: calc(var(--search-header-height) + var(--safe-area-top));
 }
 
 // 搜索加载状态
@@ -278,7 +306,7 @@ const goToDetail = (item) => {
 
     .order-no {
       font-family: 'PingFang SC';
-      font-size: 16px;
+      font-size: 15px;
       font-weight: 500;
       color: #191a1b;
     }
@@ -315,6 +343,16 @@ const goToDetail = (item) => {
         flex: 1;
         margin-left: 12px;
         word-break: break-all;
+        display: flex;
+        align-items: center;
+
+        .copy-icon {
+          width: 14px;
+          height: 14px;
+          margin-left: 2px;
+          cursor: pointer;
+          flex-shrink: 0;
+        }
       }
     }
   }
@@ -333,7 +371,7 @@ const goToDetail = (item) => {
 }
 
 .status-red {
-  color: #E43122;
+  color: #B91919;
 }
 
 // 没有更多了
@@ -350,7 +388,6 @@ const goToDetail = (item) => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
   padding: 40px;
 
   .no-results-content {
@@ -359,8 +396,7 @@ const goToDetail = (item) => {
     .no-results-img {
       width: 230px;
       height: 142px;
-      margin-bottom: 16px;
-      margin-top: 228px;
+      margin-top: 150px;
     }
 
     .no-results-text {

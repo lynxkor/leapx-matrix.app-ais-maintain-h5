@@ -45,7 +45,7 @@ export default function useRepairItemBusinessRules({
 
     const isUniversal = item?.repairItemId === UNIVERSAL_LABOR_HOUR_ITEM_ID
     const isPart = !!item?.partsId
-    const isOemPart = Number(item?.oemPart) === 1
+    const isOemPart = Number(item?.oemPart || item?.isOemPart) === 1
 
     // 权限过滤
     const perm = dealerPermission.value
@@ -53,7 +53,7 @@ export default function useRepairItemBusinessRules({
     const permCheckoutTypeIds = hasPerm ? (isPart ? perm.part.checkoutTypeIds : perm.repairItem.checkoutTypeIds) : null
     const permWarrantyTypeIds = hasPerm ? (isPart ? perm.part.warrantyTypeIds : perm.repairItem.warrantyTypeIds) : null
     // 随维修项目导入的零件维修类型不可修改，已保存过的维修项目维修类型不可修改
-    const repairItemDisabled = isPart ? !!item.repairItemId : !!item.id
+    const repairItemDisabled = isPart ? item.repairItemDisabled : (!!item.id || item.repairItemDisabled)
 
     return maintenanceTypes.map(mt => ({
       text: mt.message,
@@ -127,7 +127,9 @@ export default function useRepairItemBusinessRules({
   const onCheckoutConfirm = ({ selectedOptions }) => {
     const [level1, level2, level3] = selectedOptions || []
     if (editingItem.value) {
-      Object.assign(editingItem.value, {
+      const item = editingItem.value
+      const wasEditable = isWorkHourEditable(item)
+      Object.assign(item, {
         repairItemTypeId: level1?.value || '',
         repairItemTypeName: level1?.text || '',
         checkoutTypeId: level2?.value || '',
@@ -135,6 +137,11 @@ export default function useRepairItemBusinessRules({
         warrantyTypeId: level3?.rawValue ?? level3?.value ?? '',
         warrantyTypeName: level3?.text || ''
       })
+      // 维修项目：工时从可编辑变为不可编辑时，恢复原始工时
+      if (!item.partsId && wasEditable && !isWorkHourEditable(item)) {
+        item.quantity = item.originalQuantity
+        item.workHour = item.originalQuantity
+      }
     }
     showCheckoutPicker.value = false
     editingItem.value = null

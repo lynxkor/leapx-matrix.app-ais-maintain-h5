@@ -40,6 +40,15 @@
   --van-nav-bar-height: 44px;
 }
 
+body.ais-page-nav-safe-area .base-container {
+  --nav-bar-total-height: calc(var(--van-nav-bar-height, 44px) + var(--page-safe-area-top, 0px));
+}
+
+body.ais-page-nav-safe-area .base-container > header {
+  padding-top: var(--page-safe-area-top, 0px) !important;
+  background: #ffffff;
+}
+
 @media (prefers-color-scheme: dark) {
   :root {
     --color-background: var(--vt-c-black);

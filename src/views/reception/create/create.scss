@@ -19,7 +19,8 @@
     background: #ffffff;
   }
   .van-collapse-item__title {
-    padding: 0 0 12px 0;
+    padding: 0 0 5px 0;
+    align-items: center;
   }
 }
 .van-hairline--top-bottom:after {
@@ -71,8 +72,8 @@
 
   .vehicle-model {
     font-size: 12px;
-    color: #545454;
-    margin-bottom: 8px;
+    color: #191a1b;
+    margin-bottom: 4px;
   }
 
   .info-row {
@@ -80,7 +81,7 @@
     margin-bottom: 4px;
 
     .label {
-      color: #545454;
+      color: #191a1b;
     }
 
     .value {
@@ -102,6 +103,7 @@
 
     .label {
       font-size: 14px;
+      font-weight: 500;
       color: #191a1b;
     }
 
@@ -129,7 +131,6 @@
       padding: 0;
       background: #fff;
     }
-
     :deep(.van-cell) {
       padding: 0;
       background: transparent;
@@ -147,7 +148,6 @@
       padding: 0;
     }
   }
-
   .collapse-content {
     padding-top: 4px;
 
@@ -262,7 +262,7 @@
   margin-bottom: 12px;
 }
 .section-card {
-  padding: 12px;
+  padding: 12px 0;
   .section-title {
     font-size: 14px;
     font-weight: 500;
@@ -276,6 +276,35 @@
     .required {
       color: #ee0a24;
       margin-right: 2px;
+    }
+
+    .editable-field {
+      :deep(.van-field) {
+        padding: 0;
+        width: 160px;
+
+        .van-field__body {
+          input {
+            text-align: right;
+            font-size: 16px;
+            font-weight: 500;
+            color: #191a1b;
+          }
+        }
+
+        .van-field__button {
+          .unit {
+            font-size: 12px;
+            color: #545454;
+          }
+
+          .edit-icon {
+            width: 14px;
+            height: 14px;
+            margin-left: 4px;
+          }
+        }
+      }
     }
   }
 
@@ -353,6 +382,11 @@
     .title {
       font-size: 14px;
       color: #191a1b;
+    }
+
+    .fault-status-text {
+      font-size: 14px;
+      color: #545454;
     }
 
     .radio-group {
@@ -446,6 +480,15 @@
       cursor: pointer;
     }
   }
+
+  .fault-desc-text {
+    font-size: 14px;
+    color: #545454;
+    padding: 12px;
+    background: #f5f5f5;
+    border-radius: 6px;
+    min-height: 60px;
+  }
   .fault-header {
     display: flex;
     align-items: center;
@@ -496,11 +539,11 @@
   bottom: 0;
   left: 0;
   right: 0;
-  height: 88px;
+  height: calc(88px + env(safe-area-inset-bottom));
+  padding: 0 12px env(safe-area-inset-bottom);
   background: #ffffff;
   display: flex;
   align-items: center;
-  padding: 0 12px;
   gap: 12px;
   box-shadow: 0px -1px 0px 0px rgba(230, 230, 229, 1);
 
@@ -545,6 +588,35 @@
     background: #cccccc;
     border-color: #cccccc;
     cursor: not-allowed;
+  }
+}
+
+.add-parts-bar {
+  position: fixed;
+  bottom: calc(88px + env(safe-area-inset-bottom));
+  left: 0;
+  right: 0;
+  display: flex;
+  gap: 12px;
+  padding: 10px 12px;
+  background: #ffffff;
+  box-shadow: 0px -1px 0px 0px rgba(230, 230, 229, 1);
+
+  .add-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    height: 36px;
+    background: #e6f4e6;
+    border-radius: 20px;
+    font-size: 13px;
+    color: #009100;
+
+    :deep(.van-icon) {
+      font-size: 14px;
+    }
   }
 }
 
@@ -637,6 +709,8 @@
 
 // 项目零件Tab样式
 .parts-tab {
+  padding-bottom: 68px;
+
   .cost-summary {
     display: flex;
     align-items: center;
@@ -801,6 +875,13 @@
         gap: 4px;
       }
     }
+
+    .signature-hint {
+      font-size: 12px;
+      color: #b91919;
+      padding: 4px 0 12px 0;
+      text-align: right;
+    }
   }
 
   .attachment-section {
@@ -876,6 +957,28 @@
   }
 }
 
+.fault-list {
+  height: 60vh;
+  overflow-y: auto;
+
+  .fault-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 7px 12px;
+    border-radius: 6px;
+    margin-bottom: 8px;
+    font-size: 13px;
+    &:last-child {
+      margin-bottom: 0;
+    }
+
+    &:active {
+      background: #f7f7f7;
+    }
+  }
+}
+
 // 预计交车时间选择器样式
 .delivery-time-picker {
   display: flex;
@@ -928,7 +1031,6 @@
   }
 }
 
-// 签字渠道选择器样式
 .signature-channel-picker {
   .picker-item {
     display: flex;
@@ -956,10 +1058,42 @@
     }
 
     &.active {
-      .channel-content .channel-text {
+      .channel-content .channel-text,
+      .channel-content .channel-hint {
         color: #009100;
       }
     }
+  }
+}
+
+.signature-channel-footer {
+  display: flex;
+  gap: 12px;
+  padding: 12px 16px;
+  background: #ffffff;
+
+  .cancel-btn {
+    flex: 1;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f5f5f5;
+    border-radius: 8px;
+    font-size: 14px;
+    color: #191a1b;
+  }
+
+  .confirm-btn {
+    flex: 1;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #009100;
+    border-radius: 8px;
+    font-size: 14px;
+    color: #ffffff;
   }
 }
 
@@ -1044,7 +1178,7 @@
 .card-container {
   background: #fff;
   border-radius: 8px;
-  padding: 12px;
+  padding: 12px 0;
 
   .card-info-title {
     font-size: 14px;
@@ -1100,4 +1234,203 @@
 }
 .van-image-preview__overlay {
   background: rgb(197 196 196 / 90%);
+}
+.edit-icon {
+  width: 16px;
+  height: 16px;
+  margin-left: 4px;
+}
+.warranty-alert-content {
+  padding: 10px 24px 16px;
+  max-height: 430px;
+  overflow: auto;
+
+  .alert-section {
+    margin-bottom: 16px;
+    margin-top: 10px;
+    &:last-of-type {
+      margin-bottom: 0;
+    }
+
+    .section-title {
+      font-size: 16px;
+      font-weight: 500;
+      color: #191a1b;
+      margin-bottom: 8px;
+    }
+
+    .section-message {
+      font-size: 14px;
+      color: #545454;
+      line-height: 22px;
+      margin-bottom: 12px;
+    }
+
+    .section-action-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 6px 16px;
+      font-size: 14px;
+      color: #009100;
+      border: 1px solid #009100;
+      border-radius: 38px;
+      width: 100%;
+    }
+  }
+
+  .warranty-alerts {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    .warranty-alert-card {
+      background: #f8e8e8;
+      border-radius: 4px;
+      padding: 8px;
+
+      .alert-header {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        margin-bottom: 4px;
+
+        .alert-tag {
+          font-size: 12px;
+          padding: 1px 4px;
+          border-radius: 4px;
+          color: #ffffff;
+
+          &.red {
+            background: #b91919;
+          }
+
+          &.green {
+            background: #009100;
+          }
+
+          &.yellow {
+            background: #c8a12b;
+          }
+        }
+
+        .alert-title {
+          font-size: 14px;
+          font-weight: 500;
+          color: #b91919;
+        }
+      }
+
+      .alert-partno {
+        font-size: 14px;
+        font-weight: 500;
+        color: #b91919;
+        margin-bottom: 8px;
+      }
+
+      .alert-details {
+        .alert-detail-item {
+          font-size: 14px;
+          color: #3b3e3b;
+          line-height: 22px;
+        }
+      }
+
+      // 根据预警级别设置标题和零部件号颜色
+      &.red {
+        .alert-title,
+        .alert-partno {
+          color: #b91919;
+        }
+      }
+
+      &.green {
+        .alert-title,
+        .alert-partno {
+          color: #009100;
+        }
+      }
+
+      &.yellow {
+        .alert-title,
+        .alert-partno {
+          color: #c8a12b;
+        }
+      }
+    }
+  }
+
+  .info-title,
+  .section-title {
+    color: #191a1b;
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+  .info-content,
+  .section-message {
+    color: #545454;
+  }
+}
+.alert-confirm-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  color: #009100;
+  border-top: 0.5px solid #e6e6e5;
+  padding: 12px 0;
+}
+
+// 项目零件只读展示卡片样式
+.parts-item-card {
+  background: #ffffff;
+  border-radius: 8px;
+  padding: 15px 12px;
+  border: 0.5px solid #e6e6e5;
+  margin-bottom: 8px;
+
+  .item-main {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 4px;
+
+    .item-left {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      flex: 1;
+
+      .item-name {
+        font-size: 14px;
+        font-weight: 500;
+        color: #191a1b;
+        line-height: 20px;
+      }
+
+      .item-code {
+        font-size: 12px;
+        color: #545454;
+        line-height: 17px;
+      }
+    }
+
+    .item-right {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 2px;
+      flex-shrink: 0;
+
+      .item-amount {
+        font-size: 14px;
+        font-weight: 500;
+        color: #191a1b;
+      }
+
+      .item-discount {
+        font-size: 12px;
+        color: #545454;
+      }
+    }
+  }
 }

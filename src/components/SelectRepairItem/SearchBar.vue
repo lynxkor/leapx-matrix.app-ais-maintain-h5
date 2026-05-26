@@ -36,11 +36,12 @@
           @click="onItemClick(item)"
         >
           <span class="item-text" v-html="highlight(item.partName || item.name)"></span>
+          <span class="item-text" v-if="activeTab !== 'item'">{{ '—库存：' + item.availableQty }}</span>
           <span class="item-code" v-html="'—' + highlight(item.partCode || item.code)"></span>
         </div>
       </div>
       <div v-else-if="hasSearched" class="search-empty">
-        <span>没有找到相关维修项目</span>
+        <span>{{activeTab === 'item' ? '没有找到相关维修项目' : '没有找到相关维修备件'}}</span>
       </div>
     </div>
 
@@ -87,18 +88,22 @@ import {
   isDiscountEditable,
   isNameEditable,
   isItemDeletable,
-  isPartDeletable,
+  isPartDeletable
 } from './hooks/repairItemRules'
 
 defineProps({
   placeholder: {
     type: String,
-    default: '输入代码、名称、拼音简码',
+    default: '输入代码、名称、拼音简码'
   },
   disabled: {
     type: Boolean,
-    default: false,
+    default: false
   },
+  activeTab: {
+    type: String,
+    default: 'item'
+  }
 })
 
 const emit = defineEmits(['search', 'add-item-with-parts', 'update-item', 'delete-item', 'done'])

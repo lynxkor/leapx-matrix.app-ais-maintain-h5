@@ -1,4 +1,4 @@
-import { post, postText } from './request.js'
+import { post, postText, postJson, get } from './request.js'
 
 // 获取施工单列表
 export function getList(data) {
@@ -8,11 +8,6 @@ export function getList(data) {
 // 获取施工单详情
 export function getDetail(data) {
   return postText('/maintain/app/sp/serviceProxy/detail', data)
-}
-
-// 获取权益列表
-export function getEquityList(data) {
-  return post('/maintain/app/sp/serviceProxy/rightsList', data)
 }
 
 // 施工单作废
@@ -45,7 +40,7 @@ export function getVehicleMileage(data) {
 
 // 搜索故障模块
 export function getFaultModule(data) {
-  return post('/maintain/app/sp/serviceProxy/cccList', data)
+  return postJson('/maintain/app/sp/serviceProxy/cccList', data)
 }
 
 // 搜索维修项目
@@ -93,6 +88,10 @@ export function specialEquityUse(data) {
 
 export function specialEquityReplace(data) {
   return post('/maintain/app/sp/special/equity/replace', data)
+}
+// 特殊开单--权益套餐--提醒补差价
+export function specialEquityRemind(data) {
+  return post('/maintain/app/sp/special/equity/remind', data)
 }
 // 特殊开单--商品订单--列表查询
 export function getSpecialGoodsList(data) {
@@ -164,4 +163,32 @@ export function spConfirmAndSign(data) {
 // 更换车牌
 export function updateVehiclePlate(data) {
   return post('/datacenter/app/vehicle/vehicleProfile/updatePlate', data)
+}
+
+// 接车施工单-故障模块表新增/编辑
+export function saveSpFaultModule(data) {
+  return post('/maintain/app/sp/spFaultAlertRecord/addOrUpdate', data)
+}
+
+// 接车施工单-故障模块表删除
+export function deleteSpFaultModule(data) {
+  return post('/maintain/app/sp/spFaultAlertRecord/delete', data)
+}
+
+// 检查信息复用
+export function getRecentlyServiceProxy(data) {
+  return postJson('/maintain/app/sp/serviceProxy/getRecentlyServiceProxy', data)
+}
+
+// 判断是否留车
+export function checkFault(data) {
+  return postJson('/maintain/app/sp/serviceProxy/isVehRetention', data)
+}
+// 创建留车单
+export function createRetention(data) {
+  return post('/maintain/app/sp/serviceProxy/addVehRetentionList', data)
+}
+// 预约单查询
+export function getReservationList(data) {
+  return get('/leapx/maintenance/appointment/findById/' + data, undefined, 'leapx')
 }

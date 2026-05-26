@@ -5,7 +5,7 @@
     closeable
     close-icon="cross"
     close-icon-position="top-left"
-    title="维修套餐"
+    :title="packageData.name.split('-')[0] || '套餐详情'"
     @close="$emit('close')"
     style="height: 50vh"
   >
@@ -105,20 +105,20 @@ import AisPopup from '@/libs/components/AisPopup.vue'
 const props = defineProps({
   show: {
     type: Boolean,
-    default: false,
+    default: false
   },
   packageData: {
     type: Object,
     default: () => ({
       name: '',
       code: '',
-      itemRespList: [],
-    }),
+      itemRespList: []
+    })
   },
   showCancel: {
     type: Boolean,
-    default: false,
-  },
+    default: false
+  }
 })
 
 defineEmits(['close', 'confirm'])
@@ -128,6 +128,7 @@ const expandedPartsIndex = ref(-1)
 
 // 金额计算安全函数
 const safeCalc = (price, qty, discount = 0) => {
+  console.log('packageData', props.packageData)
   const p = Number(price) || 0
   const q = Number(qty) || 0
   const d = Number(discount) || 0

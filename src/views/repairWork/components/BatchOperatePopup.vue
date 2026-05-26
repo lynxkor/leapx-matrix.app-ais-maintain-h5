@@ -2,7 +2,7 @@
   <van-popup
     v-model:show="visible"
     position="bottom"
-    :style="{ height: '90%' }"
+    :style="{ height: '70%' }"
     round
     teleport="body"
     @close="handleClose"
@@ -21,6 +21,7 @@
       <AddRepairItem
         v-model:visible="showAddRepairPopup"
         :service-proxy-id="workOrder.serviceProxyId"
+        :current-fault="workOrder.currentFault"
         @confirm="handleAddRepairConfirm"
         mode="popup"
       />
@@ -63,7 +64,7 @@
           <div class="repair-title-row">
             <span class="repair-title">维修项目</span>
             <div class="add-repair" @click="handleAddRepair">
-              <span class="add-text">添加维修项目</span>
+              <span class="add-text">添加项目/零件</span>
               <van-icon name="arrow" class="arrow-icon" />
             </div>
           </div>
@@ -71,8 +72,8 @@
           <!-- 状态标签栏 -->
           <div class="status-tags">
             <div
-              v-for="(tag, index) in statusTags"
-              :key="index"
+              v-for="tag in statusTags"
+              :key="tag.index"
               class="status-tag-item"
               :class="{ active: activeTagIndex === tag.index }"
               @click="handleTagClick(tag.index)"
@@ -280,7 +281,7 @@ const statusTags = computed(() => {
 const loadRepairWorkRecord = async() => {
   loading.value = true
   try {
-    const res = await repairWorkRecord({ serviceProxyId: props.workOrder.serviceProxyId })
+    const res = await repairWorkRecord({ serviceProxyId: props.workOrder.serviceProxyId, pageSize: 1000 })
     if (res.code === 200) {
       internalRepairItems.value = (res?.data || []).map((item) => ({
         ...item,
@@ -688,6 +689,8 @@ const handleClose = () => {
 
   // 维修项目列表
   .repair-list {
+    max-height: calc(90vh - 335px);
+    overflow-y: auto;
     .repair-item {
       display: flex;
       align-items: center;

@@ -3,7 +3,7 @@
   <div @click="onCardClick">
     <!-- 卡片头部 -->
     <div class="card-header">
-      <span class="order-no">{{ item.code }}---{{ item.orderStatus }}</span>
+      <span class="order-no">{{ item.code }}</span>
       <span :class="['status-tag', `status-${item.orderStatus}`]">{{ item.orderStatusLabel }}</span>
     </div>
 
@@ -12,14 +12,14 @@
       <div class="plate-row">
         <span class="plate-no">{{ item.carPlate || '无车牌' }}</span>
         <div class="tag-list">
-          <span v-if="item.alarmLevelList?.includes(20)" style="height: 20px">
-            <img src="@/assets/image/warning-green.png" alt="" />
+          <span v-if="item.alarmLevelList?.includes(40)">
+            <img src="@/assets/image/warning-red.svg" alt="" />
           </span>
           <span v-if="item.alarmLevelList?.includes(30)">
-            <img src="@/assets/image/warning-yellow.png" alt="" />
+            <img src="@/assets/image/warning-yellow.svg" alt="" />
           </span>
-          <span v-if="item.alarmLevelList?.includes(40)">
-            <img src="@/assets/image/warning-red.png" alt="" />
+          <span v-if="item.alarmLevelList?.includes(20)" style="height: 17px">
+            <img src="@/assets/image/warning-green.svg" alt="" />
           </span>
           <span v-if="item.repairItemTypeDetailCollect">
             <span
@@ -32,7 +32,15 @@
           </span>
         </div>
       </div>
-      <div class="vehicle-model">{{ item.vehModelName }} · {{ item.vehProfileVin }}</div>
+      <div class="vehicle-model">
+        {{ item.vehModelName }} · {{ item.vehProfileVin }}
+        <img
+          v-if="item.vehProfileVin"
+          :src="copyIcon"
+          class="copy-icon"
+          @click.stop="handleCopyVin(item.vehProfileVin)"
+        />
+      </div>
     </div>
 
     <!-- 详细信息 -->
@@ -47,11 +55,15 @@
       </div>
       <div class="info-row">
         <span class="label">客户经理</span>
-        <span class="value">{{ item.dedicatedServiceManager }}</span>
+        <span class="value">{{ item.creatorName }}</span>
       </div>
       <div class="info-row">
         <span class="label">预计交车</span>
         <span class="value">{{ item.expectFinishAt }}</span>
+      </div>
+      <div class="info-row">
+        <span class="label">开单时间</span>
+        <span class="value">{{ item.createTime }}</span>
       </div>
     </div>
   </div>
@@ -59,18 +71,24 @@
 
 <script setup>
 import { defineProps, defineEmits } from 'vue'
+import { copyText } from '@/libs/utils'
+import copyIcon from '@/libs/assets/image/copy_icon.svg'
 
 // 定义 props
 const props = defineProps({
   item: {
     type: Object,
     required: true,
-    default: () => ({}),
-  },
+    default: () => ({})
+  }
 })
 
 // 定义 emits
 const emit = defineEmits(['click'])
+
+const handleCopyVin = (vin) => {
+  copyText(vin)
+}
 
 // 卡片点击事件
 const onCardClick = () => {
@@ -89,13 +107,13 @@ const onCardClick = () => {
     padding-bottom: 10px;
     .order-no {
       font-size: 14px;
-      font-weight: 500;
+      font-weight: 400;
       color: #191a1b;
     }
 
     .status-tag {
       font-size: 12px;
-      padding: 2px 8px;
+      padding: 2px 0 2px 8px;
       border-radius: 4px;
       font-weight: 500;
       color: #c8a12b;
@@ -127,7 +145,7 @@ const onCardClick = () => {
         display: flex;
         gap: 4px;
         align-items: center;
-
+        padding-top: 5px;
         .info-tag {
           font-size: 10px;
           padding: 1px 4px;
@@ -146,6 +164,16 @@ const onCardClick = () => {
     .vehicle-model {
       font-size: 12px;
       color: #545454;
+      display: flex;
+      align-items: center;
+
+      .copy-icon {
+        width: 14px;
+        height: 14px;
+        margin-left: 2px;
+        cursor: pointer;
+        flex-shrink: 0;
+      }
     }
   }
 

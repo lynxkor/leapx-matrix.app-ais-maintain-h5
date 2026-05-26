@@ -41,7 +41,7 @@
               v-for="item in workOrderList"
               :key="item.id"
               :work-order="item"
-              :active-tab="getTabFromStatus(item.orderStatus)"
+              :active-tab="activeTab"
               @refresh="onRefresh"
             />
           </div>
@@ -56,18 +56,25 @@
 
 <script setup>
 import { ref } from 'vue'
+import { useRoute } from 'vue-router'
 import { showToast } from 'vant'
 import { useGlobalStore } from '@/stores/global'
 import { goBack } from '@/libs/utils/app'
 import { getRecord } from '../../api/repairWork'
-import { RepairOrderStatusEnum, PAGESIZE } from './constant'
+import { TabStatusMap, PAGESIZE } from './constant'
 import RepairWorkCard from './components/RepairWorkCard.vue'
 import Empty from './components/Empty.vue'
+import { usePageSafeArea } from '@/utils/safeArea'
 
 const globalStore = useGlobalStore()
+const route = useRoute()
+usePageSafeArea()
 
 // 设置页面标题
 globalStore.title = '搜索'
+
+// 从路由参数获取当前tab，默认搜索全部
+const activeTab = ref(route.query.tab || 'dispatch')
 
 // 搜索相关
 const searchValue = ref('')
@@ -79,13 +86,6 @@ const loading = ref(false)
 const finished = ref(false)
 const refreshing = ref(false)
 const currentPage = ref(1)
-
-// 根据 orderStatus 推导 activeTab
-const getTabFromStatus = (orderStatus) => {
-  if (orderStatus <= RepairOrderStatusEnum.PENDING_DISPATCH) return 'dispatch'
-  if (orderStatus <= RepairOrderStatusEnum.UNDER_CONSTRUCTION) return 'working'
-  return 'inspection'
-}
 
 // 返回
 const handleBack = () => {
@@ -118,15 +118,11 @@ const loadData = async(isRefresh = false) => {
       itemFlag: 1,
       sortColumns: [
         {
-          'column': 'order_status',
-          'sort': 'ASC'
-        },
-        {
           'column': 'create_time',
           'sort': 'DESC'
         }
       ],
-      orderStatusList: [RepairOrderStatusEnum.PENDING_DISPATCH, RepairOrderStatusEnum.UNDER_CONSTRUCTION, RepairOrderStatusEnum.PENDING_FINAL_INSPECTION]
+      orderStatusList: [TabStatusMap[activeTab.value]]
     }
 
     const resData = await getRecord(params)
@@ -176,7 +172,10 @@ const onLoad = () => {
 
 <style lang="scss" scoped>
 .search-page {
-  min-height: 100vh;
+  --safe-area-top: var(--page-safe-area-top, env(safe-area-inset-top, 0px));
+  flex: 1;
+  display: flex;
+  flex-direction: column;
   background-color: #f7f7f7;
 }
 
@@ -188,6 +187,7 @@ const onLoad = () => {
   align-items: center;
   gap: 12px;
   padding: 8px 12px;
+  padding-top: calc(8px + var(--safe-area-top));
   background-color: #ffffff;
   box-shadow: 0px 0px 4px 0px rgba(57, 61, 58, 0.1);
 }

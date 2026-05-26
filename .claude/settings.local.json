@@ -77,12 +77,21 @@
       "Bash(py *)",
       "Bash(C:\\\\Users\\\\990900\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python312\\\\python.exe *)",
       "Bash(powershell *)",
-      "Bash(cmd.exe *)"
+      "Bash(cmd.exe *)",
+      "Bash(claude config *)",
+      "Skill(claude-hud:configure)",
+      "Bash(claude --version)",
+      "Bash(claude doctor *)",
+      "Bash(npm root *)",
+      "Bash(ls \"$\\(npm root -g\\)/@anthropic-ai/claude-code/bin/\")",
+      "mcp__context7__resolve-library-id",
+      "mcp__context7__query-docs",
+      "mcp__MiniMax__web_search",
+      "Bash(sed -i '2131s/    .attachment-img {/    img {/' src/views/preAuthorization/PreAuthorizationDetail.vue)",
+      "Bash(sed -i '2137s/    .attachment-delete {/    .delete_icon {/' src/views/preAuthorization/PreAuthorizationDetail.vue)",
+      "Bash(sed -i '1718s/overflow: hidden;/overflow: hidden;\\\\n    position: relative;/' src/views/preAuthorization/PreAuthorizationDetail.vue)",
+      "Bash(sed -i '1724a\\\\\\\\n    .attachment-delete {\\\\n      position: absolute;\\\\n      top: 0;\\\\n      right: 0;\\\\n      width: 24px;\\\\n      height: 24px;\\\\n      background: rgba\\(0, 0, 0, 0.4\\);\\\\n      border-radius: 0 6px 0 0;\\\\n      display: flex;\\\\n      align-items: center;\\\\n      justify-content: center;\\\\n      cursor: pointer;\\\\n    }' src/views/preAuthorization/PreAuthorizationDetail.vue)"
     ]
-  },
-  "statusLine": {
-    "type": "command",
-    "command": "\"C:\\Program Files\\nodejs\\node.exe\" \"C:\\Users\\990900\\.claude\\plugins\\cache\\claude-hud\\claude-hud\\0.0.12\\dist\\index.js\""
   },
   "enabledPlugins": {
     "claude-hud@claude-hud": true,

@@ -12,7 +12,7 @@
       </div>
     </div>
     <!-- 基础信息区域 -->
-    <div id="tab-basic" class="tab-content-section">
+    <div id="tab-basic" :ref="setTabSectionRef('basic')" class="tab-content-section">
       <!-- 接车施工单卡片 -->
       <div class="main-card">
         <!-- 施工单 -->
@@ -65,7 +65,7 @@
         </div>
         <div class="vehicle-info-item">
           <span class="info-label">车辆用途</span>
-          <span class="info-value">{{ vehicleInfo.vehicleUse }}</span>
+          <span class="info-value">{{ vehicleInfo.carPropertyLabel }}</span>
         </div>
         <div class="vehicle-info-item">
           <span class="info-label">终身质保</span>
@@ -79,15 +79,17 @@
           <span class="info-label">门店所属区域</span>
           <span class="info-value">{{ vehicleInfo.storeArea }}</span>
         </div>
-        <div class="vehicle-info-item" @click="warningExpanded = !warningExpanded">
+        <div class="vehicle-info-item warning-item" @click="warningExpanded = !warningExpanded">
           <span class="info-label">预警信息</span>
-          <span class="info-value" :class="{ 'text-collapsed': !warningExpanded }">{{ vehicleInfo.warningInfo }}</span>
-          <van-icon
-            v-if="vehicleInfo.warningInfo && vehicleInfo.warningInfo.length > 20"
-            :name="warningExpanded ? 'arrow-up' : 'arrow-down'"
-            size="14"
-            color="#888888"
-          />
+          <div class="info-value-wrap">
+            <span class="info-value" :class="{ 'text-collapsed': !warningExpanded }">{{ vehicleInfo.alarmInfo }}</span>
+            <van-icon
+              v-if="vehicleInfo.alarmInfo && vehicleInfo.alarmInfo.length > 20"
+              :name="warningExpanded ? 'arrow-up' : 'arrow-down'"
+              size="16"
+              color="#888888"
+            />
+          </div>
         </div>
       </div>
 
@@ -142,7 +144,7 @@
     </div>
 
     <!-- 项目零件区域 -->
-    <div id="tab-parts" class="tab-content-section">
+    <div id="tab-parts" :ref="setTabSectionRef('parts')" class="tab-content-section">
       <!-- 维修项目卡片 -->
       <div class="repair-card">
         <div class="repair-card-header">维修项目</div>
@@ -163,8 +165,6 @@
           </div>
           <div class="repair-item-bottom">
             <span class="repair-subtotal">¥{{ item.subtotal }}</span>
-            <span class="repair-actual">实际领料 {{ item.actualQuantity }}</span>
-            <span class="repair-return">退料 {{ item.returnQuantity }}</span>
             <span class="repair-quantity">x{{ item.quantity }}</span>
           </div>
         </div>
@@ -192,14 +192,14 @@
             <span class="parts-subtotal">¥{{ item.subtotal }}</span>
             <span class="parts-actual">实际领料 {{ item.actualQuantity }}</span>
             <span class="parts-return">退料 {{ item.returnQuantity }}</span>
-            <span class="parts-quantity">x{{ item.quantity }}</span>
+            <span class="parts-quantity">x{{ item.planPickNumber }}</span>
           </div>
         </div>
       </div>
     </div>
 
     <!-- 附件信息区域 -->
-    <div id="tab-attachments" class="tab-content-section">
+    <div id="tab-attachments" :ref="setTabSectionRef('attachments')" class="tab-content-section">
       <div class="attachments-card">
         <div class="attachments-card-header">附件信息</div>
 
@@ -212,14 +212,13 @@
                 <van-icon name="cross" size="12" color="#ffffff" />
               </div>
             </div>
-            <div class="attachment-upload" @click="uploadAttachment(key)" v-if="attachmentData[key].length < 3">
+            <div class="attachment-upload" @click="uploadAttachment(key)" v-if="getAttachConfig(getAttachmentTypeLabel(key)).maxNum == null || attachmentData[key].length < getAttachConfig(getAttachmentTypeLabel(key)).maxNum">
               <van-icon name="photograph" size="24" color="#d8d8d8" />
               <span class="upload-text">上传</span>
             </div>
           </div>
         </div>
       </div>
-      <div style="height: 70vh"></div>
     </div>
 
     <!-- 底部提交按钮 -->
@@ -248,17 +247,18 @@
                 v-model="constructionSearchText"
                 type="text"
                 class="search-input"
-                placeholder="输入车牌号/VIN"
+                placeholder="输入施工单号/车牌号/VIN"
               />
               <div class="search-btn" @click="handleConstructionSearch">搜索</div>
             </div>
           </div>
-          <RefreshList
-            ref="constructionRefreshListRef"
+          <van-list
+            v-if="constructionList.length > 0"
+            v-model:loading="constructionLoading"
+            :finished="constructionFinished"
+            finished-text=""
             class="popup-refresh-list"
-            :requestData="constructionRequestData"
-            :has-no-data="constructionList.length === 0"
-            @setData="setConstructionData"
+            @load="onConstructionLoad"
           >
             <div
               v-for="item in constructionList"
@@ -295,9 +295,13 @@
                     </text>
                   </svg>
                 </div>
-                <div class="vehicle-tags" v-if="item.repairItemTypeDetailCollect">
-                  <span class="vehicle-tag">{{ item.repairItemTypeDetailCollect }}</span>
-                </div>
+                <template v-if="item.repairItemTypeDetailCollect">
+                  <span
+                    v-for="(tag, index) in item.repairItemTypeDetailCollect.split('&').filter(Boolean)"
+                    :key="index"
+                    class="vehicle-tag"
+                  >{{ tag }}</span>
+                </template>
               </div>
               <div class="construction-vehicle-info">
                 {{ item.vehModelName }} · {{ item.vehProfileVin }}
@@ -305,12 +309,12 @@
               <div class="construction-detail">
                 <div class="detail-row">
                   <span class="detail-label">送修人</span>
-                  <span class="detail-value">{{ item.customerName }}</span>
-                  <span v-if="item.customerType" class="customer-tag">{{ item.customerType }}</span>
+                  <span class="detail-value">{{ item.shuttleName }}</span>
+                  <span v-if="item.custType" class="customer-tag">{{ { '10': '预约客户', '20': '随到客户' }[item.custType] || item.custType }}</span>
                 </div>
                 <div class="detail-row">
                   <span class="detail-label">客户经理</span>
-                  <span class="detail-value">{{ item.dedicatedServiceManager }}</span>
+                  <span class="detail-value">{{ item.creatorName }}</span>
                 </div>
                 <div class="detail-row">
                   <span class="detail-label">预计交车</span>
@@ -318,7 +322,13 @@
                 </div>
               </div>
             </div>
-          </RefreshList>
+          </van-list>
+          <div v-if="constructionSearched && !constructionLoading && constructionList.length === 0" class="construction-empty-wrap">
+            <div class="construction-empty">
+              <img src="@/libs/assets/image/no-data.png" alt="无搜索结果" class="construction-empty-img" />
+              <p class="construction-empty-text">没有找到相关内容</p>
+            </div>
+          </div>
         </div>
       </template>
     </AisPopup>
@@ -352,6 +362,7 @@
             class="popup-refresh-list"
             :requestData="feedbackRequestData"
             :has-no-data="feedbackList.length === 0"
+            :show-reset-button="false"
             @setData="setFeedbackData"
           >
             <div
@@ -361,8 +372,8 @@
               @click="onFeedbackSelect(item)"
             >
               <div class="feedback-serial" v-html="highlightSearch(item.code, feedbackSearchText)"></div>
-              <div class="feedback-type" v-if="item.reportType">{{ item.reportType }}</div>
-              <div class="feedback-desc" v-if="item.customerContent">{{ item.customerContent }}</div>
+              <div class="feedback-type" v-if="item.reportType">{{ qualityReportTypeMap[item.reportType] || item.reportType }}</div>
+              <div class="feedback-desc" v-if="item.title">{{ item.title }}</div>
             </div>
           </RefreshList>
         </div>
@@ -397,16 +408,24 @@ import {
   preAuthGetConstructionList,
   preAuthGetQualityFeedbackList
 } from '@/api/authorization'
-import { uploadFileByUrl, deleteAttachmentConfig } from '@/libs/api/fileConfig'
-import { getAppImg } from '@/libs/utils/nativeFn'
+import { uploadFileByUrl, deleteAttachmentConfig, getUploadConfig } from '@/libs/api/fileConfig'
+import { batchUploadImageLimit } from '@/libs/utils/nativeFn'
+import { usePageSafeArea } from '@/utils/safeArea'
+import { getEnumValue } from '@/libs/api/common'
 
 const router = useRouter()
+usePageSafeArea({ bodyClass: 'ais-page-nav-safe-area' })
 const PRE_AUTH_ATTACHMENT_CONFIG_CODE = 'mcs_preauth'
+const uploadConfig = ref({})
+const getAttachConfig = (attachType) => {
+  const detailList = uploadConfig.value?.detailList || []
+  return detailList.find((item) => item.attachType === attachType) || {}
+}
 const attachmentTypeMap = {
   vehicle: '车辆信息',
   license: '行驶证',
   fault: '故障信息',
-  finalRight: '终审权益',
+  finalRight: '终身权益',
   firstMaintain: '首保凭证',
   maintainQuality: '保养质检',
   oldParts: '施工旧件',
@@ -415,11 +434,17 @@ const attachmentTypeMap = {
 }
 
 const activeTab = ref('basic')
-const isHeaderVisible = ref(true)
-const navBarHeight = ref(43)
 const currentBusinessId = ref('')
 const currentUploadType = ref('')
 const isUploadingAttachment = ref(false)
+const isClickScrolling = ref(false)
+const TAB_SYNC_TOLERANCE = 24
+const tabsNavRef = ref(null)
+const tabSectionRefs = {}
+const PRE_AUTH_ACTION = {
+  save: 0,
+  submit: 1
+}
 
 // Tab 配置
 const tabs = [
@@ -429,8 +454,20 @@ const tabs = [
 ]
 
 // IntersectionObserver 实例
-let headerObserver = null
 let scrollContainer = null
+let clickScrollCleanup = null
+
+const setTabSectionRef = (tabName) => (el) => {
+  if (el) {
+    tabSectionRefs[tabName] = el
+  } else {
+    delete tabSectionRefs[tabName]
+  }
+}
+
+const getTabSectionEl = (tabName) => {
+  return tabSectionRefs[tabName] || null
+}
 
 /**
  * 获取滚动容器
@@ -474,24 +511,46 @@ const scrollToPosition = (targetScrollTop, behavior = 'smooth') => {
   }
 }
 
-onMounted(async() => {
-  window.getImage = handleNativeImage
-  await nextTick()
-  // 获取 nav-bar 的真实高度
-  const navBarEl = document.querySelector('.base-container header')
-  if (navBarEl) {
-    navBarHeight.value = navBarEl.getBoundingClientRect().height
+const getElementScrollTop = (element) => {
+  const container = getScrollContainer()
+  if (container === window) {
+    return element.getBoundingClientRect().top + (window.scrollY || document.documentElement.scrollTop)
   }
-  setupHeaderObserver()
+  return element.getBoundingClientRect().top - container.getBoundingClientRect().top + container.scrollTop
+}
+
+const getTabsNavHeight = () => {
+  return tabsNavRef.value?.offsetHeight || 44
+}
+
+onMounted(async() => {
+  window.getScanResult = handleNativeImage
+  await nextTick()
   setupScrollListener()
+  getUploadConfig({ configCode: PRE_AUTH_ATTACHMENT_CONFIG_CODE }).then((res) => {
+    if (res?.code === 200 || res?.code === 0) {
+      uploadConfig.value = res.data || {}
+    }
+  })
+  getEnumValue('QualityReportTypeEnum').then((res) => {
+    if (res?.code === 200) {
+      const list = res.data || []
+      const map = {}
+      list.forEach((item) => {
+        map[item.code] = item.message
+      })
+      qualityReportTypeMap.value = map
+    }
+  })
 })
 
 onUnmounted(() => {
-  if (window.getImage === handleNativeImage) {
-    window.getImage = null
+  if (window.getScanResult === handleNativeImage) {
+    window.getScanResult = null
   }
-  if (headerObserver) {
-    headerObserver.disconnect()
+  if (clickScrollCleanup) {
+    clickScrollCleanup()
+    clickScrollCleanup = null
   }
   const container = getScrollContainer()
   if (container === window) {
@@ -512,29 +571,16 @@ const setupScrollListener = () => {
 }
 
 const handleScroll = () => {
-  const tabsNavEl = document.querySelector('.detail-tabs-nav')
-  if (!tabsNavEl) return
-
-  const currentScrollTop = getScrollTop()
-  // 当滚动到顶部时，恢复 tab 导航栏初始样式
-  if (currentScrollTop <= 0) {
-    tabsNavEl.style.position = ''
-    tabsNavEl.style.top = ''
-    tabsNavEl.style.left = ''
-    tabsNavEl.style.right = ''
-    isHeaderVisible.value = true
+  if (!isClickScrolling.value) {
+    syncTabByScroll()
   }
-
-  // 根据滚动位置同步切换 tab
-  syncTabByScroll()
 }
 
 // 根据滚动位置同步切换 tab
 const scrollSyncTimeout = null
 const syncTabByScroll = () => {
   const scrollTop = getScrollTop()
-  const tabNavHeight = document.querySelector('.detail-tabs-nav')?.offsetHeight || 50
-  const offset = navBarHeight.value + tabNavHeight + 20
+  const offset = getTabsNavHeight() + 12 + TAB_SYNC_TOLERANCE
 
   // 清除之前的定时器
   if (scrollSyncTimeout) {
@@ -544,10 +590,10 @@ const syncTabByScroll = () => {
   // 找到当前应该激活的 tab
   let targetTab = null
   for (let i = tabs.length - 1; i >= 0; i--) {
-    const tabEl = document.getElementById(`tab-${tabs[i].name}`)
+    const tabEl = getTabSectionEl(tabs[i].name)
     if (!tabEl) continue
 
-    const tabTop = tabEl.offsetTop
+    const tabTop = getElementScrollTop(tabEl)
     if (scrollTop + offset >= tabTop) {
       targetTab = tabs[i].name
       break
@@ -563,7 +609,7 @@ const syncTabByScroll = () => {
 
 // 滚动指定 tab 到可视区域
 const scrollTabIntoView = (tabName) => {
-  const tabsNavEl = document.querySelector('.detail-tabs-nav')
+  const tabsNavEl = tabsNavRef.value
   if (!tabsNavEl) return
 
   const tabIndex = tabs.findIndex((tab) => tab.name === tabName)
@@ -589,56 +635,43 @@ const scrollTabIntoView = (tabName) => {
   }
 }
 
-// 监听 header 可见性，控制 tab 导航栏是否 fixed
-const setupHeaderObserver = () => {
-  // 监听第一个内容区域的可见性
-  const firstTabEl = document.getElementById('tab-basic')
-  const tabsNavEl = document.querySelector('.detail-tabs-nav')
-  if (!firstTabEl || !tabsNavEl) return
-
-  headerObserver = new IntersectionObserver(
-    (entries) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting) {
-          // 第一个tab可见，tab导航栏在原位
-          if (!isHeaderVisible.value) {
-            tabsNavEl.style.position = ''
-            tabsNavEl.style.top = ''
-            tabsNavEl.style.left = ''
-            tabsNavEl.style.right = ''
-            isHeaderVisible.value = true
-          }
-        } else {
-          // 第一个tab不可见，tab导航栏 fixed
-          if (isHeaderVisible.value) {
-            tabsNavEl.style.position = 'fixed'
-            tabsNavEl.style.top = `${navBarHeight.value}px`
-            tabsNavEl.style.left = '0'
-            tabsNavEl.style.right = '0'
-            isHeaderVisible.value = false
-          }
-        }
-      })
-    },
-    {
-      root: getScrollContainer(),
-      threshold: 0
-    }
-  )
-
-  headerObserver.observe(firstTabEl)
-}
-
 // 切换 Tab
-const switchTab = async(tabName) => {
+const switchTab = (tabName) => {
   activeTab.value = tabName
-  const targetEl = document.getElementById(`tab-${tabName}`)
+  const targetEl = getTabSectionEl(tabName)
   if (!targetEl) return
 
-  // Tab 导航栏始终是 fixed，直接滚动到目标位置
-  const targetOffsetTop = targetEl.offsetTop
-  const tabNavHeight = 42
-  scrollToPosition(targetOffsetTop - navBarHeight.value - tabNavHeight, 'smooth')
+  const finalScrollTop = Math.max(0, getElementScrollTop(targetEl) - getTabsNavHeight() - 12)
+  const container = getScrollContainer()
+  let scrollEndTimer = null
+
+  if (clickScrollCleanup) {
+    clickScrollCleanup()
+    clickScrollCleanup = null
+  }
+
+  isClickScrolling.value = true
+
+  const onScrollEnd = () => {
+    if (scrollEndTimer) {
+      clearTimeout(scrollEndTimer)
+    }
+    scrollEndTimer = setTimeout(() => {
+      container.removeEventListener('scroll', onScrollEnd)
+      isClickScrolling.value = false
+      clickScrollCleanup = null
+    }, 150)
+  }
+
+  container.addEventListener('scroll', onScrollEnd)
+  clickScrollCleanup = () => {
+    if (scrollEndTimer) {
+      clearTimeout(scrollEndTimer)
+    }
+    container.removeEventListener('scroll', onScrollEnd)
+    isClickScrolling.value = false
+  }
+  scrollToPosition(finalScrollTop, 'smooth')
 }
 
 // 表单数据
@@ -686,7 +719,7 @@ const vehicleInfo = ref({
   lifetimeWarranty: '',
   serviceStore: '',
   storeArea: '',
-  warningInfo: ''
+  alarmInfo: ''
 })
 
 // 维修项目数据
@@ -704,29 +737,41 @@ const showSaveConfirmDialog = ref(false)
 const hasEdited = ref(false)
 const constructionSearchText = ref('')
 const constructionList = ref([])
+const constructionLoading = ref(false)
+const constructionFinished = ref(true)
+const constructionSearched = ref(false)
+const constructionPageNum = ref(1)
+const constructionPageSize = 10
 
-// 施工单列表请求配置
-const constructionRequestData = reactive({
-  data: {
-    pageNum: 1,
-    pageSize: 10,
-    appSearchKeyWord: ''
-  },
-  api: (params) => preAuthGetConstructionList(params)
-})
-
-// 设置施工单数据
-const setConstructionData = (res) => {
-  const list = res?.list || []
-  if (res?.isRefresh) {
-    constructionList.value = [...list]
-  } else {
-    constructionList.value.push(...list)
+const onConstructionLoad = async() => {
+  try {
+    const res = await preAuthGetConstructionList({
+      pageNum: constructionPageNum.value,
+      pageSize: constructionPageSize,
+      appSearchKeyWord: constructionSearchText.value.trim()
+    })
+    const records = res?.data?.records || res?.data || []
+    if (constructionPageNum.value === 1) {
+      constructionList.value = [...records]
+    } else {
+      constructionList.value.push(...records)
+    }
+    constructionFinished.value = records.length < constructionPageSize
+    constructionSearched.value = true
+    if (!constructionFinished.value) {
+      constructionPageNum.value++
+    }
+  } catch {
+    constructionFinished.value = true
+    constructionSearched.value = true
+  } finally {
+    constructionLoading.value = false
   }
 }
 
 const feedbackSearchText = ref('')
 const feedbackList = ref([])
+const qualityReportTypeMap = ref({})
 
 // 监听质量反馈搜索词变化，实时搜索
 watch(feedbackSearchText, (newVal) => {
@@ -734,6 +779,7 @@ watch(feedbackSearchText, (newVal) => {
     pageNum: 1,
     pageSize: 10,
     appSearchKeyWord: newVal,
+    serviceProxyCode: constructionNo.value,
     _t: Date.now()
   }
 })
@@ -743,7 +789,9 @@ const feedbackRequestData = reactive({
   data: {
     pageNum: 1,
     pageSize: 10,
-    appSearchKeyWord: ''
+    appSearchKeyWord: '',
+    serviceProxyCode: '',
+    orderStatus: 30
   },
   api: (params) => preAuthGetQualityFeedbackList(params)
 })
@@ -760,12 +808,16 @@ const setFeedbackData = (res) => {
 
 // 施工单搜索按钮点击
 const handleConstructionSearch = () => {
-  constructionRequestData.data = {
-    pageNum: 1,
-    pageSize: 10,
-    appSearchKeyWord: constructionSearchText.value,
-    _t: Date.now()
+  if (!constructionSearchText.value.trim()) {
+    showToast('请输入搜索关键词')
+    return
   }
+  constructionList.value = []
+  constructionSearched.value = false
+  constructionPageNum.value = 1
+  constructionFinished.value = false
+  constructionLoading.value = true
+  onConstructionLoad()
 }
 
 // 质量反馈搜索按钮点击
@@ -774,6 +826,7 @@ const handleFeedbackSearch = () => {
     pageNum: 1,
     pageSize: 10,
     appSearchKeyWord: feedbackSearchText.value,
+    serviceProxyCode: constructionNo.value,
     _t: Date.now()
   }
 }
@@ -806,10 +859,6 @@ const validatePreAuthForm = () => {
     showToast('请选择施工单')
     return false
   }
-  if (!feedbackId.value) {
-    showToast('请选择质量反馈单号')
-    return false
-  }
   if (!applyReason.value.trim()) {
     showToast('请填写申请原因')
     return false
@@ -837,6 +886,7 @@ const buildPreAuthPayload = (saveOrSubmit, attachments = buildAttachmentsPayload
   const payload = {
     serviceProxyId: constructionId.value,
     qualityOrderReportId: feedbackId.value,
+    qualityOrderReport: feedbackNo.value,
     reason: applyReason.value,
     saveOrSubmit,
     attachments
@@ -928,17 +978,28 @@ const normalizeUploadResult = (item, attachType) =>
 
 const handleNativeImage = async(rawFileUrl) => {
   const uploadType = currentUploadType.value
-  const fileData = typeof rawFileUrl === 'string'
-    ? { fileUrl: rawFileUrl }
-    : rawFileUrl
-
   currentUploadType.value = ''
 
   if (!uploadType) return
-  if (!fileData.fileUrl) {
-    showToast('未获取到图片地址')
+
+  let urlList = []
+  if (typeof rawFileUrl === 'string') {
+    if (rawFileUrl.startsWith('[')) {
+      try {
+        urlList = JSON.parse(rawFileUrl)
+      } catch {
+        urlList = [rawFileUrl]
+      }
+    } else {
+      urlList = [rawFileUrl]
+    }
+  } else if (Array.isArray(rawFileUrl)) {
+    urlList = rawFileUrl
+  } else {
     return
   }
+
+  if (!urlList.length) return
   if (!constructionId.value) {
     showToast('请先选择施工单')
     return
@@ -953,15 +1014,15 @@ const handleNativeImage = async(rawFileUrl) => {
 
   try {
     isUploadingAttachment.value = true
-
     showLoadingToast({ message: '上传中...', forbidClick: true })
 
-    // 1. 上传文件
-    const uploadRes = await uploadFileByUrl([{
-      fileUrl: fileData.fileUrl,
+    const uploadItems = urlList.map((url) => ({
+      fileUrl: url,
       configCode: PRE_AUTH_ATTACHMENT_CONFIG_CODE,
       attachType
-    }])
+    }))
+
+    const uploadRes = await uploadFileByUrl(uploadItems)
 
     if (!isSuccessResponse(uploadRes)) {
       closeToast()
@@ -969,7 +1030,6 @@ const handleNativeImage = async(rawFileUrl) => {
       return
     }
 
-    // 2. 获取上传返回的文件信息，并更新本地附件列表（提交时平铺传 attachments）
     const uploadData = uploadRes?.data
     const uploadedFiles = Array.isArray(uploadData) ? uploadData : (uploadData ? [uploadData] : [])
     if (!uploadedFiles.length) {
@@ -995,7 +1055,7 @@ const handleNativeImage = async(rawFileUrl) => {
 const handleSubmit = async() => {
   const attachments = buildAttachmentsPayload()
   await savePreAuth({
-    saveOrSubmit: true,
+    saveOrSubmit: PRE_AUTH_ACTION.submit,
     attachments,
     loadingMessage: '提交中...',
     successMessage: '提交成功',
@@ -1011,67 +1071,55 @@ const handleSubmit = async() => {
 const openConstructionPicker = () => {
   constructionSearchText.value = ''
   constructionList.value = []
+  constructionSearched.value = false
   showConstructionPicker.value = true
-  // 触发重新查询 - 使用随机数强制刷新
-  nextTick(() => {
-    const timestamp = Date.now()
-    constructionRequestData.data = {
-      pageNum: 1,
-      pageSize: 10,
-      appSearchKeyWord: '',
-      _t: timestamp
-    }
-  })
 }
 
 const openFeedbackPicker = () => {
+  if (!constructionNo.value) {
+    showToast('请先选择施工单')
+    return
+  }
+  // 先更新请求参数，确保 RefreshList 挂载后首次请求就带上 serviceProxyCode
+  feedbackRequestData.data = {
+    pageNum: 1,
+    pageSize: 10,
+    appSearchKeyWord: '',
+    serviceProxyCode: constructionNo.value,
+    _t: Date.now()
+  }
   feedbackSearchText.value = ''
   feedbackList.value = []
   showFeedbackPicker.value = true
-  // 触发重新查询 - 使用随机数强制刷新
-  nextTick(() => {
-    const timestamp = Date.now()
-    feedbackRequestData.data = {
-      pageNum: 1,
-      pageSize: 10,
-      appSearchKeyWord: '',
-      _t: timestamp
-    }
-  })
 }
 
 const onAuthTypeChange = (type) => {
   authType.value = type
-  showVehicleInfo.value = true
   hasEdited.value = true
 }
 
 const onConstructionSelect = async(item) => {
-  constructionNo.value = item.code
-  constructionId.value = item.id || item.serviceProxyId
-  showConstructionPicker.value = false
-  hasEdited.value = true
-  showVehicleInfo.value = true
-
-  // 直接从选中项展示车辆信息
-  vehicleInfo.value = {
-    vin: item.vehProfileVin || '--',
-    warrantyTime: '--',
-    mileage: item.mileage || '--',
-    vehicleUse: item.carProperty || '--',
-    lifetimeWarranty: '--',
-    serviceStore: item.dealerName || '--',
-    storeArea: item.orgName || item.dealerUnitName || '--',
-    warningInfo: item.alarmInfo || '--'
-  }
-
   // 调用API获取预填充详情
   try {
     showLoadingToast({ message: '加载中...', forbidClick: true })
     const res = await preAuthGetPreAuthInfoDetail(item.id)
     closeToast()
 
+    if (res?.code !== 0 && res?.code !== 200) {
+      showToast(res?.msg || res?.message || '获取信息失败')
+      showVehicleInfo.value = false
+      constructionId.value = ''
+      constructionNo.value = ''
+      return
+    }
+
+    constructionNo.value = item.code
+    constructionId.value = item.id || item.serviceProxyId
+    showConstructionPicker.value = false
+    hasEdited.value = true
+
     if (res?.data) {
+      showVehicleInfo.value = true
       const data = res.data
       // 更新车辆信息
       vehicleInfo.value = {
@@ -1081,11 +1129,11 @@ const onConstructionSelect = async(item) => {
             ? `${data.guaranteeStartDate} 至 ${data.warrantyEndTime}`
             : '',
         mileage: data.mileage || item.mileage || '',
-        vehicleUse: data.carProperty || item.carProperty || '',
+        carPropertyLabel: data.carPropertyLabel || item.carPropertyLabel || '',
         lifetimeWarranty: data.isLifetime === 1 ? '是' : '否',
         serviceStore: data.dealerName || item.dealerName || '',
         storeArea: data.orgName || data.dealerUnitName || item.orgName || item.dealerUnitName || '',
-        warningInfo: data.alarmInfo || item.alarmInfo || '无'
+        alarmInfo: data.alarmInfo || item.alarmInfo || '无'
       }
       // 预授权类型: 1=技术预授权, 2=保修预授权
       authType.value = data.preAuthType === 1 ? 'tech' : 'warranty'
@@ -1114,24 +1162,21 @@ const onConstructionSelect = async(item) => {
         discount: item.discountAmount || '0',
         subtotal: item.totalAmount || '0',
         quantity: item.quantity || '0',
-        actualQuantity: item.actualQuantity || '0',
-        returnQuantity: item.returnQuantity || '0'
+        actualQuantity: item.actualPickNumber || '0',
+        returnQuantity: item.refundedNumber || '0'
       }))
-
-      showVehicleInfo.value = true
     }
   } catch (error) {
     closeToast()
-    console.error('获取预填充信息失败:', error)
-    showToast('获取信息失败')
-    showVehicleInfo.value = true
+    showToast(error.msg)
+    showVehicleInfo.value = false
   }
 }
 
 const onFeedbackSelect = (item) => {
   feedbackNo.value = item.code
-  feedbackId.value = item.id || item.qualityOrderReportId || ''
-  feedbackDesc.value = item.customerContent || ''
+  feedbackId.value = item.id || ''
+  feedbackDesc.value = item.title || ''
   feedbackProcess.value = item.diagnosisContent || ''
   showFeedbackPicker.value = false
   hasEdited.value = true
@@ -1139,12 +1184,17 @@ const onFeedbackSelect = (item) => {
 
 // 附件相关方法
 const uploadAttachment = (type) => {
-  if ((attachmentData[type] || []).length >= 3) {
-    showToast('最多上传3个附件')
+  const attachType = getAttachmentTypeLabel(type)
+  const config = getAttachConfig(attachType)
+  const maxNum = config.maxNum
+  if (maxNum != null && (attachmentData[type] || []).length >= maxNum) {
+    showToast(`最多上传${maxNum}个附件`)
     return
   }
   currentUploadType.value = type
-  getAppImg()
+  const maxSize = config.maxSize || 10
+  const hasUploadNumber = (attachmentData[type] || []).length + 1
+  batchUploadImageLimit(maxSize, maxNum, hasUploadNumber)
   hasEdited.value = true
 }
 
@@ -1190,7 +1240,7 @@ const onSaveConfirm = async() => {
   const attachments = buildAttachmentsPayload()
 
   await savePreAuth({
-    saveOrSubmit: false,
+    saveOrSubmit: PRE_AUTH_ACTION.save,
     attachments,
     loadingMessage: '保存中...',
     successMessage: '保存成功',
@@ -1221,29 +1271,30 @@ defineExpose({
 
 <style lang="scss" scoped>
 .create-pre-auth {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
   background: #f5f5f5;
-  min-height: calc(100vh - 46px);
-  padding-top: 56px;
   padding-left: 12px;
   padding-right: 12px;
-  padding-bottom: 100px;
+  padding-bottom: calc(75px + env(safe-area-inset-bottom));
 }
 
-// Tab 导航 - 固定在顶部
+// Tab 导航 - 在页面滚动容器内吸顶
 .detail-tabs-nav {
   background: #fff;
   display: flex;
   justify-content: space-around;
   border-bottom: 1px solid #eee;
-  position: fixed;
-  top: 43px;
-  left: 0;
-  right: 0;
+  position: sticky;
+  top: 0;
   z-index: 100;
   overflow-x: auto;
   white-space: nowrap;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
+  margin: 0 -12px 12px;
+  padding: 0 12px;
   &::-webkit-scrollbar {
     display: none;
   }
@@ -1482,10 +1533,14 @@ defineExpose({
       align-items: center;
       gap: 12px;
       color: #545454;
-      font-size: 12px;
+      font-size: 14px;
       font-weight: 400;
       font-family: 'PingFang SC';
-
+      .repair-subtotal {
+        font-family: 'PingFang SC';
+        font-size: 14px;
+        color: #545454;
+      }
       .repair-quantity {
         margin-left: auto;
         font-family: 'PingFang SC';
@@ -1510,7 +1565,7 @@ defineExpose({
   }
 
   .parts-item {
-    padding: 15px 12px;
+    padding: 12px;
     border-bottom: 0.5px solid #e6e6e5;
 
     &:last-child {
@@ -1521,14 +1576,12 @@ defineExpose({
       display: flex;
       justify-content: space-between;
       align-items: flex-start;
-      margin-bottom: 4px;
 
       .parts-item-left {
         .parts-item-top {
           display: flex;
           align-items: center;
-          gap: 4px;
-          margin-bottom: 2px;
+          gap: 8px;
 
           .parts-name {
             font-family: 'PingFang SC';
@@ -1540,9 +1593,9 @@ defineExpose({
           .parts-tag {
             font-family: 'PingFang SC';
             font-size: 12px;
-            color: #191a1b;
-            background: rgba(25, 26, 27, 0.06);
-            padding: 1px 4px;
+            color: #009100;
+            background: rgba(0, 145, 0, 0.1);
+            padding: 2px 6px;
             border-radius: 4px;
           }
         }
@@ -1557,7 +1610,7 @@ defineExpose({
         .parts-type {
           font-family: 'PingFang SC';
           font-size: 12px;
-          color: #545454;
+          color: #888888;
         }
       }
 
@@ -1584,11 +1637,10 @@ defineExpose({
       display: flex;
       align-items: center;
       gap: 8px;
-      padding-top: 4px;
 
       .parts-subtotal {
         font-family: 'PingFang SC';
-        font-size: 12px;
+        font-size: 14px;
         color: #545454;
       }
 
@@ -1708,6 +1760,10 @@ defineExpose({
       padding-bottom: 8px;
     }
 
+    &.warning-item {
+      align-items: flex-start;
+    }
+
     .info-label {
       font-family: 'PingFang SC';
       font-size: 14px;
@@ -1715,11 +1771,30 @@ defineExpose({
       flex-shrink: 0;
     }
 
+    .info-value-wrap {
+      display: flex;
+      align-items: flex-start;
+      justify-content: flex-end;
+      gap: 2px;
+      flex: 1;
+      margin-left: 23px;
+      min-width: 0;
+      overflow: hidden;
+    }
+
     .info-value {
       font-family: 'PingFang SC';
       font-size: 14px;
       color: #191a1b;
-      flex-shrink: 0;
+      text-align: right;
+      flex: 1;
+      min-width: 0;
+
+      &.text-collapsed {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
 
       &.warning-value {
         color: #ee0a24;
@@ -1830,6 +1905,7 @@ defineExpose({
   background: #f4f4f4;
   display: flex;
   flex-direction: column;
+  position: relative;
 
   .popup-header {
     padding-bottom: 12px;
@@ -1967,19 +2043,22 @@ defineExpose({
           }
         }
 
-        .vehicle-tags {
-          display: flex;
-          gap: 4px;
-
-          .vehicle-tag {
+        .vehicle-tag {
             font-family: 'PingFang SC';
             font-size: 12px;
+            font-style: normal;
             color: #191a1b;
             border: 0.5px solid #191a1b;
             border-radius: 4px;
             padding: 1px 4px;
+            height: 20px;
+            line-height: 17px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            white-space: nowrap;
           }
-        }
       }
 
       .construction-vehicle-info {
@@ -2025,6 +2104,33 @@ defineExpose({
       }
     }
   }
+
+  .construction-empty-wrap {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding-top: 55px;
+
+    .construction-empty {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+
+      .construction-empty-img {
+        width: 230px;
+        height: 142px;
+      }
+
+      .construction-empty-text {
+        font-family: 'PingFang SC';
+        font-size: 14px;
+        font-weight: 400;
+        color: #6C6E6C;
+        margin-top: 16px;
+      }
+    }
+  }
 }
 
 // 质量反馈报告卡片
@@ -2033,6 +2139,7 @@ defineExpose({
   border-radius: 6px;
   padding: 12px;
   margin-bottom: 12px;
+  margin-top: 12px;
 
   .section-title {
     font-family: 'PingFang SC';

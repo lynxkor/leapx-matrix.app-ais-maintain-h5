@@ -1,9 +1,10 @@
 import { defineStore } from 'pinia'
 import { getLoginInfo } from '@/libs/api/common'
+import { getStoredToken, normalizeBearerToken } from '@/utils/authToken'
 
 export const useUserStore = defineStore('user', {
   state: () => ({
-    token: localStorage.getItem('lxpToken') || null,
+    token: normalizeBearerToken(getStoredToken()) || null,
     userInfo: null,
     userInfoLoading: false
   }),
@@ -18,16 +19,24 @@ export const useUserStore = defineStore('user', {
   actions: {
     // 设置token
     setToken(token) {
-      this.token = token
-      if (token) {
-        localStorage.setItem('lxpToken', token)
+      const normalizedToken = normalizeBearerToken(token)
+      this.token = normalizedToken || null
+      if (normalizedToken) {
+        localStorage.setItem('lxpToken', normalizedToken)
       } else {
         localStorage.removeItem('lxpToken')
       }
     },
 
+    syncTokenFromStorage() {
+      const token = normalizeBearerToken(getStoredToken())
+      this.token = token || null
+      return this.token
+    },
+
     // 获取用户登录信息
     async fetchUserInfo() {
+      this.syncTokenFromStorage()
       // 如果没有token，不请求
       if (!this.token) {
         return null
@@ -59,6 +68,7 @@ export const useUserStore = defineStore('user', {
 
     // 强制刷新用户信息（忽略缓存）
     async refreshUserInfo() {
+      this.syncTokenFromStorage()
       if (!this.token) {
         return null
       }

@@ -15,7 +15,7 @@
     </div>
 
     <!-- 维修项目列表 -->
-    <div class="item-list-wrapper" v-if="expandState !== 'collapsed'">
+    <div ref="listWrapperRef" class="item-list-wrapper" v-if="expandState !== 'collapsed'" @touchstart="onTouchStart" @touchmove="onWrapperTouchMove">
       <div class="item-list">
         <div v-for="(item, index) in displayItems" :key="index" class="repair-item-card">
           <div class="item-content">
@@ -72,11 +72,11 @@
         </div>
       </div>
 
-      <!-- 查看全部按钮：partial状态且有超过2条时显示 -->
+      <!-- 查看全部按钮：partial状态且超过10条时显示 -->
       <div
-        v-if="expandState === 'partial' && repairItems.length > 2"
+        v-if="expandState === 'partial' && sortedItems.length > VisibleItemLength"
         class="view-all"
-        @click="expandState = 'full'"
+        @click="emit('viewAll')"
       >
         <span class="view-all-text">查看全部</span>
         <van-icon name="arrow-down" size="12" />
@@ -86,11 +86,13 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { showToast } from 'vant'
 import DispatchWorkPopup from './DispatchWorkPopup.vue'
 import { WorkRecordStatusEnum } from '../constant'
-import { executeSingleItemOperation } from '../utils'
+import { executeSingleItemOperation, filterByTag } from '../utils'
+
+const VisibleItemLength = 10
 
 const props = defineProps({
   repairItems: {
@@ -108,22 +110,79 @@ const props = defineProps({
   hasFault: {
     type: Boolean,
     default: false
+  },
+  activeTab: {
+    type: String,
+    default: 'dispatch'
   }
 })
 
-const emit = defineEmits(['refresh'])
+const emit = defineEmits(['refresh', 'viewAll'])
 
-// 三态折叠: collapsed(0条) / partial(2条) / full(全部)
-const expandState = ref('collapsed')
+// 折叠状态: collapsed(折叠) / partial(展示前10条)
+const expandState = ref('partial')
+const listWrapperRef = ref(null)
+let touchStartY = 0
+
+const onTouchStart = (e) => {
+  touchStartY = e.touches[0].clientY
+}
+
+// 阻止内层滚动事件冒泡到 van-pull-refresh，但在边界位置放行以允许下拉刷新
+const onWrapperTouchMove = (e) => {
+  const el = listWrapperRef.value
+  if (!el) return
+  const { scrollTop, scrollHeight, clientHeight } = el
+  if (scrollHeight <= clientHeight) return
+
+  const direction = e.touches[0].clientY - touchStartY
+  // 下拉到顶部 → 放行（允许 pull-to-refresh）
+  if (direction > 0 && scrollTop <= 0) return
+  // 上拉到底部 → 放行（允许外层滚动继续）
+  if (direction < 0 && scrollTop >= scrollHeight - clientHeight - 1) return
+
+  e.stopPropagation()
+}
 
 // 派工弹窗
 const showDispatchPopup = ref(false)
 const currentDispatchItem = ref(null)
 
+// 根据 tab 筛选+排序维修项目
+const sortedItems = computed(() => {
+  const items = props.repairItems
+  if (!items.length) return []
+  switch (props.activeTab) {
+    case 'dispatch':
+      return items.filter(item => filterByTag(item, 0) || filterByTag(item, 1))
+    case 'working': {
+      const priority = [0, 1, 2, 3]
+      const prioritized = []
+      const rest = []
+      for (const item of items) {
+        const idx = priority.findIndex(tag => filterByTag(item, tag))
+        if (idx !== -1) prioritized.push({ item, priority: idx })
+        else rest.push(item)
+      }
+      prioritized.sort((a, b) => a.priority - b.priority)
+      return [...prioritized.map(p => p.item), ...rest]
+    }
+    case 'inspection':
+      return items
+    default:
+      return items
+  }
+})
+
+// 切换 tab 时重置折叠状态
+watch(() => props.activeTab, (tab) => {
+  expandState.value = tab === 'inspection' ? 'collapsed' : 'partial'
+}, { immediate: true })
+
 const displayItems = computed(() => {
   if (expandState.value === 'collapsed') return []
-  if (expandState.value === 'partial') return props.repairItems.slice(0, 2)
-  return props.repairItems
+  if (expandState.value === 'partial') return sortedItems.value.slice(0, VisibleItemLength)
+  return sortedItems.value
 })
 
 const toggleExpand = () => {
@@ -160,7 +219,6 @@ const handleDispatchSubmit = async() => {
 .repair-item-list {
   width: 100%;
   border-top: 0.5px solid var(--leap-color-default-light-4);
-  border-bottom: 0.5px solid var(--leap-color-default-light-4);
   padding: 10px 0;
 
   .collapse-header {
@@ -193,6 +251,8 @@ const handleDispatchSubmit = async() => {
 
   .item-list-wrapper {
     margin-top: 8px;
+    max-height: 360px;
+    overflow: auto;
 
     .item-list {
       display: flex;

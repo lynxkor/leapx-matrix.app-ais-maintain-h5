@@ -44,7 +44,10 @@
 
         <template v-else>
         <!-- 客户签字模块：按签字规则展示 -->
-        <div v-if="showSignSection" class="sign-section" @click="handleSignClick">
+
+        <!-- 结算信息卡片 -->
+        <div class="settle-info-card">
+          <div v-if="showSignSection" class="sign-section" @click="handleSignClick">
           <div class="sign-header">
             <span class="sign-title">客户签字</span>
             <div class="sign-status">
@@ -52,7 +55,7 @@
               <svg class="chevron-icon" width="16" height="16" viewBox="0 0 16 16" fill="none">
                 <path
                   d="M6 4L10 8L6 12"
-                  :stroke="signStatusClass === 'status-green' ? '#009100' : '#888888'"
+                  :stroke="signStatusClass === 'status-red' ? '#B91919' : '#888888'"
                   stroke-width="1.5"
                   stroke-linecap="round"
                   stroke-linejoin="round"
@@ -62,9 +65,6 @@
           </div>
           <div class="sign-desc">{{ signDescription }}</div>
         </div>
-
-        <!-- 结算信息卡片 -->
-        <div class="settle-info-card">
           <div class="info-title">结算信息</div>
           <div class="info-rows">
             <div class="info-row">
@@ -96,9 +96,9 @@
         </div>
 
         <!-- 收款记录列表 -->
-        <div v-if="groupedInvoiceRecords.length > 0" class="payment-records-section">
+        <div v-if="invoiceRecords.length > 0" class="payment-records-section">
           <div class="section-title">收款记录</div>
-          <div v-for="(record, index) in groupedInvoiceRecords" :key="index" class="payment-record-item">
+          <div v-for="(record, index) in invoiceRecords" :key="index" class="payment-record-item">
             <div class="record-left">
               <div class="record-method">{{ getPayTypeText(record.payType) }}</div>
             </div>
@@ -173,7 +173,7 @@
     </template>
 
     <!-- 添加收款弹窗 -->
-    <AisPopup v-model:show="showAddPayment" title="创建收款记录" position="bottom" round>
+    <AisPopup v-model:show="showAddPayment" title="创建收款记录" position="bottom" round :popupStyle="{ height: '662px' }">
       <template #content>
         <div class="payment-form">
           <div class="payment-card">
@@ -198,8 +198,10 @@
               <input
                 v-model="paymentForm.amount"
                 class="payment-amount-input"
-                type="number"
+                type="text"
+                inputmode="decimal"
                 placeholder="请输入支付金额"
+                @input="onAmountInput"
               />
             </div>
           </div>
@@ -241,7 +243,7 @@
       :popup-style="{ height: '360px' }"
     >
       <template #content>
-        <div class="sign-hint-text">此操作将生成待签字结算单且需要用户签字</div>
+        <div v-if="selectedChannel !== 'paper'" class="sign-hint-text">此操作将生成待签字结算单且需要用户签字</div>
         <div class="channel-list">
           <div
             class="channel-item"
@@ -306,7 +308,7 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { showToast } from 'vant'
+import { showToast, showImagePreview } from 'vant'
 import { useRoute } from 'vue-router'
 import AisPopup from '@/libs/components/AisPopup.vue'
 import {
@@ -317,8 +319,11 @@ import {
   addReceiptRecord,
   receiptCompletion
 } from '@/api/settlementStatement'
+import { getFileList } from '@/libs/api/fileConfig'
+import { usePageSafeArea } from '@/utils/safeArea'
 
 const route = useRoute()
+usePageSafeArea({ bodyClass: 'ais-page-nav-safe-area' })
 
 // 加载状态
 const isLoading = ref(true)
@@ -346,22 +351,6 @@ const remainingAmount = computed(() => {
   return Math.max(Number(detailData.value.remainAmount) || 0, 0)
 })
 
-// 收款记录按支付方式类型分组合并
-const groupedInvoiceRecords = computed(() => {
-  const grouped = {}
-  invoiceRecords.value.forEach((record) => {
-    const payType = record.payType
-    if (!grouped[payType]) {
-      grouped[payType] = {
-        payType,
-        payAmount: 0
-      }
-    }
-    grouped[payType].payAmount += Number(record.payAmount) || 0
-  })
-  return Object.values(grouped)
-})
-
 // 从路由获取来源状态：pending-待交车，completed-已交车
 const sourceStatus = ref('pending')
 
@@ -376,7 +365,7 @@ const tabs = ref([])
 const activeTab = ref(0)
 const showSignChannel = ref(false)
 const selectedChannel = ref('paper')
-const signStatus = ref('not_signed')
+const signStatus = ref(null)
 const showPendingTip = ref(false)
 
 const isSuccessResponse = (res) => res?.code === 200 || res?.code === 0 || res?.success === true
@@ -409,31 +398,6 @@ const getSignStatus = (statement) => {
   }
 
   return 'not_signed'
-}
-
-const getStatementStatusText = (statement = {}) => {
-  return statement?.statementStatusLabel || statement?.statementStatusDesc || ''
-}
-
-const isStatementSubmitted = (statement = {}) => {
-  const statusText = getStatementStatusText(statement)
-
-  if (statusText.includes('待提交') || statusText.includes('未提交')) {
-    return false
-  }
-
-  if (
-    statement?.submitTime ||
-    statement?.submitOn ||
-    statement?.submittedOn ||
-    statement?.signGeneratedOn ||
-    statement?.signCompletedOn ||
-    statement?.receiveTime
-  ) {
-    return true
-  }
-
-  return statusText.includes('已提交') || statusText.includes('待签字') || statusText.includes('已签字')
 }
 
 const buildTabLabels = (list) => list.map((_, index) => `结算单${index + 1}`)
@@ -543,20 +507,14 @@ const pendingSettlementCount = computed(() => {
   }
   return uncheckedCount.value
 })
-const allSettlementsSubmitted = computed(() => {
-  return statementList.value.length > 0 && pendingSettlementCount.value === 0
-})
-const isPaperSubmittedSigned = computed(() => {
-  return Number(detailData.value.signChannel) === 40 && isStatementSubmitted(detailData.value)
-})
-const currentStatementSigned = computed(() => {
-  return signStatus.value === 'signed' || isPaperSubmittedSigned.value
-})
+// signStatus: null-不需要签字, 10-待签字, 20-已签字
 const showSignSection = computed(() => {
-  if (currentStatementSigned.value) {
-    return true
+  const backendSignStatus = Number(detailData.value.signStatus)
+  // null 或 undefined → 不显示签字模块
+  if (backendSignStatus !== 10 && backendSignStatus !== 20) {
+    return false
   }
-  return isCompleted.value && allSettlementsSubmitted.value
+  return true
 })
 const isPcPaymentCompleted = computed(() => {
   return Boolean(detailData.value.receiveTime) || statementStatusText.value.includes('已收款')
@@ -721,24 +679,43 @@ const selectPaymentMethod = (item) => {
   paymentForm.value.paymentMethodText = item.text
 }
 
+const onAmountInput = () => {
+  let val = paymentForm.value.amount
+  // 只允许数字和小数点
+  val = val.replace(/[^\d.]/g, '')
+  // 小数点只能出现一次
+  val = val.replace(/\.{2,}/g, '.')
+  val = val.replace(/^(\d*\.)(.*)$/, (_, prefix, rest) => prefix + rest.replace(/\./g, ''))
+  // 限制两位小数
+  val = val.replace(/^(\d*\.\d{2}).*$/, '$1')
+  // 不能以多个0开头（除非是0.x）
+  val = val.replace(/^0+(\d)/, '0')
+  paymentForm.value.amount = val
+}
+
 // 根据签字规则显示不同文案和颜色
+// signStatus: 10-待签字, 20-已签字
 const signActionText = computed(() => {
-  if (currentStatementSigned.value) {
+  const backendSignStatus = Number(detailData.value.signStatus)
+  if (backendSignStatus === 20) {
     return '查看客户签字'
   }
-  return '请客户签字'
+  return '邀请客户签字'
 })
 
 const signDescription = computed(() => {
-  if (currentStatementSigned.value) {
+  const backendSignStatus = Number(detailData.value.signStatus)
+  if (backendSignStatus === 20) {
     return '客户已完成签字确认'
   }
   return '为保障双方合理权益，请完成客户签字确认'
 })
 
 const signStatusClass = computed(() => {
-  if (!currentStatementSigned.value) {
-    return 'status-green'
+  const backendSignStatus = Number(detailData.value.signStatus)
+  // 10-待签字显示红色(#B91919)，20-已签字显示灰色(#888888)
+  if (backendSignStatus === 10) {
+    return 'status-red'
   }
   return 'status-gray'
 })
@@ -749,18 +726,43 @@ const switchTab = (index) => {
 }
 
 // 签字模块点击
-const handleSignClick = () => {
+const handleSignClick = async() => {
   if (!showSignSection.value) {
     return
   }
 
-  if (!currentStatementSigned.value) {
-    // c: 所有结算单都已提交且未签字，显示签字渠道选择弹窗
-    showSignChannel.value = true
-  } else {
-    // b, d: 已签字或纸质单据已提交，跳转到外部施工单页面
-    const targetUrl = `https://staticres-sitb.leapmotor.com/leapx/biling/ais/settlement?serviceProxyId=${serviceProxyId.value}`
+  const backendSignStatus = Number(detailData.value.signStatus)
+
+  // signStatus=10: 待签字，直接跳转外部页面（同APP/短信/零小跑逻辑）
+  if (backendSignStatus === 10) {
+    const targetUrl = `https://staticres-sitb.leapmotor.com/leapx/biling/aisInner/settlement?serviceProxyId=${serviceProxyId.value}&signChannel=3`
     window.location.href = targetUrl
+    return
+  }
+
+  // signStatus=20: 已签字，调用接口获取签字图片并展示
+  if (backendSignStatus === 20) {
+    const currentStatementId = detailData.value.id || statementId.value
+    if (!currentStatementId) {
+      showToast('缺少结算单ID')
+      return
+    }
+    try {
+      const res = await getFileList({ businessId: currentStatementId, attachType: '制单签字' })
+      if (res.code === 200 && res.data && res.data.length > 0) {
+        const images = res.data.map(item => item.fileUrl || item.authFileUrl || item.url)
+        showImagePreview({
+          images,
+          startPosition: 0,
+          showIndex: images.length > 1,
+          className: 'sign-image-preview'
+        })
+      } else {
+        showToast('暂无签字图片')
+      }
+    } catch {
+      showToast('获取签字图片失败')
+    }
   }
 }
 
@@ -813,7 +815,7 @@ const handleSignSuccess = async() => {
 
       // APP/短信/零小跑：接口成功后跳转到外部页面
       if (selectedChannel.value === 'app') {
-        const targetUrl = `https://staticres-sitb.leapmotor.com/leapx/biling/ais/settlement?serviceProxyId=${serviceProxyId.value}&signChannel=3`
+        const targetUrl = `https://staticres-sitb.leapmotor.com/leapx/biling/aisInner/settlement?serviceProxyId=${serviceProxyId.value}&signChannel=3`
         window.location.href = targetUrl
         return
       }
@@ -836,7 +838,7 @@ const handleSignSuccess = async() => {
 
 const handleAddPayment = () => {
   paymentForm.value = {
-    amount: '',
+    amount: remainingAmount.value ? remainingAmount.value.toFixed(2) : '',
     paymentMethod: '',
     paymentMethodText: ''
   }
@@ -935,6 +937,9 @@ const handlePaymentSubmit = async() => {
     return
   }
 
+  // 补全两位小数
+  paymentForm.value.amount = parseFloat(paymentForm.value.amount).toFixed(2)
+
   // 校验支付方式
   if (!paymentForm.value.paymentMethod) {
     showToast('请选择支付方式')
@@ -976,7 +981,9 @@ const handlePaymentSubmit = async() => {
 
 <style lang="scss" scoped>
 .after-sales-settlement-list {
-  min-height: 100vh;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
   background-color: #f5f5f5;
   padding-bottom: 88px;
   overflow-y: auto;
@@ -1009,10 +1016,10 @@ const handlePaymentSubmit = async() => {
 
   .sticky-header {
     position: fixed;
-    top: 44px;
+    top: var(--nav-bar-total-height, 46px);
     left: 0;
     right: 0;
-    z-index: 5001;
+    z-index: 2000;
     background: #fff;
   }
 
@@ -1112,7 +1119,7 @@ const handlePaymentSubmit = async() => {
     border-radius: 6px;
     padding: 12px;
     margin-bottom: 12px;
-    margin-top: 12px;
+    // margin-top: 12px;
 
     .info-title {
       font-family: 'PingFang SC';
@@ -1183,8 +1190,11 @@ const handlePaymentSubmit = async() => {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
-    padding: 12px 0;
-    border-bottom: 0.5px solid #e6e6e5;
+    margin-top: 12px;
+
+    &:first-of-type {
+      margin-top: 0;
+    }
 
     &.special {
       .repair-left {
@@ -1244,11 +1254,12 @@ const handlePaymentSubmit = async() => {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 8px 0 12px;
     border-bottom: 0.5px solid #e6e6e5;
+    padding-bottom: 10px;
 
     &:last-child {
       border-bottom: none;
+      padding-bottom: 0;
     }
 
     .original-price {
@@ -1268,8 +1279,11 @@ const handlePaymentSubmit = async() => {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
-    padding: 12px 0;
-    border-bottom: 0.5px solid #e6e6e5;
+    margin-top: 14px;
+
+    &:first-of-type {
+      margin-top: 0;
+    }
 
     &.special {
       .part-left {
@@ -1364,11 +1378,12 @@ const handlePaymentSubmit = async() => {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 8px 0 12px;
+    padding-bottom: 10px;
     border-bottom: 0.5px solid #e6e6e5;
 
     &:last-child {
       border-bottom: none;
+      padding-bottom: 0;
     }
 
     .original-price {
@@ -1411,7 +1426,7 @@ const handlePaymentSubmit = async() => {
         align-items: center;
         gap: 4px;
 
-        .status-green {
+        .status-red {
           font-family: 'PingFang SC';
           font-size: 14px;
           color: #009100;
@@ -1448,7 +1463,7 @@ const handlePaymentSubmit = async() => {
       font-size: 14px;
       font-weight: 500;
       color: #191a1b;
-      margin-bottom: 12px;
+      // margin-bottom: 12px;
     }
 
     .payment-record-item {
@@ -1866,5 +1881,11 @@ const handlePaymentSubmit = async() => {
     justify-content: center;
     cursor: pointer;
   }
+}
+</style>
+
+<style lang="scss">
+.sign-image-preview .van-image-preview__image img {
+  background: #fff;
 }
 </style>

@@ -29,6 +29,7 @@
       ref="contentRef"
       show-header
       :service-proxy-id="serviceProxyId"
+      :current-fault="currentFault"
       @close="handleClose"
       @confirm="onConfirm"
     />
@@ -39,6 +40,7 @@
     <RepairItemContent
       ref="contentRef"
       :service-proxy-id="serviceProxyId"
+      :current-fault="currentFault"
       @close="handleClose"
       @confirm="onConfirm"
     />
@@ -59,6 +61,10 @@ const props = defineProps({
     type: String,
     default: ''
   },
+  currentFault: {
+    type: [String, Number],
+    default: ''
+  },
   mode: {
     type: String,
     default: 'page', // 'popup' | 'page'
@@ -71,6 +77,7 @@ const emit = defineEmits(['update:visible', 'confirm'])
 const route = useRoute()
 const isPageMode = computed(() => props.mode === 'page')
 const serviceProxyId = computed(() => props.serviceProxyId || route.query.serviceProxyId || '')
+const currentFault = computed(() => route.query.currentFault || props.currentFault)
 
 const innerVisible = computed({
   get: () => props.visible,
@@ -102,10 +109,11 @@ watch(() => props.visible, async(newVal) => {
   immediate: true
 })
 
-// 页面模式：挂载时自动加载
-onMounted(() => {
+// 页面模式：挂载时自动加载并保存初始快照
+onMounted(async() => {
   if (isPageMode.value) {
-    contentRef.value?.loadInitialData()
+    await contentRef.value?.loadInitialData()
+    contentRef.value?.saveItemsSnapshot()
   }
 })
 </script>
