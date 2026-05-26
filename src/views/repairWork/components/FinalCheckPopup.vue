@@ -280,14 +280,14 @@ const handleBatteryUnitClear = () => {
 const handlePartUnitSelect = (option, part) => {
   part.targetUnitId = option.value
   part.targetUnitName = option.label
-  part.targetUnitCode = option.buinessLicense
+  part.buinessLicense = option.buinessLicense
 }
 
 // 清除零件去向单位
 const handlePartUnitClear = (part) => {
   part.targetUnitId = ''
   part.targetUnitName = ''
-  part.targetUnitCode = ''
+  part.buinessLicense = ''
   part.batteryUnitId = ''
   part.batteryUnitName = ''
 }
