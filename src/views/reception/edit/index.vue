@@ -639,6 +639,12 @@
       </template>
       <template v-else-if="activeTab === 'signature'">
         <span
+          v-if="detail.orderStatus !== 180 && detail.orderStatus !== 210"
+          class="save-btn"
+          @click="onSaveDeliveryTime"
+          >保存</span
+        >
+        <span
           v-if="!isSettled && detail.orderStatus == 110 && ((Number(detail.signStatus) !== 10 && Number(detail.signStatus) !== 20) || !detail.signStatus)"
           :class="['complete-btn', { disabled: isConfirmAndSignDisabled }]"
           @click="onConfirmAndSignClick"
@@ -1650,6 +1656,11 @@ const onHasFaultChange = (value) => {
 
   // 如果选择"否"，弹出确认框
   if (Number(value) === 0) {
+    // confirmFault=1时，直接切换，不弹窗，不清空故障模块和客户故障描述
+    if (Number(detail.confirmFault) === 1) {
+      detail.currentFault = '0'
+      return
+    }
     // 维修类型包含一般维修或三电维修时，不允许改为"否"
     // const typeCollect = detail.repairItemTypeDetailCollect || ''
     // if (typeCollect.includes('一般维修') || typeCollect.includes('三电维修')) {
@@ -3475,6 +3486,29 @@ const onOpenDeliveryTimePicker = () => {
     selectedDeliveryTime.value = signatureData.expectFinishAt.split(' ')[1] || ''
   }
   showDeliveryTimePicker.value = true
+}
+
+// 保存预计交车时间
+const onSaveDeliveryTime = () => {
+  if (!signatureData.expectFinishAt) {
+    showToast('请选择预计交车时间')
+    return
+  }
+  savingLoading.value = true
+  spConfirmAndSign({
+    serviceProxyId: detail.id,
+    expectFinishAt: signatureData.expectFinishAt
+  }).then((res) => {
+    savingLoading.value = false
+    if (res.code === 200) {
+      showToast('保存成功')
+      fetchDetail()
+    } else {
+      showToast(res.msg || '保存失败')
+    }
+  }).catch(() => {
+    savingLoading.value = false
+  })
 }
 
 // 选择预计交车日期
