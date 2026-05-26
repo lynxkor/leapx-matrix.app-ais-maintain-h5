@@ -16,7 +16,11 @@ export function getFilePreviewUrl(file) {
  * 获取文件保存 URL
  */
 export function getFileSaveUrl(file) {
-  return file?.url || file?.fileUrl || file?.authFileUrl || ''
+  const url = file?.fileUrl || file?.url || file?.authFileUrl || ''
+  if (!url) return ''
+  // 如果是带签名的完整URL，提取 /VirtualUrl/... 路径部分
+  const match = url.match(/\/VirtualUrl\/[^?]+/)
+  return match ? match[0] : url
 }
 
 /**

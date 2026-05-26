@@ -359,7 +359,7 @@
                 autosize
                 show-word-limit
                 maxlength="500"
-                :disabled="detail.currentFault === '0'"
+                :disabled="detail.currentFault === '0' || Number(detail.confirmFault) === 1"
                 style="background: #f5f5f5; border-radius: 6px"
               />
             </div>
@@ -1574,6 +1574,11 @@ const onHasFaultChange = (value) => {
   }
   // 如果选择"否"，弹出确认框
   if (value === '0') {
+    // confirmFault=1时，直接切换，不弹窗，不清空故障模块和客户故障描述
+    if (Number(detail.confirmFault) === 1) {
+      detail.currentFault = '0'
+      return
+    }
     // 维修类型包含一般维修或三电维修时，不允许改为"否"
     // const typeCollect = detail.repairItemTypeDetailCollect || ''
     // if (typeCollect.includes('一般维修') || typeCollect.includes('三电维修')) {
