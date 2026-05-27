@@ -393,7 +393,7 @@
           </div>
 
           <!-- 维修项目零件内容 - 使用 RepairItemContent 组件 -->
-           <div style="height: calc(42vh - 10px)">
+           <div style="max-height: calc(72vh - 10px)">
             <RepairItemContent
               ref="repairItemContentRef"
               :service-proxy-id="detail.id"
@@ -1573,7 +1573,7 @@ const onHasFaultChange = (value) => {
     return
   }
   // 如果选择"否"，弹出确认框
-  if (value === '0') {
+  if (Number(value) === 0) {
     // confirmFault=1时，直接切换，不弹窗，不清空故障模块和客户故障描述
     if (Number(detail.confirmFault) === 1) {
       detail.currentFault = '0'
@@ -1595,8 +1595,10 @@ const onHasFaultChange = (value) => {
       detail.customerFaultDesc = '本次进店车辆无故障'
     }
   } else if (value === '1') {
-    // 从"否"切换到"是"，清空客户故障描述
-    detail.customerFaultDesc = ''
+    // 从"否"切换到"是"，清空客户故障描述（confirmFault=1时不清空）
+    if (Number(detail.confirmFault) !== 1) {
+      detail.customerFaultDesc = ''
+    }
   }
 }
 
@@ -1812,12 +1814,10 @@ const isPartsSaveDisabled = computed(() => {
   // return items.length === 0 && parts.length === 0
 })
 
-// 环检信息保存按钮是否禁用：进店里程数、进店电量、送修人信息、车内车外照片、异常描述、经理建议为空
+// 环检信息保存按钮是否禁用：进店里程数、送修人信息、车内车外照片、异常描述、经理建议为空
 const isInspectionSaveDisabled = computed(() => {
   // 进店里程数
   if (!detail.mileage) return true
-  // 进店电量
-  if (!detail.battery) return true
   // 送修人信息
   if (!detail.repairPerson || !detail.repairPersonPhone) return true
   // 车内照片（根据配置判断是否必填）
@@ -2421,7 +2421,7 @@ const onRepairPersonPhoneChange = () => {
 }
 
 // 保存
-const validateRepairPerson = () => _validateRepairPerson(repairPersonType.value, repairPersonNameInput.value, repairPersonPhoneInput.value)
+const validateRepairPerson = () => _validateRepairPerson(repairPersonType.value, detail.repairPerson, detail.repairPersonPhone)
 // hasDuplicateFileId 已从 receptionCommon 导入
 
 const savingLoading = ref(false)
@@ -2854,6 +2854,15 @@ const onConfirmAndSignClick = async() => {
   if (!id) return
   if (!signatureData.expectFinishAt) {
     showToast('请选择预计交车时间')
+    return
+  }
+  // 检查环检信息和项目零件是否修改后未保存
+  if (hasInspectionDataChanged()) {
+    showToast('环检信息已修改，请先保存')
+    return
+  }
+  if (hasPartsDataChanged()) {
+    showToast('项目零件已修改，请先保存')
     return
   }
   showLoadingToast({ message: '请稍候...', forbidClick: true })
