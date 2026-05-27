@@ -2797,10 +2797,10 @@ const onPartsSave = async() => {
   const parts = componentParts && componentParts.length > 0 ? componentParts : partsData.sparePartRespList
 
   // 校验项目及零件不可为空
-  if (items.length === 0 && parts.length === 0) {
-    showToast('项目及零件不可为空，请添加项目或者零件')
-    return
-  }
+  // if (items.length === 0 && parts.length === 0) {
+  //   showToast('项目及零件不可为空，请添加项目或者零件')
+  //   return
+  // }
   // 售前保修只能单独开单
   if (!validatePreSaleWarranty(items, parts)) return
 
