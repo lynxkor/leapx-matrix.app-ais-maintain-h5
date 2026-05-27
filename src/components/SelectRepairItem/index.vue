@@ -61,6 +61,10 @@ const props = defineProps({
     type: String,
     default: ''
   },
+  currentFault: {
+    type: [String, Number],
+    default: ''
+  },
   mode: {
     type: String,
     default: 'page', // 'popup' | 'page'
@@ -73,7 +77,7 @@ const emit = defineEmits(['update:visible', 'confirm'])
 const route = useRoute()
 const isPageMode = computed(() => props.mode === 'page')
 const serviceProxyId = computed(() => props.serviceProxyId || route.query.serviceProxyId || '')
-const currentFault = computed(() => route.query.currentFault || '')
+const currentFault = computed(() => route.query.currentFault || props.currentFault)
 
 const innerVisible = computed({
   get: () => props.visible,

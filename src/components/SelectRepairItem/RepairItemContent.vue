@@ -169,7 +169,7 @@
 
 <script setup>
 import { ref, computed, watch, onMounted, nextTick } from 'vue'
-import { showToast, closeToast, showLoadingToast, showDialog } from 'vant'
+import { showToast, closeToast, showDialog } from 'vant'
 import Empty from '@/views/repairWork/components/Empty.vue'
 import SearchBar from './SearchBar.vue'
 import RepairItemCard from './RepairItemCard.vue'
@@ -210,7 +210,7 @@ const props = defineProps({
     default: true
   },
   currentFault: {
-    type: String,
+    type: [String, Number],
     default: ''
   }
 })
@@ -398,14 +398,16 @@ const saveItemsSnapshot = () => {
 }
 
 // 保存后检查：原来不含一般维修/三电维修，保存后包含了，且currentFault为否
-const checkFaultOnSave = () => {
+const checkFaultOnSave = (flag) => {
   const targetTypes = ['一般维修', '三电维修']
   const hasType = (list) => list.some((item) => targetTypes.includes(item.repairItemTypeName))
   const hadBefore = hasType(itemsSnapshot.value.items) || hasType(itemsSnapshot.value.parts)
   const hasNow = hasType(selectedItems.value) || hasType(selectedParts.value)
-  if (!hadBefore && hasNow && props.currentFault === '0') {
+  if (!hadBefore && hasNow && String(props.currentFault) === '0') {
     showToast({ message: '维修类型为一般维修或三电维修，系统默认调整 【本次进店是否存在故障】为是，存在故障，请填写故障模块信息!', duration: 3000, onClose: () => {
-      router.go(-1)
+      if (!flag) {
+        router.go(-1)
+      }
     } })
     sessionStorage.setItem('faultDetected', '1')
   }
@@ -420,7 +422,7 @@ const saving = ref(false)
 const onSave = async() => {
   if (isAuditComplete.value || saving.value) return
   saving.value = true
-  showLoadingToast('请稍候...')
+  checkFaultOnSave(true)
   try {
     const success = await handleSave(onSaveSuccess)
     if (success) {

@@ -94,7 +94,7 @@
               <div class="part-form-item">
                 <div class="form-label">去向单位统一代码</div>
                 <van-field
-                  v-model="part.targetUnitCode"
+                  v-model="part.buinessLicense"
                   placeholder="选填，请输入"
                   :border="false"
                   input-align="right"
@@ -147,7 +147,7 @@
 import { ref, computed, watch } from 'vue'
 import { showToast } from 'vant'
 import SearchDropdown from '@/libs/components/SearchDropdown.vue'
-import { finalInspectionDetail, getBatteryUnitList, finalInspection } from '../../../api/repairWork'
+import { finalInspectionDetail, getBatteryUnitList, finalInspection, saveTraceRecord } from '../../../api/repairWork'
 import { formatDateTime } from '@/libs/utils'
 import { useUserStore } from '@/stores/user'
 
@@ -323,13 +323,13 @@ const handleSubmit = () => {
   const userStore = useUserStore()
 
   const submitData = {
-    id: props.serviceProxyId,
-    finalCheckAt: formatDateTime(new Date()),
-    finalCheckerId: userStore.userId,
-    finalChecker: userStore.userName,
+    id: props.serviceProxyId
+    // finalCheckAt: formatDateTime(new Date()),
+    // finalCheckerId: userStore.userId,
+    // finalChecker: userStore.userName,
     // faultAlertRecordParams: detailData.value.faultAlertRecordResps || [],
-    repairWorkRecordResps: detailData.value.repairWorkRecordResps || [],
-    currentFault: detailData.value.faultFlag ? 1 : 0
+    // repairWorkRecordResps: detailData.value.repairWorkRecordResps || [],
+    // currentFault: detailData.value.faultFlag ? 1 : 0
   }
 
   // 电池信息
@@ -346,11 +346,28 @@ const handleSubmit = () => {
     submitData.traceRecordParams = partsList.value
   }
 
-  finalInspection(submitData).then(target => {
+  saveTraceRecord(submitData).then(target => {
     if (target.code === 200) {
-      showToast('终检成功')
-      emit('refresh')
-      emit('update:modelValue', false)
+      Object.assign(submitData, {
+        finalCheckAt: formatDateTime(new Date()),
+        finalCheckerId: userStore.userId,
+        finalChecker: userStore.userName,
+        faultAlertRecordParams: detailData.value.faultAlertRecordResps || [],
+        repairWorkRecordResps: detailData.value.repairWorkRecordResps || [],
+        currentFault: detailData.value.faultFlag ? 1 : 0
+      })
+      finalInspection(submitData).then(res => {
+        if (res.code === 200) {
+          showToast('终检成功')
+          emit('refresh')
+          emit('update:modelValue', false)
+        } else {
+          showToast(res.msg || '终检失败')
+        }
+      }).catch(err => {
+        showToast(err.msg || '终检失败')
+        emit('refresh')
+      })
     } else {
       showToast({
         message: target.message,

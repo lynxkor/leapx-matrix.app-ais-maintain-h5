@@ -249,3 +249,11 @@ export function getRepairItemTypeMap() {
 export function getDealerPermission(data) {
   return post('maintain/app/common/dealer/permission/list', data)
 }
+
+/**
+ * 保存电池和追溯信息
+ * @param data
+ */
+export function saveTraceRecord(data) {
+  return post('maintain/app/sp/serviceProxy/saveTraceRecord', data)
+}
