@@ -204,7 +204,7 @@
               </div>
               <div class="item-footer">
                 <span class="item-subtotal">¥{{ repairItem.price }}</span>
-                <!-- <span class="item-quantity">x{{ repairItem.quantity }}</span> -->
+                <span class="item-quantity">x{{ repairItem.workHour }}</span>
               </div>
             </div>
           </div>

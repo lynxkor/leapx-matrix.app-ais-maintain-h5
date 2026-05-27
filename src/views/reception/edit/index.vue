@@ -469,7 +469,7 @@
               </div>
             </div>
           </template>
-          <div v-else style="height: calc(42vh - 10px)">
+          <div v-else style="max-height: calc(72vh - 10px)">
             <RepairItemContent
               ref="repairItemContentRef"
               :service-proxy-id="route.query.id"
@@ -1677,9 +1677,11 @@ const onHasFaultChange = (value) => {
       detail.customerFaultDesc = '本次进店车辆无故障'
     }
     showFaultConfirm.value = true
-  } else if (value === '1' && detail.customerFaultDesc === '本次进店车辆无故障') {
-    // 从"否"切换到"是"，清空客户故障描述
-    detail.customerFaultDesc = ''
+  } else if (value === '1') {
+    // 从"否"切换到"是"，清空客户故障描述（confirmFault=1时不清空）
+    if (Number(detail.confirmFault) !== 1 && detail.customerFaultDesc === '本次进店车辆无故障') {
+      detail.customerFaultDesc = ''
+    }
   }
 }
 
@@ -2004,12 +2006,10 @@ const isPartsSaveDisabled = computed(() => {
   // return items.length === 0 && parts.length === 0
 })
 
-// 环检信息保存按钮是否禁用：进店里程数、进店电量、送修人信息、车内车外照片、异常描述、经理建议为空
+// 环检信息保存按钮是否禁用：进店里程数、送修人信息、车内车外照片、异常描述、经理建议为空
 const isInspectionSaveDisabled = computed(() => {
   // 进店里程数
   if (!detail.mileage) return true
-  // 进店电量
-  if (!detail.battery) return true
   // 送修人信息
   if (!detail.repairPerson || !detail.repairPersonPhone) return true
   // 车内照片（已生成结算单时不再必填）
@@ -2924,7 +2924,7 @@ const onMore = () => {
 }
 
 // 保存
-const validateRepairPerson = () => _validateRepairPerson(repairPersonType.value, repairPersonNameInput.value, repairPersonPhoneInput.value)
+const validateRepairPerson = () => _validateRepairPerson(repairPersonType.value, detail.repairPerson, detail.repairPersonPhone)
 
 const savingLoading = ref(false)
 const cancelLoading = ref(false)
@@ -3175,8 +3175,8 @@ const onPartsSave = async() => {
 
   // 善意保修只能单独开单
   if (!validateGoodWillWarranty(items, parts)) return
-  // 记录原来的维修类型（从初始快照获取）
-  const oldRepairItemTypeDetailCollect = initialInspectionData.value?.repairItemTypeDetailCollect || ''
+  // 记录保存前的维修类型（从当前detail取值，确保准确反映保存前的状态）
+  const oldRepairItemTypeDetailCollect = detail.repairItemTypeDetailCollect || ''
 
   savingLoading.value = true
   try {
@@ -3536,6 +3536,15 @@ const onConfirmAndSignClick = async() => {
   if (!id) return
   if (!signatureData.expectFinishAt) {
     showToast('请选择预计交车时间')
+    return
+  }
+  // 检查环检信息和项目零件是否修改后未保存
+  if (hasInspectionDataChanged()) {
+    showToast('环检信息已修改，请先保存')
+    return
+  }
+  if (hasPartsDataChanged()) {
+    showToast('项目零件已修改，请先保存')
     return
   }
   showLoadingToast({ message: '请稍候...', forbidClick: true })
