@@ -2642,6 +2642,20 @@ const onComplete = async() => {
 // 环检信息保存（已保存状态）
 const onInspectionSave = async() => {
   if (isInspectionSaveDisabled.value) return
+  // 送修人校验
+  if (!validateRepairPerson()) return
+  // 里程校验
+  validateMileage(detail.mileage, detail.lastMileage, detail.networkMileageTotal)
+  // 如果currentFault为"1"，客户故障描述必填
+  if (Number(detail.currentFault) === 1 && !detail.customerFaultDesc.trim()) {
+    showToast('请输入客户故障描述')
+    return
+  }
+  // 如果currentFault为"1"，必须添加故障模块
+  if (Number(detail.currentFault) === 1 && detail.faultModules.length === 0) {
+    showToast('请添加故障模块')
+    return
+  }
   // 检查车内、车外照片是否有重复文件
   if (hasDuplicateFileId(detail.interiorImages)) {
     showToast('车内照片存在重复文件，请检查')
