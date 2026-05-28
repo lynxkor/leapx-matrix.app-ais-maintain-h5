@@ -1707,7 +1707,7 @@ const detail = reactive({
   signGeneratedOn: '',
   signStatus: '',
   signUrlExpiredOn: '',
-  appointmentType: '',
+  appointmentType: 0,
   preAuthType: '',
   isLockLive: '',
   isCreateWarranty: '',
