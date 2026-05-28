@@ -376,7 +376,7 @@
                 autosize
                 show-word-limit
                 maxlength="500"
-                :disabled="detail.currentFault !== '1' || Number(detail.confirmFault) === 1"
+                :disabled="detail.currentFault == 0 || Number(detail.confirmFault) === 1 || (detail.currentFault == 1 && detail.confirmFault != 1)"
                 style="background: #f5f5f5; border-radius: 6px"
               />
             </div>
@@ -550,7 +550,7 @@
             </div>
             <div
               class="signature-action-row"
-              v-if="Number(detail.signStatus) === 20 && detail.signChannel != 40"
+              v-if="Number(detail.signStatus) === 20 && detail.signChannel == 30"
             >
               <van-button type="primary" size="small" @click="onViewSignature">查看签字</van-button>
             </div>
@@ -919,7 +919,7 @@
       position="bottom"
       title="选择签字渠道"
       @close="onCancelSignatureChannel"
-      :style="{ background: '#f4f4f4', height: '50%' }"
+      :style="{ background: '#f4f4f4', height: '35%' }"
     >
       <template #content>
         <div class="signature-channel-picker">
@@ -1301,7 +1301,6 @@ const faultSearchValue = ref('')
 
 // 是否存在故障确认弹框
 const showFaultConfirm = ref(false)
-const pendingFaultValue = ref('')
 
 // 三包预警提示框
 const showWarrantyAlertDialog = ref(false)
@@ -1656,11 +1655,6 @@ const onHasFaultChange = (value) => {
 
   // 如果选择"否"，弹出确认框
   if (Number(value) === 0) {
-    // confirmFault=1时，直接切换，不弹窗，不清空故障模块和客户故障描述
-    if (Number(detail.confirmFault) === 1) {
-      detail.currentFault = '0'
-      return
-    }
     // 维修类型包含一般维修或三电维修时，不允许改为"否"
     // const typeCollect = detail.repairItemTypeDetailCollect || ''
     // if (typeCollect.includes('一般维修') || typeCollect.includes('三电维修')) {
@@ -1671,15 +1665,16 @@ const onHasFaultChange = (value) => {
     // }
     // 如果已添加过故障模块或客户故障描述，弹出确认框
     if (detail.faultModules.length > 0 || detail.customerFaultDesc) {
-      pendingFaultValue.value = value
+      showFaultConfirm.value = true
     } else {
       detail.currentFault = '0'
       detail.customerFaultDesc = '本次进店车辆无故障'
     }
-    showFaultConfirm.value = true
-  } else if (value === '1') {
+  } else if (Number(value) === 1) {
     // 从"否"切换到"是"，清空客户故障描述（confirmFault=1时不清空）
-    if (Number(detail.confirmFault) !== 1) {
+    if (Number(detail.currentFault) === 1 && Number(detail.confirmFault) !== 1) {
+      console.log('不清空客户故障描述')
+    } else if (Number(detail.confirmFault) !== 1) {
       detail.customerFaultDesc = ''
     }
   }
