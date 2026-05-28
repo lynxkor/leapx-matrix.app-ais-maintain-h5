@@ -1589,7 +1589,7 @@ const onHasFaultChange = (value) => {
     }
   } else if (Number(value) === 1) {
     // 从"否"切换到"是"，清空客户故障描述（confirmFault=1时不清空）
-    if (Number(detail.currentFault) === 1 && Number(detail.confirmFault) !== 1) {
+    if (Number(detail.currentFault) === 1 && Number(detail.confirmFault) === 1) {
       console.log('不清空客户故障描述')
     } else if (Number(detail.confirmFault) !== 1 || !detail.confirmFault) {
       detail.customerFaultDesc = ''
@@ -1608,6 +1608,7 @@ const onCancelFaultConfirm = () => {
 const onConfirmFaultChange = () => {
   showFaultConfirm.value = false
   detail.faultModules = []
+  detail.customerFaultDesc = '本次进店车辆无故障'
   detail.currentFault = '0'
   showToast('已更改')
 }
@@ -3068,6 +3069,7 @@ const fetchDetailForSignature = async() => {
       detail.code = data.code || ''
       detail.orderStatus = data.orderStatus || ''
       detail.signStatus = data.signStatus || ''
+      detail.signChannel = data.signChannel || ''
       // 将故障预警记录映射到faultModules用于显示
       if (data.faultAlertRecordRespList && data.faultAlertRecordRespList.length > 0) {
         detail.faultModules = data.faultAlertRecordRespList.map((item) => ({
