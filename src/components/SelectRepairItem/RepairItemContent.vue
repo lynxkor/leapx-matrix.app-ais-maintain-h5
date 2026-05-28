@@ -507,6 +507,8 @@ onMounted(async() => {
     // 无外部数据时，调用完整加载
     await loadInitialData()
   }
+  // 保存初始快照，用于保存后比较维修类型变化
+  saveItemsSnapshot()
 })
 
 // 暴露方法供父组件调用
