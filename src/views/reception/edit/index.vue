@@ -83,6 +83,7 @@
                     :placeholder="repairPersonInputDisabled ? '' : '请输入姓名'"
                     class="edit-input"
                     :disabled="repairPersonInputDisabled"
+                    data-scroll-target="repairPersonName"
                     @input="onRepairPersonNameChange"
                   />
                   <img
@@ -102,6 +103,7 @@
                     class="edit-input"
                     :disabled="repairPersonInputDisabled"
                     maxlength="11"
+                    data-scroll-target="repairPersonPhone"
                     @input="onRepairPersonPhoneChange"
                   />
                   <img
@@ -186,7 +188,7 @@
             </div>
 
             <!-- 车内照片 -->
-            <div class="card-container marginB1">
+            <div class="card-container marginB1" data-scroll-target="interiorPhotos">
               <div class="card-info-title marginB1">
                 车内照片
                 <span v-if="!isSettled && interiorConfig.required === '1'" style="color: #b91919; font-size: 15px"
@@ -224,7 +226,7 @@
             </div>
 
             <!-- 车外照片 -->
-            <div class="card-container marginB1">
+            <div class="card-container marginB1" data-scroll-target="exteriorPhotos">
               <div class="card-info-title marginB1">
                 车外照片
                 <span v-if="!isSettled && exteriorConfig.required === '1'" style="color: #b91919; font-size: 15px"
@@ -274,6 +276,7 @@
                 autosize
                 show-word-limit
                 maxlength="500"
+                data-scroll-target="abnormalDesc"
                 style="background: #f5f5f5; border-radius: 6px"
               />
             </div>
@@ -302,6 +305,7 @@
                 autosize
                 show-word-limit
                 maxlength="500"
+                data-scroll-target="testResult"
                 style="background: #f5f5f5; border-radius: 6px"
               />
             </div>
@@ -327,7 +331,7 @@
               </div>
 
               <!-- 故障模块列表 -->
-              <div class="fault-modules" v-if="Number(detail.currentFault) === 1">
+              <div class="fault-modules" v-if="Number(detail.currentFault) === 1" data-scroll-target="faultModules">
                 <div v-if="!isFaultReadonly" class="add-module" @click="onAddFaultModule">
                   <van-icon name="plus" />
                   <span>添加故障模块</span>
@@ -377,6 +381,7 @@
                 show-word-limit
                 maxlength="500"
                 :disabled="detail.currentFault == 0 || Number(detail.confirmFault) === 1 || (detail.currentFault == 1 && detail.confirmFault == 1)"
+                data-scroll-target="customerFaultDesc"
                 style="background: #f5f5f5; border-radius: 6px"
               />
             </div>
@@ -1237,6 +1242,7 @@ import {
   generateDeliveryTimes as _generateDeliveryTimes,
   validateMileage,
   validateRepairPerson as _validateRepairPerson,
+  scrollToErrorField,
   getAttachConfig as _getAttachConfig,
   getTargetFileList as _getTargetFileList,
   handleFileDelete as _handleFileDelete,
@@ -2926,10 +2932,12 @@ const onInspectionSave = async(type) => {
   // 检查车内、车外照片是否有重复文件
   if (hasDuplicateFileId(detail.interiorImages)) {
     showToast('车内照片存在重复文件，请检查')
+    scrollToErrorField({ errorField: 'interiorPhotos', activeTab, repairPersonCollapse })
     return { code: -1 }
   }
   if (hasDuplicateFileId(detail.exteriorImages)) {
     showToast('车外照片存在重复文件，请检查')
+    scrollToErrorField({ errorField: 'exteriorPhotos', activeTab, repairPersonCollapse })
     return { code: -1 }
   }
   // 如果是项目零件或签字确认页，且数据没改动，则跳过校验直接返回
@@ -2938,7 +2946,12 @@ const onInspectionSave = async(type) => {
   }
 
   // 环检信息页需要校验
-  if (!validateRepairPerson()) return { code: -1 }
+  const repairResult = validateRepairPerson()
+  if (!repairResult.valid) {
+    repairPersonType.value = 'other'
+    scrollToErrorField({ errorField: repairResult.errorField, activeTab, repairPersonCollapse })
+    return { code: -1 }
+  }
   // 里程校验
   validateMileage(detail.mileage, detail.lastMileage, detail.networkMileageTotal)
   // 已生成结算单时跳过故障和照片校验
@@ -2946,31 +2959,37 @@ const onInspectionSave = async(type) => {
     // 如果currentFault为1，客户故障描述必填
     if (Number(detail.currentFault) === 1 && !detail.customerFaultDesc.trim()) {
       showToast('请输入客户故障描述')
+      scrollToErrorField({ errorField: 'customerFaultDesc', activeTab, repairPersonCollapse })
       return { code: -1 }
     }
     // 如果currentFault为1，必须添加故障模块
     if (Number(detail.currentFault) === 1 && detail.faultModules.length === 0) {
       showToast('请添加故障模块')
+      scrollToErrorField({ errorField: 'faultModules', activeTab, repairPersonCollapse })
       return { code: -1 }
     }
     // 照片校验（根据配置判断是否必填）
     if (interiorConfig.value.required === '1' && detail.interiorImages.length === 0) {
       showToast('请上传车内照片')
+      scrollToErrorField({ errorField: 'interiorPhotos', activeTab, repairPersonCollapse })
       return { code: -1 }
     }
     if (exteriorConfig.value.required === '1' && detail.exteriorImages.length === 0) {
       showToast('请上传车外照片')
+      scrollToErrorField({ errorField: 'exteriorPhotos', activeTab, repairPersonCollapse })
       return { code: -1 }
     }
   }
   // 异常描述
   if (!detail.abnormalDesc) {
     showToast('请输入异常描述')
+    scrollToErrorField({ errorField: 'abnormalDesc', activeTab, repairPersonCollapse })
     return { code: -1 }
   }
   // 经理建议
   if (!detail.testResult) {
     showToast('请输入客户经理建议')
+    scrollToErrorField({ errorField: 'testResult', activeTab, repairPersonCollapse })
     return { code: -1 }
   }
 
@@ -3263,19 +3282,27 @@ const onComplete = async() => {
     showToast('请先保存当前编辑的环检信息')
     return
   }
-  if (!validateRepairPerson()) return
+  const repairResult = validateRepairPerson()
+  if (!repairResult.valid) {
+    repairPersonType.value = 'other'
+    scrollToErrorField({ errorField: repairResult.errorField, activeTab, repairPersonCollapse })
+    return
+  }
   // 照片校验（根据配置判断是否必填）
   if (interiorConfig.value.required === '1' && detail.interiorImages.length === 0) {
     showToast('请上传车内照片')
+    scrollToErrorField({ errorField: 'interiorPhotos', activeTab, repairPersonCollapse })
     return
   }
   if (exteriorConfig.value.required === '1' && detail.exteriorImages.length === 0) {
     showToast('请上传车外照片')
+    scrollToErrorField({ errorField: 'exteriorPhotos', activeTab, repairPersonCollapse })
     return
   }
   // 如果currentFault为1，客户故障描述必填
   if (Number(detail.currentFault) === 1 && !detail.customerFaultDesc.trim()) {
     showToast('请输入客户故障描述')
+    scrollToErrorField({ errorField: 'customerFaultDesc', activeTab, repairPersonCollapse })
     return
   }
   showConfirmDialog({

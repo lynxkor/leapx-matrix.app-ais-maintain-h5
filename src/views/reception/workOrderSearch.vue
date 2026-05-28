@@ -171,9 +171,7 @@ const onCardClick = (item) => {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding-left: 12px;
-  padding-right: 12px;
-  padding-bottom: 7px;
+  padding:7px 12px;
   box-sizing: border-box;
   z-index: 6000;
 
