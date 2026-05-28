@@ -43,7 +43,7 @@ export default function useRepairItemBusinessRules({
     const checkoutTypes = rawCheckoutTypes.value
     const repairItemTypes = rawRepairItemTypes.value
 
-    const isUniversal = item?.repairItemId === UNIVERSAL_LABOR_HOUR_ITEM_ID
+    const isUniversal = item?.repairItemCode === UNIVERSAL_LABOR_HOUR_ITEM_ID
     const isPart = !!item?.partsId
     const isOemPart = Number(item?.oemPart || item?.isOemPart) === 1
 
