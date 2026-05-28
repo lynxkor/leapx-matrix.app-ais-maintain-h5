@@ -1700,7 +1700,7 @@ const detail = reactive({
   signGeneratedOn: '',
   signStatus: '',
   signUrlExpiredOn: '',
-  appointmentType: '',
+  appointmentType: 0,
   preAuthType: '',
   isLockLive: '',
   isCreateWarranty: '',
@@ -2481,6 +2481,7 @@ const onSave = async() => {
     const res = await serviceAddOrUpdate({
       id: undefined,
       dataSource: 180, // 170零小跑PC端; 180零小跑APP端,
+      appointmentType: detail.appointmentType, // 预约方式，默认0未预约
       customerName: detail.owner,
       customerPhone: detail.ownerPhone,
       vehModelName: detail.vehicleModelName,
@@ -2692,7 +2693,6 @@ const onInspectionSave = async() => {
       signGeneratedOn: detail.signGeneratedOn,
       signStatus: detail.signStatus,
       signUrlExpiredOn: detail.signUrlExpiredOn,
-      appointmentType: detail.appointmentType,
       preAuthType: detail.preAuthType,
       isLockLive: detail.isLockLive,
       isCreateWarranty: detail.isCreateWarranty,
