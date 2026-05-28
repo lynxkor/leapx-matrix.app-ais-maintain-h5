@@ -70,7 +70,7 @@ export default function useRepairItemOperations({
     if (activeTab.value === 'item') {
       // 维修项目：添加项目 + 附带零件
       const exists = selectedItems.value.filter(
-        el => el.repairItemId !== UNIVERSAL_LABOR_HOUR_ITEM_ID && el.workRecordStatus !== WorkRecordStatusEnum.COMPLETED
+        el => el.repairItemCode !== UNIVERSAL_LABOR_HOUR_ITEM_ID && el.workRecordStatus !== WorkRecordStatusEnum.COMPLETED
       ).find(el => el.repairItemId === rawItem.id)
       if (exists) {
         showToast({ message: '请勿重复添加', 'z-index': 5100 })

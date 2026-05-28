@@ -22,7 +22,7 @@ const AIS_PREFIXES = [
   '/file/'
 ]
 
-function resolveBaseURL (url, sign) {
+function resolveBaseURL(url, sign) {
   if (sign) return leapx
   const target = url.startsWith('/') ? url : '/' + url
   return AIS_PREFIXES.some((p) => target.startsWith(p)) ? ais : leapx
@@ -30,7 +30,7 @@ function resolveBaseURL (url, sign) {
 
 // 创建axios实例
 const service = axios.create({
-  timeout: 10000 // 超时时间
+  timeout: 30 * 1000 // 超时时间
 })
 
 // 请求拦截器
@@ -99,7 +99,7 @@ service.interceptors.response.use(
   }
 )
 
-export function post (url, data, sign) {
+export function post(url, data, sign) {
   return service({
     url,
     baseURL: resolveBaseURL(url, sign),
@@ -109,7 +109,7 @@ export function post (url, data, sign) {
   })
 }
 
-export function postText (url, data, sign) {
+export function postText(url, data, sign) {
   return service({
     url,
     baseURL: resolveBaseURL(url, sign),
@@ -119,7 +119,7 @@ export function postText (url, data, sign) {
   })
 }
 
-export function get (url, params, sign) {
+export function get(url, params, sign) {
   return service({
     url,
     baseURL: resolveBaseURL(url, sign),
@@ -128,7 +128,7 @@ export function get (url, params, sign) {
   })
 }
 
-export function postJson (url, params, sign) {
+export function postJson(url, params, sign) {
   const config = {
     url,
     baseURL: resolveBaseURL(url, sign),
