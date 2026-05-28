@@ -1679,7 +1679,7 @@ const onHasFaultChange = (value) => {
     showFaultConfirm.value = true
   } else if (value === '1') {
     // 从"否"切换到"是"，清空客户故障描述（confirmFault=1时不清空）
-    if (Number(detail.confirmFault) !== 1 && detail.customerFaultDesc === '本次进店车辆无故障') {
+    if (Number(detail.confirmFault) !== 1) {
       detail.customerFaultDesc = ''
     }
   }
