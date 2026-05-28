@@ -15,7 +15,7 @@ export const checkoutTypeIncluded = (typeId) => {
  * @returns {boolean}
  */
 export const isWorkHourEditable = (item) => {
-  const isUniversal = item.repairItemId === UNIVERSAL_LABOR_HOUR_ITEM_ID
+  const isUniversal = item.repairItemCode === UNIVERSAL_LABOR_HOUR_ITEM_ID
   if (checkoutTypeIncluded(item.checkoutTypeId) && (item.isWarranty === 1 || item.isProdType === 1)) {
     return true
   }
@@ -49,7 +49,7 @@ export const isDiscountEditable = (item) => {
  * @returns {boolean}
  */
 export const isNameEditable = (item) => {
-  const isUniversal = item.repairItemId === UNIVERSAL_LABOR_HOUR_ITEM_ID
+  const isUniversal = item.repairItemCode === UNIVERSAL_LABOR_HOUR_ITEM_ID
   return isUniversal && !item.id && !item.packageId
 }
 
