@@ -1588,10 +1588,7 @@ const onHasFaultChange = (value) => {
       detail.customerFaultDesc = '本次进店车辆无故障'
     }
   } else if (Number(value) === 1) {
-    // 从"否"切换到"是"，清空客户故障描述（confirmFault=1时不清空）
-    if (Number(detail.currentFault) === 1 && Number(detail.confirmFault) === 1) {
-      console.log('不清空客户故障描述')
-    } else if (Number(detail.confirmFault) !== 1 || !detail.confirmFault) {
+    if (Number(detail.confirmFault) !== 1) {
       detail.customerFaultDesc = ''
     }
   }
@@ -1610,7 +1607,6 @@ const onConfirmFaultChange = () => {
   detail.faultModules = []
   detail.customerFaultDesc = '本次进店车辆无故障'
   detail.currentFault = '0'
-  showToast('已更改')
 }
 
 const onTabScroll = (e) => {
