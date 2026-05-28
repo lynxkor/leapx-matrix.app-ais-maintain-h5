@@ -41,7 +41,7 @@ export function getFileType(file, fallback = '') {
  */
 export function formatPhotoList(list, attachType, businessId) {
   return list.map((item) => {
-    const fileId = item.id || item.uploadId
+    const fileId = item.uploadId || item.fileId || item.id
     return {
       id: businessId ? fileId : null,
       fileId,
