@@ -376,7 +376,7 @@
                 autosize
                 show-word-limit
                 maxlength="500"
-                :disabled="detail.currentFault == 0 || Number(detail.confirmFault) === 1 || (detail.currentFault == 1 && detail.confirmFault != 1)"
+                :disabled="detail.currentFault == 0 || Number(detail.confirmFault) === 1 || (detail.currentFault == 1 && detail.confirmFault == 1)"
                 style="background: #f5f5f5; border-radius: 6px"
               />
             </div>
