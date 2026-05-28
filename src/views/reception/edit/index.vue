@@ -3463,6 +3463,10 @@ const onViewSignature = () => {
 
 // 打开预计交车时间选择器
 const onOpenDeliveryTimePicker = () => {
+  if (partsData.repairItemRespList.length === 0 && partsData.sparePartRespList.length === 0) {
+    showToast('请先添加维修项目或配件')
+    return
+  }
   // 已交车或已作废不允许修改交车时间
   if (detail.orderStatus === 180 || detail.orderStatus === 210) {
     return
