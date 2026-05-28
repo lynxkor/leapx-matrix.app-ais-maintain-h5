@@ -104,6 +104,7 @@ watch(() => props.visible, async(newVal) => {
     await nextTick()
     contentRef.value?.resetData()
     await contentRef.value?.loadInitialData()
+    contentRef.value?.saveItemsSnapshot()
   }
 }, {
   immediate: true

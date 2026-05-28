@@ -3149,6 +3149,10 @@ const onAddPackage = () => {
 
 // 打开预计交车时间选择器
 const onOpenDeliveryTimePicker = () => {
+  if (partsData.repairItemRespList.length === 0 && partsData.sparePartRespList.length === 0) {
+    showToast('请先添加维修项目或配件')
+    return
+  }
   // 如果是接口返回的交车时间，不允许点击
   if (signatureData.isDeliveryTimeFromApi) {
     return
