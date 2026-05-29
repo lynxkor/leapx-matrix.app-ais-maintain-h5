@@ -392,7 +392,7 @@
       <van-tab v-if="isSaved && detail.orderStatus != 100" title="项目零件" name="parts">
         <div
           class="tab-content parts-tab"
-          style="max-height: calc(100vh - 130px); min-height: 54vh"
+          style="min-height: 54vh"
         >
           <!-- 费用汇总 -->
           <div
@@ -474,7 +474,7 @@
               </div>
             </div>
           </template>
-          <div v-else style="max-height: calc(72vh - 10px)">
+          <div v-else>
             <RepairItemContent
               ref="repairItemContentRef"
               :service-proxy-id="route.query.id"
@@ -4378,7 +4378,6 @@ defineExpose({ onBeforeBack })
 .signature-section {
   background: #fff;
   border-radius: 8px;
-  padding: 12px;
 
   .signature-row {
     display: flex;

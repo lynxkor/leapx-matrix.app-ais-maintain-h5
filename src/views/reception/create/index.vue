@@ -398,7 +398,7 @@
           </div>
 
           <!-- 维修项目零件内容 - 使用 RepairItemContent 组件 -->
-           <div style="max-height: calc(72vh - 10px)">
+           <div>
             <RepairItemContent
               ref="repairItemContentRef"
               :service-proxy-id="detail.id"
