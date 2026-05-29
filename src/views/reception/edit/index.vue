@@ -1202,6 +1202,7 @@ import { ref, reactive, onMounted, computed, watch, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { showToast, showConfirmDialog, showImagePreview, closeToast, showLoadingToast } from 'vant'
 import { useGlobalStore } from '@/stores/global'
+import { usePageSafeArea } from '@/utils/safeArea'
 import AisPopup from '@/libs/components/AisPopup.vue'
 import AisCascader from '@/components/AisCascader/index.vue'
 import PackageDetailPopup from '@/components/PackageDetailPopup.vue'
@@ -1256,6 +1257,7 @@ import '../create/create.scss'
 const route = useRoute()
 const router = useRouter()
 const globalStore = useGlobalStore()
+usePageSafeArea({ bodyClass: 'ais-page-nav-safe-area' })
 const addFaultModuleShow = ref(false)
 const changeCarDialog = ref(false)
 const changePlateDialog = ref(false)
