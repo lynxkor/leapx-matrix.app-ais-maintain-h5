@@ -175,6 +175,7 @@ import SearchBar from './SearchBar.vue'
 import RepairItemCard from './RepairItemCard.vue'
 import AisCascader from '@/components/AisCascader/index.vue'
 import PackageDetailPopup from '@/components/PackageDetailPopup.vue'
+import { usePageSafeArea } from '@/utils/safeArea'
 import {
   useRepairItemData,
   useRepairItemBusinessRules,
@@ -224,6 +225,7 @@ const searchBarRef = ref(null)
 const activeTab = ref('item')
 const isAuditComplete = computed(() => extraInfo.value.isAuditComplete)
 const router = useRouter()
+usePageSafeArea({ bodyClass: 'ais-page-nav-safe-area' })
 // 数据管理 Hook
 const {
   rawCheckoutTypes,

@@ -23,6 +23,7 @@
     teleport="body"
     :style="{ width: '100vw', height: '100%' }"
     z-index="5055"
+    safe-area-inset-top
     class="add-repair-item-popup"
   >
     <RepairItemContent
