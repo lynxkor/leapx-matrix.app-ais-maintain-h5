@@ -19,7 +19,7 @@
     background: #ffffff;
   }
   .van-collapse-item__title {
-    padding: 0 0 5px 0;
+    padding: 0;
     align-items: center;
   }
 }
@@ -30,6 +30,9 @@
   background: #ffffff;
   padding: 12px;
   margin-bottom: 8px;
+  .van-collapse-item__title--expanded:after {
+    border-width: 0;
+  }
 
   .plate-row {
     display: flex;
@@ -100,6 +103,9 @@
     align-items: center;
     justify-content: space-between;
     padding: 4px 0;
+    &:last-child {
+      padding: 12px 0;
+    }
 
     .label {
       font-size: 14px;
@@ -203,11 +209,11 @@
         display: flex;
         align-items: center;
         justify-content: space-between;
-        padding: 15px 0;
+        padding: 13px 0;
         border-bottom: 0.5px solid #e6e6e5;
 
         &:last-child {
-          border-bottom: none;
+          // border-bottom: none;
         }
 
         .label {

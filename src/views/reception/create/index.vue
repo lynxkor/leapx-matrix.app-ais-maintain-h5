@@ -54,6 +54,12 @@
             <!-- 类型选择 -->
             <div class="type-selector">
               <div
+                :class="['type-item', { active: repairPersonType === 'other' }]"
+                @click="onSelectRepairPersonType('other')"
+              >
+                送修人
+              </div>
+              <div
                 :class="['type-item', { active: repairPersonType === 'owner' }]"
                 @click="onSelectRepairPersonType('owner')"
               >
@@ -64,12 +70,6 @@
                 @click="onSelectRepairPersonType('bindingUser')"
               >
                 绑车人
-              </div>
-              <div
-                :class="['type-item', { active: repairPersonType === 'other' }]"
-                @click="onSelectRepairPersonType('other')"
-              >
-                其他
               </div>
             </div>
             <!-- 送修人信息 -->
@@ -1310,12 +1310,12 @@ const fetchRemindInfo = () => {
 }
 
 // 送修人类型选择
-const repairPersonType = ref('owner') // owner/bindingUser/other
+const repairPersonType = ref('other') // owner/bindingUser/other
 const repairPersonNameInput = ref('')
 const repairPersonPhoneInput = ref('')
 
 // 折叠面板状态
-const repairPersonCollapse = ref([])
+const repairPersonCollapse = ref(['repairPerson'])
 
 // 车牌输入相关
 const plateInputChars = ref(['', '', '', '', '', '', '', ''])
@@ -1956,8 +1956,8 @@ const fetchDetail = async() => {
       // 默认送修人为车主
       detail.repairPerson = item.vehicleProfileOwnerResp?.ownerName || ''
       detail.repairPersonPhone = item.vehicleProfileOwnerResp?.mobilephone || ''
-      detail.repairPersonTag = '车主'
-      repairPersonType.value = 'owner'
+      // detail.repairPersonTag = '车主'
+      // repairPersonType.value = 'owner'
       // 初始化输入框
       repairPersonNameInput.value = item.vehicleProfileOwnerResp?.ownerName || ''
       repairPersonPhoneInput.value = item.vehicleProfileOwnerResp?.mobilephone || ''
@@ -2406,7 +2406,7 @@ const onSelectRepairPersonType = (type) => {
     // 其他：带出车主信息，支持编辑
     repairPersonNameInput.value = detail.owner
     repairPersonPhoneInput.value = detail.ownerPhone
-    detail.repairPersonTag = '其他'
+    detail.repairPersonTag = '送修人'
   }
   // 同步更新送修人信息
   detail.repairPerson = repairPersonNameInput.value

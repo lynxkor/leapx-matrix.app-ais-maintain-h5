@@ -54,6 +54,12 @@
             <!-- 类型选择 -->
             <div class="type-selector">
               <div
+                :class="['type-item', { active: repairPersonType === 'other' }]"
+                @click="onSelectRepairPersonType('other')"
+              >
+                送修人
+              </div>
+              <div
                 :class="['type-item', { active: repairPersonType === 'owner' }]"
                 @click="onSelectRepairPersonType('owner')"
               >
@@ -64,12 +70,6 @@
                 @click="onSelectRepairPersonType('bindingUser')"
               >
                 绑车人
-              </div>
-              <div
-                :class="['type-item', { active: repairPersonType === 'other' }]"
-                @click="onSelectRepairPersonType('other')"
-              >
-                其他
               </div>
             </div>
             <!-- 送修人信息 -->
@@ -1384,7 +1384,7 @@ const {
 
 // 初始化数据
 // 送修人类型选择
-const repairPersonType = ref('owner') // owner/bindingUser/other
+const repairPersonType = ref('other') // owner/bindingUser/other
 const repairPersonNameInput = ref('')
 const repairPersonPhoneInput = ref('')
 
@@ -1759,7 +1759,7 @@ const detail = reactive({
   bindingUserId: '',
   repairPerson: '',
   repairPersonPhone: '',
-  repairPersonTag: '车主',
+  repairPersonTag: '送修人',
   businessType: null, // 初始为null，后续根据isAppointment计算
   mileage: '',
   departureMileage: '',
@@ -2129,12 +2129,12 @@ const fetchDetail = async() => {
       detail.repairPerson = data.shuttleName || data.customerName || ''
       detail.repairPersonPhone = data.shuttlePhone || data.customerPhone || ''
       // 计算送修人类型
-      detail.repairPersonTag =
-        detail.repairPerson === data.customerName
-          ? '车主'
-          : detail.repairPerson === data.bindingUser
-            ? '绑车人'
-            : '其他'
+      // detail.repairPersonTag =
+      //   detail.repairPerson === data.customerName
+      //     ? '车主'
+      //     : detail.repairPerson === data.bindingUser
+      //       ? '绑车人'
+      //       : '其他'
       detail.id = data.id || ''
       detail.testResult = data.testResult || ''
       // 预约客户默认预约到店，否则默认自然到店
@@ -2898,7 +2898,7 @@ const onSelectRepairPersonType = (type) => {
     // 其他：带出车主信息，支持编辑
     repairPersonNameInput.value = detail.shuttleName || detail.customerName
     repairPersonPhoneInput.value = detail.shuttlePhone || detail.customerPhone
-    detail.repairPersonTag = '其他'
+    detail.repairPersonTag = '送修人'
   }
   // 同步更新送修人信息
   detail.repairPerson = repairPersonNameInput.value
