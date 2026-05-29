@@ -1120,7 +1120,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, computed } from 'vue'
+import { ref, reactive, onMounted, computed, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { showToast, showConfirmDialog, showImagePreview, closeToast, showLoadingToast } from 'vant'
 import { useGlobalStore } from '@/stores/global'
@@ -1586,12 +1586,15 @@ const onHasFaultChange = (value) => {
     //   detail.currentFault = '1'
     //   return
     // }
-    // 如果已添加过故障模块或客户故障描述，弹出确认框
-    if (detail.faultModules.length > 0 || detail.customerFaultDesc) {
+    // 如果已保存过且有故障数据，弹出确认框
+    if (serviceProxyId.value && (detail.faultModules.length > 0 || detail.customerFaultDesc)) {
       showFaultConfirm.value = true
     } else {
       detail.currentFault = '0'
-      detail.customerFaultDesc = '本次进店车辆无故障'
+      if (Number(detail.confirmFault) !== 1) {
+        detail.customerFaultDesc = '本次进店车辆无故障'
+      }
+      detail.faultModules = []
     }
   } else if (Number(value) === 1) {
     if (Number(detail.confirmFault) !== 1) {
@@ -1611,7 +1614,9 @@ const onCancelFaultConfirm = () => {
 const onConfirmFaultChange = () => {
   showFaultConfirm.value = false
   detail.faultModules = []
-  detail.customerFaultDesc = '本次进店车辆无故障'
+  if (Number(detail.confirmFault) !== 1) {
+    detail.customerFaultDesc = '本次进店车辆无故障'
+  }
   detail.currentFault = '0'
 }
 
@@ -3091,6 +3096,7 @@ const fetchDetailForSignature = async() => {
       detail.customerComment = data.customerComment || ''
       isSettingFaultProgrammatically.value = true
       detail.currentFault = data.currentFault != null ? String(data.currentFault) : ''
+      nextTick(() => { isSettingFaultProgrammatically.value = false })
       detail.confirmFault = data.confirmFault
       detail.customerFaultDesc = data.customerContent || ''
       detail.faultAlertRecordRespList = data.faultAlertRecordRespList || []
@@ -3114,6 +3120,7 @@ const fetchDetailForSignature = async() => {
       if (sessionStorage.getItem('faultDetected') === '1') {
         isSettingFaultProgrammatically.value = true
         detail.currentFault = '1'
+        nextTick(() => { isSettingFaultProgrammatically.value = false })
         sessionStorage.removeItem('faultDetected')
       }
 

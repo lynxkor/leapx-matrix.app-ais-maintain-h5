@@ -1198,7 +1198,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, computed, watch } from 'vue'
+import { ref, reactive, onMounted, computed, watch, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { showToast, showConfirmDialog, showImagePreview, closeToast, showLoadingToast } from 'vant'
 import { useGlobalStore } from '@/stores/global'
@@ -1674,7 +1674,9 @@ const onHasFaultChange = (value) => {
       showFaultConfirm.value = true
     } else {
       detail.currentFault = '0'
-      detail.customerFaultDesc = '本次进店车辆无故障'
+      if (Number(detail.confirmFault) !== 1) {
+        detail.customerFaultDesc = '本次进店车辆无故障'
+      }
     }
   } else if (Number(value) === 1) {
     if (Number(detail.confirmFault) !== 1) {
@@ -1695,7 +1697,9 @@ const onConfirmFaultChange = () => {
   showFaultConfirm.value = false
   // 清空故障模块，设置默认客户故障描述
   detail.faultModules = []
-  detail.customerFaultDesc = '本次进店车辆无故障'
+  if (Number(detail.confirmFault) !== 1) {
+    detail.customerFaultDesc = '本次进店车辆无故障'
+  }
   detail.currentFault = '0'
 }
 
@@ -2318,6 +2322,7 @@ const fetchDetail = async() => {
       if (sessionStorage.getItem('faultDetected') === '1') {
         isSettingFaultProgrammatically.value = true
         detail.currentFault = '1'
+        nextTick(() => { isSettingFaultProgrammatically.value = false })
         sessionStorage.removeItem('faultDetected')
       }
 
@@ -3220,6 +3225,7 @@ const onPartsSave = async() => {
     if (!hadGeneralOrThreeElectric && hasGeneralOrThreeElectric && Number(detail.currentFault) === 0) {
       isSettingFaultProgrammatically.value = true
       detail.currentFault = '1'
+      nextTick(() => { isSettingFaultProgrammatically.value = false })
       // 清空默认文本
       if (detail.customerFaultDesc === '本次进店车辆无故障') {
         detail.customerFaultDesc = ''
