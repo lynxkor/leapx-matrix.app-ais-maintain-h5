@@ -3039,7 +3039,7 @@ const handleConfirmAndSignProcess = () => {
         fetchDetailForSignature()
         if (!params.signChannel) {
           // 接口成功后跳转结算页面
-          const settlementUrl = `${window.APP_AIS_H5_CONFIG?.VITE_STATIC_RES_URL || import.meta.env.VITE_STATIC_RES_URL}/leapx/biling/aisInner/constructionOrder?serviceProxyId=${detail.id}&signChannel=3`
+          const settlementUrl = `${window.APP_AIS_H5_CONFIG?.VITE_STATIC_RES_URL || import.meta.env.VITE_STATIC_RES_URL}/leapx/biling/aisInner/constructionOrder?serviceProxyId=${detail.id}&signChannel=3&token=${localStorage.getItem('lxpToken')}`
           window.location.href = settlementUrl
         }
       } else {

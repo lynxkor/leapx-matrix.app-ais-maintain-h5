@@ -3448,7 +3448,7 @@ const handleConfirmAndSignProcess = () => {
   const isPaperSign = signatureData.signChannel === '纸质单据' || Number(detail.signChannel) === 40
   // signStatus == 10 时，纸质单据需调用接口保存，其他渠道直接跳转结算页面
   if (Number(detail.signStatus) === 10 && !isPaperSign) {
-    const settlementUrl = `${window.APP_AIS_H5_CONFIG?.VITE_STATIC_RES_URL || import.meta.env.VITE_STATIC_RES_URL}/leapx/biling/aisInner/constructionOrder?serviceProxyId=${detail.id}&signChannel=3`
+    const settlementUrl = `${window.APP_AIS_H5_CONFIG?.VITE_STATIC_RES_URL || import.meta.env.VITE_STATIC_RES_URL}/leapx/biling/aisInner/constructionOrder?serviceProxyId=${detail.id}&signChannel=3&token=${localStorage.getItem('lxpToken')}`
     window.location.href = settlementUrl
     return
   }
@@ -3472,7 +3472,7 @@ const handleConfirmAndSignProcess = () => {
         fetchDetail()
         if (!params.signChannel) {
           // 接口成功后跳转结算页面
-          const settlementUrl = `${window.APP_AIS_H5_CONFIG?.VITE_STATIC_RES_URL || import.meta.env.VITE_STATIC_RES_URL}/leapx/biling/aisInner/constructionOrder?serviceProxyId=${detail.id}&signChannel=3`
+          const settlementUrl = `${window.APP_AIS_H5_CONFIG?.VITE_STATIC_RES_URL || import.meta.env.VITE_STATIC_RES_URL}/leapx/biling/aisInner/constructionOrder?serviceProxyId=${detail.id}&signChannel=3&token=${localStorage.getItem('lxpToken')}`
           window.location.href = settlementUrl
         }
       } else {
@@ -3531,8 +3531,10 @@ const onSaveDeliveryTime = () => {
   }
   savingLoading.value = true
   serviceAddOrUpdate({
-    ...detail,
     vehProfileVin: detail.vin,
+    shuttleName: detail.shuttleName,
+    shuttlePhone: detail.shuttlePhone,
+    businessType: detail.businessType,
     expectFinishAt: signatureData.expectFinishAt
   }).then((res) => {
     savingLoading.value = false
