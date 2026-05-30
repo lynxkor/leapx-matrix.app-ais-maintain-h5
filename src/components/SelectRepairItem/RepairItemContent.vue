@@ -9,7 +9,7 @@
   数据： contentRef.value?.selectedItems、contentRef.value?.selectedParts
 -->
 <template>
-  <div class="popup-container">
+  <div class="popup-container" :class="{ 'popup-container--popup': showHeader }">
     <!-- 标题栏（弹窗模式） -->
     <div v-if="showHeader" class="popup-header">
       <div class="close-btn" @click="$emit('close')">
@@ -531,7 +531,10 @@ defineExpose({
   flex-direction: column;
   height: 100%;
   background: var(--leap-color-default-light-5);
-  padding-top: var(--page-safe-area-top, env(safe-area-inset-top, 0px));
+
+  &.popup-container--popup {
+    padding-top: var(--page-safe-area-top, env(safe-area-inset-top, 0px));
+  }
 
   // 标题栏
   .popup-header {

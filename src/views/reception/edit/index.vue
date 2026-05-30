@@ -3528,8 +3528,9 @@ const onSaveDeliveryTime = () => {
     return
   }
   savingLoading.value = true
-  spConfirmAndSign({
-    serviceProxyId: detail.id,
+  serviceAddOrUpdate({
+    ...detail,
+    vehProfileVin: detail.vin,
     expectFinishAt: signatureData.expectFinishAt
   }).then((res) => {
     savingLoading.value = false
