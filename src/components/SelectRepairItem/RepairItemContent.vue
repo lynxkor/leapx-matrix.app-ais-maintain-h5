@@ -531,8 +531,7 @@ defineExpose({
   flex-direction: column;
   height: 100%;
   background: var(--leap-color-default-light-5);
-  --safe-area-top: env(safe-area-inset-top, 0px);
-  padding-top: var(--safe-area-top);
+  padding-top: var(--page-safe-area-top, env(safe-area-inset-top, 0px));
 
   // 标题栏
   .popup-header {
