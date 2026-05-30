@@ -536,9 +536,9 @@ const onSelectMoreAction = (action) => {
     })
   }
   if (action.name === '实时故障') {
-    window.location.href = `https://staticres.leapmotor.com/leapx/batteryDiagnosis?vin=${detail.value.vehProfileVin}&vehicleModel=${detail.value.vehSeriesName}`
+    window.location.href = `${window.APP_AIS_H5_CONFIG?.VITE_STATIC_RES_URL || import.meta.env.VITE_STATIC_RES_URL}/leapx/batteryDiagnosis?vin=${detail.value.vehProfileVin}&vehicleModel=${detail.value.vehSeriesName}`
     // router.push({
-    //   path: `https://staticres.leapmotor.com/leapx/batteryDiagnosis?vin=${detail.value.vehProfileVin}&vehicleModel=${detail.value.vehSeriesName}`,
+    //   path: `${window.APP_AIS_H5_CONFIG?.VITE_STATIC_RES_URL || import.meta.env.VITE_STATIC_RES_URL}/leapx/batteryDiagnosis?vin=${detail.value.vehProfileVin}&vehicleModel=${detail.value.vehSeriesName}`,
     //   query: {
     //     vin: detail.value.vehProfileVin,
     //   },

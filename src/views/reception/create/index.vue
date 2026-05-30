@@ -1546,7 +1546,7 @@ const onSelectMoreAction = (action) => {
     })
   }
   if (action.name === '实时故障') {
-    window.location.href = `https://staticres.leapmotor.com/leapx/batteryDiagnosis?vin=${detail.vin}&vehicleModel=${detail.vehSeriesName}`
+    window.location.href = `${window.APP_AIS_H5_CONFIG?.VITE_STATIC_RES_URL || import.meta.env.VITE_STATIC_RES_URL}/leapx/batteryDiagnosis?vin=${detail.vin}&vehicleModel=${detail.vehSeriesName}`
   }
 }
 // 确认作废
@@ -2350,8 +2350,18 @@ const onDeleteFaultModule = async(module) => {
     if (serviceProxyId.value && module.id) {
       deleteSpFaultModule([module.id]).then(res => {
         if (res.code === 200) {
-          fetchDetailForSignature()
+          const index = detail.faultModules.findIndex((m) => m.id === module.id)
+          if (index > -1) {
+            detail.faultModules.splice(index, 1)
+          }
           showToast('删除成功')
+          if (detail.faultModules.length === 0) {
+            console.log('提示：', detail.faultModules.length)
+            showConfirmDialog({
+              title: '提示',
+              message: '全部故障模块已删除，请重新确认【本次进店是否存在故障】？'
+            })
+          }
         } else {
           showToast(res.msg || '删除失败')
         }
@@ -2363,12 +2373,6 @@ const onDeleteFaultModule = async(module) => {
         detail.faultModules.splice(index, 1)
       }
       showToast('删除成功')
-    }
-    if (detail.faultModules.length === 0) {
-      showConfirmDialog({
-        title: '提示',
-        message: '全部故障模块已删除，请重新确认【本次进店是否存在故障】？'
-      })
     }
   } catch {
     // 取消操作
@@ -3026,7 +3030,7 @@ const handleConfirmAndSignProcess = () => {
         fetchDetailForSignature()
         if (!params.signChannel) {
           // 接口成功后跳转结算页面
-          const settlementUrl = `https://staticres-sitb.leapmotor.com/leapx/biling/aisInner/constructionOrder?serviceProxyId=${detail.id}&signChannel=3`
+          const settlementUrl = `${window.APP_AIS_H5_CONFIG?.VITE_STATIC_RES_URL || import.meta.env.VITE_STATIC_RES_URL}/leapx/biling/aisInner/constructionOrder?serviceProxyId=${detail.id}&signChannel=3`
           window.location.href = settlementUrl
         }
       } else {
@@ -3078,6 +3082,11 @@ const fetchDetailForSignature = async() => {
       // 送修人信息从接口返回的送修人字段获取
       detail.repairPerson = data.shuttleName || ''
       detail.repairPersonPhone = data.shuttlePhone || ''
+      // 初始化送修人输入框
+      if (detail.repairPerson) {
+        repairPersonNameInput.value = detail.repairPerson
+        repairPersonPhoneInput.value = detail.repairPersonPhone
+      }
       detail.previewingFinishAt = data.previewingFinishAt || ''
       // 计算送修人类型
       detail.repairPersonTag =
@@ -3297,9 +3306,6 @@ onMounted(async() => {
     fetchDetailForSignature()
     refreshAttachmentList()
   }
-  // 初始化送修人输入框
-  repairPersonNameInput.value = detail.repairPerson
-  repairPersonPhoneInput.value = detail.repairPersonPhone
   // 初始化预计交车日期列表
   generateDeliveryDates()
   // 初始化预计交车时间列表

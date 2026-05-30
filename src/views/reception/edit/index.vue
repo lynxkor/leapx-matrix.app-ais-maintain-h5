@@ -1621,9 +1621,9 @@ const onSelectMoreAction = (action) => {
     })
   }
   if (action.name === '实时故障') {
-    window.location.href = `https://staticres.leapmotor.com/leapx/batteryDiagnosis?vin=${detail.vin}&vehicleModel=${detail.vehSeriesName}`
+    window.location.href = `${window.APP_AIS_H5_CONFIG?.VITE_STATIC_RES_URL || import.meta.env.VITE_STATIC_RES_URL}/leapx/batteryDiagnosis?vin=${detail.vin}&vehicleModel=${detail.vehSeriesName}`
     // router.push({
-    //   path: `https://staticres.leapmotor.com/leapx/batteryDiagnosis?vin=${detail.vehProfileVin}&vehicleModel=${detail.vehModelId}`,
+    //   path: `${window.APP_AIS_H5_CONFIG?.VITE_STATIC_RES_URL || import.meta.env.VITE_STATIC_RES_URL}/leapx/batteryDiagnosis?vin=${detail.vehProfileVin}&vehicleModel=${detail.vehModelId}`,
     //   query: {
     //     vin: detail.vehProfileVin,
     //   },
@@ -2834,18 +2834,21 @@ const onDeleteFaultModule = async(module) => {
     })
     deleteSpFaultModule([module.id]).then(res => {
       if (res.code === 200) {
-        fetchDetail()
+        const index = detail.faultModules.findIndex((m) => m.id === module.id)
+        if (index > -1) {
+          detail.faultModules.splice(index, 1)
+        }
         showToast('删除成功')
+        if (detail.faultModules.length === 0) {
+          showConfirmDialog({
+            title: '提示',
+            message: '全部故障模块已删除，请重新确认【本次进店是否存在故障】？'
+          })
+        }
       } else {
         showToast(res.msg || '删除失败')
       }
     })
-    if (detail.faultModules.length === 0) {
-      showConfirmDialog({
-        title: '提示',
-        message: '全部故障模块已删除，请重新确认【本次进店是否存在故障】？'
-      })
-    }
   } catch {
     // 取消操作
   }
@@ -3443,7 +3446,7 @@ const handleConfirmAndSignProcess = () => {
   const isPaperSign = signatureData.signChannel === '纸质单据' || Number(detail.signChannel) === 40
   // signStatus == 10 时，纸质单据需调用接口保存，其他渠道直接跳转结算页面
   if (Number(detail.signStatus) === 10 && !isPaperSign) {
-    const settlementUrl = `https://staticres-sitb.leapmotor.com/leapx/biling/aisInner/constructionOrder?serviceProxyId=${detail.id}&signChannel=3`
+    const settlementUrl = `${window.APP_AIS_H5_CONFIG?.VITE_STATIC_RES_URL || import.meta.env.VITE_STATIC_RES_URL}/leapx/biling/aisInner/constructionOrder?serviceProxyId=${detail.id}&signChannel=3`
     window.location.href = settlementUrl
     return
   }
@@ -3467,7 +3470,7 @@ const handleConfirmAndSignProcess = () => {
         fetchDetail()
         if (!params.signChannel) {
           // 接口成功后跳转结算页面
-          const settlementUrl = `https://staticres-sitb.leapmotor.com/leapx/biling/aisInner/constructionOrder?serviceProxyId=${detail.id}&signChannel=3`
+          const settlementUrl = `${window.APP_AIS_H5_CONFIG?.VITE_STATIC_RES_URL || import.meta.env.VITE_STATIC_RES_URL}/leapx/biling/aisInner/constructionOrder?serviceProxyId=${detail.id}&signChannel=3`
           window.location.href = settlementUrl
         }
       } else {
