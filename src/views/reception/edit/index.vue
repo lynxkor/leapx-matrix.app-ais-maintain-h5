@@ -2319,7 +2319,7 @@ const fetchDetail = async() => {
       }
 
       // 里程校验
-      validateMileage(data.mileage, data.lastMileage, data.netMileage)
+      // validateMileage(data.mileage, data.lastMileage, data.netMileage)
 
       // 检查是否从添加项目/零件页面返回，需要更新故障状态
       if (sessionStorage.getItem('faultDetected') === '1') {
@@ -2405,7 +2405,7 @@ const fetchVehicleMileage = async(vin) => {
       detail.mileage = res.data.mileage || ''
       detail.battery = res.data.electricity || ''
       // 获取车联网里程后进行校验
-      validateMileage(detail.mileage, detail.lastMileage, detail.networkMileageTotal)
+      // validateMileage(detail.mileage, detail.lastMileage, detail.networkMileageTotal)
     }
   } catch (error) {
     console.error('获取车联网里程失败:', error)

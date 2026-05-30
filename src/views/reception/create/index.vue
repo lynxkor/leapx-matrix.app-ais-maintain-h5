@@ -2076,7 +2076,7 @@ const fetchVehicleMileage = async(vin) => {
       detail.mileage = res.data.mileage || ''
       detail.battery = res.data.electricity || ''
       // 获取车联网里程后进行校验
-      validateMileage(detail.mileage, detail.lastMileage, detail.networkMileageTotal)
+      // validateMileage(detail.mileage, detail.lastMileage, detail.networkMileageTotal)
     }
   } catch (error) {
     console.error('获取车联网里程失败:', error)
