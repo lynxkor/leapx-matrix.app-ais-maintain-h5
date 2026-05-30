@@ -731,9 +731,11 @@ import {
   cancelSelect
 } from '@/api/reception'
 import './select-package.scss'
+import { usePageSafeArea } from '@/utils/safeArea'
 
 const router = useRouter()
 const route = useRoute()
+usePageSafeArea({ bodyClass: 'ais-page-nav-safe-area' })
 
 // 公共参数
 const serviceProxyId = computed(() => route.query.serviceProxyId || route.query.id)

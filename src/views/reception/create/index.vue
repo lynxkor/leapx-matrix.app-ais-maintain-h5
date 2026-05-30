@@ -1610,6 +1610,7 @@ const onCancelFaultConfirm = () => {
   showFaultConfirm.value = false
   // 恢复为"是"
   detail.currentFault = '1'
+  isSettingFaultProgrammatically.value = true
 }
 
 // 确认故障变更
@@ -2318,6 +2319,7 @@ const onAddFaultModuleItem = (item) => {
   }
   // 如果已保存，调用接口添加
   if (serviceProxyId.value) {
+    delete item.id
     saveSpFaultModule({ ...item, serviceProxyId: serviceProxyId.value }).then(res => {
       if (res.code === 200) {
         fetchDetailForSignature()
@@ -2445,22 +2447,6 @@ const onSave = async() => {
     savingLoading.value = false
     return
   }
-  // 里程校验
-  validateMileage(detail.mileage, detail.lastMileage, detail.networkMileageTotal)
-  // 如果currentFault为"1"，客户故障描述必填
-  if (Number(detail.currentFault) === 1 && !detail.customerFaultDesc.trim()) {
-    showToast('请输入客户故障描述')
-    scrollToErrorField({ errorField: 'customerFaultDesc', activeTab, repairPersonCollapse })
-    savingLoading.value = false
-    return
-  }
-  // 如果currentFault为"1"，必须添加故障模块
-  if (Number(detail.currentFault) === 1 && detail.faultModules.length === 0) {
-    showToast('请添加故障模块')
-    scrollToErrorField({ errorField: 'faultModules', activeTab, repairPersonCollapse })
-    savingLoading.value = false
-    return
-  }
   // 照片校验（根据配置判断是否必填）
   if (interiorConfig.value.required === '1' && detail.interiorImages.length === 0) {
     showToast('请上传车内照片')
@@ -2501,6 +2487,23 @@ const onSave = async() => {
     savingLoading.value = false
     return
   }
+  // 如果currentFault为"1"，必须添加故障模块
+  if (Number(detail.currentFault) === 1 && detail.faultModules.length === 0) {
+    showToast('请添加故障模块')
+    scrollToErrorField({ errorField: 'faultModules', activeTab, repairPersonCollapse })
+    savingLoading.value = false
+    return
+  }
+  // 里程校验
+  validateMileage(detail.mileage, detail.lastMileage, detail.networkMileageTotal)
+  // 如果currentFault为"1"，客户故障描述必填
+  if (Number(detail.currentFault) === 1 && !detail.customerFaultDesc.trim()) {
+    showToast('请输入客户故障描述')
+    scrollToErrorField({ errorField: 'customerFaultDesc', activeTab, repairPersonCollapse })
+    savingLoading.value = false
+    return
+  }
+
   showLoadingToast('正在保存...')
   try {
     const res = await serviceAddOrUpdate({
@@ -2570,14 +2573,20 @@ const onSave = async() => {
         serviceProxyId.value = res.data
         detail.id = res.data
       }
-      // 同步更新快照，防止返回时误提示
-      saveDataSnapshot()
-      // 保存成功生成施工单后，清除sessionStorage中的车辆信息
-      sessionStorage.removeItem('vehicleInfo')
-      // 保存成功后获取详情数据更新（await 确保快照同步完成后再放开 loading）
-      await fetchDetailForSignature()
-      // 获取提醒信息
-      fetchRemindInfo()
+      router.replace({
+        path: '/reception/work-order/edit',
+        query: {
+          id: detail.id || serviceProxyId.value || route.query.id
+        }
+      })
+      // // 同步更新快照，防止返回时误提示
+      // saveDataSnapshot()
+      // // 保存成功生成施工单后，清除sessionStorage中的车辆信息
+      // sessionStorage.removeItem('vehicleInfo')
+      // // 保存成功后获取详情数据更新（await 确保快照同步完成后再放开 loading）
+      // await fetchDetailForSignature()
+      // // 获取提醒信息
+      // fetchRemindInfo()
     } else {
       showToast(res.msg || '保存失败')
     }

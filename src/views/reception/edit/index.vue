@@ -521,7 +521,7 @@
               <span class="label">开启维修直播</span>
               <van-switch v-model="signatureData.liveEnabled" size="20" active-color="#009100" />
             </div> -->
-            <div v-if="Number(detail.signStatus) === 20" class="signature-row">
+            <div v-if="Number(detail.signStatus) === 20 || Number(detail.signChannel) === 40" class="signature-row">
               <span class="label">签字渠道</span>
 
               <div class="value-wrapper">
@@ -1692,6 +1692,7 @@ const onCancelFaultConfirm = () => {
   showFaultConfirm.value = false
   // 恢复为"是"
   detail.currentFault = '1'
+  isSettingFaultProgrammatically.value = true
 }
 
 // 确认故障变更
@@ -2803,6 +2804,7 @@ const onAddFaultModuleItem = (item) => {
     showToast('该故障模块已添加')
     return
   }
+  delete item.id
   saveSpFaultModule({ ...item, serviceProxyId: detail.id }).then(res => {
     if (res.code === 200) {
       // 将新添加的故障模块加入列表显示
