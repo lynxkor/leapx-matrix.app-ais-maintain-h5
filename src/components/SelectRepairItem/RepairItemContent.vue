@@ -645,7 +645,7 @@ defineExpose({
   .popup-footer {
     flex-shrink: 0;
     padding: 7px 12px;
-    padding-bottom: calc(7px + env(safe-area-inset-bottom));
+    padding-bottom: calc(20px + env(safe-area-inset-bottom));
     background: #fff;
 
     .save-btn {
