@@ -3533,8 +3533,8 @@ const onSaveDeliveryTime = () => {
   serviceAddOrUpdate({
     id: detail.id,
     vehProfileVin: detail.vin,
-    shuttleName: detail.shuttleName,
-    shuttlePhone: detail.shuttlePhone,
+    shuttleName: repairPersonNameInput.value || detail.shuttleName,
+    shuttlePhone: repairPersonPhoneInput.value || detail.shuttlePhone,
     businessType: detail.businessType,
     expectFinishAt: signatureData.expectFinishAt
   }).then((res) => {
