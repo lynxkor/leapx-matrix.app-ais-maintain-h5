@@ -3531,6 +3531,7 @@ const onSaveDeliveryTime = () => {
   }
   savingLoading.value = true
   serviceAddOrUpdate({
+    id: detail.id,
     vehProfileVin: detail.vin,
     shuttleName: detail.shuttleName,
     shuttlePhone: detail.shuttlePhone,
