@@ -954,10 +954,10 @@ const onSearchClear = () => {
 
 // 点击维修套餐
 const onPackageClick = (item) => {
-  if (item.used) {
-    showToast('已使用')
-    return
-  }
+  // if (item.used) {
+  //   showToast('已使用')
+  //   return
+  // }
   getSpecialPackageDetail({ id: serviceProxyId.value, packageId: item.id }).then((res) => {
     if (res.code === 200) {
       const data = res.data
@@ -986,10 +986,10 @@ const onEquityClick = (item) => {
 
 // 点击商城订单
 const onMallClick = (item) => {
-  if (item.used) {
-    showToast('已使用')
-    return
-  }
+  // if (item.used) {
+  //   showToast('已使用')
+  //   return
+  // }
   getSpecialGoodsDetail({
     id: serviceProxyId.value,
     packageId: item.id
@@ -1005,10 +1005,10 @@ const onMallClick = (item) => {
 
 // 点击免保项目
 const onFreeClick = (item) => {
-  if (item.used) {
-    showToast('已使用')
-    return
-  }
+  // if (item.used) {
+  //   showToast('已使用')
+  //   return
+  // }
   getSpecialFreeDetail({
     id: serviceProxyId.value,
     packageId: item.id
@@ -1026,10 +1026,10 @@ const onFreeClick = (item) => {
 
 // 点击服务活动
 const onServiceClick = (item) => {
-  if (item.used) {
-    showToast('已使用')
-    return
-  }
+  // if (item.used) {
+  //   showToast('已使用')
+  //   return
+  // }
   showLoadingToast('请稍候...')
   getSpecialActivityDetail({
     activityId: item.activityId,
@@ -1213,7 +1213,7 @@ const onConfirmMall = () => {
       if (res.code === 200) {
         showToast('已添加')
         showMallDetail.value = false
-        // router.back()
+        router.back()
       } else {
         showToast({ message: res.msg || '保存失败', duration: 3000 })
       }
@@ -1256,6 +1256,8 @@ const onConfirmEquity = () => {
     .then((res) => {
       if (res.code === 200) {
         showToast('已添加')
+        showEquityDetail.value = false
+        router.back()
         specialEquityRemind({ id: serviceProxyId.value }).then((remindRes) => {
           const remindData = remindRes.code === 200 ? remindRes.data : null
           if (Array.isArray(remindData) && remindData.length > 0) {

@@ -2342,6 +2342,12 @@ const fetchDetail = async() => {
   } finally {
     savingLoading.value = false
     isDataLoading.value = false // 数据加载完成
+    // 恢复从选择套餐/添加项目页面返回时的tab状态
+    const savedTab = sessionStorage.getItem('receptionEditActiveTab')
+    if (savedTab) {
+      sessionStorage.removeItem('receptionEditActiveTab')
+      nextTick(() => { activeTab.value = savedTab })
+    }
   }
 }
 // 换车
@@ -3339,6 +3345,7 @@ const onComplete = async() => {
 }
 // 添加项目/零件
 const onAddParts = () => {
+  sessionStorage.setItem('receptionEditActiveTab', activeTab.value)
   router.push({
     path: '/reception/add-parts',
     query: {
@@ -3351,6 +3358,7 @@ const onAddParts = () => {
 
 // 添加套餐及其他
 const onAddPackage = () => {
+  sessionStorage.setItem('receptionEditActiveTab', activeTab.value)
   router.push({
     path: '/reception/select-package',
     query: {
