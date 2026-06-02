@@ -1444,3 +1444,316 @@
 .empty-state {
   height: auto !important;
 }
+
+// ==================== 以下为 create/edit 共享样式 ====================
+
+.van-action-sheet__cancel {
+  color: #191a1b;
+}
+
+// 换车弹框样式
+.change-car-content {
+  .search-box {
+    margin-bottom: 12px;
+
+    .search-input-wrapper {
+      .search-input {
+        flex: 1;
+        height: 100%;
+        border: none;
+        background: transparent;
+        font-size: 12px;
+        color: #191a1b;
+        outline: none;
+        padding: 0;
+        &::placeholder {
+          color: #888888;
+        }
+      }
+
+      .search-btn {
+        background: #009100;
+        color: #ffffff;
+        font-size: 12px;
+        padding: 4px 14px;
+        border-radius: 13px;
+        flex-shrink: 0;
+
+        &:active {
+          background: #007a00;
+        }
+      }
+    }
+  }
+
+  .search-results {
+    border-radius: 8px;
+    overflow: hidden;
+
+    .result-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px 12px;
+      border-bottom: 0.5px solid #e6e6e5;
+
+      &:last-child {
+        border-bottom: none;
+      }
+
+      &:active {
+        background: #f7f7f7;
+      }
+
+      .result-text {
+        font-size: 14px;
+        color: #191a1b;
+      }
+    }
+  }
+
+  .car-info-card {
+    background: #ffffff;
+    border-radius: 6px;
+    overflow: hidden;
+
+    .card-header {
+      padding: 12px 12px 0;
+
+      .plate-no {
+        font-size: 16px;
+        font-weight: 600;
+        color: #191a1b;
+      }
+    }
+
+    .card-info-list {
+      padding: 8px 12px 12px;
+
+      .info-row {
+        display: flex;
+        align-items: center;
+        margin-bottom: 6px;
+
+        &:last-child {
+          margin-bottom: 0;
+        }
+
+        .label {
+          width: 56px;
+          font-size: 14px;
+          color: #545454;
+          flex-shrink: 0;
+        }
+
+        .value {
+          font-size: 14px;
+          color: #191a1b;
+          margin-left: 12px;
+        }
+      }
+    }
+
+    .card-footer {
+      padding: 0 12px 12px;
+      display: flex;
+      justify-content: flex-end;
+      .change-car-btn {
+        border: 1px solid #009100;
+        color: #009100;
+        font-size: 14px;
+        padding: 6px 16px;
+        border-radius: 38px;
+        background: #fff;
+      }
+      .confirm-btn {
+        border: 1px solid #009100;
+        color: #009100;
+        font-size: 14px;
+        padding: 6px 16px;
+        border-radius: 38px;
+
+        &:active {
+          background: rgba(0, 145, 0, 0.1);
+        }
+      }
+    }
+  }
+
+  .no-result {
+    text-align: center;
+    padding: 60px 0;
+
+    img {
+      max-width: 200px;
+    }
+  }
+}
+
+// 故障模块弹框样式
+.fault-module-content {
+  .search-box {
+    margin-bottom: 12px;
+
+    .search-input-wrapper {
+      .search-input {
+        flex: 1;
+        height: 100%;
+        border: none;
+        background: transparent;
+        font-size: 12px;
+        color: #191a1b;
+        outline: none;
+        padding: 0;
+
+        &::placeholder {
+          color: #888888;
+        }
+      }
+
+      .search-btn {
+        background: #009100;
+        color: #ffffff;
+        font-size: 12px;
+        padding: 4px 14px;
+        border-radius: 13px;
+        flex-shrink: 0;
+
+        &:active {
+          background: #007a00;
+        }
+      }
+    }
+  }
+
+  .no-result {
+    text-align: center;
+    padding: 60px 0;
+
+    img {
+      max-width: 200px;
+    }
+  }
+}
+
+// 故障确认弹框样式
+.fault-confirm-content {
+  padding: 24px 24px 10px 24px;
+
+  .confirm-text {
+    font-size: 14px;
+    color: #888888;
+    text-align: center;
+    line-height: 20px;
+    margin-bottom: 24px;
+  }
+
+  .confirm-actions {
+    display: flex;
+    gap: 12px;
+
+    .action-btn {
+      flex: 1;
+      height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      border-radius: 8px;
+      border-top: 1px solid #eeeeee;
+      &.confirm {
+        color: #191a1b;
+      }
+    }
+  }
+}
+
+// 二次确认提示框样式
+.confirm-dialog {
+  background: #ffffff;
+  border-radius: 8px;
+  width: 295px;
+
+  .van-dialog__content {
+    padding: 0;
+  }
+}
+
+.confirm-dialog-content {
+  padding: 32px 24px 16px;
+
+  .confirm-section {
+    margin-bottom: 24px;
+
+    &:last-of-type {
+      margin-bottom: 0;
+    }
+
+    &:last-of-type {
+      margin-bottom: 0;
+    }
+  }
+
+  .confirm-title {
+    font-size: 16px;
+    font-weight: 500;
+    color: #191a1b;
+    margin-bottom: 8px;
+  }
+
+  .confirm-message {
+    font-size: 14px;
+    color: #545454;
+    line-height: 22px;
+  }
+
+  .confirm-btn {
+    width: 100%;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    color: #009100;
+    border-top: 0.5px solid #e6e6e5;
+    margin-top: 24px;
+  }
+}
+
+.loading-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+}
+
+.action-sheet-item {
+  padding: 12px;
+  text-align: center;
+  font-size: 16px;
+  color: #333;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.action-sheet-item:last-child {
+  border-bottom: none;
+}
+
+.van-collapse-item__content {
+  padding: 0;
+}
+
+.section-field {
+  .van-field__control {
+    width: 100px;
+    text-align: right
+  }
+  .van-cell {
+    padding-right: 0;
+  }
+  .van-field__button {
+    padding-left: 3px;
+    display: inline-flex;
+    align-items: center;
+  }
+}

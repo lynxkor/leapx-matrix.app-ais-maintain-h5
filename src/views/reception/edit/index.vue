@@ -658,118 +658,13 @@
       </template>
     </div>
     <!-- 更换车牌 -->
-    <van-dialog
+    <PlateKeyboard
       v-model:show="changePlateDialog"
-      title="更换车牌"
-      show-cancel-button
-      confirmButtonText="保存"
-      cancelButtonText="取消"
-      confirmButtonColor="#009100"
-      cancelButtonColor="#191A1B"
-      @confirm="onConfirmChangePlate"
-      @opened="onPlateDialogOpened"
-      @closed="onPlateDialogClosed"
-      :style="{ marginBottom: showPlateKeyboard ? '220px' : '0' }"
-    >
-      <template #title>
-        <div class="dialog-title">实名认证车辆</div>
-        <div class="dialog-subtitle">原车牌：{{ detail.plateNo }}</div>
-      </template>
-      <template #default>
-        <div class="plate-input-wrapper">
-          <div class="plate-input-box">
-            <div
-              v-for="(char, index) in plateInputChars"
-              :key="index"
-              :class="['plate-char', { active: currentPlateIndex === index }]"
-              @click="onPlateCharClick(index)"
-            >
-              {{ char }}
-            </div>
-          </div>
-        </div>
-      </template>
-    </van-dialog>
-
-    <!-- 车牌键盘 - 放在弹框外面 -->
-    <van-popup
-      v-model:show="showPlateKeyboard"
-      position="bottom"
-      :style="{ height: '220px' }"
-      :overlay="false"
-      @open="onKeyboardOpen"
-    >
-      <div class="plate-keyboard">
-        <!-- 省份键盘 -->
-        <div v-if="currentPlateIndex === 0" class="keyboard-content">
-          <div class="keyboard-row" v-for="(row, rowIndex) in provinceRows" :key="rowIndex">
-            <span
-              v-for="item in row"
-              :key="item"
-              :class="['key-item', { disabled: !item }]"
-              @click="onKeyboardKeyClick(item)"
-            >
-              {{ item }}
-            </span>
-          </div>
-        </div>
-        <!-- 字母键盘 -->
-        <div v-else-if="currentPlateIndex === 1" class="keyboard-content">
-          <div class="keyboard-tabs">
-            <span
-              :class="['tab-item', { active: keyboardTab === 'letter' }]"
-              @click="keyboardTab = 'letter'"
-              >字母</span
-            >
-            <span
-              :class="['tab-item', { active: keyboardTab === 'province' }]"
-              @click="keyboardTab = 'province'"
-              >省份</span
-            >
-          </div>
-          <template v-if="keyboardTab === 'letter'">
-            <div class="keyboard-row" v-for="(row, rowIndex) in letterRows" :key="rowIndex">
-              <span
-                v-for="item in row"
-                :key="item"
-                :class="['key-item', { disabled: !item }]"
-                @click="onKeyboardKeyClick(item)"
-              >
-                {{ item }}
-              </span>
-            </div>
-          </template>
-          <template v-else>
-            <div class="keyboard-row" v-for="(row, rowIndex) in provinceRows" :key="rowIndex">
-              <span
-                v-for="item in row"
-                :key="item"
-                :class="['key-item', { disabled: !item }]"
-                @click="onKeyboardKeyClick(item)"
-              >
-                {{ item }}
-              </span>
-            </div>
-          </template>
-        </div>
-        <!-- 数字字母混合键盘 -->
-        <div v-else class="keyboard-content">
-          <div class="keyboard-row" v-for="(row, rowIndex) in numberLetterRows" :key="rowIndex">
-            <span
-              v-for="item in row"
-              :key="item"
-              :class="[
-                'key-item',
-                { disabled: !item, special: item === '删除' || item === '完成' },
-              ]"
-              @click="onKeyboardKeyClick(item)"
-            >
-              {{ item }}
-            </span>
-          </div>
-        </div>
-      </div>
-    </van-popup>
+      v-model="detail.plateNo"
+      title="实名认证车辆"
+      :subtitle="'原车牌：' + detail.plateNo"
+      :exclude-vin="detail.vin"
+    />
     <!-- 换车弹框 -->
     <ais-popup
       :show="changeCarDialog"
@@ -877,46 +772,13 @@
       </template>
     </ais-popup>
     <!-- 预计交车时间选择器 -->
-    <ais-popup
-      :show="showDeliveryTimePicker"
-      position="bottom"
+    <DeliveryTimePicker
+      v-model:show="showDeliveryTimePicker"
+      v-model="signatureData.expectFinishAt"
       title="预计交车时间"
-      @close="onCloseDeliveryTimePicker"
-      :style="{ background: '#f4f4f4', height: '70%' }"
-    >
-      <template #content>
-        <div class="delivery-time-picker">
-          <!-- 日期列 -->
-          <div class="date-column">
-            <div
-              v-for="(item, index) in deliveryDateList"
-              :key="index"
-              :class="['picker-item', { active: selectedDeliveryDate === item.value }]"
-              @click="onSelectDeliveryDate(item)"
-            >
-              {{ item.label }}
-            </div>
-          </div>
-          <!-- 时间列 -->
-          <div class="time-column">
-            <div
-              v-for="(item, index) in deliveryTimeList"
-              :key="index"
-              :class="['picker-item', { active: selectedDeliveryTime === item.value }]"
-              @click="onSelectDeliveryTime(item)"
-            >
-              <span class="time-text">{{ item.label }}</span>
-              <van-icon
-                v-if="selectedDeliveryTime === item.value"
-                name="success"
-                size="16"
-                color="#009100"
-              />
-            </div>
-          </div>
-        </div>
-      </template>
-    </ais-popup>
+      :dates="deliveryDateList"
+      :times="deliveryTimeList"
+    />
 
     <!-- 签字渠道选择器 -->
     <ais-popup
@@ -1252,6 +1114,8 @@ import {
   validatePreSaleWarranty,
   validateGoodWillWarranty
 } from '@/utils/receptionCommon'
+import PlateKeyboard from '@/libs/components/PlateKeyboard.vue'
+import DeliveryTimePicker from '@/libs/components/DeliveryTimePicker.vue'
 import '../create/create.scss'
 
 const route = useRoute()
@@ -1391,165 +1255,6 @@ const repairPersonPhoneInput = ref('')
 // 折叠面板状态
 const repairPersonCollapse = ref([])
 // const businessTypeCollapse = ref([])
-
-// 车牌输入相关
-const plateInputChars = ref(['', '', '', '', '', '', '', ''])
-const currentPlateIndex = ref(0) // 当前选中的输入框索引
-const showPlateKeyboard = ref(false) // 键盘显示状态
-const keyboardTab = ref('province') // 键盘tab: province/letter
-
-// 省份列表
-const provinceList = '京津沪渝冀豫云辽黑湘皖鲁新苏浙赣鄂桂甘晋蒙陕吉闽贵粤青藏川宁琼使领'
-
-// 字母列表
-const letterList = 'ABCDEFGHJKLMNPQRSTUVWXYZ' // 不含I和O
-
-// 省份键盘布局（每行10个）
-const provinceRows = computed(() => {
-  const provinces = provinceList.split('')
-  const rows = []
-  for (let i = 0; i < provinces.length; i += 10) {
-    const row = provinces.slice(i, i + 10)
-    while (row.length < 10) {
-      row.push('')
-    }
-    rows.push(row)
-  }
-  return rows
-})
-
-// 字母键盘布局
-const letterRows = computed(() => {
-  const letters = letterList.split('')
-  const rows = []
-  // 第一行10个
-  rows.push(letters.slice(0, 10))
-  // 第二行10个
-  rows.push(letters.slice(10, 20))
-  // 第三行6个字母 + 4个空位
-  const lastRow = letters.slice(20, 26)
-  while (lastRow.length < 10) {
-    lastRow.push('')
-  }
-  rows.push(lastRow)
-  return rows
-})
-
-// 数字字母混合键盘布局
-const numberLetterRows = computed(() => {
-  return [
-    ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'],
-    ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'P', '港', '澳'],
-    ['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', '学'],
-    ['Z', 'X', 'C', 'V', 'B', 'N', 'M', '警', '领', ''],
-    ['删除', '', '', '', '', '', '', '', '', '完成']
-  ]
-})
-
-// 弹框打开时初始化
-const onPlateDialogOpened = () => {
-  // 初始化车牌输入框，使用当前车牌号
-  const currentPlate = detail.plateNo.replace(/[·•]/g, '')
-  const chars = currentPlate.split('')
-  // 补齐8位
-  while (chars.length < 8) {
-    chars.push('')
-  }
-  plateInputChars.value = chars.slice(0, 8)
-  currentPlateIndex.value = 0
-  showPlateKeyboard.value = true
-}
-
-// 弹框关闭时
-const onPlateDialogClosed = () => {
-  showPlateKeyboard.value = false
-}
-
-// 键盘打开
-const onKeyboardOpen = () => {
-  // 键盘打开时的处理
-}
-
-// 点击车牌输入框
-const onPlateCharClick = (index) => {
-  currentPlateIndex.value = index
-  showPlateKeyboard.value = true
-}
-
-// 键盘按键点击
-const onKeyboardKeyClick = (key) => {
-  if (!key) return
-
-  if (key === '删除') {
-    // 删除操作
-    if (currentPlateIndex.value > 0) {
-      if (plateInputChars.value[currentPlateIndex.value]) {
-        plateInputChars.value[currentPlateIndex.value] = ''
-      } else {
-        currentPlateIndex.value--
-        plateInputChars.value[currentPlateIndex.value] = ''
-      }
-    } else {
-      plateInputChars.value[0] = ''
-    }
-  } else if (key === '完成') {
-    // 完成操作
-    showPlateKeyboard.value = false
-  } else {
-    // 输入字符
-    if (currentPlateIndex.value < 8) {
-      plateInputChars.value[currentPlateIndex.value] = key
-      if (currentPlateIndex.value < 7) {
-        currentPlateIndex.value++
-      }
-    }
-  }
-}
-
-// 确认更换车牌
-const onConfirmChangePlate = async() => {
-  const newPlate = plateInputChars.value.join('')
-  if (newPlate.length < 7) {
-    showToast('请输入完整的车牌号')
-    return
-  }
-
-  // 如果车牌没有变化，直接关闭弹框
-  if (newPlate === detail.plateNo) {
-    changePlateDialog.value = false
-    return
-  }
-
-  savingLoading.value = true
-  try {
-    // 校验新车牌号唯一性
-    const res = await getVehicleInfo({ searchVin: newPlate })
-    if (res.code === 200) {
-      const vehicleList = res.data || []
-      // 检查是否存在其他车辆使用该车牌号（排除当前车辆）
-      const existingVehicle = vehicleList.find(
-        (v) => v.vehiclePlateNo === newPlate && v.vin !== detail.vin
-      )
-
-      if (existingVehicle) {
-        // 该车牌已具有一个VIN码，请检查确认
-        showToast('该车牌已具有一个VIN码，请检查确认')
-      } else {
-        // 车牌唯一，直接更新页面数据并关闭弹框
-        detail.plateNo = newPlate
-        showToast('车牌修改成功')
-        changePlateDialog.value = false
-      }
-    } else {
-      showToast(res.msg || '校验车牌失败')
-    }
-  } catch (error) {
-    console.error('更换车牌失败:', error)
-    showToast('更换车牌失败，请稍后重试')
-  } finally {
-    savingLoading.value = false
-  }
-}
 
 // 更多操作列表 - 动态计算作废按钮状态
 const moreActionsList = computed(() => {
@@ -2070,10 +1775,6 @@ watch(
 const showDeliveryTimePicker = ref(false)
 const showSignatureChannelPicker = ref(false)
 const tempSignatureChannel = ref('')
-
-// 预计交车时间选择相关
-const selectedDeliveryDate = ref('')
-const selectedDeliveryTime = ref('')
 
 // 预计交车日期列表（生成未来7天）
 const deliveryDateList = ref([])
@@ -3515,19 +3216,6 @@ const onOpenDeliveryTimePicker = () => {
   if (detail.orderStatus === 180 || detail.orderStatus === 210) {
     return
   }
-  // 如果没有值，默认选中第一个日期和第一个时间
-  if (!signatureData.expectFinishAt) {
-    if (deliveryDateList.value.length > 0) {
-      selectedDeliveryDate.value = deliveryDateList.value[0].value
-    }
-    if (deliveryTimeList.value.length > 0) {
-      selectedDeliveryTime.value = deliveryTimeList.value[0].value
-    }
-  }
-  if (signatureData.expectFinishAt) {
-    selectedDeliveryDate.value = signatureData.expectFinishAt.split(' ')[0] || ''
-    selectedDeliveryTime.value = signatureData.expectFinishAt.split(' ')[1] || ''
-  }
   showDeliveryTimePicker.value = true
 }
 
@@ -3559,24 +3247,6 @@ const onSaveDeliveryTime = () => {
 }
 
 // 选择预计交车日期
-const onSelectDeliveryDate = (item) => {
-  selectedDeliveryDate.value = item.value
-}
-
-// 选择预计交车时间 - 选中后直接确认并关闭
-const onSelectDeliveryTime = (item) => {
-  selectedDeliveryTime.value = item.value
-  // 选中时间后直接确认
-  if (selectedDeliveryDate.value && selectedDeliveryTime.value) {
-    signatureData.expectFinishAt = `${selectedDeliveryDate.value} ${selectedDeliveryTime.value}`
-    showDeliveryTimePicker.value = false
-  }
-}
-
-// 关闭预计交车时间选择器
-const onCloseDeliveryTimePicker = () => {
-  showDeliveryTimePicker.value = false
-}
 // 点击制单确认并签字，先查询最新状态，再弹出签字渠道选择
 const onConfirmAndSignClick = async() => {
   const id = route.query.id
@@ -3696,359 +3366,7 @@ const onBeforeBack = () => {
 defineExpose({ onBeforeBack })
 </script>
 <style lang="scss" scoped>
-:deep(.van-action-sheet__cancel) {
-  color: #191a1b;
-}
-
-.dialog-title {
-  font-size: 16px;
-  font-weight: 500;
-  color: #191a1b;
-  text-align: center;
-}
-
-.dialog-subtitle {
-  font-size: 12px;
-  color: #545454;
-  text-align: center;
-  margin-top: 2px;
-}
-
-.plate-input-wrapper {
-  padding: 8px 10px 32px;
-  display: flex;
-  justify-content: center;
-}
-
-.plate-input-box {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-
-  .plate-char {
-    width: 30px;
-    height: 40px;
-    background: #ffffff;
-    border: 0.5px solid #cecfce;
-    border-radius: 4px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 14px;
-    font-weight: 500;
-    color: #191a1b;
-    cursor: pointer;
-
-    &.active {
-      background: rgba(0, 145, 0, 0.1);
-      border-color: #009100;
-      color: #009100;
-    }
-  }
-}
-
-.keyboard-tabs {
-  display: flex;
-  justify-content: center;
-  gap: 16px;
-  padding: 8px 0;
-
-  .tab-item {
-    font-size: 14px;
-    color: #545454;
-    cursor: pointer;
-
-    &.active {
-      color: #009100;
-      font-weight: 500;
-    }
-  }
-}
-
-.plate-keyboard {
-  background: #d1d5db;
-  padding: 8px 6px;
-  height: 100%;
-  box-sizing: border-box;
-
-  .keyboard-content {
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-evenly;
-  }
-
-  .keyboard-row {
-    display: flex;
-    justify-content: center;
-    gap: 4px;
-    margin-bottom: 6px;
-
-    &:last-child {
-      margin-bottom: 0;
-    }
-  }
-
-  .key-item {
-    flex: 1;
-    max-width: 32px;
-    height: 36px;
-    background: #ffffff;
-    border-radius: 4px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 14px;
-    color: #191a1b;
-    cursor: pointer;
-    user-select: none;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-
-    &:active {
-      background: #e5e7eb;
-    }
-
-    &.disabled {
-      background: transparent;
-      box-shadow: none;
-      cursor: default;
-    }
-
-    &.special {
-      max-width: 50px;
-      background: #a3a3a3;
-      color: #ffffff;
-
-      &:active {
-        background: #737373;
-      }
-    }
-  }
-}
-
-// 换车弹框样式
-.change-car-content {
-  .search-box {
-    margin-bottom: 12px;
-
-    .search-input-wrapper {
-      // display: flex;
-      // align-items: center;
-      // height: 30px;
-      // background: rgba(216, 216, 216, 0.3);
-      // border-radius: 15px;
-      // padding: 0 4px;
-
-      .search-input {
-        flex: 1;
-        height: 100%;
-        border: none;
-        background: transparent;
-        font-size: 12px;
-        color: #191a1b;
-        outline: none;
-        padding: 0;
-        &::placeholder {
-          color: #888888;
-        }
-      }
-
-      .search-btn {
-        background: #009100;
-        color: #ffffff;
-        font-size: 12px;
-        padding: 4px 14px;
-        border-radius: 13px;
-        flex-shrink: 0;
-
-        &:active {
-          background: #007a00;
-        }
-      }
-    }
-  }
-
-  .search-results {
-    border-radius: 8px;
-    overflow: hidden;
-
-    .result-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 14px 12px;
-      border-bottom: 0.5px solid #e6e6e5;
-
-      &:last-child {
-        border-bottom: none;
-      }
-
-      &:active {
-        background: #f7f7f7;
-      }
-
-      .result-text {
-        font-size: 14px;
-        color: #191a1b;
-      }
-    }
-  }
-
-  .car-info-card {
-    background: #ffffff;
-    border-radius: 6px;
-    overflow: hidden;
-
-    .card-header {
-      padding: 12px 12px 0;
-
-      .plate-no {
-        font-size: 16px;
-        font-weight: 600;
-        color: #191a1b;
-      }
-    }
-
-    .card-info-list {
-      padding: 8px 12px 12px;
-
-      .info-row {
-        display: flex;
-        align-items: center;
-        margin-bottom: 6px;
-
-        &:last-child {
-          margin-bottom: 0;
-        }
-
-        .label {
-          width: 56px;
-          font-size: 14px;
-          color: #545454;
-          flex-shrink: 0;
-        }
-
-        .value {
-          font-size: 14px;
-          color: #191a1b;
-          margin-left: 12px;
-        }
-      }
-    }
-
-    .card-footer {
-      padding: 0 12px 12px;
-      display: flex;
-      justify-content: flex-end;
-      .change-car-btn {
-        border: 1px solid #009100;
-        color: #009100;
-        font-size: 14px;
-        padding: 6px 16px;
-        border-radius: 38px;
-        background: #fff;
-      }
-      .confirm-btn {
-        border: 1px solid #009100;
-        color: #009100;
-        font-size: 14px;
-        padding: 6px 16px;
-        border-radius: 38px;
-
-        &:active {
-          background: rgba(0, 145, 0, 0.1);
-        }
-      }
-    }
-  }
-
-  .no-result {
-    text-align: center;
-    padding: 60px 0;
-
-    img {
-      max-width: 200px;
-    }
-  }
-}
-
-// 故障模块弹框样式
-.fault-module-content {
-  .search-box {
-    margin-bottom: 12px;
-
-    .search-input-wrapper {
-      .search-input {
-        flex: 1;
-        height: 100%;
-        border: none;
-        background: transparent;
-        font-size: 12px;
-        color: #191a1b;
-        outline: none;
-        padding: 0;
-
-        &::placeholder {
-          color: #888888;
-        }
-      }
-
-      .search-btn {
-        background: #009100;
-        color: #ffffff;
-        font-size: 12px;
-        padding: 4px 14px;
-        border-radius: 13px;
-        flex-shrink: 0;
-
-        &:active {
-          background: #007a00;
-        }
-      }
-    }
-  }
-
-  .no-result {
-    text-align: center;
-    padding: 60px 0;
-
-    img {
-      max-width: 200px;
-    }
-  }
-}
-
-// 故障确认弹框样式
-.fault-confirm-content {
-  padding: 24px 24px 10px 24px;
-
-  .confirm-text {
-    font-size: 14px;
-    color: #888888;
-    text-align: center;
-    line-height: 20px;
-    margin-bottom: 24px;
-  }
-
-  .confirm-actions {
-    display: flex;
-    gap: 12px;
-
-    .action-btn {
-      flex: 1;
-      height: 44px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 16px;
-      border-radius: 8px;
-      border-top: 1px solid #eeeeee;
-      &.confirm {
-        color: #191a1b;
-      }
-    }
-  }
-}
+// 签字渠道选择器
 .signature-channel-picker {
   div:first-child {
     border-top-left-radius: 8px;
@@ -4063,62 +3381,11 @@ defineExpose({ onBeforeBack })
   }
 }
 
-// 二次确认提示框样式
-:deep(.confirm-dialog) {
-  background: #ffffff;
-  border-radius: 8px;
-  width: 295px;
-
-  .van-dialog__content {
-    padding: 0;
-  }
-}
-
-.confirm-dialog-content {
-  padding: 32px 24px 16px;
-
-  .confirm-section {
-    margin-bottom: 24px;
-
-    &:last-of-type {
-      margin-bottom: 0;
-    }
-
-    &:last-of-type {
-      margin-bottom: 0;
-    }
-  }
-
-  .confirm-title {
-    font-size: 16px;
-    font-weight: 500;
-    color: #191a1b;
-    margin-bottom: 8px;
-  }
-
-  .confirm-message {
-    font-size: 14px;
-    color: #545454;
-    line-height: 22px;
-  }
-
-  .confirm-btn {
-    width: 100%;
-    height: 44px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 14px;
-    color: #009100;
-    border-top: 0.5px solid #e6e6e5;
-    margin-top: 24px;
-  }
-}
-
 // 作废原因弹框样式
 .cancel-reason-content {
   padding: 12px;
 }
+
 .confirm-btn {
   height: 40px;
   display: flex;
@@ -4129,6 +3396,7 @@ defineExpose({ onBeforeBack })
   font-size: 14px;
   color: #ffffff;
 }
+
 // 三包预警提示框样式
 :deep(.warranty-alert-dialog) {
   background: #ffffff;
@@ -4141,203 +3409,12 @@ defineExpose({ onBeforeBack })
     padding: 0;
   }
 }
-.loading-wrapper {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-}
-
-// 项目零件Tab样式
-.parts-section {
-  padding: 12px;
-
-  .section-title {
-    font-size: 14px;
-    font-weight: 500;
-    color: #191a1b;
-    margin-bottom: 12px;
-  }
-
-  .package-group {
-    margin-bottom: 12px;
-    border-radius: 8px;
-    overflow: hidden;
-    border-top: 0.5px solid rgba(0, 145, 0, 0.1);
-    border-bottom: 0.5px solid rgba(0, 145, 0, 0.1);
-
-    .package-group-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 8px 12px;
-
-      .package-group-title {
-        display: flex;
-        align-items: center;
-      }
-
-      .package-label {
-        font-size: 14px;
-        font-weight: 500;
-        color: #191a1b;
-      }
-
-      .package-code {
-        font-size: 12px;
-        color: #191a1b;
-      }
-    }
-  }
-
-  .parts-card {
-    background: #ffffff;
-    border: 0.5px solid rgba(0, 0, 0, 0.06);
-    border-radius: 8px;
-    padding: 15px 12px;
-    margin-bottom: 12px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-
-    .card-delete {
-      width: 28px;
-      height: 28px;
-      background: #f8e8e8;
-      border-radius: 60px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-    }
-
-    .card-content {
-      flex: 1;
-      min-width: 0;
-
-      .card-top {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-
-        .card-info {
-          flex: 1;
-          min-width: 0;
-
-          .item-name {
-            font-size: 14px;
-            color: #191a1b;
-            font-weight: 500;
-            line-height: 1.4;
-          }
-
-          .item-code {
-            font-size: 12px;
-            color: #545454;
-            margin-top: 2px;
-          }
-
-          .item-category {
-            display: inline-flex;
-            align-items: center;
-            gap: 2px;
-            background: rgba(84, 84, 84, 0.06);
-            padding: 2px 4px;
-            border-radius: 4px;
-            margin-top: 4px;
-
-            .category-text {
-              font-size: 12px;
-              color: #545454;
-            }
-          }
-        }
-
-        .card-price {
-          display: flex;
-          flex-direction: column;
-          align-items: flex-end;
-
-          .item-price {
-            font-size: 14px;
-            color: #191a1b;
-            font-weight: 500;
-          }
-
-          .discount-tags {
-            display: flex;
-            align-items: center;
-            margin-top: 4px;
-
-            .discount-tag {
-              font-size: 12px;
-              color: #545454;
-              background: #faf6ea;
-              padding: 2px 4px;
-              border-radius: 4px 0 0 4px;
-            }
-
-            .discount-amount {
-              font-size: 12px;
-              color: #c8a12b;
-              background: #faf6ea;
-              padding: 2px 4px;
-              border-radius: 0 4px 4px 0;
-            }
-          }
-        }
-      }
-
-      .card-bottom {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-top: 8px;
-        padding-top: 8px;
-
-        .item-subtotal {
-          font-size: 12px;
-          color: #545454;
-        }
-
-        .quantity-stepper {
-          .van-stepper {
-            border: 1px solid #191a1b;
-            border-radius: 4px;
-          }
-          :deep(.van-stepper__minus),
-          :deep(.van-stepper__plus),
-          :deep(.van-stepper__input) {
-            background: #fff;
-          }
-
-          :deep(.van-stepper__minus--disabled),
-          :deep(.van-stepper__plus--disabled) {
-            background-color: #fff;
-          }
-        }
-      }
-    }
-  }
-}
 
 // 图片上传action sheet样式
 :deep(.van-action-sheet) {
   .van-action-sheet__cancel {
     margin-bottom: 34px !important;
   }
-}
-
-.action-sheet-item {
-  padding: 12px;
-  text-align: center;
-  font-size: 16px;
-  color: #333;
-  border-bottom: 1px solid #f0f0f0;
-}
-
-.action-sheet-item:last-child {
-  border-bottom: none;
 }
 
 // 上传组件样式
@@ -4451,24 +3528,6 @@ defineExpose({ onBeforeBack })
   .signature-action-row{
     text-align: right;
     margin-top: 5px;
-  }
-}
-
-:deep(.van-collapse-item__content) {
-  padding: 0;
-}
-.section-field{
-  :deep(.van-field__control) {
-    width: 100px;
-    text-align: right
-  }
-  :deep(.van-cell) {
-    padding-right: 0;
-  }
-  :deep(.van-field__button) {
-    padding-left: 3px;
-    display: inline-flex;
-    align-items: center;
   }
 }
 </style>
