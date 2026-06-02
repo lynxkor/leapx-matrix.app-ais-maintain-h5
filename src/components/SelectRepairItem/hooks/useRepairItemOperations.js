@@ -43,7 +43,7 @@ export default function useRepairItemOperations({
       const apiFn = activeTab.value === 'item' ? filterRepairItems : filterRepairParts
       const res = await apiFn({
         serviceProxyId: serviceProxyId,
-        nameOrCodeOrPinyinLike: keyword,
+        nameOrCodeOrPinyinLike: String(keyword).trim(),
         pageSize: 50
       })
       closeToast()
