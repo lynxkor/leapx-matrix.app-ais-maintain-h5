@@ -142,6 +142,10 @@ export default function useRepairItemBusinessRules({
         item.quantity = item.originalQuantity
         item.workHour = item.originalQuantity
       }
+      // 保修或合同清空折扣价格
+      if (checkoutTypeIncluded(level2?.value)) {
+        item.discountAmount = 0
+      }
     }
     showCheckoutPicker.value = false
     editingItem.value = null
