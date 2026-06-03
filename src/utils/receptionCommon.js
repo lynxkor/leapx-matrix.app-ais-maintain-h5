@@ -327,6 +327,7 @@ export function validateGoodWillWarranty(selectedItems, selectedParts) {
 // ==================== 表单校验滚动定位 ====================
 
 const FIELD_SELECTOR_MAP = {
+  mileage: '[data-scroll-target="mileage"]',
   repairPersonName: '[data-scroll-target="repairPersonName"]',
   repairPersonPhone: '[data-scroll-target="repairPersonPhone"]',
   customerFaultDesc: '[data-scroll-target="customerFaultDesc"]',

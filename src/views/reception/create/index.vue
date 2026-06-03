@@ -45,7 +45,7 @@
             <div class="select-row">
               <span class="label">送修人</span>
               <div class="value-wrapper">
-                <span class="tag">[{{ detail.repairPersonTag }}]</span>
+                <span class="tag">[送修人]</span>
                 <span class="value">{{ detail.repairPerson }} {{ detail.repairPersonPhone }}</span>
               </div>
             </div>
@@ -133,9 +133,9 @@
         <div class="tab-content">
           <div class="inspection-info">
             <!-- 进店里程数 -->
-            <div class="section-card borderB">
+            <div class="section-card borderB" data-scroll-target="mileage">
               <div class="section-title section-field">
-                <div>进店里程数</div>
+                <div><span class="required">*</span>进店里程数</div>
                 <div class="editable-field">
                   <van-field
                     v-model="detail.mileage"
@@ -842,7 +842,7 @@ const detail = reactive({
   bindingUserId: '',
   repairPerson: '',
   repairPersonPhone: '',
-  repairPersonTag: '车主',
+  repairPersonTag: '送修人',
   businessType: null, // 初始为null，后续根据isAppointment计算
   mileage: '',
   networkMileageTotal: '',
@@ -1367,24 +1367,16 @@ const repairPersonInputLabel = computed(() => {
 // 选择送修人类型
 const onSelectRepairPersonType = (type) => {
   repairPersonType.value = type
-  // 根据类型更新输入框的值
   if (type === 'owner') {
     repairPersonNameInput.value = detail.owner
     repairPersonPhoneInput.value = detail.ownerPhone
-    detail.repairPersonTag = '车主'
   } else if (type === 'bindingUser') {
     repairPersonNameInput.value = detail.bindingUser
     repairPersonPhoneInput.value = detail.binderPhone
-    detail.repairPersonTag = '绑车人'
   } else {
-    // 其他：带出车主信息，支持编辑
-    repairPersonNameInput.value = detail.owner
-    repairPersonPhoneInput.value = detail.ownerPhone
-    detail.repairPersonTag = '送修人'
+    repairPersonNameInput.value = detail.repairPerson
+    repairPersonPhoneInput.value = detail.repairPersonPhone
   }
-  // 同步更新送修人信息
-  detail.repairPerson = repairPersonNameInput.value
-  detail.repairPersonPhone = repairPersonPhoneInput.value
 }
 
 // 送修人姓名变化
@@ -1411,6 +1403,13 @@ const onSave = async() => {
   if (!repairResult.valid) {
     repairPersonType.value = 'other'
     scrollToErrorField({ errorField: repairResult.errorField, activeTab, repairPersonCollapse })
+    savingLoading.value = false
+    return
+  }
+  // 进店里程数必填校验
+  if (!detail.mileage) {
+    showToast('请输入进店里程数')
+    scrollToErrorField({ errorField: 'mileage', activeTab, repairPersonCollapse })
     savingLoading.value = false
     return
   }
@@ -1480,16 +1479,13 @@ const onSave = async() => {
       customerName: detail.owner,
       customerPhone: detail.ownerPhone,
       vehModelName: detail.vehicleModelName,
-      bindingPhone: detail.binderPhone,
-      bindingUser: detail.bindingUser,
+      bindingPhone: detail.vehicleProfileOwnerResp?.bindingPhone,
+      bindingUser: detail.vehicleProfileOwnerResp?.bindingUser,
       carPlate: detail.plateNo,
       mileage: detail.mileage,
-      lastMileage: null,
       startWarrantyDate: detail.vehicleProfileServiceResp.warrantyStartdate || '',
-      expectFinishAt: '',
       shuttleName: detail.repairPerson,
       shuttlePhone: detail.repairPersonPhone,
-      signChannel: '',
       inPower: detail.battery,
       netMileage: detail.networkMileageTotal,
       inNetPower: detail.networkBattery,

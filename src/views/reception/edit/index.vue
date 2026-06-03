@@ -133,9 +133,9 @@
         <div class="tab-content">
           <div class="inspection-info">
             <!-- 进店里程数 -->
-            <div class="section-card borderB">
+            <div class="section-card borderB" data-scroll-target="mileage">
               <div class="section-title section-field">
-                <div>进店里程数</div>
+                <div><span class="required">*</span>进店里程数</div>
                 <div class="editable-field">
                   <van-field
                     v-model="detail.mileage"
@@ -2003,21 +2003,9 @@ const fetchDetail = async() => {
       }
 
       // 设置送修人类型
-      if (detail.repairPersonTag === '车主') {
-        repairPersonType.value = 'owner'
-        repairPersonNameInput.value = detail.customerName
-        repairPersonPhoneInput.value = detail.customerPhone
-      } else if (detail.repairPersonTag === '绑车人') {
-        repairPersonType.value = 'bindingUser'
-
-        repairPersonNameInput.value = detail.bindingUser
-        repairPersonPhoneInput.value = detail.binderPhone
-      } else {
-        repairPersonType.value = 'other'
-
-        repairPersonNameInput.value = detail.repairPerson
-        repairPersonPhoneInput.value = detail.repairPersonPhone
-      }
+      repairPersonType.value = 'other'
+      repairPersonNameInput.value = detail.repairPerson
+      repairPersonPhoneInput.value = detail.repairPersonPhone
 
       // 里程校验
       // validateMileage(data.mileage, data.lastMileage, data.netMileage)
@@ -2141,8 +2129,7 @@ const onConfirmChangeCar = () => {
   // 更新送修人信息为当前车主
   detail.repairPerson = detail.customerName
   detail.repairPersonPhone = detail.customerPhone
-  detail.repairPersonTag = '车主'
-  repairPersonType.value = 'owner'
+  repairPersonType.value = 'other'
   repairPersonNameInput.value = detail.customerName
   repairPersonPhoneInput.value = detail.customerPhone
 
@@ -2597,24 +2584,16 @@ const nonPackageParts = computed(() =>
 // 选择送修人类型
 const onSelectRepairPersonType = (type) => {
   repairPersonType.value = type
-  // 根据类型更新输入框的值
   if (type === 'owner') {
     repairPersonNameInput.value = detail.customerName
     repairPersonPhoneInput.value = detail.customerPhone
-    detail.repairPersonTag = '车主'
   } else if (type === 'bindingUser') {
     repairPersonNameInput.value = detail.bindingUser
     repairPersonPhoneInput.value = detail.binderPhone
-    detail.repairPersonTag = '绑车人'
   } else {
-    // 其他：带出车主信息，支持编辑
-    repairPersonNameInput.value = detail.shuttleName || detail.customerName
-    repairPersonPhoneInput.value = detail.shuttlePhone || detail.customerPhone
-    detail.repairPersonTag = '送修人'
+    repairPersonNameInput.value = detail.repairPerson
+    repairPersonPhoneInput.value = detail.repairPersonPhone
   }
-  // 同步更新送修人信息
-  detail.repairPerson = repairPersonNameInput.value
-  detail.repairPersonPhone = repairPersonPhoneInput.value
 }
 
 // 送修人姓名变化
@@ -2648,6 +2627,12 @@ const cancelLoading = ref(false)
 // 环检信息保存（新增或编辑）
 const onInspectionSave = async(type) => {
   if (isInspectionSaveDisabled.value) return
+  // 进店里程数必填校验
+  if (!detail.mileage) {
+    showToast('请输入进店里程数')
+    scrollToErrorField({ errorField: 'mileage', activeTab, repairPersonCollapse })
+    return { code: -1 }
+  }
   // 检查车内、车外照片是否有重复文件
   if (hasDuplicateFileId(detail.interiorImages)) {
     showToast('车内照片存在重复文件，请检查')
@@ -3000,6 +2985,12 @@ const onComplete = async() => {
   // 如果环检信息有未保存的改动，提示先保存
   if (hasInspectionDataChanged()) {
     showToast('请先保存当前编辑的环检信息')
+    return
+  }
+  // 进店里程数必填校验
+  if (!detail.mileage) {
+    showToast('请输入进店里程数')
+    scrollToErrorField({ errorField: 'mileage', activeTab, repairPersonCollapse })
     return
   }
   const repairResult = validateRepairPerson()
