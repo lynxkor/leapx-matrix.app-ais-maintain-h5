@@ -9,7 +9,7 @@
   数据： contentRef.value?.selectedItems、contentRef.value?.selectedParts
 -->
 <template>
-  <div class="popup-container">
+  <div class="popup-container" :class="{ 'popup-container--popup': showHeader }">
     <!-- 标题栏（弹窗模式） -->
     <div v-if="showHeader" class="popup-header">
       <div class="close-btn" @click="$emit('close')">
@@ -175,6 +175,7 @@ import SearchBar from './SearchBar.vue'
 import RepairItemCard from './RepairItemCard.vue'
 import AisCascader from '@/components/AisCascader/index.vue'
 import PackageDetailPopup from '@/components/PackageDetailPopup.vue'
+import { usePageSafeArea } from '@/utils/safeArea'
 import {
   useRepairItemData,
   useRepairItemBusinessRules,
@@ -224,6 +225,7 @@ const searchBarRef = ref(null)
 const activeTab = ref('item')
 const isAuditComplete = computed(() => extraInfo.value.isAuditComplete)
 const router = useRouter()
+usePageSafeArea({ bodyClass: 'ais-page-nav-safe-area' })
 // 数据管理 Hook
 const {
   rawCheckoutTypes,
@@ -334,7 +336,7 @@ const repairItemContentReplace = (content) => {
 
   if (index !== -1) {
     // 需要替换零件的一些属性（如 packageId、isBindltem 等）
-    const replacedProps = ['partsCode', 'partsId', 'price', 'partsName', 'isOemPart']
+    const replacedProps = ['partsCode', 'partsId', 'price', 'partsName', 'isOemPart', 'stockCount']
 
     const part = JSON.parse(JSON.stringify(oldPart))
     replacedProps.forEach((prop) => {
@@ -507,6 +509,8 @@ onMounted(async() => {
     // 无外部数据时，调用完整加载
     await loadInitialData()
   }
+  // 保存初始快照，用于保存后比较维修类型变化
+  saveItemsSnapshot()
 })
 
 // 暴露方法供父组件调用
@@ -527,8 +531,10 @@ defineExpose({
   flex-direction: column;
   height: 100%;
   background: var(--leap-color-default-light-5);
-  --safe-area-top: env(safe-area-inset-top, 0px);
-  padding-top: var(--safe-area-top);
+
+  &.popup-container--popup {
+    padding-top: var(--page-safe-area-top, env(safe-area-inset-top, 0px));
+  }
 
   // 标题栏
   .popup-header {
@@ -642,7 +648,7 @@ defineExpose({
   .popup-footer {
     flex-shrink: 0;
     padding: 7px 12px;
-    padding-bottom: calc(7px + env(safe-area-inset-bottom));
+    padding-bottom: calc(20px + env(safe-area-inset-bottom));
     background: #fff;
 
     .save-btn {

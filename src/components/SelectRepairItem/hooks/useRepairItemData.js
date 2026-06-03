@@ -117,7 +117,7 @@ export default function useRepairItemData({ serviceProxyId }) {
    * @returns {Object} 标准化后的数据
    */
   const normalizeItem = (raw) => {
-    const isUniversal = (raw.repairItemId || raw.id) === UNIVERSAL_LABOR_HOUR_ITEM_ID
+    const isUniversal = (raw.repairItemCode || raw.code) === UNIVERSAL_LABOR_HOUR_ITEM_ID
     // 优先使用权限过滤后的默认值
     const permDefaults = getPermFilteredDefaults(false)
     let defaultCheckoutTypeId = permDefaults?.checkoutTypeId || enumDefaults.value.checkoutTypeId

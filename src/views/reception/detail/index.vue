@@ -204,7 +204,7 @@
               </div>
               <div class="item-footer">
                 <span class="item-subtotal">¥{{ repairItem.price }}</span>
-                <!-- <span class="item-quantity">x{{ repairItem.quantity }}</span> -->
+                <span class="item-quantity">x{{ repairItem.workHour }}</span>
               </div>
             </div>
           </div>
@@ -449,6 +449,7 @@ import { ref, reactive, onMounted, nextTick, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { showToast, showImagePreview } from 'vant'
 import { useGlobalStore } from '@/stores/global'
+import { usePageSafeArea } from '@/utils/safeArea'
 import AisPopup from '@/libs/components/AisPopup.vue'
 import { getDetail, serviceProxyCancel } from '@/api/reception'
 import { getFileList } from '@/libs/api/fileConfig'
@@ -465,6 +466,7 @@ import './detail.scss'
 const route = useRoute()
 const router = useRouter()
 const globalStore = useGlobalStore()
+usePageSafeArea({ bodyClass: 'ais-page-nav-safe-area' })
 const loading = ref(false)
 const cancelLoading = ref(false)
 
@@ -534,9 +536,9 @@ const onSelectMoreAction = (action) => {
     })
   }
   if (action.name === '实时故障') {
-    window.location.href = `https://staticres.leapmotor.com/leapx/batteryDiagnosis?vin=${detail.value.vehProfileVin}&vehicleModel=${detail.value.vehSeriesName}`
+    window.location.href = `${window.APP_AIS_H5_CONFIG?.VITE_STATIC_RES_URL || import.meta.env.VITE_STATIC_RES_URL}/leapx/batteryDiagnosis?vin=${detail.value.vehProfileVin}&vehicleModel=${detail.value.vehSeriesName}`
     // router.push({
-    //   path: `https://staticres.leapmotor.com/leapx/batteryDiagnosis?vin=${detail.value.vehProfileVin}&vehicleModel=${detail.value.vehSeriesName}`,
+    //   path: `${window.APP_AIS_H5_CONFIG?.VITE_STATIC_RES_URL || import.meta.env.VITE_STATIC_RES_URL}/leapx/batteryDiagnosis?vin=${detail.value.vehProfileVin}&vehicleModel=${detail.value.vehSeriesName}`,
     //   query: {
     //     vin: detail.value.vehProfileVin,
     //   },

@@ -7,7 +7,7 @@
         v-model="appSearchKeyWord"
         shape="round"
         :autofocus="true"
-        placeholder="输入VIN/车牌号"
+        placeholder="输入VIN/车牌号/姓名"
         @update:model-value="onInputChange"
         @search="onLocalSearch"
         class="page-search-input"
@@ -166,14 +166,12 @@ const onCardClick = (item) => {
   left: 0;
   right: 0;
   height: calc(var(--search-header-height) + var(--safe-area-top));
-  padding-top: var(--safe-area-top);
+  padding:7px 12px;
+  padding-top: calc(7px + var(--safe-area-top));
   background-color: #fff;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding-left: 12px;
-  padding-right: 12px;
-  padding-bottom: 7px;
   box-sizing: border-box;
   z-index: 6000;
 

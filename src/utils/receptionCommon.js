@@ -1,4 +1,5 @@
 import { showToast } from 'vant'
+import { nextTick } from 'vue'
 import { AlarmLevelEnum, WarrantyTypeEnum } from '@/views/repairWork/constant'
 import { deleteAttachmentConfig } from '@/libs/api/fileConfig'
 import { getFaultModule } from '@/api/reception'
@@ -41,7 +42,7 @@ export function getFileType(file, fallback = '') {
  */
 export function formatPhotoList(list, attachType, businessId) {
   return list.map((item) => {
-    const fileId = item.id || item.uploadId
+    const fileId = item.uploadId || item.fileId || item.id
     return {
       id: businessId ? fileId : null,
       fileId,
@@ -145,18 +146,18 @@ export function validateRepairPerson(
   if (repairPersonType === 'other') {
     if (!repairPersonNameInput.trim()) {
       showToast('请输入送修人姓名')
-      return false
+      return { valid: false, errorField: 'repairPersonName' }
     }
     if (!repairPersonPhoneInput.trim()) {
       showToast('请输入送修人手机号')
-      return false
+      return { valid: false, errorField: 'repairPersonPhone' }
     }
   }
   if (repairPersonPhoneInput?.trim() && !/^1[3-9]\d{9}$/.test(repairPersonPhoneInput.trim())) {
     showToast('请输入正确的手机号')
-    return false
+    return { valid: false, errorField: 'repairPersonPhone' }
   }
-  return true
+  return { valid: true }
 }
 
 /**
@@ -321,4 +322,43 @@ export function validateGoodWillWarranty(selectedItems, selectedParts) {
     return false
   }
   return true
+}
+
+// ==================== 表单校验滚动定位 ====================
+
+const FIELD_SELECTOR_MAP = {
+  mileage: '[data-scroll-target="mileage"]',
+  repairPersonName: '[data-scroll-target="repairPersonName"]',
+  repairPersonPhone: '[data-scroll-target="repairPersonPhone"]',
+  customerFaultDesc: '[data-scroll-target="customerFaultDesc"]',
+  faultModules: '[data-scroll-target="faultModules"]',
+  interiorPhotos: '[data-scroll-target="interiorPhotos"]',
+  exteriorPhotos: '[data-scroll-target="exteriorPhotos"]',
+  abnormalDesc: '[data-scroll-target="abnormalDesc"]',
+  testResult: '[data-scroll-target="testResult"]'
+}
+
+/**
+ * 校验失败时滚动到对应表单项并聚焦
+ */
+export function scrollToErrorField({ errorField, activeTab, repairPersonCollapse }) {
+  if (activeTab.value !== 'inspection') {
+    activeTab.value = 'inspection'
+  }
+  if (['repairPersonName', 'repairPersonPhone'].includes(errorField)) {
+    if (!repairPersonCollapse.value.includes('repairPerson')) {
+      repairPersonCollapse.value = ['repairPerson']
+    }
+  }
+  nextTick(() => {
+    setTimeout(() => {
+      const selector = FIELD_SELECTOR_MAP[errorField]
+      if (!selector) return
+      const el = document.querySelector(selector)
+      if (!el) return
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      const target = el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' ? el : el.querySelector('input, textarea')
+      if (target && !target.disabled) target.focus()
+    }, 300)
+  })
 }

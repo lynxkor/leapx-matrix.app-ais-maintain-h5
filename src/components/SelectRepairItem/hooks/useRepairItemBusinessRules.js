@@ -43,7 +43,7 @@ export default function useRepairItemBusinessRules({
     const checkoutTypes = rawCheckoutTypes.value
     const repairItemTypes = rawRepairItemTypes.value
 
-    const isUniversal = item?.repairItemId === UNIVERSAL_LABOR_HOUR_ITEM_ID
+    const isUniversal = item?.repairItemCode === UNIVERSAL_LABOR_HOUR_ITEM_ID
     const isPart = !!item?.partsId
     const isOemPart = Number(item?.oemPart || item?.isOemPart) === 1
 
@@ -141,6 +141,10 @@ export default function useRepairItemBusinessRules({
       if (!item.partsId && wasEditable && !isWorkHourEditable(item)) {
         item.quantity = item.originalQuantity
         item.workHour = item.originalQuantity
+      }
+      // 保修或合同清空折扣价格
+      if (checkoutTypeIncluded(level2?.value)) {
+        item.discountAmount = 0
       }
     }
     showCheckoutPicker.value = false

@@ -735,7 +735,7 @@ const handleSignClick = async() => {
 
   // signStatus=10: 待签字，直接跳转外部页面（同APP/短信/零小跑逻辑）
   if (backendSignStatus === 10) {
-    const targetUrl = `https://staticres-sitb.leapmotor.com/leapx/biling/aisInner/settlement?serviceProxyId=${serviceProxyId.value}&signChannel=3`
+    const targetUrl = `${window.APP_AIS_H5_CONFIG?.VITE_STATIC_RES_URL || import.meta.env.VITE_STATIC_RES_URL}/leapx/biling/aisInner/settlement?serviceProxyId=${serviceProxyId.value}&signChannel=3&token=${localStorage.getItem('lxpToken')}`
     window.location.href = targetUrl
     return
   }
@@ -815,7 +815,7 @@ const handleSignSuccess = async() => {
 
       // APP/短信/零小跑：接口成功后跳转到外部页面
       if (selectedChannel.value === 'app') {
-        const targetUrl = `https://staticres-sitb.leapmotor.com/leapx/biling/aisInner/settlement?serviceProxyId=${serviceProxyId.value}&signChannel=3`
+        const targetUrl = `${window.APP_AIS_H5_CONFIG?.VITE_STATIC_RES_URL || import.meta.env.VITE_STATIC_RES_URL}/leapx/biling/aisInner/settlement?serviceProxyId=${serviceProxyId.value}&signChannel=3&token=${localStorage.getItem('lxpToken')}`
         window.location.href = targetUrl
         return
       }
