@@ -133,9 +133,9 @@
         <div class="tab-content">
           <div class="inspection-info">
             <!-- 进店里程数 -->
-            <div class="section-card borderB">
+            <div class="section-card borderB" data-scroll-target="mileage">
               <div class="section-title section-field">
-                <div>进店里程数</div>
+                <div><span class="required">*</span>进店里程数</div>
                 <div class="editable-field">
                   <van-field
                     v-model="detail.mileage"
@@ -1729,7 +1729,6 @@ const isInspectionSaveDisabled = computed(() => {
   if (!detail.abnormalDesc) return true
   // 经理建议
   if (!detail.testResult) return true
-  if (savingLoading.value) return true
   return false
 })
 
@@ -2003,21 +2002,9 @@ const fetchDetail = async() => {
       }
 
       // 设置送修人类型
-      if (detail.repairPersonTag === '车主') {
-        repairPersonType.value = 'owner'
-        repairPersonNameInput.value = detail.customerName
-        repairPersonPhoneInput.value = detail.customerPhone
-      } else if (detail.repairPersonTag === '绑车人') {
-        repairPersonType.value = 'bindingUser'
-
-        repairPersonNameInput.value = detail.bindingUser
-        repairPersonPhoneInput.value = detail.binderPhone
-      } else {
-        repairPersonType.value = 'other'
-
-        repairPersonNameInput.value = detail.repairPerson
-        repairPersonPhoneInput.value = detail.repairPersonPhone
-      }
+      repairPersonType.value = 'other'
+      repairPersonNameInput.value = detail.repairPerson
+      repairPersonPhoneInput.value = detail.repairPersonPhone
 
       // 里程校验
       // validateMileage(data.mileage, data.lastMileage, data.netMileage)
@@ -2141,8 +2128,7 @@ const onConfirmChangeCar = () => {
   // 更新送修人信息为当前车主
   detail.repairPerson = detail.customerName
   detail.repairPersonPhone = detail.customerPhone
-  detail.repairPersonTag = '车主'
-  repairPersonType.value = 'owner'
+  repairPersonType.value = 'other'
   repairPersonNameInput.value = detail.customerName
   repairPersonPhoneInput.value = detail.customerPhone
 
@@ -2503,7 +2489,9 @@ const onFaultSearchClear = () => {
 }
 
 // 添加故障模块项
+const addingFaultModule = ref(false)
 const onAddFaultModuleItem = (item) => {
+  if (addingFaultModule.value) return
   // 检查是否已存在（根据cccCode匹配）
   console.log('item22', item, detail.faultModules)
   const exists = detail.faultModules.some((m) => m.cccId === item.cccId)
@@ -2512,6 +2500,7 @@ const onAddFaultModuleItem = (item) => {
     return
   }
   delete item.id
+  addingFaultModule.value = true
   saveSpFaultModule({ ...item, serviceProxyId: detail.id }).then(res => {
     if (res.code === 200) {
       // 将新添加的故障模块加入列表显示
@@ -2526,11 +2515,14 @@ const onAddFaultModuleItem = (item) => {
       showToast(res.data || '添加成功')
       addFaultModuleShow.value = false
       faultSearchValue.value = ''
+      saveDataSnapshot()
     } else {
       showToast(res.msg || '添加失败')
     }
   }).catch(err => {
     showToast(err.msg || '添加失败')
+  }).finally(() => {
+    addingFaultModule.value = false
   })
 }
 
@@ -2548,6 +2540,7 @@ const onDeleteFaultModule = async(module) => {
           detail.faultModules.splice(index, 1)
         }
         showToast('删除成功')
+        saveDataSnapshot()
         if (detail.faultModules.length === 0) {
           showConfirmDialog({
             title: '提示',
@@ -2597,24 +2590,16 @@ const nonPackageParts = computed(() =>
 // 选择送修人类型
 const onSelectRepairPersonType = (type) => {
   repairPersonType.value = type
-  // 根据类型更新输入框的值
   if (type === 'owner') {
     repairPersonNameInput.value = detail.customerName
     repairPersonPhoneInput.value = detail.customerPhone
-    detail.repairPersonTag = '车主'
   } else if (type === 'bindingUser') {
     repairPersonNameInput.value = detail.bindingUser
     repairPersonPhoneInput.value = detail.binderPhone
-    detail.repairPersonTag = '绑车人'
   } else {
-    // 其他：带出车主信息，支持编辑
-    repairPersonNameInput.value = detail.shuttleName || detail.customerName
-    repairPersonPhoneInput.value = detail.shuttlePhone || detail.customerPhone
-    detail.repairPersonTag = '送修人'
+    repairPersonNameInput.value = detail.repairPerson
+    repairPersonPhoneInput.value = detail.repairPersonPhone
   }
-  // 同步更新送修人信息
-  detail.repairPerson = repairPersonNameInput.value
-  detail.repairPersonPhone = repairPersonPhoneInput.value
 }
 
 // 送修人姓名变化
@@ -2648,6 +2633,12 @@ const cancelLoading = ref(false)
 // 环检信息保存（新增或编辑）
 const onInspectionSave = async(type) => {
   if (isInspectionSaveDisabled.value) return
+  // 进店里程数必填校验
+  if (!detail.mileage) {
+    showToast('请输入进店里程数')
+    scrollToErrorField({ errorField: 'mileage', activeTab, repairPersonCollapse })
+    return { code: -1 }
+  }
   // 检查车内、车外照片是否有重复文件
   if (hasDuplicateFileId(detail.interiorImages)) {
     showToast('车内照片存在重复文件，请检查')
@@ -2921,13 +2912,13 @@ const onPartsSave = async() => {
       return
     }
     showToast('保存成功')
-    // 同步更新快照，确保返回拦截判断准确
-    saveDataSnapshot()
     // 执行inspection保存（带id编辑）
     const inspectionRes = await onInspectionSave(1)
     if (inspectionRes?.code === 200) {
       isSaved.value = true
     }
+    // 同步更新快照，确保返回拦截判断准确
+    saveDataSnapshot()
     await fetchDetail()
     fetchRemindInfo()
 
@@ -3002,6 +2993,12 @@ const onComplete = async() => {
     showToast('请先保存当前编辑的环检信息')
     return
   }
+  // 进店里程数必填校验
+  if (!detail.mileage) {
+    showToast('请输入进店里程数')
+    scrollToErrorField({ errorField: 'mileage', activeTab, repairPersonCollapse })
+    return
+  }
   const repairResult = validateRepairPerson()
   if (!repairResult.valid) {
     repairPersonType.value = 'other'
@@ -3071,6 +3068,53 @@ const onAddPackage = () => {
 // 留车检查返回数据
 const checkFaultData = ref(null)
 
+// 留车调查校验
+const checkVehicleRetention = async() => {
+  // 如果已设置不需要留车提醒，直接执行后续流程
+  if (Number(detail.isVehRetentionRemind) === 1) {
+    return true
+  }
+  try {
+    const res = await checkFault(detail.id)
+    if (res.code === 200) {
+      checkFaultData.value = res.data
+      if (res.data?.isVehRetention === 1) {
+        return new Promise((resolve) => {
+          showConfirmDialog({
+            title: '提示',
+            message: '该车辆需要留车检查，请咨询客户是否同意留车?',
+            confirmButtonText: '同意',
+            cancelButtonText: '不同意',
+            showCancelButton: true
+          })
+            .then(() => {
+              createRetention({
+                serviceProxyId: detail.id,
+                vehRetentionConfigId: res.data?.vehRetentionConfigId
+              }).then(() => {
+                resolve(true)
+              }).catch((err) => {
+                showToast(err.msg || '留车操作失败')
+                resolve(false)
+              })
+            })
+            .catch(() => {
+              resolve(true)
+            })
+        })
+      }
+      return true
+    } else {
+      showToast(res.msg || '检查失败')
+      return false
+    }
+  } catch (error) {
+    console.error('checkFault接口调用失败:', error)
+    showToast(error.msg || '检查失败')
+    return false
+  }
+}
+
 // 制单确认并签字
 const onConfirmAndSign = async() => {
   if (isConfirmAndSignDisabled.value) {
@@ -3101,55 +3145,7 @@ const onConfirmAndSign = async() => {
     return
   }
 
-  // 如果已设置不需要留车提醒，直接执行后续流程
-  if (Number(detail.isVehRetentionRemind) === 1) {
-    handleConfirmAndSignProcess()
-    return
-  }
-
-  // 先调用checkFault接口
-  try {
-    savingLoading.value = true
-    const res = await checkFault(detail.id)
-    savingLoading.value = false
-    if (res.code === 200) {
-      checkFaultData.value = res.data
-      // 如果isVehRetention=1，弹出留车确认框
-      if (res.data?.isVehRetention === 1) {
-        showConfirmDialog({
-          title: '提示',
-          message: '该车辆需要留车检查，请咨询客户是否同意留车?',
-          confirmButtonText: '同意',
-          cancelButtonText: '不同意',
-          showCancelButton: true
-        })
-          .then(() => {
-            // 同意留车，调用createRetention接口
-            createRetention({
-              serviceProxyId: detail.id,
-              vehRetentionConfigId: res.data?.vehRetentionConfigId
-            }).then(() => {
-              handleConfirmAndSignProcess()
-            }).catch((err) => {
-              showToast(err.msg || '留车操作失败')
-            })
-          })
-          .catch(() => {
-            // 不同意留车，继续后续流程
-            handleConfirmAndSignProcess()
-          })
-      } else {
-        // 不需要留车检查，直接执行后续流程
-        handleConfirmAndSignProcess()
-      }
-    } else {
-      showToast(res.msg || '检查失败')
-    }
-  } catch (error) {
-    savingLoading.value = false
-    console.error('checkFault接口调用失败:', error)
-    showToast(error.msg || '检查失败')
-  }
+  handleConfirmAndSignProcess()
 }
 
 // 处理制单确认并签字后续流程
@@ -3251,6 +3247,9 @@ const onSaveDeliveryTime = () => {
 const onConfirmAndSignClick = async() => {
   const id = route.query.id
   if (!id) return
+  // 留车调查校验
+  const retentionPassed = await checkVehicleRetention()
+  if (!retentionPassed) return
   if (!signatureData.expectFinishAt) {
     showToast('请选择预计交车时间')
     return

@@ -123,8 +123,8 @@
               <!-- 信息行 -->
               <div class="info-rows">
                 <div class="info-row">
-                  <span class="info-label">车主</span>
-                  <span class="info-value">{{ item.customerName }}</span>
+                  <span class="info-label">送修人</span>
+                  <span class="info-value">{{ item.shuttleName }}</span>
                   <span v-if="item.custType" class="cust-type-tag">{{ { '10': '预约客户', '20': '随到客户' }[item.custType] || item.custType }}</span>
                 </div>
                 <div class="info-row">
