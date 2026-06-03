@@ -1318,18 +1318,22 @@ const onFaultSearchClear = () => {
 }
 
 // 添加故障模块项
+const addingFaultModule = ref(false)
 const onAddFaultModuleItem = (item) => {
+  if (addingFaultModule.value) return
   // 检查是否已存在（根据cccCode匹配）
   const exists = detail.faultModules.some((m) => m.cccId === item.cccId)
   if (exists) {
     showToast('该故障模块已添加')
     return
   }
+  addingFaultModule.value = true
   // 如果已保存，调用接口添加
   detail.faultModules.push(item)
   showToast('添加成功')
   addFaultModuleShow.value = false
   faultSearchValue.value = ''
+  addingFaultModule.value = false
 }
 
 // 删除故障模块
@@ -1481,6 +1485,7 @@ const onSave = async() => {
       vehModelName: detail.vehicleModelName,
       bindingPhone: detail.vehicleProfileOwnerResp?.bindingPhone,
       bindingUser: detail.vehicleProfileOwnerResp?.bindingUser,
+      bindingUserId: detail.vehicleProfileOwnerResp?.bindingUserid,
       carPlate: detail.plateNo,
       mileage: detail.mileage,
       startWarrantyDate: detail.vehicleProfileServiceResp.warrantyStartdate || '',

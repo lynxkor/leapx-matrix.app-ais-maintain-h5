@@ -1729,7 +1729,6 @@ const isInspectionSaveDisabled = computed(() => {
   if (!detail.abnormalDesc) return true
   // 经理建议
   if (!detail.testResult) return true
-  if (savingLoading.value) return true
   return false
 })
 
@@ -2490,7 +2489,9 @@ const onFaultSearchClear = () => {
 }
 
 // 添加故障模块项
+const addingFaultModule = ref(false)
 const onAddFaultModuleItem = (item) => {
+  if (addingFaultModule.value) return
   // 检查是否已存在（根据cccCode匹配）
   console.log('item22', item, detail.faultModules)
   const exists = detail.faultModules.some((m) => m.cccId === item.cccId)
@@ -2499,6 +2500,7 @@ const onAddFaultModuleItem = (item) => {
     return
   }
   delete item.id
+  addingFaultModule.value = true
   saveSpFaultModule({ ...item, serviceProxyId: detail.id }).then(res => {
     if (res.code === 200) {
       // 将新添加的故障模块加入列表显示
@@ -2513,11 +2515,14 @@ const onAddFaultModuleItem = (item) => {
       showToast(res.data || '添加成功')
       addFaultModuleShow.value = false
       faultSearchValue.value = ''
+      saveDataSnapshot()
     } else {
       showToast(res.msg || '添加失败')
     }
   }).catch(err => {
     showToast(err.msg || '添加失败')
+  }).finally(() => {
+    addingFaultModule.value = false
   })
 }
 
@@ -2535,6 +2540,7 @@ const onDeleteFaultModule = async(module) => {
           detail.faultModules.splice(index, 1)
         }
         showToast('删除成功')
+        saveDataSnapshot()
         if (detail.faultModules.length === 0) {
           showConfirmDialog({
             title: '提示',
@@ -2906,13 +2912,13 @@ const onPartsSave = async() => {
       return
     }
     showToast('保存成功')
-    // 同步更新快照，确保返回拦截判断准确
-    saveDataSnapshot()
     // 执行inspection保存（带id编辑）
     const inspectionRes = await onInspectionSave(1)
     if (inspectionRes?.code === 200) {
       isSaved.value = true
     }
+    // 同步更新快照，确保返回拦截判断准确
+    saveDataSnapshot()
     await fetchDetail()
     fetchRemindInfo()
 
