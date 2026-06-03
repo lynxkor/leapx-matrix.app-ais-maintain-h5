@@ -3068,6 +3068,53 @@ const onAddPackage = () => {
 // 留车检查返回数据
 const checkFaultData = ref(null)
 
+// 留车调查校验
+const checkVehicleRetention = async() => {
+  // 如果已设置不需要留车提醒，直接执行后续流程
+  if (Number(detail.isVehRetentionRemind) === 1) {
+    return true
+  }
+  try {
+    const res = await checkFault(detail.id)
+    if (res.code === 200) {
+      checkFaultData.value = res.data
+      if (res.data?.isVehRetention === 1) {
+        return new Promise((resolve) => {
+          showConfirmDialog({
+            title: '提示',
+            message: '该车辆需要留车检查，请咨询客户是否同意留车?',
+            confirmButtonText: '同意',
+            cancelButtonText: '不同意',
+            showCancelButton: true
+          })
+            .then(() => {
+              createRetention({
+                serviceProxyId: detail.id,
+                vehRetentionConfigId: res.data?.vehRetentionConfigId
+              }).then(() => {
+                resolve(true)
+              }).catch((err) => {
+                showToast(err.msg || '留车操作失败')
+                resolve(false)
+              })
+            })
+            .catch(() => {
+              resolve(true)
+            })
+        })
+      }
+      return true
+    } else {
+      showToast(res.msg || '检查失败')
+      return false
+    }
+  } catch (error) {
+    console.error('checkFault接口调用失败:', error)
+    showToast(error.msg || '检查失败')
+    return false
+  }
+}
+
 // 制单确认并签字
 const onConfirmAndSign = async() => {
   if (isConfirmAndSignDisabled.value) {
@@ -3098,55 +3145,7 @@ const onConfirmAndSign = async() => {
     return
   }
 
-  // 如果已设置不需要留车提醒，直接执行后续流程
-  if (Number(detail.isVehRetentionRemind) === 1) {
-    handleConfirmAndSignProcess()
-    return
-  }
-
-  // 先调用checkFault接口
-  try {
-    savingLoading.value = true
-    const res = await checkFault(detail.id)
-    savingLoading.value = false
-    if (res.code === 200) {
-      checkFaultData.value = res.data
-      // 如果isVehRetention=1，弹出留车确认框
-      if (res.data?.isVehRetention === 1) {
-        showConfirmDialog({
-          title: '提示',
-          message: '该车辆需要留车检查，请咨询客户是否同意留车?',
-          confirmButtonText: '同意',
-          cancelButtonText: '不同意',
-          showCancelButton: true
-        })
-          .then(() => {
-            // 同意留车，调用createRetention接口
-            createRetention({
-              serviceProxyId: detail.id,
-              vehRetentionConfigId: res.data?.vehRetentionConfigId
-            }).then(() => {
-              handleConfirmAndSignProcess()
-            }).catch((err) => {
-              showToast(err.msg || '留车操作失败')
-            })
-          })
-          .catch(() => {
-            // 不同意留车，继续后续流程
-            handleConfirmAndSignProcess()
-          })
-      } else {
-        // 不需要留车检查，直接执行后续流程
-        handleConfirmAndSignProcess()
-      }
-    } else {
-      showToast(res.msg || '检查失败')
-    }
-  } catch (error) {
-    savingLoading.value = false
-    console.error('checkFault接口调用失败:', error)
-    showToast(error.msg || '检查失败')
-  }
+  handleConfirmAndSignProcess()
 }
 
 // 处理制单确认并签字后续流程
@@ -3248,6 +3247,9 @@ const onSaveDeliveryTime = () => {
 const onConfirmAndSignClick = async() => {
   const id = route.query.id
   if (!id) return
+  // 留车调查校验
+  const retentionPassed = await checkVehicleRetention()
+  if (!retentionPassed) return
   if (!signatureData.expectFinishAt) {
     showToast('请选择预计交车时间')
     return
