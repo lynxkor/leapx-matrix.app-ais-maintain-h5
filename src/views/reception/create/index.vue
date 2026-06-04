@@ -1593,6 +1593,11 @@ onMounted(async() => {
   fetchDetail()
   // 获取上次环检信息
   const vehicleInfoStr = sessionStorage.getItem('vehicleInfo')
+  // 如果没有相关信息，跳转到工单列表
+  if (!route.query.appointId && !route.query.vin && !vehicleInfoStr) {
+    router.replace('/reception/work-order')
+    return
+  }
   if (vehicleInfoStr) {
     const item = JSON.parse(vehicleInfoStr)
     getRecentlyServiceProxy(item.vin).then((res) => {
