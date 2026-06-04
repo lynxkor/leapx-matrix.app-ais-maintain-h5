@@ -3228,6 +3228,7 @@ const onSaveDeliveryTime = () => {
     shuttleName: repairPersonNameInput.value || detail.shuttleName,
     shuttlePhone: repairPersonPhoneInput.value || detail.shuttlePhone,
     businessType: detail.businessType,
+    customerContent: detail.customerFaultDesc || detail.customerContent,
     expectFinishAt: signatureData.expectFinishAt
   }).then((res) => {
     savingLoading.value = false
