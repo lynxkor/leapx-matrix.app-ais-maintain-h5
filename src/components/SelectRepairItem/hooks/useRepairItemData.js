@@ -71,8 +71,8 @@ export default function useRepairItemData({ serviceProxyId }) {
           warrantyTypeIds: [...new Set(partPerms.map(p => p.repairItemTypeId))]
         }
       }
-    } catch (e) {
-      console.error('加载权限数据失败:', e)
+    } catch (_e) { // eslint-disable-line no-unused-vars
+      console.warn('加载权限数据失败')
     }
   }
 
@@ -265,8 +265,8 @@ export default function useRepairItemData({ serviceProxyId }) {
           }
         })
       ])
-    } catch (error) {
-      console.error('加载维修项目数据失败:', error)
+    } catch (_error) { // eslint-disable-line no-unused-vars
+      console.warn('加载维修项目数据失败')
     } finally {
       loading.value = false
     }
