@@ -259,7 +259,7 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { showToast } from 'vant'
+import { showToast, showConfirmDialog } from 'vant'
 import ListItem from '@/components/ListItem.vue'
 import AisPopup from '@/libs/components/AisPopup.vue'
 import { getSettlementStatementPage, addServiceProxyStatement, cancelServiceProxy } from '@/api/settlementStatement'
@@ -413,7 +413,16 @@ const handleGoBack = () => {
 const handleContact = (item) => {
   const phone = item.customerPhone
   if (phone) {
-    callPhone(phone)
+    showConfirmDialog({
+      title: '提示',
+      message: `是否拨打电话 ${phone}？`
+    })
+      .then(() => {
+        callPhone(phone)
+      })
+      .catch(() => {
+        // on cancel
+      })
   } else {
     showToast('暂无联系电话')
   }
