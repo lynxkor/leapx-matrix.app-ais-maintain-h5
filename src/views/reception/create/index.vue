@@ -1327,7 +1327,6 @@ const onAddFaultModuleItem = (item) => {
     showToast('该故障模块已添加')
     return
   }
-  addingFaultModule.value = true
   // 如果已保存，调用接口添加
   detail.faultModules.push(item)
   showToast('添加成功')
@@ -1566,8 +1565,18 @@ const onSave = async() => {
 }
 
 onMounted(async() => {
-  // 如果从预约单跳转过来，先查询预约信息获取VIN，再查询车辆信息存入sessionStorage
-  if (route.query.appointId) {
+  // 如果推送开单，默认带vin时
+  if (route.query.vin) {
+    try {
+      detail.appointmentType = 0
+      const vehicleRes = await getVehicleInfo({ searchVin: route.query.vin })
+      if (vehicleRes.code === 200 && vehicleRes.data?.length > 0) {
+        sessionStorage.setItem('vehicleInfo', JSON.stringify(vehicleRes.data[0]))
+      }
+    } catch (e) {
+      console.error('获取预约车辆信息失败:', e)
+    }
+  } else if (route.query.appointId) { // 如果从预约单跳转过来，先查询预约信息获取VIN，再查询车辆信息存入sessionStorage
     try {
       const reservationRes = await getReservationList(route.query.appointId)
       if (reservationRes.code === 200 && reservationRes.data?.vin) {
