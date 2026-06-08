@@ -2662,8 +2662,10 @@ const onInspectionSave = async(type) => {
     scrollToErrorField({ errorField: repairResult.errorField, activeTab, repairPersonCollapse })
     return { code: -1 }
   }
-  // 里程校验
-  validateMileage(detail.mileage, detail.lastMileage, detail.networkMileageTotal)
+  // 里程校验（仅进店里程发生变化时校验）
+  if (!initialInspectionData.value || detail.mileage !== initialInspectionData.value.mileage) {
+    validateMileage(detail.mileage, detail.lastMileage, detail.networkMileageTotal)
+  }
   // 已生成结算单时跳过故障和照片校验
   if (!isSettled.value) {
     // 如果currentFault为1，客户故障描述必填
