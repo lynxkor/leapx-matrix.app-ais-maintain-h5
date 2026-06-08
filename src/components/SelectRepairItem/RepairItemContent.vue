@@ -430,7 +430,7 @@ const onSave = async() => {
     const success = await handleSave(onSaveSuccess)
     if (success) {
       getRemindInfo(props.serviceProxyId).then((remindRes) => {
-        if (remindRes.code === 200) {
+        if (remindRes?.code === 200) {
           const remindData = remindRes.data || []
           const preAuthItems = remindData.filter((item) => item.type === '3')
           if (preAuthItems.length > 0) {
@@ -444,7 +444,7 @@ const onSave = async() => {
             })
           }
         }
-      })
+      }).catch(() => {})
       searchBarRef.value?.reset()
       emit('close')
     }
