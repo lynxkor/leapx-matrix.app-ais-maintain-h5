@@ -708,7 +708,7 @@ const fetchDetail = async() => {
 
         // 签字确认数据
         signatureData.maintenanceCostEstimation =
-          data.costCountResp.maintenanceCostEstimation || '0.00'
+          data.costCountResp?.maintenanceCostEstimation || '0.00'
         signatureData.repairItemTypeDetailCollect = data.repairItemTypeDetailCollect || ''
         signatureData.expectFinishAt = data.expectFinishAt || ''
         signatureData.isLive = data.isLive === 1
