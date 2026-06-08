@@ -3333,12 +3333,6 @@ onMounted(() => {
   generateDeliveryDates()
   // 初始化预计交车时间列表
   generateDeliveryTimes()
-  // 获取提醒信息
-  if (route.query.id) {
-    setTimeout(() => {
-      fetchRemindInfo()
-    }, 1000)
-  }
   // 获取上传配置
   if (route.query.id) {
     getUploadConfig({ configCode: 'mcs_serviceproxy' }).then((res) => {
