@@ -24,24 +24,21 @@
       <RefreshList
         :requestData="requestData"
         :needRefresh="needRefresh"
+        :hasNoData="list.length === 0"
+        :showResetButton="false"
         @setData="onSetData"
         @onError="onListError"
       >
-        <div v-if="list.length > 0">
-          <list-item
-            v-for="item in list"
-            :key="item.id"
-            class="work-order-card"
-            @click="onCardClick(item)"
-          >
-            <template #card-info>
-              <WorkOrderCard :item="item" />
-            </template>
-          </list-item>
-        </div>
-        <div v-else class="no-list">
-          <img src="@/assets/image/noList.png" alt="" />
-        </div>
+        <list-item
+          v-for="item in list"
+          :key="item.id"
+          class="work-order-card"
+          @click="onCardClick(item)"
+        >
+          <template #card-info>
+            <WorkOrderCard :item="item" />
+          </template>
+        </list-item>
       </RefreshList>
     </div>
 
@@ -392,11 +389,6 @@ onMounted(() => {
       }
     }
   }
-}
-.no-list {
-  height: 45vh;
-  text-align: center;
-  line-height: 40;
 }
 .bottom-bar {
   flex-shrink: 0;

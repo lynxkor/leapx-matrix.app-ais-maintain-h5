@@ -336,11 +336,11 @@ const repairItemContentReplace = (content) => {
 
   if (index !== -1) {
     // 需要替换零件的一些属性（如 packageId、isBindltem 等）
-    const replacedProps = ['partsCode', 'partsId', 'price', 'partsName', 'isOemPart', 'stockCount']
+    const replacedProps = ['partsCode', 'partsId', 'price', 'partsName', 'isOemPart', 'stockCount', 'quantity']
 
     const part = JSON.parse(JSON.stringify(oldPart))
     replacedProps.forEach((prop) => {
-      if (newPart[prop] !== undefined) {
+      if (newPart[prop]) {
         part[prop] = newPart[prop]
       }
     })
@@ -365,6 +365,7 @@ const repairItemContentReplace = (content) => {
         price: oldPart.price,
         stockCount: oldPart.stockCount,
         isOutstock: oldPart.isOutstock,
+        quantity: oldPart.quantity,
         isOemPart: oldPart.isOemPart
       }
       if (idx !== -1) {
@@ -429,7 +430,7 @@ const onSave = async() => {
     const success = await handleSave(onSaveSuccess)
     if (success) {
       getRemindInfo(props.serviceProxyId).then((remindRes) => {
-        if (remindRes.code === 200) {
+        if (remindRes?.code === 200) {
           const remindData = remindRes.data || []
           const preAuthItems = remindData.filter((item) => item.type === '3')
           if (preAuthItems.length > 0) {
@@ -443,7 +444,7 @@ const onSave = async() => {
             })
           }
         }
-      })
+      }).catch(() => {})
       searchBarRef.value?.reset()
       emit('close')
     }

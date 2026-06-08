@@ -2662,8 +2662,10 @@ const onInspectionSave = async(type) => {
     scrollToErrorField({ errorField: repairResult.errorField, activeTab, repairPersonCollapse })
     return { code: -1 }
   }
-  // 里程校验
-  validateMileage(detail.mileage, detail.lastMileage, detail.networkMileageTotal)
+  // 里程校验（仅进店里程发生变化时校验）
+  if (!initialInspectionData.value || detail.mileage !== initialInspectionData.value.mileage) {
+    validateMileage(detail.mileage, detail.lastMileage, detail.networkMileageTotal)
+  }
   // 已生成结算单时跳过故障和照片校验
   if (!isSettled.value) {
     // 如果currentFault为1，客户故障描述必填
@@ -3228,6 +3230,7 @@ const onSaveDeliveryTime = () => {
     shuttleName: repairPersonNameInput.value || detail.shuttleName,
     shuttlePhone: repairPersonPhoneInput.value || detail.shuttlePhone,
     businessType: detail.businessType,
+    customerContent: detail.customerFaultDesc || detail.customerContent,
     expectFinishAt: signatureData.expectFinishAt
   }).then((res) => {
     savingLoading.value = false
@@ -3330,12 +3333,6 @@ onMounted(() => {
   generateDeliveryDates()
   // 初始化预计交车时间列表
   generateDeliveryTimes()
-  // 获取提醒信息
-  if (route.query.id) {
-    setTimeout(() => {
-      fetchRemindInfo()
-    }, 1000)
-  }
   // 获取上传配置
   if (route.query.id) {
     getUploadConfig({ configCode: 'mcs_serviceproxy' }).then((res) => {

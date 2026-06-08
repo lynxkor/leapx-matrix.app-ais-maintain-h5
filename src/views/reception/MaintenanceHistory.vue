@@ -14,9 +14,9 @@
         @setData="onSetData"
       >
         <div v-if="list.length > 0" class="list-wrapper">
-          <div v-for="item in list" :key="item.id" class="history-card" @click="onCardClick(item)">
+          <div v-for="(item, index) in list" :key="item.id || index" class="history-card" @click="onCardClick(item)">
             <div class="card-header">
-              <span class="order-no">{{ item.serviceProxyCode }}</span>
+              <span class="order-no">{{ item.serviceProxyCode || '-' }}</span>
               <div class="status-wrapper">
                 <span class="status-text">已交车</span>
                 <van-icon name="arrow" size="12" color="#6C6E6C" />
@@ -25,19 +25,19 @@
             <div class="card-content">
               <div class="info-row">
                 <span class="label">服务门店</span>
-                <span class="value">{{ item.dealerName }}</span>
+                <span class="value">{{ item.dealerName || '-' }}</span>
               </div>
               <div class="info-row">
                 <span class="label">工单时间</span>
-                <span class="value">{{ item.orderTime }}</span>
+                <span class="value">{{ item.orderTime || '-' }}</span>
               </div>
               <div class="info-row">
                 <span class="label">进店里程</span>
-                <span class="value">{{ item.mileage }}</span>
+                <span class="value">{{ item.mileage || '-' }}</span>
               </div>
               <div class="info-row">
                 <span class="label">客户经理</span>
-                <span class="value">{{ item.creatorName }}</span>
+                <span class="value">{{ item.creatorName || '-' }}</span>
               </div>
             </div>
           </div>
@@ -61,31 +61,31 @@
           <!-- 顶部信息卡片 -->
           <div class="info-card">
             <div class="card-header">
-              <span class="order-no">{{ popupData.serviceProxyCode }}</span>
+              <span class="order-no">{{ popupData.serviceProxyCode || '-' }}</span>
               <span class="status-text">已交车</span>
             </div>
             <div class="card-info-list">
               <div class="info-row">
                 <span class="label">服务门店</span>
-                <span class="value">{{ popupData.dealerName }}</span>
+                <span class="value">{{ popupData.dealerName || '-' }}</span>
               </div>
               <div class="info-row">
                 <span class="label">工单时间</span>
-                <span class="value">{{ popupData.orderTime }}</span>
+                <span class="value">{{ popupData.orderTime || '-' }}</span>
               </div>
               <div class="info-row">
                 <span class="label">进店里程</span>
-                <span class="value">{{ popupData.mileage }}km</span>
+                <span class="value">{{ popupData.mileage || '-' }}km</span>
               </div>
               <div class="info-row">
                 <span class="label">客户经理</span>
-                <span class="value">{{ popupData.creatorName }}</span>
+                <span class="value">{{ popupData.creatorName || '-' }}</span>
               </div>
             </div>
           </div>
 
           <!-- 维修项目 -->
-          <div class="section" v-if="popupData.repairItems.length > 0">
+          <div class="section" v-if="popupData.repairItems && popupData.repairItems.length > 0">
             <div class="section-title">维修项目</div>
             <div class="item-list">
               <div
@@ -105,7 +105,7 @@
           </div>
 
           <!-- 维修配件 -->
-          <div class="section" v-if="popupData.repairParts.length > 0">
+          <div class="section" v-if="popupData.repairParts && popupData.repairParts.length > 0">
             <div class="section-title">维修配件</div>
             <div class="item-list">
               <div

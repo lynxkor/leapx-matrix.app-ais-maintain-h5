@@ -298,7 +298,7 @@
 <script setup>
 import { ref, reactive, nextTick, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { showToast } from 'vant'
+import { showToast, showConfirmDialog } from 'vant'
 import dayjs from 'dayjs'
 import RefreshList from '@/libs/components/RefreshList.vue'
 import ListItem from '@/components/ListItem.vue'
@@ -626,7 +626,16 @@ const executeCancel = async() => {
 const handleContact = (item) => {
   const phone = item.shuttlePhone
   if (phone) {
-    callPhone(phone)
+    showConfirmDialog({
+      title: '提示',
+      message: `是否拨打电话 ${phone}？`
+    })
+      .then(() => {
+        callPhone(phone)
+      })
+      .catch(() => {
+        // on cancel
+      })
   } else {
     showToast('暂无联系电话')
   }
