@@ -6,7 +6,7 @@
         <span class="plate-no">{{ detail.plateNo }}</span>
         <span class="appointment-tag" style="opacity: 0">预约客户</span>
         <span
-          v-if="detail.orderStatus === 100"
+          v-if="Number(detail.orderStatus) === RepairOrderStatusEnum.RECEPTION_INSPECTION"
           class="edit-plate edit-plate-after"
           @click="onChangeCar"
         >
@@ -14,7 +14,7 @@
           <span>换车</span>
         </span>
         <span
-          v-if="detail.orderStatus != 180 && detail.orderStatus != 210"
+          v-if="Number(detail.orderStatus) !== RepairOrderStatusEnum.DELIVERED && Number(detail.orderStatus) !== RepairOrderStatusEnum.CANCEL"
           class="edit-plate"
           @click="onEditPlate"
         >
@@ -696,6 +696,7 @@ import {
   fetchFaultModuleList as _fetchFaultModuleList,
   onSelectImageSource as _onSelectImageSource
 } from '@/utils/receptionCommon'
+import { RepairOrderStatusEnum } from '../constant'
 import PlateKeyboard from '@/libs/components/PlateKeyboard.vue'
 import './create.scss'
 
@@ -1604,7 +1605,7 @@ onMounted(async() => {
       if (res.code === 200 && res.data) {
         // 已作废210、反结算200时不回显，其他状态回显上次环检信息
         const recentData = res.data
-        if (recentData.orderStatus !== 210 && recentData.orderStatus !== 200) {
+        if (Number(recentData.orderStatus) !== RepairOrderStatusEnum.CANCEL && Number(recentData.orderStatus) !== RepairOrderStatusEnum.ANTI_SETTLEMENT) {
           // 合并车内照片到 detail.interiorImages
           if (recentData.interiorPhotoList && recentData.interiorPhotoList.length > 0) {
             detail.interiorImages = [

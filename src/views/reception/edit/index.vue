@@ -6,7 +6,7 @@
         <span class="plate-no">{{ detail.plateNo }}</span>
         <span class="appointment-tag">{{ detail.custTypeLabel || '随到客户' }}</span>
         <span
-          v-if="!isSettled && detail.orderStatus == 100"
+          v-if="!isSettled && Number(detail.orderStatus) === RepairOrderStatusEnum.RECEPTION_INSPECTION"
           class="edit-plate edit-plate-after"
           @click="onChangeCar"
         >
@@ -14,7 +14,7 @@
           <span>换车</span>
         </span>
         <span
-          v-if="detail.orderStatus != 180 && detail.orderStatus != 210"
+          v-if="Number(detail.orderStatus) !== RepairOrderStatusEnum.DELIVERED && Number(detail.orderStatus) !== RepairOrderStatusEnum.CANCEL"
           class="edit-plate"
           @click="onEditPlate"
         >
@@ -389,7 +389,7 @@
         </div>
       </van-tab>
 
-      <van-tab v-if="isSaved && detail.orderStatus != 100" title="项目零件" name="parts">
+      <van-tab v-if="isSaved && Number(detail.orderStatus) !== RepairOrderStatusEnum.RECEPTION_INSPECTION" title="项目零件" name="parts">
         <div
           class="tab-content parts-tab"
           style="min-height: 54vh"
@@ -490,7 +490,7 @@
         </div>
       </van-tab>
 
-      <van-tab v-if="isSaved && detail.orderStatus != 100" title="签字确认" name="signature">
+      <van-tab v-if="isSaved && Number(detail.orderStatus) !== RepairOrderStatusEnum.RECEPTION_INSPECTION" title="签字确认" name="signature">
         <div class="tab-content signature-tab">
           <!-- 费用合计 -->
           <div class="signature-section">
@@ -509,7 +509,7 @@
                   {{ signatureData.expectFinishAt || '请选择' }}
                 </span>
                 <van-icon
-                  v-if="detail.orderStatus !== 180 && detail.orderStatus !== 210"
+                  v-if="Number(detail.orderStatus) !== RepairOrderStatusEnum.DELIVERED && Number(detail.orderStatus) !== RepairOrderStatusEnum.CANCEL"
                   name="arrow"
                   size="12"
                   color="#545454"
@@ -521,7 +521,7 @@
               <span class="label">开启维修直播</span>
               <van-switch v-model="signatureData.liveEnabled" size="20" active-color="#009100" />
             </div> -->
-            <div v-if="Number(detail.signStatus) === 20 || Number(detail.signChannel) === 40" class="signature-row">
+            <div v-if="Number(detail.signStatus) === SignStatusEnum.SIGNED || Number(detail.signChannel) === SignChannelEnum.PAPER" class="signature-row">
               <span class="label">签字渠道</span>
 
               <div class="value-wrapper">
@@ -543,7 +543,7 @@
               </div>
             </div> -->
             <!-- 待签字状态显示 -->
-            <div class="signature-row" v-if="!isSettled && Number(detail.signStatus) === 10">
+            <div class="signature-row" v-if="!isSettled && Number(detail.signStatus) === SignStatusEnum.PENDING_SIGN">
               <span class="label">签字状态</span>
               <div class="value-wrapper">
                 <div
@@ -555,7 +555,7 @@
             </div>
             <div
               class="signature-action-row"
-              v-if="Number(detail.signStatus) === 20 && detail.signChannel == 30"
+              v-if="Number(detail.signStatus) === SignStatusEnum.SIGNED && Number(detail.signChannel) === SignChannelEnum.LXPAO"
             >
               <van-button type="primary" size="small" @click="onViewSignature">查看签字</van-button>
             </div>
@@ -644,13 +644,13 @@
       </template>
       <template v-else-if="activeTab === 'signature'">
         <span
-          v-if="detail.orderStatus !== 180 && detail.orderStatus !== 210"
+          v-if="Number(detail.orderStatus) !== RepairOrderStatusEnum.DELIVERED && Number(detail.orderStatus) !== RepairOrderStatusEnum.CANCEL"
           class="save-btn"
           @click="onSaveDeliveryTime"
           >保存</span
         >
         <span
-          v-if="!isSettled && detail.orderStatus == 110 && ((Number(detail.signStatus) !== 10 && Number(detail.signStatus) !== 20) || !detail.signStatus)"
+          v-if="showConfirmAndSignBtn"
           :class="['complete-btn', { disabled: isConfirmAndSignDisabled }]"
           @click="onConfirmAndSignClick"
           >制单确认并签字</span
@@ -1077,6 +1077,13 @@ import {
 } from '@/libs/api/fileConfig'
 import { batchUploadImageLimit } from '@/libs/utils/nativeFn'
 import { RemindInfoTypeEnum } from '@/views/repairWork/constant'
+import {
+  RepairOrderStatusEnum,
+  SignChannelEnum,
+  SignStatusEnum,
+  CurrentFaultEnum,
+  ConfirmFaultEnum
+} from '../constant'
 import {
   getDetail,
   getVehicleInfo,
@@ -1701,7 +1708,7 @@ const computedTotalCost = computed(() => {
 
 // 制单确认并签字按钮是否禁用：需要预计交车时间
 const isConfirmAndSignDisabled = computed(() => {
-  if (Number(detail.signStatus) === 10) {
+  if (Number(detail.signStatus) === SignStatusEnum.PENDING_SIGN) {
     return false
   }
   return !signatureData.expectFinishAt
@@ -1783,17 +1790,17 @@ const generateDeliveryTimes = () => { deliveryTimeList.value = _generateDelivery
 
 // 签字渠道列表
 const signatureChannelList = ref([
-  { value: 40, label: '纸质单据' },
-  { value: 30, label: 'APP/短信/零小跑' }
+  { value: SignChannelEnum.PAPER, label: '纸质单据' },
+  { value: SignChannelEnum.LXPAO, label: 'APP/短信/零小跑' }
 ])
 
 // 签字渠道转换（为空时默认为APP/短信/零小跑）
 const getSignChannelName = (channel) => {
   const channelMap = {
-    40: '纸质单据',
-    10: 'APP/短信/零小跑',
-    20: 'APP/短信/零小跑',
-    30: 'APP/短信/零小跑'
+    [SignChannelEnum.PAPER]: '纸质单据',
+    [SignChannelEnum.SMS]: 'APP/短信/零小跑',
+    [SignChannelEnum.APP]: 'APP/短信/零小跑',
+    [SignChannelEnum.LXPAO]: 'APP/短信/零小跑'
   }
   return channelMap[channel] || 'APP/短信/零小跑'
 }
@@ -2573,11 +2580,27 @@ const repairPersonInputLabel = computed(() => {
 
 // 故障模块是否只读（已生成结算单、已作废、已交车不可修改）
 const isFaultReadonly = computed(() =>
-  detail.isCreateStatementInfo === 1 || detail.orderStatus === 180 || detail.orderStatus === 210
+  detail.isCreateStatementInfo === 1 || Number(detail.orderStatus) === RepairOrderStatusEnum.DELIVERED || Number(detail.orderStatus) === RepairOrderStatusEnum.CANCEL
 )
 
 // 已生成结算单但未交车/未作废，部分字段仍可编辑
 const isSettled = computed(() => detail.isCreateStatementInfo === 1)
+
+/** 制单确认并签字按钮是否可见：制单中且未签字，或存在故障确认不一致 */
+const showConfirmAndSignBtn = computed(() => {
+  // 制单中状态，且签字状态为空或非待签字/已签字
+  const isCreatingAndUnsigned =
+    !isSettled.value &&
+    Number(detail.orderStatus) === RepairOrderStatusEnum.CREATING_ORDER &&
+    (!detail.signStatus ||
+      (Number(detail.signStatus) !== SignStatusEnum.PENDING_SIGN &&
+        Number(detail.signStatus) !== SignStatusEnum.SIGNED))
+  // 无故障且确认结果为不准确
+  const hasFaultConflict =
+    Number(detail.currentFault) === CurrentFaultEnum.NONE &&
+    Number(detail.confirmFault) === ConfirmFaultEnum.INACCURATE
+  return isCreatingAndUnsigned || hasFaultConflict
+})
 
 // 已生成结算单时，只读展示的非套餐项目/零件
 const nonPackageItems = computed(() =>
@@ -2740,7 +2763,7 @@ const onInspectionSave = async(type) => {
     shuttlePhone: detail.repairPersonPhone,
     payType: detail.payType,
     warrantyCompany: detail.warrantyCompany,
-    signChannel: signatureData.signChannel === '纸质单据' || Number(detail.signChannel) === 40 ? '40' : '',
+    signChannel: signatureData.signChannel === '纸质单据' || Number(detail.signChannel) === SignChannelEnum.PAPER ? String(SignChannelEnum.PAPER) : '',
     signCompletedOn: detail.signCompletedOn,
     signGeneratedOn: detail.signGeneratedOn,
     signStatus: detail.signStatus,
@@ -3152,9 +3175,9 @@ const onConfirmAndSign = async() => {
 
 // 处理制单确认并签字后续流程
 const handleConfirmAndSignProcess = () => {
-  const isPaperSign = signatureData.signChannel === '纸质单据' || Number(detail.signChannel) === 40
+  const isPaperSign = signatureData.signChannel === '纸质单据' || Number(detail.signChannel) === SignChannelEnum.PAPER
   // signStatus == 10 时，纸质单据需调用接口保存，其他渠道直接跳转结算页面
-  if (Number(detail.signStatus) === 10 && !isPaperSign) {
+  if (Number(detail.signStatus) === SignStatusEnum.PENDING_SIGN && !isPaperSign) {
     const settlementUrl = `${window.APP_AIS_H5_CONFIG?.VITE_STATIC_RES_URL || import.meta.env.VITE_STATIC_RES_URL}/leapx/biling/aisInner/constructionOrder?serviceProxyId=${detail.id}&signChannel=3&token=${localStorage.getItem('lxpToken')}`
     window.location.href = settlementUrl
     return
@@ -3167,7 +3190,7 @@ const handleConfirmAndSignProcess = () => {
   console.log('signatureData.signChannel', signatureData, detail)
   savingLoading.value = true
   if (isPaperSign) {
-    params.signChannel = '40'
+    params.signChannel = SignChannelEnum.PAPER
   } else {
     params.signChannel = null
   }
@@ -3211,7 +3234,7 @@ const onOpenDeliveryTimePicker = () => {
     return
   }
   // 已交车或已作废不允许修改交车时间
-  if (detail.orderStatus === 180 || detail.orderStatus === 210) {
+  if (Number(detail.orderStatus) === RepairOrderStatusEnum.DELIVERED || Number(detail.orderStatus) === RepairOrderStatusEnum.CANCEL) {
     return
   }
   showDeliveryTimePicker.value = true
@@ -3269,12 +3292,12 @@ const onConfirmAndSignClick = async() => {
   showLoadingToast({ message: '请稍候...', forbidClick: true })
   try {
     // 记录查询前的 signStatus，用于判断是否发生变化
-    const prevSignStatus = String(detail.signStatus)
+    const prevSignStatus = Number(detail.signStatus)
     const res = await getDetail(id)
     if (res.code === 200 && res.data) {
-      const newSignStatus = String(res.data.signStatus)
-      // signStatus 由非20变为20，表示工单状态已更新，需重新加载数据
-      if (prevSignStatus !== '20' && newSignStatus === '20') {
+      const newSignStatus = Number(res.data.signStatus)
+      // signStatus 由非已签字变为已签字，表示工单状态已更新，需重新加载数据
+      if (prevSignStatus !== SignStatusEnum.SIGNED && newSignStatus === SignStatusEnum.SIGNED) {
         closeToast()
         showToast('工单状态已更新')
         await fetchDetail()
