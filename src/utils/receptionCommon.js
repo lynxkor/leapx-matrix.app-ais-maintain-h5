@@ -1,8 +1,9 @@
 import { showToast } from 'vant'
 import { nextTick } from 'vue'
 import { AlarmLevelEnum, WarrantyTypeEnum } from '@/views/repairWork/constant'
+import { RepairOrderStatusEnum } from '@/views/reception/constant'
 import { deleteAttachmentConfig } from '@/libs/api/fileConfig'
-import { getFaultModule } from '@/api/reception'
+import { getFaultModule, getRecentlyServiceProxy } from '@/api/reception'
 
 // ==================== 文件相关工具函数 ====================
 
@@ -361,4 +362,70 @@ export function scrollToErrorField({ errorField, activeTab, repairPersonCollapse
       if (target && !target.disabled) target.focus()
     }, 300)
   })
+}
+
+// ==================== 近期环检信息回显 ====================
+
+/**
+ * 按 fileUrl 追加去重，避免同一 VIN 重复合并产生重复照片
+ */
+function appendUniquePhotos(targetList, newList) {
+  const exist = new Set((targetList || []).map((i) => i.fileUrl || i.url))
+  return [...(targetList || []), ...newList.filter((p) => p && !exist.has(p.fileUrl))]
+}
+
+/**
+ * 拉取该 VIN 上次环检数据并合并到 detail（车内/车外照片、异常描述）。
+ * 已作废（210）、反结算（200）状态不回显。
+ *
+ * 注：状态判断使用 Number() 转换，兼容后端可能返回字符串状态码（如 "210"/"200"）的场景。
+ *
+ * @param {string} vin 车辆 VIN
+ * @param {object} detail 详情对象（需包含 interiorImages / exteriorImages / abnormalDesc）
+ * @param {object} [options]
+ * @param {string|number|null} [options.businessId=null] 合并照片时携带的业务 ID（create 场景传 null，edit 场景传施工单 ID）
+ */
+export async function applyRecentInspectionByVin(vin, detail, { businessId = null } = {}) {
+  if (!vin || !detail) return
+  // 防御性初始化，确保即使外部未声明字段也不报错
+  if (!Array.isArray(detail.interiorImages)) detail.interiorImages = []
+  if (!Array.isArray(detail.exteriorImages)) detail.exteriorImages = []
+  try {
+    const res = await getRecentlyServiceProxy(vin)
+    if (res.code !== 200 || !res.data) return
+    const recentData = res.data
+    // 已作废、反结算状态不回显（兼容字符串状态码）
+    const status = Number(recentData.orderStatus)
+    if (status === RepairOrderStatusEnum.CANCEL || status === RepairOrderStatusEnum.ANTI_SETTLEMENT) return
+    // 合并车内照片（按 fileUrl 去重）
+    if (recentData.interiorPhotoList && recentData.interiorPhotoList.length > 0) {
+      detail.interiorImages = appendUniquePhotos(
+        detail.interiorImages,
+        recentData.interiorPhotoList.map((photo) => ({
+          ...photo,
+          url: photo.fileUrl,
+          id: null,
+          businessId
+        }))
+      )
+    }
+    // 合并车外照片（按 fileUrl 去重）
+    if (recentData.exteriorPhotoList && recentData.exteriorPhotoList.length > 0) {
+      detail.exteriorImages = appendUniquePhotos(
+        detail.exteriorImages,
+        recentData.exteriorPhotoList.map((photo) => ({
+          ...photo,
+          url: photo.fileUrl,
+          id: null,
+          businessId
+        }))
+      )
+    }
+    // 回显异常描述
+    if (recentData.anomalyDescription) {
+      detail.abnormalDesc = recentData.anomalyDescription
+    }
+  } catch (error) {
+    console.error('获取上次环检信息失败:', error)
+  }
 }

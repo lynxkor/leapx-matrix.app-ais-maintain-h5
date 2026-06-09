@@ -666,111 +666,7 @@
       :exclude-vin="detail.vin"
     />
     <!-- 换车弹框 -->
-    <ais-popup
-      :show="changeCarDialog"
-      position="bottom"
-      title="更换车辆"
-      @close="onChangeCarClose"
-      :style="{ background: '#f4f4f4', height: '80%' }"
-    >
-      <template #content>
-        <div class="change-car-content">
-          <!-- 搜索框 -->
-          <div class="search-box">
-            <div class="search-input-wrapper">
-              <van-search
-                v-model="carSearchValue"
-                class="search-input"
-                clearable
-                placeholder="请输入车牌号/VIN/车主姓名"
-                shape="round"
-                :autofocus="true"
-                @search="onCarSearch"
-              >
-                <template #left-icon>
-                  <van-icon name="search" size="16" color="#191A1B" />
-                </template>
-                <template #right-icon>
-                  <span class="search-btn" @click="onCarSearch(carSearchValue)">搜索</span>
-                </template>
-              </van-search>
-            </div>
-          </div>
-          <!-- 搜索结果列表 -->
-          <div v-if="!selectedCarInfo && carSearchResults.length > 0" class="search-results">
-            <div
-              v-for="(item, index) in carSearchResults"
-              :key="index"
-              class="result-item"
-              @click="onSelectCar(item)"
-            >
-              <span class="result-text">
-                <van-highlight
-                  :keywords="carSearchValue"
-                  :source-string="
-                    (item.vehiclePlateNo || '无车牌') +
-                    '/' +
-                    item.vin +
-                    '/' +
-                    (item.vehicleProfileOwnerResp?.ownerName || '')
-                  "
-                />
-              </span>
-            </div>
-          </div>
-
-          <!-- 选中车辆信息卡片 -->
-          <div v-if="selectedCarInfo" class="car-info-card">
-            <div class="card-header">
-              <span class="plate-no">{{ selectedCarInfo.vehiclePlateNo || '无车牌' }}</span>
-            </div>
-            <div class="card-info-list">
-              <div class="info-row">
-                <span class="label">车型</span>
-                <span class="value">{{
-                  selectedCarInfo.vehicleModelName || selectedCarInfo.vehicleModel || ''
-                }}</span>
-              </div>
-              <div class="info-row">
-                <span class="label">VIN</span>
-                <span class="value">{{ selectedCarInfo.vin }}</span>
-              </div>
-              <div class="info-row">
-                <span class="label">保修日期</span>
-                <span class="value">{{ selectedCarInfo.warrantyDate }}</span>
-              </div>
-              <div class="info-row">
-                <span class="label">车主</span>
-                <span class="value"
-                  >{{ selectedCarInfo.vehicleProfileOwnerResp?.ownerName || '' }}
-                  {{ selectedCarInfo.vehicleProfileOwnerResp?.mobilephone || '' }}</span
-                >
-              </div>
-              <div class="info-row">
-                <span class="label">绑车人</span>
-                <span class="value"
-                  >{{ selectedCarInfo.vehicleProfileOwnerResp?.bindingUser || '' }}
-                  {{ selectedCarInfo.vehicleProfileOwnerResp?.bindingPhone || '' }}</span
-                >
-              </div>
-            </div>
-            <div class="card-footer">
-              <span class="change-car-btn" @click="onConfirmChangeCar">更换为该车辆</span>
-            </div>
-          </div>
-
-          <!-- 无结果提示 -->
-          <div
-            v-if="
-              !selectedCarInfo && carSearchValue && carSearchResults.length === 0 && hasSearched
-            "
-            class="no-result"
-          >
-            <img src="@/assets/image/noList.png" alt="" />
-          </div>
-        </div>
-      </template>
-    </ais-popup>
+    <ChangeCarPopup v-model:show="changeCarDialog" @confirm="onChangeCarSelected" />
     <!-- 预计交车时间选择器 -->
     <DeliveryTimePicker
       v-model:show="showDeliveryTimePicker"
@@ -1065,7 +961,6 @@ import {
 } from '../constant'
 import {
   getDetail,
-  getVehicleInfo,
   getVehicleMileage,
   serviceAddOrUpdate,
   servicePreCheck,
@@ -1075,7 +970,6 @@ import {
   serviceProxyCancel,
   saveSpFaultModule,
   deleteSpFaultModule,
-  getRecentlyServiceProxy,
   checkFault,
   createRetention
 } from '@/api/reception'
@@ -1097,10 +991,12 @@ import {
   handleFileDelete as _handleFileDelete,
   fetchFaultModuleList as _fetchFaultModuleList,
   validatePreSaleWarranty,
-  validateGoodWillWarranty
+  validateGoodWillWarranty,
+  applyRecentInspectionByVin
 } from '@/utils/receptionCommon'
 import PlateKeyboard from '@/libs/components/PlateKeyboard.vue'
 import DeliveryTimePicker from '@/libs/components/DeliveryTimePicker.vue'
+import ChangeCarPopup from '../components/ChangeCarPopup.vue'
 import '../create/create.scss'
 
 const route = useRoute()
@@ -1108,6 +1004,7 @@ const router = useRouter()
 const globalStore = useGlobalStore()
 usePageSafeArea({ bodyClass: 'ais-page-nav-safe-area' })
 const addFaultModuleShow = ref(false)
+// 换车
 const changeCarDialog = ref(false)
 const changePlateDialog = ref(false)
 
@@ -1143,12 +1040,6 @@ const computedBusinessType = computed(() => {
 
 // 施工单状态
 const isSaved = ref(false) // 是否已保存
-
-// 换车相关
-const carSearchValue = ref('')
-const carSearchResults = ref([])
-const selectedCarInfo = ref(null)
-const hasSearched = ref(false)
 
 // 故障模块搜索相关
 const faultSearchValue = ref('')
@@ -2020,52 +1911,9 @@ const fetchDetail = async() => {
     }
   }
 }
-// 换车
+// 打开换车弹框
 const onChangeCar = () => {
-  carSearchValue.value = ''
-  carSearchResults.value = []
-  selectedCarInfo.value = null
-  hasSearched.value = false
   changeCarDialog.value = true
-}
-
-// 关闭换车弹框
-const onChangeCarClose = () => {
-  changeCarDialog.value = false
-  carSearchValue.value = ''
-  carSearchResults.value = []
-  selectedCarInfo.value = null
-  hasSearched.value = false
-}
-
-// 搜索车辆
-const onCarSearch = async(value) => {
-  console.log('搜索车辆:', value)
-  // 重置选中车辆信息，展示搜索结果列表
-  selectedCarInfo.value = null
-  if (!value || !value.trim()) {
-    carSearchResults.value = []
-    hasSearched.value = false
-    return
-  }
-
-  try {
-    const res = await getVehicleInfo({ searchVin: value.trim() })
-    if (res.code === 200) {
-      carSearchResults.value = res.data || []
-    } else {
-      carSearchResults.value = []
-    }
-  } catch (error) {
-    console.error('搜索车辆失败:', error)
-    carSearchResults.value = []
-  }
-  hasSearched.value = true
-}
-
-// 选择车辆
-const onSelectCar = (item) => {
-  selectedCarInfo.value = item
 }
 
 // 获取车联网里程数
@@ -2080,32 +1928,24 @@ const fetchVehicleMileage = async(vin) => {
       detail.electricalMileage = res.data.electricMileage || ''
       detail.mileage = res.data.mileage || ''
       detail.battery = res.data.electricity || ''
-      // 获取车联网里程后进行校验
-      // validateMileage(detail.mileage, detail.lastMileage, detail.networkMileageTotal)
     }
   } catch (error) {
     console.error('获取车联网里程失败:', error)
   }
 }
 
-// 确认更换车辆
-const onConfirmChangeCar = () => {
-  if (!selectedCarInfo.value) {
-    showToast('请选择车辆')
-    return
-  }
-
+// 换车弹窗确认回调：在 edit 场景下需同步送修人、车联网里程以及近期环检信息
+const onChangeCarSelected = (carInfo) => {
   // 更新车辆信息
-  detail.plateNo = selectedCarInfo.value.vehiclePlateNo || ''
-  detail.vin = selectedCarInfo.value.vin || ''
-  detail.vehicleModel =
-    selectedCarInfo.value.vehicleModelName || selectedCarInfo.value.vehicleModel || ''
-  detail.warrantyDate = selectedCarInfo.value.warrantyDate || ''
-  detail.customerName = selectedCarInfo.value.vehicleProfileOwnerResp?.ownerName || ''
-  detail.customerPhone = selectedCarInfo.value.vehicleProfileOwnerResp?.mobilephone || ''
-  detail.bindingUser = selectedCarInfo.value.vehicleProfileOwnerResp?.bindingUser || ''
-  detail.binderPhone = selectedCarInfo.value.vehicleProfileOwnerResp?.bindingPhone || ''
-  detail.vehicleProfileServiceResp = selectedCarInfo.value.vehicleProfileServiceResp || {}
+  detail.plateNo = carInfo.vehiclePlateNo || ''
+  detail.vin = carInfo.vin || ''
+  detail.vehicleModel = carInfo.vehicleModelName || carInfo.vehicleModel || ''
+  detail.warrantyDate = carInfo.warrantyDate || ''
+  detail.customerName = carInfo.vehicleProfileOwnerResp?.ownerName || ''
+  detail.customerPhone = carInfo.vehicleProfileOwnerResp?.mobilephone || ''
+  detail.bindingUser = carInfo.vehicleProfileOwnerResp?.bindingUser || ''
+  detail.binderPhone = carInfo.vehicleProfileOwnerResp?.bindingPhone || ''
+  detail.vehicleProfileServiceResp = carInfo.vehicleProfileServiceResp || {}
 
   // 更新送修人信息为当前车主
   detail.repairPerson = detail.customerName
@@ -2119,48 +1959,8 @@ const onConfirmChangeCar = () => {
     fetchVehicleMileage(detail.vin)
   }
 
-  // 获取上次环检信息
-  if (detail.vin) {
-    getRecentlyServiceProxy(detail.vin).then((res) => {
-      if (res.code === 200 && res.data) {
-        // 已作废210、反结算200时不回显，其他状态回显上次环检信息
-        const recentData = res.data
-        if (recentData.orderStatus !== 210 && recentData.orderStatus !== 200) {
-          // 合并车内照片到 detail.interiorImages
-          if (recentData.interiorPhotoList && recentData.interiorPhotoList.length > 0) {
-            detail.interiorImages = [
-              ...detail.interiorImages,
-              ...recentData.interiorPhotoList.map((photo) => ({
-                ...photo,
-                url: photo.fileUrl,
-                id: null,
-                businessId: detail.id
-              }))
-            ]
-          }
-          // 合并车外照片到 detail.exteriorImages
-          if (recentData.exteriorPhotoList && recentData.exteriorPhotoList.length > 0) {
-            detail.exteriorImages = [
-              ...detail.exteriorImages,
-              ...recentData.exteriorPhotoList.map((photo) => ({
-                ...photo,
-                url: photo.fileUrl,
-                id: null,
-                businessId: detail.id
-              }))
-            ]
-          }
-          // 回显异常描述
-          if (recentData.anomalyDescription) {
-            detail.abnormalDesc = recentData.anomalyDescription
-          }
-        }
-      }
-    })
-  }
-
-  showToast('更换车辆成功')
-  onChangeCarClose()
+  // 获取上次环检信息并回显
+  applyRecentInspectionByVin(detail.vin, detail, { businessId: detail.id })
 }
 // 修改车牌
 const onEditPlate = () => {
