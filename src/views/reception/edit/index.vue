@@ -2858,6 +2858,7 @@ const onInspectionSave = async(type) => {
     savingLoading.value = false
     if (res.code === 200) {
       showToast('保存成功')
+      fetchRemindInfo()
       saveDataSnapshot()
       fetchDetail()
     } else {
@@ -3327,9 +3328,11 @@ const onConfirmSignatureChannel = () => {
   onConfirmAndSign()
 }
 
-// 获取提醒信息（预授权、三包预警、服务活动、差价等）
+// 获取提醒信息（预授权、三包预警、服务活动、差价等），会话周期内只弹窗一次
 const fetchRemindInfo = () => {
   if (!route.query.id) return
+  const remindKey = `remind_shown_${route.query.id}`
+  if (sessionStorage.getItem(remindKey)) return
   getRemindInfo(route.query.id).then((res) => {
     if (res.code === 200) {
       const rawData = res.data || []
@@ -3339,6 +3342,7 @@ const fetchRemindInfo = () => {
       remindList.value = [...preAuthItems, ...otherItems]
       if (remindList.value.length > 0) {
         showWarrantyAlertDialog.value = true
+        sessionStorage.setItem(remindKey, '1')
       }
     }
   })
