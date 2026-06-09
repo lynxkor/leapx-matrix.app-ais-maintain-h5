@@ -136,11 +136,12 @@ import RefreshList from '@/libs/components/RefreshList.vue'
 import AisPopup from '@/libs/components/AisPopup.vue'
 import { getDetail, getHistoryDetail } from '@/api/reception'
 import { showToast } from 'vant'
+import { usePageSafeArea } from '@/utils/safeArea'
 
 const route = useRoute()
 const needRefresh = ref(false)
 const refreshListRef = ref(null)
-
+usePageSafeArea()
 // 车辆信息
 const vehicleInfo = reactive({
   vin: '',

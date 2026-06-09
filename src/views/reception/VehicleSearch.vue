@@ -60,10 +60,11 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useGlobalStore } from '@/stores/global'
 import { showToast } from 'vant'
+import { usePageSafeArea } from '@/utils/safeArea'
 
 const router = useRouter()
 const globalStore = useGlobalStore()
-
+usePageSafeArea()
 // 返回上一页
 const goBack = () => {
   router.back()

@@ -58,11 +58,12 @@ import { ref, reactive, onMounted } from 'vue'
 import RefreshList from '@/libs/components/RefreshList.vue'
 import { getRightsList } from '@/api/reception'
 import { useRoute } from 'vue-router'
+import { usePageSafeArea } from '@/utils/safeArea'
 
 const needRefresh = ref(false)
 const loading = ref(false)
 const route = useRoute()
-
+usePageSafeArea()
 // 车辆信息
 const vehicleInfo = reactive({
   vin: ''
