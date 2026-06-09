@@ -829,19 +829,6 @@
     >
     </van-action-sheet>
 
-    <!-- 图片上传选择 -->
-    <van-action-sheet
-      v-model:show="showImageUploadSheet"
-      cancel-text="取消"
-      close-on-click-action
-      @select="onSelectImageSource"
-    >
-      <template #default>
-        <div class="action-sheet-item" @click="onSelectImageSource('camera')">拍照</div>
-        <div class="action-sheet-item" @click="onSelectImageSource('album')">从相册中选择</div>
-      </template>
-    </van-action-sheet>
-
     <!-- 添加故障模块 -->
     <ais-popup
       :show="addFaultModuleShow"
@@ -1048,14 +1035,6 @@
       </div>
     </van-overlay>
 
-    <!-- 图片上传隐藏文件输入 -->
-    <input
-      ref="imageUploadRef"
-      type="file"
-      accept="image/*"
-      style="display: none"
-      @change="handleImageFileChange"
-    />
   </div>
 </template>
 
@@ -1117,7 +1096,6 @@ import {
   getTargetFileList as _getTargetFileList,
   handleFileDelete as _handleFileDelete,
   fetchFaultModuleList as _fetchFaultModuleList,
-  onSelectImageSource as _onSelectImageSource,
   validatePreSaleWarranty,
   validateGoodWillWarranty
 } from '@/utils/receptionCommon'
@@ -1143,9 +1121,6 @@ const repairItemContentRef = ref(null)
 
 // 图片上传相关
 const currentUploadType = ref('') // 'interior' or 'exterior'
-const currentUploadIndex = ref(0)
-const imageUploadRef = ref(null) // 文件输入引用
-const showImageUploadSheet = ref(false)
 const uploadConfig = ref({})
 
 // 根据附件类型获取配置
@@ -2231,7 +2206,6 @@ const showImg = (url) => {
 // 统一上传方法
 const uploadGeneric = (type) => {
   currentUploadType.value = type
-  currentUploadIndex.value = 0
   // attachType 映射
   const attachTypeMap = {
     interior: '车内照片',
@@ -2256,109 +2230,9 @@ const uploadGeneric = (type) => {
   batchUploadImageLimit(maxSize, maxSelectNum, hasUploadNumber)
 }
 
-// 选择图片来源
-const onSelectImageSource = (source) => _onSelectImageSource(source, showImageUploadSheet, imageUploadRef)
 // 获取目标文件列表
 const getTargetFileList = (type) => _getTargetFileList(type, detail, signatureData)
 
-// 处理图片文件选择
-const handleImageFileChange = (event) => {
-  console.log('event:', event)
-  const files = event.target.files
-  if (files && files.length > 0) {
-    const file = files[0]
-    // 创建本地预览 URL
-    const previewUrl = URL.createObjectURL(file)
-
-    // attachType 映射
-    const attachTypeMap = {
-      interior: '车内照片',
-      exterior: '车外照片',
-      attachment: '附件资料'
-    }
-
-    // 先添加临时预览
-    const fileObj = {
-      url: previewUrl,
-      status: 'uploading',
-      message: '上传中...',
-      id: null
-    }
-
-    // 根据当前上传类型添加到对应的文件列表
-    switch (currentUploadType.value) {
-      case 'interior':
-        detail.interiorImages.push(fileObj)
-        break
-      case 'exterior':
-        detail.exteriorImages.push(fileObj)
-        break
-      case 'attachment':
-        signatureData.attachments.push(fileObj)
-        break
-    }
-
-    // 调用上传接口
-    const uploadFile = async() => {
-      // 保存当前上传类型，避免异步上传完成时类型已改变
-      const uploadType = currentUploadType.value
-      try {
-        const params = {
-          fileUrl: previewUrl,
-          businessId: route.query.id,
-          configCode: 'mcs_serviceproxy',
-          attachType: attachTypeMap[uploadType]
-        }
-
-        const res = await uploadFileByUrl([params])
-
-        if (res.code === 200) {
-          // 兼容两种返回格式：数组或对象
-          const uploadData = Array.isArray(res.data) ? res.data[0] || {} : res.data || {}
-          const rawUrl = uploadData.url || uploadData.fileUrl || previewUrl
-          const authFileUrl = uploadData.authFileUrl || rawUrl
-
-          // 更新文件状态 - 使用保存的 uploadType
-          const targetList = getTargetFileList(uploadType)
-          if (targetList.length > 0) {
-            const lastIndex = targetList.length - 1
-            targetList[lastIndex] = {
-              ...targetList[lastIndex],
-              status: 'done',
-              message: '',
-              id: uploadData.id, // 取上传成功的id
-              businessId: detail.id, // 取施工单id
-              url: rawUrl,
-              fileUrl: rawUrl,
-              authFileUrl
-            }
-          }
-
-          showToast('上传成功')
-        } else {
-          // 上传失败，移除临时文件 - 使用保存的 uploadType
-          const targetList = getTargetFileList(uploadType)
-          if (targetList.length > 0) {
-            targetList.pop()
-          }
-          showToast(res.msg || '上传失败')
-        }
-      } catch (e) {
-        console.error('上传出错:', e)
-        // 出错时移除临时文件 - 使用保存的 uploadType
-        const targetList = getTargetFileList(uploadType)
-        if (targetList.length > 0) {
-          targetList.pop()
-        }
-        showToast('上传出错')
-      }
-    }
-
-    uploadFile()
-  }
-  // 清空 input 值，允许重复选择同一文件
-  event.target.value = ''
-}
 // getFileType 已从 receptionCommon 导入
 // 注册原生图片回调
 window.getScanResult = async(url) => {

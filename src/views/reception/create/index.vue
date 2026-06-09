@@ -563,53 +563,6 @@
       </div>
     </van-action-sheet>
 
-    <!-- 图片上传选择 -->
-    <van-action-sheet
-      v-model:show="showImageUploadSheet"
-      cancel-text="取消"
-      close-on-click-action
-      @select="onSelectImageSource"
-    >
-      <template #default>
-        <div class="action-sheet-item" @click="onSelectImageSource('camera')">拍照</div>
-        <div class="action-sheet-item" @click="onSelectImageSource('album')">从相册中选择</div>
-      </template>
-    </van-action-sheet>
-
-    <!-- 图片上传隐藏文件输入 -->
-    <input
-      ref="imageUploadRef"
-      type="file"
-      accept="image/*"
-      style="display: none"
-      @change="handleImageFileChange"
-    />
-
-    <!-- 二次确认提示框 -->
-    <van-dialog
-      v-model:show="showConfirmDialog2"
-      :show-confirm-button="false"
-      :show-cancel-button="false"
-      close-on-click-overlay
-      class="confirm-dialog"
-    >
-      <div class="confirm-dialog-content">
-        <div class="confirm-section">
-          <div class="confirm-title">服务活动</div>
-          <div class="confirm-message">
-            该车辆有服务活动未完成，您可通过"添加维修项目"功能查看使用服务活动。
-          </div>
-        </div>
-        <div class="confirm-section">
-          <div class="confirm-title">车辆标识</div>
-          <div class="confirm-message">
-            该车辆为「车辆标识名称一」「车辆标识名称二」，请注意接待。
-          </div>
-        </div>
-        <div class="confirm-btn" @click="onConfirmDialogClose">我知道了</div>
-      </div>
-    </van-dialog>
-
     <!-- 全屏Loading -->
     <van-overlay :show="savingLoading">
       <div class="loading-wrapper">
@@ -654,9 +607,6 @@ const computedBusinessType = computed(() => {
 
 // 图片上传相关
 const currentUploadType = ref('') // 'interior' or 'exterior'
-const currentUploadIndex = ref(0)
-const imageUploadRef = ref(null) // 文件输入引用
-const showImageUploadSheet = ref(false)
 
 // 获取目标文件列表
 // 上传配置获取（从共享模块导入，保留组件绑定）
@@ -693,8 +643,7 @@ import {
   getAttachConfig as _getAttachConfig,
   getTargetFileList as _getTargetFileList,
   handleFileDelete as _handleFileDelete,
-  fetchFaultModuleList as _fetchFaultModuleList,
-  onSelectImageSource as _onSelectImageSource
+  fetchFaultModuleList as _fetchFaultModuleList
 } from '@/utils/receptionCommon'
 import { RepairOrderStatusEnum } from '../constant'
 import PlateKeyboard from '@/libs/components/PlateKeyboard.vue'
@@ -724,13 +673,6 @@ const faultSearchValue = ref('')
 
 // 是否存在故障确认弹框
 const showFaultConfirm = ref(false)
-
-// 二次确认提示框
-const showConfirmDialog2 = ref(false)
-
-const onConfirmDialogClose = () => {
-  showConfirmDialog2.value = false
-}
 
 // 送修人类型选择
 const repairPersonType = ref('other') // owner/bindingUser/other
@@ -1156,7 +1098,6 @@ const onEditPlate = () => {
 // 通用上传方法
 const uploadGeneric = (type) => {
   currentUploadType.value = type
-  currentUploadIndex.value = 0
   // attachType 映射
   const attachTypeMap = {
     interior: '车内照片',
@@ -1178,112 +1119,6 @@ const uploadGeneric = (type) => {
   // 计算最大可选数量：maxNum有值时用maxNum，无值时不限制传999
   const maxSelectNum = config.maxNum || 20
   batchUploadImageLimit(maxSize, maxSelectNum, hasUploadNumber)
-}
-
-// 选择图片来源
-const onSelectImageSource = (source) => _onSelectImageSource(source, showImageUploadSheet, imageUploadRef)
-
-// 处理图片文件选择
-const handleImageFileChange = (event) => {
-  const files = event.target.files
-  if (files && files.length > 0) {
-    const file = files[0]
-    // 创建本地预览 URL
-    const previewUrl = URL.createObjectURL(file)
-
-    // attachType 映射
-    const attachTypeMap = {
-      interior: '车内照片',
-      exterior: '车外照片',
-      attachment: '附件资料'
-    }
-
-    // 先添加临时预览
-    const fileObj = {
-      url: previewUrl,
-      fileUrl: previewUrl,
-      authFileUrl: previewUrl,
-      fileType: file.type || getFileType({ url: previewUrl }, 'image/jpeg'),
-      status: 'uploading',
-      message: '上传中...',
-      id: null
-    }
-
-    // 根据当前上传类型添加到对应的文件列表
-    switch (currentUploadType.value) {
-      case 'interior':
-        detail.interiorImages.push(fileObj)
-        break
-      case 'exterior':
-        detail.exteriorImages.push(fileObj)
-        break
-      case 'attachment':
-        attachmentsList.value.push(fileObj)
-        break
-    }
-
-    // 调用上传接口
-    const uploadFile = async() => {
-      // 保存当前上传类型，避免异步上传完成时类型已改变
-      const uploadType = currentUploadType.value
-      try {
-        const params = {
-          fileUrl: previewUrl,
-          businessId: serviceProxyId.value || detail.id || null,
-          configCode: 'mcs_serviceproxy',
-          attachType: attachTypeMap[uploadType]
-        }
-
-        const res = await uploadFileByUrl([params])
-
-        if (res.code === 200) {
-          // 兼容两种返回格式：数组或对象
-          const uploadData = Array.isArray(res.data) ? res.data[0] || {} : res.data || {}
-
-          // 更新文件状态 - 使用保存的 uploadType
-          const targetList = getTargetFileList(uploadType)
-          if (targetList.length > 0) {
-            const lastIndex = targetList.length - 1
-            const rawUrl = uploadData.url || uploadData.fileUrl || previewUrl
-            const currentBusinessId = serviceProxyId.value || detail.id || null
-            targetList[lastIndex] = {
-              ...targetList[lastIndex],
-              status: 'done',
-              message: '',
-              id: currentBusinessId ? uploadData.id : null, // 有施工单id时取上传id，无施工单id时为null
-              uploadId: uploadData.id, // 保存上传成功后的id，用于fileId
-              businessId: currentBusinessId, // 取施工单id（如果有）
-              url: rawUrl,
-              fileUrl: rawUrl,
-              authFileUrl: uploadData.authFileUrl || rawUrl,
-              fileType: uploadData.fileType || uploadData.ext || file.type || getFileType({ url: rawUrl }, 'image/jpeg')
-            }
-          }
-
-          showToast('上传成功')
-        } else {
-          // 上传失败，移除临时文件 - 使用保存的 uploadType
-          const targetList = getTargetFileList(uploadType)
-          if (targetList.length > 0) {
-            targetList.pop()
-          }
-          showToast(res.msg || '上传失败')
-        }
-      } catch (e) {
-        console.error('上传出错:', e)
-        // 出错时移除临时文件 - 使用保存的 uploadType
-        const targetList = getTargetFileList(uploadType)
-        if (targetList.length > 0) {
-          targetList.pop()
-        }
-        showToast('上传出错')
-      }
-    }
-
-    uploadFile()
-  }
-  // 清空 input 值，允许重复选择同一文件
-  event.target.value = ''
 }
 
 // 预览图片

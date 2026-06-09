@@ -86,16 +86,6 @@ const router = createRouter({
           }
         },
         {
-          path: '/reception/vehicle-search',
-          name: 'vehicleSearch',
-          component: () => import('../views/reception/VehicleSearch.vue'),
-          meta: {
-            title: '车辆搜索',
-            hideHeader: true,
-            keepAlive: false
-          }
-        },
-        {
           path: '/reception/sign',
           name: 'signView',
           component: () => import('../views/reception/sign/SignView.vue'),
