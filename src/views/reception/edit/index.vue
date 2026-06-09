@@ -310,82 +310,18 @@
               />
             </div>
           </div>
-          <div class="fault-info">
-            <!-- 是否存在故障 -->
-            <div class="section-card">
-              <div class="fault-header">
-                <span class="title">本次是否因故障进店</span>
-                <template v-if="isFaultReadonly">
-                  <span class="fault-status-text">{{ detail.currentFault === '1' ? '是' : '否' }}</span>
-                </template>
-                <div v-else class="radio-group">
-                  <van-radio-group
-                    v-model="detail.currentFault"
-                    direction="horizontal"
-                    @change="onHasFaultChange"
-                  >
-                    <van-radio name="1">是</van-radio>
-                    <van-radio name="0">否</van-radio>
-                  </van-radio-group>
-                </div>
-              </div>
-
-              <!-- 故障模块列表 -->
-              <div class="fault-modules" v-if="Number(detail.currentFault) === 1" data-scroll-target="faultModules">
-                <div v-if="!isFaultReadonly" class="add-module" @click="onAddFaultModule">
-                  <van-icon name="plus" />
-                  <span>添加故障模块</span>
-                </div>
-
-                <!-- 模块列表容器，支持滚动 -->
-                <div class="modules-container" :class="{ expanded: showAllModules }">
-                  <div
-                    v-for="(module, index) in displayModules"
-                    :key="index"
-                    class="fault-module-item"
-                  >
-                    <span class="module-name">{{
-                      module.vrtName + '-' + module.vfgName + '-' + module.cccName
-                    }}</span>
-                    <img v-if="!isFaultReadonly" src="@/assets/images/trash.svg"  @click="onDeleteFaultModule(module)"/>
-                  </div>
-                </div>
-
-                <!-- 查看全部按钮 -->
-                <div
-                  v-if="detail.faultModules.length > 3"
-                  class="view-all"
-                  @click="onViewAllModules"
-                >
-                  <span>{{ showAllModules ? '收起' : '查看全部' }}</span>
-                  <van-icon :name="showAllModules ? 'arrow-up' : 'arrow-down'" />
-                </div>
-              </div>
-            </div>
-
-            <!-- 客户故障描述 -->
-            <div class="section-card">
-              <div class="section-title" style="justify-content: flex-start">
-                <span v-if="!isFaultReadonly && Number(detail.currentFault) === 1" class="required">*</span>客户故障描述
-              </div>
-              <template v-if="isFaultReadonly">
-                <div class="fault-desc-text">{{ detail.customerFaultDesc || '无' }}</div>
-              </template>
-              <van-field
-                v-else
-                v-model="detail.customerFaultDesc"
-                type="textarea"
-                placeholder="请输入客户故障描述"
-                rows="3"
-                autosize
-                show-word-limit
-                maxlength="500"
-                :disabled="detail.currentFault == 0 || Number(detail.confirmFault) === 1 || (detail.currentFault == 1 && detail.confirmFault == 1)"
-                data-scroll-target="customerFaultDesc"
-                style="background: #f5f5f5; border-radius: 6px"
-              />
-            </div>
-          </div>
+          <FaultInfoSection
+            ref="faultInfoSectionRef"
+            v-model:current-fault="detail.currentFault"
+            v-model:customer-fault-desc="detail.customerFaultDesc"
+            v-model:fault-modules="detail.faultModules"
+            mode="edit"
+            :service-proxy-id="detail.id"
+            :readonly="isFaultReadonly"
+            :confirm-fault="detail.confirmFault"
+            :loading="isDataLoading"
+            @change="saveDataSnapshot"
+          />
         </div>
       </van-tab>
 
@@ -725,59 +661,6 @@
     >
     </van-action-sheet>
 
-    <!-- 添加故障模块 -->
-    <ais-popup
-      :show="addFaultModuleShow"
-      position="bottom"
-      title="添加故障模块"
-      @close="onCloseFaultModulePopup"
-      :style="{ height: '80%', background: '#F4F4F4' }"
-    >
-      <template #content>
-        <div class="fault-module-content">
-          <!-- 搜索框 -->
-          <div class="search-box">
-            <div class="search-input-wrapper">
-              <van-search
-                v-model="faultSearchValue"
-                class="search-input"
-                clearable
-                placeholder="请输入CCC"
-                shape="round"
-                :autofocus="true"
-                @search="onFaultSearch"
-                @clear="onFaultSearchClear"
-              >
-                <template #left-icon>
-                  <van-icon name="search" size="16" color="#191A1B" />
-                </template>
-                <template #right-icon>
-                  <span class="search-btn" @click="onFaultSearch(faultSearchValue)">搜索</span>
-                </template>
-              </van-search>
-            </div>
-          </div>
-          <!-- 搜索结果列表 -->
-          <div class="fault-list">
-            <div
-              v-for="item in faultModuleList"
-              :key="item.cccId"
-              class="fault-item"
-              @click="onAddFaultModuleItem(item)"
-            >
-              <van-highlight
-                :keywords="faultSearchValue"
-                :source-string="item.vrtName + '-' + item.vfgName + '-' + item.cccName"
-              />
-            </div>
-            <!-- 无结果 -->
-            <div v-if="faultModuleList.length === 0 && faultSearchValue" class="no-result">
-              <img src="@/assets/image/noCCC.png" alt="" />
-            </div>
-          </div>
-        </div>
-      </template>
-    </ais-popup>
     <!-- 作废原因弹框 -->
     <ais-popup
       :show="showCancelReason"
@@ -812,24 +695,6 @@
         </van-button>
       </template>
     </ais-popup>
-
-    <!-- 是否存在故障确认弹框 -->
-    <van-action-sheet
-      v-model:show="showFaultConfirm"
-      :show-cancel="true"
-      cancel-text="取消"
-      @cancel="onCancelFaultConfirm"
-    >
-      <div class="fault-confirm-content">
-        <div class="confirm-text">
-          若本次进店无故障，会清空"故障模块、客户故障描述"。确定更改吗？
-        </div>
-        <div class="confirm-actions">
-          <!-- <div class="action-btn cancel" @click="onCancelFaultConfirm">取消</div> -->
-          <div class="action-btn confirm" @click="onConfirmFaultChange">确定</div>
-        </div>
-      </div>
-    </van-action-sheet>
 
     <!-- 三包预警提示框 -->
     <van-dialog
@@ -968,8 +833,6 @@ import {
   saveSpRepairItem,
   spConfirmAndSign,
   serviceProxyCancel,
-  saveSpFaultModule,
-  deleteSpFaultModule,
   checkFault,
   createRetention
 } from '@/api/reception'
@@ -989,7 +852,6 @@ import {
   getAttachConfig as _getAttachConfig,
   getTargetFileList as _getTargetFileList,
   handleFileDelete as _handleFileDelete,
-  fetchFaultModuleList as _fetchFaultModuleList,
   validatePreSaleWarranty,
   validateGoodWillWarranty,
   applyRecentInspectionByVin
@@ -997,21 +859,21 @@ import {
 import PlateKeyboard from '@/libs/components/PlateKeyboard.vue'
 import DeliveryTimePicker from '@/libs/components/DeliveryTimePicker.vue'
 import ChangeCarPopup from '../components/ChangeCarPopup.vue'
+import FaultInfoSection from '../components/FaultInfoSection.vue'
 import '../create/create.scss'
 
 const route = useRoute()
 const router = useRouter()
 const globalStore = useGlobalStore()
 usePageSafeArea({ bodyClass: 'ais-page-nav-safe-area' })
-const addFaultModuleShow = ref(false)
 // 换车
 const changeCarDialog = ref(false)
 const changePlateDialog = ref(false)
 
 // 数据加载标志（用于区分用户手动操作和数据赋值）
 const isDataLoading = ref(false)
-// 程序化设置 currentFault 标志（配合 isDataLoading 防止 @change 弹窗干扰）
-const isSettingFaultProgrammatically = ref(false)
+// 故障信息区块子组件引用
+const faultInfoSectionRef = ref(null)
 
 // RepairItemContent 组件引用
 const repairItemContentRef = ref(null)
@@ -1040,12 +902,6 @@ const computedBusinessType = computed(() => {
 
 // 施工单状态
 const isSaved = ref(false) // 是否已保存
-
-// 故障模块搜索相关
-const faultSearchValue = ref('')
-
-// 是否存在故障确认弹框
-const showFaultConfirm = ref(false)
 
 // 三包预警提示框
 const showWarrantyAlertDialog = ref(false)
@@ -1158,10 +1014,6 @@ const moreActionsList = computed(() => {
     }
   ]
 })
-const faultModuleList = ref([])
-
-// 获取故障模块列表
-const fetchFaultModuleList = () => _fetchFaultModuleList(faultSearchValue.value, faultModuleList)
 
 // 作废原因弹框状态
 const showCancelReason = ref(false)
@@ -1231,59 +1083,6 @@ const onConfirmCancel = async() => {
   }
 }
 
-// 是否存在故障变更
-const onHasFaultChange = (value) => {
-  // 如果是数据加载或程序化赋值导致的改变，不执行弹窗逻辑
-  if (isDataLoading.value || isSettingFaultProgrammatically.value) {
-    isSettingFaultProgrammatically.value = false
-    return
-  }
-
-  // 如果选择"否"，弹出确认框
-  if (Number(value) === 0) {
-    // 维修类型包含一般维修或三电维修时，不允许改为"否"
-    // const typeCollect = detail.repairItemTypeDetailCollect || ''
-    // if (typeCollect.includes('一般维修') || typeCollect.includes('三电维修')) {
-    //   showToast({ message: '当前工单维修类型包含一般维修或三电维修，请确认是否存在故障!', duration: 3000 })
-    //   // 还原为"是"
-    //   detail.currentFault = '1'
-    //   return
-    // }
-    // 如果已添加过故障模块或客户故障描述，弹出确认框
-    if (detail.faultModules.length > 0 || detail.customerFaultDesc) {
-      showFaultConfirm.value = true
-    } else {
-      detail.currentFault = '0'
-      if (Number(detail.confirmFault) !== 1) {
-        detail.customerFaultDesc = '本次进店车辆无故障'
-      }
-    }
-  } else if (Number(value) === 1) {
-    if (Number(detail.confirmFault) !== 1) {
-      detail.customerFaultDesc = ''
-    }
-  }
-}
-
-// 取消故障确认
-const onCancelFaultConfirm = () => {
-  showFaultConfirm.value = false
-  // 恢复为"是"
-  detail.currentFault = '1'
-  isSettingFaultProgrammatically.value = true
-}
-
-// 确认故障变更
-const onConfirmFaultChange = () => {
-  showFaultConfirm.value = false
-  // 清空故障模块，设置默认客户故障描述
-  detail.faultModules = []
-  if (Number(detail.confirmFault) !== 1) {
-    detail.customerFaultDesc = '本次进店车辆无故障'
-  }
-  detail.currentFault = '0'
-}
-
 const onTabScroll = (e) => {
   if (e.isFixed) {
     // 触发吸顶时设置标题
@@ -1294,15 +1093,6 @@ const onTabScroll = (e) => {
 }
 // Tab状态
 const activeTab = ref('inspection')
-// 故障模块展开状态
-const showAllModules = ref(false)
-// 计算属性：控制显示的模块列表
-const displayModules = computed(() => {
-  if (showAllModules.value) {
-    return detail.faultModules
-  }
-  return detail.faultModules.slice(0, 3)
-})
 // 选择器显示状态
 const showMoreActions = ref(false)
 
@@ -1884,9 +1674,7 @@ const fetchDetail = async() => {
 
       // 检查是否从添加项目/零件页面返回，需要更新故障状态
       if (sessionStorage.getItem('faultDetected') === '1') {
-        isSettingFaultProgrammatically.value = true
-        detail.currentFault = '1'
-        nextTick(() => { isSettingFaultProgrammatically.value = false })
+        faultInfoSectionRef.value?.setCurrentFaultSilent('1')
         sessionStorage.removeItem('faultDetected')
       }
 
@@ -2144,102 +1932,6 @@ window.getScanResult = async(url) => {
       showToast('上传出错')
     }
   }
-}
-
-// 添加故障模块
-const onAddFaultModule = () => {
-  faultSearchValue.value = ''
-  addFaultModuleShow.value = true
-}
-
-// 关闭故障模块弹框
-const onCloseFaultModulePopup = () => {
-  addFaultModuleShow.value = false
-  faultSearchValue.value = ''
-}
-
-// 故障模块搜索
-const onFaultSearch = async(value) => {
-  faultSearchValue.value = value
-  await fetchFaultModuleList()
-}
-
-// 清空故障模块搜索
-const onFaultSearchClear = () => {
-  faultSearchValue.value = ''
-}
-
-// 添加故障模块项
-const addingFaultModule = ref(false)
-const onAddFaultModuleItem = (item) => {
-  if (addingFaultModule.value) return
-  // 检查是否已存在（根据cccCode匹配）
-  console.log('item22', item, detail.faultModules)
-  const exists = detail.faultModules.some((m) => m.cccId === item.cccId)
-  if (exists) {
-    showToast('该故障模块已添加')
-    return
-  }
-  delete item.id
-  addingFaultModule.value = true
-  saveSpFaultModule({ ...item, serviceProxyId: detail.id }).then(res => {
-    if (res.code === 200) {
-      // 将新添加的故障模块加入列表显示
-      detail.faultModules.push({
-        ...item,
-        id: res.data?.id || item.id,
-        cccCode: item.cccCode,
-        cccName: item.cccName,
-        vfgName: item.vfgName,
-        faultDesc: item.faultDescription || item.faultDesc
-      })
-      showToast(res.data || '添加成功')
-      addFaultModuleShow.value = false
-      faultSearchValue.value = ''
-      saveDataSnapshot()
-    } else {
-      showToast(res.msg || '添加失败')
-    }
-  }).catch(err => {
-    showToast(err.msg || '添加失败')
-  }).finally(() => {
-    addingFaultModule.value = false
-  })
-}
-
-// 删除故障模块
-const onDeleteFaultModule = async(module) => {
-  try {
-    await showConfirmDialog({
-      title: '提示',
-      message: '是否要删除此接车施工单-故障模块？您无法撤销此操作。'
-    })
-    deleteSpFaultModule([module.id]).then(res => {
-      if (res.code === 200) {
-        const index = detail.faultModules.findIndex((m) => m.id === module.id)
-        if (index > -1) {
-          detail.faultModules.splice(index, 1)
-        }
-        showToast('删除成功')
-        saveDataSnapshot()
-        if (detail.faultModules.length === 0) {
-          showConfirmDialog({
-            title: '提示',
-            message: '全部故障模块已删除，请重新确认【本次进店是否存在故障】？'
-          })
-        }
-      } else {
-        showToast(res.msg || '删除失败')
-      }
-    })
-  } catch {
-    // 取消操作
-  }
-}
-
-// 查看全部故障模块
-const onViewAllModules = () => {
-  showAllModules.value = !showAllModules.value
 }
 
 // 送修人输入框是否禁用（车主/绑车人不可编辑，其他可编辑）
@@ -2628,9 +2320,7 @@ const onPartsSave = async() => {
     const hasGeneralOrThreeElectric = newRepairItemTypeDetailCollect.includes('一般维修') || newRepairItemTypeDetailCollect.includes('三电维修')
     console.log('hadGeneralOrThreeElectric', hadGeneralOrThreeElectric, hasGeneralOrThreeElectric, detail.currentFault)
     if (!hadGeneralOrThreeElectric && hasGeneralOrThreeElectric && Number(detail.currentFault) === 0) {
-      isSettingFaultProgrammatically.value = true
-      detail.currentFault = '1'
-      nextTick(() => { isSettingFaultProgrammatically.value = false })
+      faultInfoSectionRef.value?.setCurrentFaultSilent('1')
       // 清空默认文本
       if (detail.customerFaultDesc === '本次进店车辆无故障') {
         detail.customerFaultDesc = ''
