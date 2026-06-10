@@ -186,15 +186,15 @@
           justify-content: center;
           background: #ffffff;
 
-          &.checked {
-            background: #009100;
-            border-color: #009100;
-          }
 
           &.disabled {
             background: #e6e6e6;
             border-color: #dce0e4;
             cursor: not-allowed;
+          }
+          &.checked {
+            background: #009100;
+            border-color: #009100;
           }
         }
       }

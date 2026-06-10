@@ -832,6 +832,8 @@ const selectedPackage = reactive({
 const selectedService = reactive({
   id: '',
   activityId: '',
+  activityUsed: '',
+  actualDealerName: '',
   packageType: '50',
   activityResponse: {},
   itemResponseList: [],
@@ -1071,6 +1073,8 @@ const onServiceClick = (item) => {
     if (res.code === 200) {
       const data = res.data
       selectedService.id = data.id
+      selectedService.activityUsed = data.activityUsed
+      selectedService.actualDealerName = data.actualDealerName
       selectedService.activityId = data.activityId
       selectedService.activityResponse = data.activityResponse || {}
       // 根据activityType判断packageType: 4->50, 其他->60
@@ -1132,6 +1136,10 @@ const onTogglePart = (part) => {
 
 // 确认选择服务活动
 const onConfirmService = () => {
+  if (selectedService.activityUsed) {
+    showToast(`该活动已被${selectedService.actualDealerName ? selectedService.actualDealerName : ''}使用，您不可重复使用`)
+    return
+  }
   // 只发送选中的项目和配件
   const selectedItems = selectedService.itemResponseList.filter((item) => item.selected)
   const selectedParts = selectedService.partResponseList.filter((part) => part.selected)
