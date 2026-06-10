@@ -28,6 +28,11 @@
   :deep(.van-tabs__line) {
     background: #009100;
   }
+
+  .van-button{
+    height: 40px;
+    border-radius: 8px;
+  }
 }
 
 .tab-content {
@@ -41,10 +46,6 @@
   background: #ffffff;
   .van-search {
     padding: 6px 12px;
-  }
-
-  .van-search__content {
-    height: 30px;
   }
   :deep(.van-search) {
     padding: 0;
@@ -69,15 +70,6 @@
   padding: 0 12px;
 }
 
-.no-data {
-  text-align: center;
-  padding: 40px 0;
-
-  img {
-    width: 160px;
-    height: auto;
-  }
-}
 
 .package-item {
   display: flex;
@@ -533,41 +525,6 @@
   display: flex;
   gap: 12px;
   padding: 12px;
-
-  &.single-btn {
-    .cancel-btn {
-      flex: 1;
-    }
-  }
-
-  .cancel-btn {
-    flex: 1;
-    height: 40px;
-    background: #ffffff;
-    border: 1px solid #dce0e4;
-    border-radius: 8px;
-    font-size: 14px;
-    color: #191a1b;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .confirm-btn {
-    flex: 1;
-    height: 40px;
-    background: #009100;
-    border-radius: 8px;
-    font-size: 14px;
-    color: #ffffff;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    &.full-btn {
-      flex: 1;
-    }
-  }
 }
 
 .loading-wrapper {

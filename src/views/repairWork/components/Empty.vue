@@ -27,7 +27,7 @@ defineProps({
   align-items: center;
   justify-content: center;
   width: 230px;
-  margin: 120px auto 0 auto;
+  margin: 120px auto 120px auto;
 
   .empty-image {
     width: 230px;
