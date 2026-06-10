@@ -6,16 +6,15 @@ import vueDevTools from 'vite-plugin-vue-devtools'
 // import basicSsl from '@vitejs/plugin-basic-ssl'
 
 // https://vite.dev/config/
-export default defineConfig({
+export default defineConfig(({ command }) => ({
   plugins: [
     vue(),
-    vueDevTools()
-    // basicSsl()
-  ],
+    command === 'serve' ? vueDevTools() : null
+  ].filter(Boolean),
   base: '/maintenance/',
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url))
     }
   }
-})
+}))
