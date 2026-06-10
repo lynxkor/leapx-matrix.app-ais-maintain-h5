@@ -25,8 +25,8 @@ setHtmlFontsize()
 const app = createApp(App)
 
 // 初始化 Sentry 错误追踪
-const environment = window.APP_AIS_H5_CONFIG.VITE_SENTRY_ENV
-if (environment) {
+const environment = window.APP_AIS_H5_CONFIG?.VITE_SENTRY_ENV
+if (environment && environment !== 'production') {
   Sentry.init({
     app,
     dsn: 'https://ee4e500cb386a8ae8f0e53a9f8be3c8f@it-sentry.leapmotor.com/62', // Sentry 数据源名称配置
@@ -40,6 +40,10 @@ if (environment) {
     // 会话重放
     replaysSessionSampleRate: 0.1, // 这将采样率设置为10%。在开发环境中可以将其设为100%，然后在生产环境中降低采样率。
     replaysOnErrorSampleRate: 1.0 // 如果尚未对整个会话进行采样，则在出现错误的会话中将采样率更改为100%。
+  })
+  // 非生产环境启用 vConsole
+  import('vconsole').then(({ default: VConsole }) => {
+    new VConsole()
   })
 }
 
@@ -88,11 +92,5 @@ app.use(Cascader)
 app.use(Lazyload, {
   lazyComponent: true
 })
-
-// if (import.meta.env.DEV) {
-import('vconsole').then(({ default: VConsole }) => {
-  new VConsole()
-})
-// }
 
 mountWithToken(app)

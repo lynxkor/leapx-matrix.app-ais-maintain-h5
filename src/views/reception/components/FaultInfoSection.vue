@@ -367,3 +367,230 @@ function setCurrentFaultSilent(value) {
 
 defineExpose({ setCurrentFaultSilent })
 </script>
+
+<style lang="scss">
+.fault-info {
+  padding: 0 12px 12px 12px;
+  background: #ffffff;
+
+  .section-card {
+    .fault-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+
+      .title {
+        font-size: 14px;
+        color: #191a1b;
+        font-weight: 500;
+      }
+
+      .fault-status-text {
+        font-size: 14px;
+        color: #545454;
+      }
+
+      .radio-group {
+        display: flex;
+        gap: 16px;
+
+        .radio-item {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          font-size: 14px;
+          color: #191a1b;
+
+          .van-icon {
+            color: #009100;
+            font-size: 16px;
+          }
+
+          .radio-circle {
+            width: 16px;
+            height: 16px;
+            border: 1px solid #dce0e4;
+            border-radius: 50%;
+          }
+
+          &.active {
+            .van-icon {
+              color: #009100;
+            }
+          }
+        }
+      }
+    }
+
+    .fault-modules {
+      .add-module {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        padding: 12px;
+        background: #e6f4e6;
+        border-radius: 8px;
+        color: #009100;
+        font-size: 14px;
+        margin-bottom: 12px;
+      }
+
+      // 模块列表容器
+      .modules-container {
+        max-height: 300px;
+        overflow-y: auto;
+        transition: max-height 0.3s ease;
+
+        &.expanded {
+          max-height: 300px;
+        }
+      }
+
+      .fault-module-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 8px;
+        border-radius: 6px;
+        background: #f8f7f7;
+        margin-bottom: 12px;
+
+        .module-name {
+          font-size: 14px;
+          color: #191a1b;
+        }
+
+        .van-icon {
+          color: #545454;
+          font-size: 18px;
+        }
+        &.last-child {
+          margin-bottom: 0;
+        }
+      }
+
+      .view-all {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        padding: 0 12px;
+        color: #009100;
+        font-size: 12px;
+        cursor: pointer;
+      }
+    }
+
+    .fault-desc-text {
+      font-size: 14px;
+      color: #545454;
+      padding: 12px;
+      background: #f5f5f5;
+      border-radius: 6px;
+      min-height: 60px;
+    }
+  }
+}
+
+// 故障模块弹框样式
+.fault-module-content {
+  .search-box {
+    margin-bottom: 12px;
+
+    .search-input-wrapper {
+      .search-input {
+        flex: 1;
+        height: 100%;
+        border: none;
+        background: transparent;
+        font-size: 12px;
+        color: #191a1b;
+        outline: none;
+        padding: 0;
+
+        &::placeholder {
+          color: #888888;
+        }
+      }
+
+      .search-btn {
+        background: #009100;
+        color: #ffffff;
+        font-size: 12px;
+        padding: 4px 14px;
+        border-radius: 13px;
+        flex-shrink: 0;
+
+        &:active {
+          background: #007a00;
+        }
+      }
+    }
+  }
+
+  .no-result {
+    text-align: center;
+    padding: 60px 0;
+
+    img {
+      max-width: 200px;
+    }
+  }
+}
+
+.fault-list {
+  height: 60vh;
+  overflow-y: auto;
+
+  .fault-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 7px 12px;
+    border-radius: 6px;
+    margin-bottom: 8px;
+    font-size: 13px;
+    &:last-child {
+      margin-bottom: 0;
+    }
+
+    &:active {
+      background: #f7f7f7;
+    }
+  }
+}
+
+// 故障确认弹框样式
+.fault-confirm-content {
+  padding: 24px 24px 10px 24px;
+
+  .confirm-text {
+    font-size: 14px;
+    color: #888888;
+    text-align: center;
+    line-height: 20px;
+    margin-bottom: 24px;
+  }
+
+  .confirm-actions {
+    display: flex;
+    gap: 12px;
+
+    .action-btn {
+      flex: 1;
+      height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      border-radius: 8px;
+      border-top: 1px solid #eeeeee;
+      &.confirm {
+        color: #191a1b;
+      }
+    }
+  }
+}
+</style>

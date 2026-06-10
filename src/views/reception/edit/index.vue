@@ -1465,7 +1465,7 @@ const getSignChannelName = (channel) => {
 // validateMileage 已从 receptionCommon 导入
 
 // 获取详情
-const fetchDetail = async() => {
+const fetchDetail = async(cb) => {
   const id = route.query.id
   if (!id) return
 
@@ -1697,6 +1697,9 @@ const fetchDetail = async() => {
       sessionStorage.removeItem('receptionEditActiveTab')
       nextTick(() => { activeTab.value = savedTab })
     }
+    nextTick(() => {
+      cb && cb()
+    })
   }
 }
 // 打开换车弹框
@@ -2421,7 +2424,9 @@ const onComplete = async() => {
       const res = await servicePreCheck(route.query.id)
       if (res.code === 200) {
         showToast('预检完成')
-        fetchDetail()
+        fetchDetail(() => {
+          activeTab.value = 'parts'
+        })
       } else {
         showToast(res.msg || '操作失败')
       }

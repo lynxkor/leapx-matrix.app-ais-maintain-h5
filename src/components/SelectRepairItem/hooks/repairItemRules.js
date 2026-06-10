@@ -50,7 +50,7 @@ export const isDiscountEditable = (item) => {
  */
 export const isNameEditable = (item) => {
   const isUniversal = item.repairItemCode === UNIVERSAL_LABOR_HOUR_ITEM_ID
-  return isUniversal && !item.id && !item.packageId
+  return isUniversal && Number(item.workRecordStatus || 0) < WorkRecordStatusEnum.COMPLETED && !item.packageId
 }
 
 /**

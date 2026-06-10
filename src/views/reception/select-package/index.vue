@@ -34,9 +34,7 @@
               </div>
               <div v-if="item.used" class="item-status">已选</div>
             </div>
-            <div v-if="packageList.length === 0 && !loading" class="no-data">
-              <img src="@/assets/image/noList.png" alt="" />
-            </div>
+            <Empty v-if="packageList.length === 0 && !loading" />
           </div>
         </div>
       </van-tab>
@@ -72,9 +70,7 @@
               </div>
               <div v-if="item.used" class="item-status">已选</div>
             </div>
-            <div v-if="equityList.length === 0 && !loading" class="no-data">
-              <img src="@/assets/image/noList.png" alt="" />
-            </div>
+            <Empty v-if="equityList.length === 0 && !loading" />
           </div>
         </div>
       </van-tab>
@@ -108,9 +104,7 @@
               </div>
               <div v-if="item.used" class="item-status">已选</div>
             </div>
-            <div v-if="mallList.length === 0 && !loading" class="no-data">
-              <img src="@/assets/image/noList.png" alt="" />
-            </div>
+            <Empty v-if="mallList.length === 0 && !loading" />
           </div>
         </div>
       </van-tab>
@@ -144,9 +138,7 @@
               </div>
               <div v-if="item.used" class="item-status used">已使用</div>
             </div>
-            <div v-if="freeList.length === 0 && !loading" class="no-data">
-              <img src="@/assets/image/noList.png" alt="" />
-            </div>
+            <Empty v-if="freeList.length === 0 && !loading" />
           </div>
         </div>
       </van-tab>
@@ -180,9 +172,7 @@
               </div>
               <div v-if="item.used" class="item-status used">已使用</div>
             </div>
-            <div v-if="serviceList.length === 0 && !loading" class="no-data">
-              <img src="@/assets/image/noList.png" alt="" />
-            </div>
+            <Empty v-if="serviceList.length === 0 && !loading" />
           </div>
         </div>
       </van-tab>
@@ -206,11 +196,6 @@
       @close="showPackageDetail = false"
       style="height: 80vh"
     >
-      <van-overlay :show="packageSubmitting" style="z-index: 100">
-        <div class="loading-wrapper">
-          <van-loading size="24px" vertical color="#009100">请稍候...</van-loading>
-        </div>
-      </van-overlay>
       <template #content>
         <!-- 套餐信息 -->
         <div class="package-info">
@@ -298,9 +283,22 @@
         </div>
       </template>
       <template #footer>
-        <div class="detail-actions" :class="{ 'single-btn': isPackageSelected }">
-          <div v-if="isPackageSelected" class="cancel-btn" @click="onCancelPackage">取消选择</div>
-          <div v-else class="confirm-btn full-btn" @click="onConfirmPackage">选择</div>
+        <div class="detail-actions">
+          <van-button
+            v-if="isPackageSelected"
+            block
+            :loading="packageSubmitting"
+            loading-text="请稍候..."
+            @click="onCancelPackage"
+          >取消选择</van-button>
+          <van-button
+            v-else
+            type="primary"
+            block
+            :loading="packageSubmitting"
+            loading-text="请稍候..."
+            @click="onConfirmPackage"
+          >选择</van-button>
         </div>
       </template>
     </ais-popup>
@@ -316,11 +314,6 @@
       @close="showServiceDetail = false"
       style="height: 80vh"
     >
-      <van-overlay :show="serviceSubmitting" style="z-index: 100">
-        <div class="loading-wrapper">
-          <van-loading size="24px" vertical color="#009100">请稍候...</van-loading>
-        </div>
-      </van-overlay>
       <template #content>
         <!-- 活动信息 -->
         <div class="package-info">
@@ -428,9 +421,22 @@
         </div>
       </template>
       <template #footer>
-        <div class="detail-actions" :class="{ 'single-btn': isServiceSelected }">
-          <div v-if="isServiceSelected" class="cancel-btn" @click="onCancelService">取消选择</div>
-          <div v-else class="confirm-btn full-btn" @click="onConfirmService">选择</div>
+        <div class="detail-actions">
+          <van-button
+            v-if="isServiceSelected"
+            block
+            :loading="serviceSubmitting"
+            loading-text="请稍候..."
+            @click="onCancelService"
+          >取消选择</van-button>
+          <van-button
+            v-else
+            type="primary"
+            block
+            :loading="serviceSubmitting"
+            loading-text="请稍候..."
+            @click="onConfirmService"
+          >选择</van-button>
         </div>
       </template>
     </ais-popup>
@@ -446,11 +452,6 @@
       @close="showFreeDetail = false"
       style="height: 80vh"
     >
-      <van-overlay :show="freeSubmitting" style="z-index: 100">
-        <div class="loading-wrapper">
-          <van-loading size="24px" vertical color="#009100">请稍候...</van-loading>
-        </div>
-      </van-overlay>
       <template #content>
         <!-- 免保项目信息 -->
         <div class="package-info">
@@ -481,9 +482,22 @@
         </div>
       </template>
       <template #footer>
-        <div class="detail-actions" :class="{ 'single-btn': isFreeSelected }">
-          <div v-if="isFreeSelected" class="cancel-btn" @click="onCancelFree">取消选择</div>
-          <div v-else class="confirm-btn full-btn" @click="onConfirmFree">选择</div>
+        <div class="detail-actions">
+          <van-button
+            v-if="isFreeSelected"
+            block
+            :loading="freeSubmitting"
+            loading-text="请稍候..."
+            @click="onCancelFree"
+          >取消选择</van-button>
+          <van-button
+            v-else
+            type="primary"
+            block
+            :loading="freeSubmitting"
+            loading-text="请稍候..."
+            @click="onConfirmFree"
+          >选择</van-button>
         </div>
       </template>
     </ais-popup>
@@ -499,11 +513,6 @@
       @close="showMallDetail = false"
       style="height: 80vh"
     >
-      <van-overlay :show="mallSubmitting" style="z-index: 100">
-        <div class="loading-wrapper">
-          <van-loading size="24px" vertical color="#009100">请稍候...</van-loading>
-        </div>
-      </van-overlay>
       <template #content>
         <!-- 商品明细标题 -->
         <div class="mall-title">商品明细</div>
@@ -591,9 +600,22 @@
         </div>
       </template>
       <template #footer>
-        <div class="detail-actions" :class="{ 'single-btn': isMallSelected }">
-          <div v-if="isMallSelected" class="cancel-btn" @click="onCancelMall">取消选择</div>
-          <div v-else class="confirm-btn full-btn" @click="onConfirmMall">选择</div>
+        <div class="detail-actions">
+          <van-button
+            v-if="isMallSelected"
+            block
+            :loading="mallSubmitting"
+            loading-text="请稍候..."
+            @click="onCancelMall"
+          >取消选择</van-button>
+          <van-button
+            v-else
+            type="primary"
+            block
+            :loading="mallSubmitting"
+            loading-text="请稍候..."
+            @click="onConfirmMall"
+          >选择</van-button>
         </div>
       </template>
     </ais-popup>
@@ -609,11 +631,6 @@
       @close="showEquityDetail = false"
       style="height: 80vh"
     >
-      <van-overlay :show="equitySubmitting" style="z-index: 100">
-        <div class="loading-wrapper">
-          <van-loading size="24px" vertical color="#009100">请稍候...</van-loading>
-        </div>
-      </van-overlay>
       <template #content>
         <!-- 套餐信息 -->
         <div class="package-info">
@@ -698,9 +715,22 @@
         </div>
       </template>
       <template #footer>
-        <div class="detail-actions" :class="{ 'single-btn': isEquitySelected }">
-          <div v-if="isEquitySelected" class="cancel-btn" @click="onCancelEquity">取消选择</div>
-          <div v-else class="confirm-btn full-btn" @click="onConfirmEquity">选择</div>
+        <div class="detail-actions">
+          <van-button
+            v-if="isEquitySelected"
+            block
+            :loading="equitySubmitting"
+            loading-text="请稍候..."
+            @click="onCancelEquity"
+          >取消选择</van-button>
+          <van-button
+            v-else
+            type="primary"
+            block
+            :loading="equitySubmitting"
+            loading-text="请稍候..."
+            @click="onConfirmEquity"
+          >选择</van-button>
         </div>
       </template>
     </ais-popup>
@@ -712,6 +742,7 @@ import { ref, reactive, onMounted, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { showToast, closeToast, showLoadingToast, showDialog } from 'vant'
 import AisPopup from '@/libs/components/AisPopup.vue'
+import Empty from '@/views/repairWork/components/Empty.vue'
 import {
   getSpecialPackageList,
   getSpecialPackageDetail,
@@ -801,6 +832,8 @@ const selectedPackage = reactive({
 const selectedService = reactive({
   id: '',
   activityId: '',
+  activityUsed: '',
+  actualDealerName: '',
   packageType: '50',
   activityResponse: {},
   itemResponseList: [],
@@ -1040,6 +1073,8 @@ const onServiceClick = (item) => {
     if (res.code === 200) {
       const data = res.data
       selectedService.id = data.id
+      selectedService.activityUsed = data.activityUsed
+      selectedService.actualDealerName = data.actualDealerName
       selectedService.activityId = data.activityId
       selectedService.activityResponse = data.activityResponse || {}
       // 根据activityType判断packageType: 4->50, 其他->60
@@ -1065,13 +1100,12 @@ const onServiceClick = (item) => {
 
 // 确认选择维修套餐
 const onConfirmPackage = () => {
-  showLoadingToast('请稍候...')
+  packageSubmitting.value = true
   specialPackageUse({
     id: serviceProxyId.value,
     packageId: selectedPackage.id
   })
     .then((res) => {
-      closeToast()
       if (res.code === 200) {
         showToast('已添加')
         showPackageDetail.value = false
@@ -1082,7 +1116,9 @@ const onConfirmPackage = () => {
     })
     .catch((err) => {
       showToast({ message: err.msg || '网络错误', duration: 3000 })
-      closeToast()
+    })
+    .finally(() => {
+      packageSubmitting.value = false
     })
 }
 
@@ -1100,6 +1136,10 @@ const onTogglePart = (part) => {
 
 // 确认选择服务活动
 const onConfirmService = () => {
+  if (selectedService.activityUsed) {
+    showToast(`该活动已被${selectedService.actualDealerName ? selectedService.actualDealerName : ''}使用，您不可重复使用`)
+    return
+  }
   // 只发送选中的项目和配件
   const selectedItems = selectedService.itemResponseList.filter((item) => item.selected)
   const selectedParts = selectedService.partResponseList.filter((part) => part.selected)
@@ -1158,10 +1198,9 @@ const onConfirmService = () => {
     itemList: enrichedItems,
     partsList: enrichedParts
   }
-  showLoadingToast('请稍候...')
+  serviceSubmitting.value = true
   specialActivityUse(params)
     .then((res) => {
-      closeToast()
       if (res.code === 200) {
         showToast('已添加')
         showServiceDetail.value = false
@@ -1172,9 +1211,9 @@ const onConfirmService = () => {
     })
     .catch((err) => {
       showToast({ message: err.msg || '网络错误', duration: 3000 })
-      closeToast()
     })
     .finally(() => {
+      serviceSubmitting.value = false
     })
 }
 
@@ -1229,7 +1268,7 @@ const onConfirmMall = () => {
 // 替换零件
 // 确认选择权益套餐
 const onConfirmEquity = () => {
-  showLoadingToast('请稍候...')
+  equitySubmitting.value = true
   const params = {
     id: serviceProxyId.value,
     equityUseId: selectedEquity.data.useId,
@@ -1280,7 +1319,7 @@ const onConfirmEquity = () => {
       showToast({ message: err.msg || '网络错误', duration: 3000 })
     })
     .finally(() => {
-      // closeToast()
+      equitySubmitting.value = false
     })
 }
 
@@ -1311,14 +1350,13 @@ const onCancelPackage = () => {
 
 // 取消选择服务活动
 const onCancelService = () => {
-  showLoadingToast('请稍候...')
+  serviceSubmitting.value = true
   cancelSelect({
     id: serviceProxyId.value,
     packageId: selectedService.activityId + '#' + selectedService.id,
     packageType: '50'
   })
     .then((res) => {
-      closeToast()
       if (res.code === 200) {
         showToast('已取消选择')
         showServiceDetail.value = false
@@ -1329,9 +1367,9 @@ const onCancelService = () => {
     })
     .catch((err) => {
       showToast({ message: err.msg || '网络错误', duration: 3000 })
-      closeToast()
     })
     .finally(() => {
+      serviceSubmitting.value = false
     })
 }
 
