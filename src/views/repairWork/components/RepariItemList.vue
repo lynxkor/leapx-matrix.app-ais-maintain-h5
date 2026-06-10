@@ -87,7 +87,6 @@
 
 <script setup>
 import { ref, computed, watch } from 'vue'
-import { showToast } from 'vant'
 import DispatchWorkPopup from './DispatchWorkPopup.vue'
 import { WorkRecordStatusEnum } from '../constant'
 import { executeSingleItemOperation, filterByTag } from '../utils'
@@ -206,10 +205,8 @@ const handleAction = async(action, item) => {
   })
 }
 
-// 派工弹窗提交
-const handleDispatchSubmit = async() => {
-  showDispatchPopup.value = false
-  showToast('派工成功')
+// 派工弹窗提交（DispatchWorkPopup内部已完成API调用和成功提示，此处仅刷新列表）
+const handleDispatchSubmit = () => {
   emit('refresh')
 }
 
