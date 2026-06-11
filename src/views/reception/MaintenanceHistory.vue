@@ -141,7 +141,7 @@ import { usePageSafeArea } from '@/utils/safeArea'
 const route = useRoute()
 const needRefresh = ref(false)
 const refreshListRef = ref(null)
-usePageSafeArea()
+usePageSafeArea({ bodyClass: 'ais-page-nav-safe-area' })
 // 车辆信息
 const vehicleInfo = reactive({
   vin: '',
