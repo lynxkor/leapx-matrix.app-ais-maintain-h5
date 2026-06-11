@@ -485,7 +485,7 @@
                 <div
                   class="signature-action-row"
                 >
-                  <van-button type="primary" size="small" @click="onConfirmAndSign">邀请客户签字</van-button>
+                  <van-button v-if="permissionStore.hasPermission('AISMC-app-serviceProxy-confirmToSign')" type="primary" size="small" @click="onConfirmAndSign">邀请客户签字</van-button>
                 </div>
               </div>
             </div>
@@ -566,7 +566,7 @@
           @click="onInspectionSave"
           >保存</span
         >
-        <span v-if="!isSettled && !detail.previewingFinishAt" class="complete-btn" @click="onComplete"
+        <span v-if="!isSettled && !detail.previewingFinishAt && permissionStore.hasPermission('AISMC-app-serviceProxy-precheck')" class="complete-btn" @click="onComplete"
           >预检确认</span
         >
       </template>
@@ -586,7 +586,7 @@
           >保存</span
         >
         <span
-          v-if="showConfirmAndSignBtn"
+          v-if="showConfirmAndSignBtn && permissionStore.hasPermission('AISMC-app-serviceProxy-confirmToSign')"
           :class="['complete-btn', { disabled: isConfirmAndSignDisabled }]"
           @click="onConfirmAndSignClick"
           >制单确认并签字</span
@@ -711,7 +711,7 @@
             <div v-if="detail.isCreatePreAuth !== 1" class="alert-section">
               <div class="section-title">{{ item.typeLabel }}</div>
               <div class="section-message">{{ item.content || '暂无提醒信息' }}</div>
-              <div class="section-action-btn" @click="onGenerateAuthorization">生成预授权</div>
+              <div v-if="permissionStore.hasPermission('AISMC-app-preAuth-addOrUpdate')" class="section-action-btn" @click="onGenerateAuthorization">生成预授权</div>
             </div>
             <div v-else>
               <div class="info-title">{{ item.typeLabel }}</div>
@@ -804,6 +804,7 @@ import { ref, reactive, onMounted, computed, watch, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { showToast, showConfirmDialog, showImagePreview, closeToast, showLoadingToast } from 'vant'
 import { useGlobalStore } from '@/stores/global'
+import { usePermissionStore } from '@/stores/permission'
 import { usePageSafeArea } from '@/utils/safeArea'
 import AisPopup from '@/libs/components/AisPopup.vue'
 import AisCascader from '@/components/AisCascader/index.vue'
@@ -864,6 +865,7 @@ import '../create/create.scss'
 const route = useRoute()
 const router = useRouter()
 const globalStore = useGlobalStore()
+const permissionStore = usePermissionStore()
 usePageSafeArea({ bodyClass: 'ais-page-nav-safe-area' })
 // 换车
 const changeCarDialog = ref(false)
@@ -1004,13 +1006,17 @@ const moreActionsList = computed(() => {
     { name: '权益查询', tag: '1', color: '#191a1b' },
     { name: '维修履历', tag: '2', color: '#191a1b' },
     { name: '实时故障', tag: '3', color: '#191a1b' },
-    {
-      name: '作废',
-      tag: '4',
-      color: isCancelDisabled ? '#888888' : '#191a1b',
-      disabled: isCancelDisabled,
-      disabledReason: disabledReason
-    }
+    ...(
+      permissionStore.hasPermission('AISMC-app-serviceProxy-cancel')
+        ? [{
+          name: '作废',
+          tag: '4',
+          color: isCancelDisabled ? '#888888' : '#191a1b',
+          disabled: isCancelDisabled,
+          disabledReason: disabledReason
+        }]
+        : []
+    )
   ]
 })
 

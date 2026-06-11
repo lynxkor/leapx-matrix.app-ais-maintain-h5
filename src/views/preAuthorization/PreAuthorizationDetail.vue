@@ -347,19 +347,19 @@
       </div>
     </div>
     <!-- 底部审核按钮 (仅审批中状态且非善意保修时显示) -->
-    <div v-if="detail.status === 20 && detail.isGoodWarranty !== true" class="bottom-actions">
+    <div v-if="detail.status === 20 && detail.isGoodWarranty !== true && permissionStore.hasPermission('AISMC-app-preAuth-audit')" class="bottom-actions">
       <div class="action-btn back" @click="router.back()">返回</div>
       <div class="action-btn audit" @click="handleAudit">审核</div>
     </div>
 
     <!-- 底部激活按钮 (已拒绝状态且非善意保修时显示) -->
-    <div v-if="detail.status === 70 && detail.isGoodWarranty !== true" class="bottom-actions">
+    <div v-if="detail.status === 70 && detail.isGoodWarranty !== true && permissionStore.hasPermission('AISMC-app-preAuth-enableOrDisable')" class="bottom-actions">
       <div class="action-btn back" @click="router.back()">返回</div>
       <div class="action-btn audit" @click="handleAudit">激活</div>
     </div>
 
     <!-- 底部提交按钮 (未提交或已驳回状态显示) -->
-    <div v-if="isEditable" class="bottom-actions">
+    <div v-if="isEditable && permissionStore.hasPermission('AISMC-app-preAuth-addOrUpdate')" class="bottom-actions">
       <div class="action-btn submit" @click="handleSubmit">提交申请</div>
     </div>
 
@@ -581,8 +581,10 @@ import { getAttachmentList, uploadFileByUrl, deleteAttachmentConfig, getUploadCo
 import { getEnumValue } from '@/libs/api/common'
 import { batchUploadImageLimit } from '@/libs/utils/nativeFn'
 import { usePageSafeArea } from '@/utils/safeArea'
+import { usePermissionStore } from '@/stores/permission'
 const route = useRoute()
 const router = useRouter()
+const permissionStore = usePermissionStore()
 usePageSafeArea({ bodyClass: 'ais-page-nav-safe-area' })
 const PRE_AUTH_ATTACHMENT_CONFIG_CODE = 'mcs_preauth'
 const uploadConfig = ref({})

@@ -17,7 +17,7 @@
     </div>
     <div class="actions-right">
       <van-button
-        v-if="hasNotStarted || hasInProgress"
+        v-if="(hasNotStarted || hasInProgress) && permissionStore.hasPermission('AISMC-app-serviceProxy-deleteWorkers')"
         class="action-btn"
         plain
         type="primary"
@@ -28,7 +28,7 @@
         删除派工
       </van-button>
       <van-button
-        v-if="hasInProgress"
+        v-if="hasInProgress && permissionStore.hasPermission('AISMC-app-serviceProxy-endWork')"
         class="action-btn"
         plain
         type="primary"
@@ -39,7 +39,7 @@
         作业结束
       </van-button>
       <van-button
-        v-if="hasNotStarted"
+        v-if="hasNotStarted && permissionStore.hasPermission('AISMC-app-serviceProxy-startWork')"
         class="action-btn"
         plain
         type="primary"
@@ -50,7 +50,7 @@
         作业开始
       </van-button>
       <van-button
-        v-if="hasQualityed"
+        v-if="hasQualityed && permissionStore.hasPermission('AISMC-app-serviceProxy-repaired')"
         class="action-btn rework-btn"
         plain
         type="primary"
@@ -61,7 +61,7 @@
         返修
       </van-button>
       <van-button
-        v-if="hasPendingQuality"
+        v-if="hasPendingQuality && permissionStore.hasPermission('AISMC-app-serviceProxy-qualityInspection')"
         class="action-btn"
         plain
         type="primary"
@@ -72,7 +72,7 @@
         质检
       </van-button>
       <van-button
-        v-if="hasPendingFinal && activeTab === 'inspection'"
+        v-if="hasPendingFinal && activeTab === 'inspection' && permissionStore.hasPermission('AISMC-app-serviceProxy-finalInspection')"
         class="action-btn"
         plain
         type="primary"
@@ -83,7 +83,7 @@
         终检
       </van-button>
       <van-button
-        v-if="hasPendingDispatch"
+        v-if="hasPendingDispatch && permissionStore.hasPermission('AISMC-app-serviceProxy-dispatchWorkers')"
         class="action-btn"
         plain
         type="primary"
@@ -102,6 +102,9 @@ import { ref, computed } from 'vue'
 import FinalCheckPopup from './FinalCheckPopup.vue'
 import FaultInfoPopup from './FaultInfoPopup.vue'
 import { filterByTag, handleFinalCheckFlow } from '../utils'
+import { usePermissionStore } from '@/stores/permission'
+
+const permissionStore = usePermissionStore()
 
 const props = defineProps({
   workOrder: {
