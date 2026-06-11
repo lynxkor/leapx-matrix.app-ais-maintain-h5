@@ -604,12 +604,12 @@
     <!-- 换车弹框 -->
     <ChangeCarPopup v-model:show="changeCarDialog" @confirm="onChangeCarSelected" />
     <!-- 预计交车时间选择器 -->
-    <DeliveryTimePicker
+    <DateTimePicker
       v-model:show="showDeliveryTimePicker"
       v-model="signatureData.expectFinishAt"
       title="预计交车时间"
-      :dates="deliveryDateList"
-      :times="deliveryTimeList"
+      :max-date="maxDeliveryDate"
+      :min-time="minTime"
     />
 
     <!-- 签字渠道选择器 -->
@@ -810,6 +810,7 @@ import AisCascader from '@/components/AisCascader/index.vue'
 import PackageDetailPopup from '@/components/PackageDetailPopup.vue'
 import RepairItemContent from '@/components/SelectRepairItem/RepairItemContent.vue'
 import { useRepairItemBusinessRules, useRepairItemData } from '@/components/SelectRepairItem/hooks'
+import dayjs from 'dayjs'
 import {
   uploadFileByUrl,
   getUploadConfig,
@@ -844,8 +845,6 @@ import {
   hasDuplicateFileId,
   getAlarmColor,
   getAlarmLabel,
-  generateDeliveryDates as _generateDeliveryDates,
-  generateDeliveryTimes as _generateDeliveryTimes,
   validateMileage,
   validateRepairPerson as _validateRepairPerson,
   scrollToErrorField,
@@ -857,7 +856,7 @@ import {
   applyRecentInspectionByVin
 } from '@/utils/receptionCommon'
 import PlateKeyboard from '@/libs/components/PlateKeyboard.vue'
-import DeliveryTimePicker from '@/libs/components/DeliveryTimePicker.vue'
+import DateTimePicker from '@/libs/components/DateTimePicker.vue'
 import ChangeCarPopup from '../components/ChangeCarPopup.vue'
 import FaultInfoSection from '../components/FaultInfoSection.vue'
 import '../create/create.scss'
@@ -1438,11 +1437,8 @@ const showDeliveryTimePicker = ref(false)
 const showSignatureChannelPicker = ref(false)
 const tempSignatureChannel = ref('')
 
-// 预计交车日期列表（生成未来7天）
-const deliveryDateList = ref([])
-const generateDeliveryDates = () => { deliveryDateList.value = _generateDeliveryDates() }
-const deliveryTimeList = ref([])
-const generateDeliveryTimes = () => { deliveryTimeList.value = _generateDeliveryTimes() }
+const maxDeliveryDate = new Date(Date.now() + 100 * 86400000)
+const minTime = dayjs().format('HH:mm:ss')
 
 // 签字渠道列表
 const signatureChannelList = ref([
@@ -2725,10 +2721,6 @@ onMounted(() => {
   // 初始化送修人输入框
   repairPersonNameInput.value = detail.repairPerson
   repairPersonPhoneInput.value = detail.repairPersonPhone
-  // 初始化预计交车日期列表
-  generateDeliveryDates()
-  // 初始化预计交车时间列表
-  generateDeliveryTimes()
   // 获取上传配置
   if (route.query.id) {
     getUploadConfig({ configCode: 'mcs_serviceproxy' }).then((res) => {
