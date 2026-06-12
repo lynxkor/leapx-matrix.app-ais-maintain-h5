@@ -940,21 +940,22 @@ const fetchListData = (tabName, searchKey = '') => {
   api
     .then((res) => {
       if (res.code === 200 && res.data) {
+        const list = Array.isArray(res.data) ? res.data : []
         switch (tabName) {
           case 'repair':
-            packageList.value = res.data.map((item) => ({ ...item, selected: false }))
+            packageList.value = list.map((item) => ({ ...item, selected: false }))
             break
           case 'equity':
-            equityList.value = res.data.map((item) => ({ ...item, selected: false }))
+            equityList.value = list.map((item) => ({ ...item, selected: false }))
             break
           case 'mall':
-            mallList.value = res.data.map((item) => ({ ...item, selected: false }))
+            mallList.value = list.map((item) => ({ ...item, selected: false }))
             break
           case 'free':
-            freeList.value = res.data.map((item) => ({ ...item, selected: false }))
+            freeList.value = list.map((item) => ({ ...item, selected: false }))
             break
           case 'service':
-            serviceList.value = res.data.map((item) => ({ ...item, selected: item.used }))
+            serviceList.value = list.map((item) => ({ ...item, selected: item.used }))
             break
         }
       } else {

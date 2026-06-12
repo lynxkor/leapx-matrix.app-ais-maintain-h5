@@ -421,7 +421,8 @@ const getReasonOptions = async() => {
   try {
     const res = await getEnumValue('UnresolvedIssueReasonEnum')
     if (res?.data) {
-      reasonOptions.value = res.data.map((item) => ({
+      const list = Array.isArray(res.data) ? res.data : []
+      reasonOptions.value = list.map((item) => ({
         label: item.message,
         value: item.code
       }))
