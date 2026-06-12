@@ -232,7 +232,7 @@ export function filterRepairParts(data) {
  * @param {String} key
  */
 export function getEnum(key) {
-  return post(`maintain/web/common/enum/${key}`)
+  return post(`maintain/app/common/enum/${key}`)
 }
 
 /**
