@@ -27,7 +27,7 @@ const app = createApp(App)
 // 初始化 Sentry 错误追踪
 const environment = window.APP_AIS_H5_CONFIG?.VITE_SENTRY_ENV
 if (environment) {
-  if (environment !== 'production' || environment !== 'pre') {
+  if (environment !== 'production' && environment !== 'pre') {
     Sentry.init({
       app,
       dsn: 'https://ee4e500cb386a8ae8f0e53a9f8be3c8f@it-sentry.leapmotor.com/62', // Sentry 数据源名称配置
