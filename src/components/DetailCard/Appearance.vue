@@ -142,7 +142,7 @@ const showPop = (item) => {
     abnormalDesc: item.abnormalDesc ? item.abnormalDesc : ''
   })))
   popupInputDisabled.value = true
-  popupObj.damagedTypeList.map(damagedType => {
+  ;(popupObj.damagedTypeList || []).map(damagedType => {
     damagedType.isUnusual = Boolean(damagedType.isUnusual)
   })
   show.value = true
@@ -183,7 +183,7 @@ const saveClick = () => {
   const _checkItems = { ...deepClone(popupObj) }
   let _count = 0
   _checkItems.abnormalUrl = _checkItems.abnormalUrlList.join(',')
-  _checkItems.damagedTypeList.map(damagedType => {
+  ;(_checkItems.damagedTypeList || []).map(damagedType => {
     damagedType.isUnusual = Number(damagedType.isUnusual)
     if (damagedType.isUnusual) {
       _count++
@@ -232,8 +232,10 @@ const saveClick = () => {
 
 const switchChange = () => {
   // 需要所有的复选框状态都要判断
-  for (let index = 0; index < tempObj.damagedTypeList.length; index++) {
-    if (Number(popupObj.damagedTypeList[index].isUnusual) === tempObj.damagedTypeList[index].isUnusual) {
+  const damagedList = popupObj.damagedTypeList || []
+  const tempDamagedList = tempObj.damagedTypeList || []
+  for (let index = 0; index < tempDamagedList.length; index++) {
+    if (Number(damagedList[index]?.isUnusual) === tempDamagedList[index]?.isUnusual) {
       popupInputDisabled.value = true
     } else {
       popupInputDisabled.value = false
