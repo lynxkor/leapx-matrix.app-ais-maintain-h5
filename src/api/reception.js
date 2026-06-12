@@ -142,7 +142,7 @@ export function getRemindInfo(data) {
  * @param data
  */
 export function getRepairItemTypeList(data) {
-  return post('/maintain/web/basic/repairItemType/list', data)
+  return post('/maintain/app/common/repairItemType/list', data)
 }
 
 // 接车施工单--维修项目/零件--保存
