@@ -18,7 +18,7 @@
           <span class="status-tag" :class="detail.statusClass">{{ detail.approvalStatusLabel }}</span>
         </div>
         <!-- 驳回原因 -->
-        <div v-if="detail.status === 40" class="reject-reason">
+        <div v-if="detail.status === AUDIT_STATUS.REJECTED" class="reject-reason">
           {{ detail.preAuthRuleCodeDesc || '--' }}
         </div>
       </div>
@@ -347,19 +347,19 @@
       </div>
     </div>
     <!-- 底部审核按钮 (仅审批中状态且非善意保修时显示) -->
-    <div v-if="detail.status === 20 && detail.isGoodWarranty !== true" class="bottom-actions">
+    <div v-if="detail.status === AUDIT_STATUS.IN_PROGRESS && detail.isGoodWarranty !== true && permissionStore.hasPermission('AISMC-app-preAuth-audit')" class="bottom-actions">
       <div class="action-btn back" @click="router.back()">返回</div>
       <div class="action-btn audit" @click="handleAudit">审核</div>
     </div>
 
     <!-- 底部激活按钮 (已拒绝状态且非善意保修时显示) -->
-    <div v-if="detail.status === 70 && detail.isGoodWarranty !== true" class="bottom-actions">
+    <div v-if="detail.status === AUDIT_STATUS.REFUSED && detail.isGoodWarranty !== true && permissionStore.hasPermission('AISMC-app-preAuth-enableOrDisable')" class="bottom-actions">
       <div class="action-btn back" @click="router.back()">返回</div>
       <div class="action-btn audit" @click="handleAudit">激活</div>
     </div>
 
     <!-- 底部提交按钮 (未提交或已驳回状态显示) -->
-    <div v-if="isEditable" class="bottom-actions">
+    <div v-if="isEditable && permissionStore.hasPermission('AISMC-app-preAuth-addOrUpdate')" class="bottom-actions">
       <div class="action-btn submit" @click="handleSubmit">提交申请</div>
     </div>
 
@@ -581,8 +581,11 @@ import { getAttachmentList, uploadFileByUrl, deleteAttachmentConfig, getUploadCo
 import { getEnumValue } from '@/libs/api/common'
 import { batchUploadImageLimit } from '@/libs/utils/nativeFn'
 import { usePageSafeArea } from '@/utils/safeArea'
+import { usePermissionStore } from '@/stores/permission'
+import { AUDIT_STATUS } from './constant'
 const route = useRoute()
 const router = useRouter()
+const permissionStore = usePermissionStore()
 usePageSafeArea({ bodyClass: 'ais-page-nav-safe-area' })
 const PRE_AUTH_ATTACHMENT_CONFIG_CODE = 'mcs_preauth'
 const uploadConfig = ref({})
@@ -692,7 +695,7 @@ const auditOptions = computed(() => {
     { label: '审批通过', value: 'approve' },
     { label: '审批驳回', value: 'reject' }
   ]
-  if (detail.value.status !== 70) {
+  if (detail.value.status !== AUDIT_STATUS.REFUSED) {
     base.push({ label: '拒绝申请', value: 'refuse' })
   }
   return base
@@ -700,11 +703,11 @@ const auditOptions = computed(() => {
 
 // 是否可编辑（未提交10 或 已驳回40）
 const isEditable = computed(() => {
-  return detail.value.status === 10 || detail.value.status === 40
+  return detail.value.status === AUDIT_STATUS.TODO || detail.value.status === AUDIT_STATUS.REJECTED
 })
 
 // 是否可编辑施工单号（仅未提交时可编辑，已驳回时不可修改）
-const canEditConstruction = computed(() => detail.value.status === 10)
+const canEditConstruction = computed(() => detail.value.status === AUDIT_STATUS.TODO)
 
 // 是否展示车辆信息区域（可编辑时需要选择了施工单才展示；不可编辑时始终展示）
 const showVehicleInfo = computed(() => {
@@ -1621,15 +1624,15 @@ const formatDetailData = (data) => {
   }
 }
 
-// 获取状态样式类 (approvalStatus: 10-未提交, 20-审批中, 30-已通过, 40-已驳回, 50-已作废, 70-已拒绝)
 const getStatusClass = (status) => {
   switch (status) {
-    case 10: return 'status-pending'
-    case 20: return 'status-audit'
-    case 30: return 'status-approved'
-    case 40: return 'status-rejected'
-    case 50: return 'status-rejected'
-    case 70: return 'status-rejected'
+    case AUDIT_STATUS.TODO: return 'status-pending'
+    case AUDIT_STATUS.IN_PROGRESS: return 'status-audit'
+    case AUDIT_STATUS.APPROVED: return 'status-approved'
+    case AUDIT_STATUS.REJECTED: return 'status-rejected'
+    case AUDIT_STATUS.CANCELLED: return 'status-rejected'
+    case AUDIT_STATUS.EXPIRED: return 'status-rejected'
+    case AUDIT_STATUS.REFUSED: return 'status-rejected'
     default: return ''
   }
 }

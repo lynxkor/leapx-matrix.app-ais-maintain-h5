@@ -321,8 +321,10 @@ import {
 } from '@/api/settlementStatement'
 import { getFileList } from '@/libs/api/fileConfig'
 import { usePageSafeArea } from '@/utils/safeArea'
+import { usePermissionStore } from '@/stores/permission'
 
 const route = useRoute()
+const permissionStore = usePermissionStore()
 usePageSafeArea({ bodyClass: 'ais-page-nav-safe-area' })
 
 // 加载状态
@@ -535,13 +537,14 @@ const bottomActionConfig = computed(() => {
 
   // 1. isCheck === false：未提交结算，显示提交结算按钮
   if (detailData.value.isCheck === false) {
-    // 判断是否为最后一个未提交的结算单
     if (shouldUseSignFlow.value) {
-      return {
-        type: 'button',
-        text: '提交结算并签字',
-        action: 'submitSign'
-      }
+      return permissionStore.hasPermission('AISMC-app-serviceStatement-submitSettlementAndSign')
+        ? {
+          type: 'button',
+          text: '提交结算并签字',
+          action: 'submitSign'
+        }
+        : null
     }
     return {
       type: 'button',

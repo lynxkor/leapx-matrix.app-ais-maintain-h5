@@ -91,7 +91,7 @@
     </div>
 
     <!-- 底部操作栏 -->
-    <div class="action-bar">
+    <div class="action-bar" v-if="permissionStore.hasPermission('AISMC-app-preAuth-addOrUpdate')">
       <van-button class="create-btn" type="primary" @click="createAuthorization"> 新建 </van-button>
     </div>
   </div>
@@ -111,8 +111,10 @@ import { callPhone } from '@/libs/utils/nativeFn'
 import { copyText } from '@/libs/utils'
 import copyIcon from '@/libs/assets/image/copy_icon.svg'
 import { usePageSafeArea } from '@/utils/safeArea'
+import { usePermissionStore } from '@/stores/permission'
 
 const router = useRouter()
+const permissionStore = usePermissionStore()
 
 usePageSafeArea({ bodyClass: 'ais-page-nav-safe-area' })
 

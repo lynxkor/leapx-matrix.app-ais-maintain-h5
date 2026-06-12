@@ -30,6 +30,8 @@
       show-header
       :service-proxy-id="serviceProxyId"
       :current-fault="currentFault"
+      :isCreatePreAuth="isCreatePreAuth"
+      :isPageMode="isPageMode"
       @close="handleClose"
       @confirm="onConfirm"
     />
@@ -41,6 +43,8 @@
       ref="contentRef"
       :service-proxy-id="serviceProxyId"
       :current-fault="currentFault"
+      :isCreatePreAuth="isCreatePreAuth"
+      :isPageMode="isPageMode"
       @close="handleClose"
       @confirm="onConfirm"
     />
@@ -65,6 +69,10 @@ const props = defineProps({
     type: [String, Number],
     default: ''
   },
+  isCreatePreAuth: {
+    type: [String, Number],
+    default: ''
+  },
   mode: {
     type: String,
     default: 'page', // 'popup' | 'page'
@@ -78,6 +86,7 @@ const route = useRoute()
 const isPageMode = computed(() => props.mode === 'page')
 const serviceProxyId = computed(() => props.serviceProxyId || route.query.serviceProxyId || '')
 const currentFault = computed(() => route.query.currentFault || props.currentFault)
+const isCreatePreAuth = computed(() => route.query.isCreatePreAuth || props.isCreatePreAuth)
 
 const innerVisible = computed({
   get: () => props.visible,

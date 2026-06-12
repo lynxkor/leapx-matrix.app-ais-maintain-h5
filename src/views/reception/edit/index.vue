@@ -485,7 +485,7 @@
                 <div
                   class="signature-action-row"
                 >
-                  <van-button type="primary" size="small" @click="onConfirmAndSign">邀请客户签字</van-button>
+                  <van-button v-if="permissionStore.hasPermission('AISMC-app-serviceProxy-confirmToSign')" type="primary" size="small" @click="onConfirmAndSign">邀请客户签字</van-button>
                 </div>
               </div>
             </div>
@@ -566,7 +566,7 @@
           @click="onInspectionSave"
           >保存</span
         >
-        <span v-if="!isSettled && !detail.previewingFinishAt" class="complete-btn" @click="onComplete"
+        <span v-if="!isSettled && !detail.previewingFinishAt && permissionStore.hasPermission('AISMC-app-serviceProxy-precheck')" class="complete-btn" @click="onComplete"
           >预检确认</span
         >
       </template>
@@ -586,7 +586,7 @@
           >保存</span
         >
         <span
-          v-if="showConfirmAndSignBtn"
+          v-if="showConfirmAndSignBtn && permissionStore.hasPermission('AISMC-app-serviceProxy-confirmToSign')"
           :class="['complete-btn', { disabled: isConfirmAndSignDisabled }]"
           @click="onConfirmAndSignClick"
           >制单确认并签字</span
@@ -604,12 +604,12 @@
     <!-- 换车弹框 -->
     <ChangeCarPopup v-model:show="changeCarDialog" @confirm="onChangeCarSelected" />
     <!-- 预计交车时间选择器 -->
-    <DeliveryTimePicker
+    <DateTimePicker
       v-model:show="showDeliveryTimePicker"
       v-model="signatureData.expectFinishAt"
       title="预计交车时间"
-      :dates="deliveryDateList"
-      :times="deliveryTimeList"
+      :max-date="maxDeliveryDate"
+      :min-time="minTime"
     />
 
     <!-- 签字渠道选择器 -->
@@ -711,7 +711,7 @@
             <div v-if="detail.isCreatePreAuth !== 1" class="alert-section">
               <div class="section-title">{{ item.typeLabel }}</div>
               <div class="section-message">{{ item.content || '暂无提醒信息' }}</div>
-              <div class="section-action-btn" @click="onGenerateAuthorization">生成预授权</div>
+              <div v-if="permissionStore.hasPermission('AISMC-app-preAuth-addOrUpdate')" class="section-action-btn" @click="onGenerateAuthorization">生成预授权</div>
             </div>
             <div v-else>
               <div class="info-title">{{ item.typeLabel }}</div>
@@ -804,12 +804,14 @@ import { ref, reactive, onMounted, computed, watch, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { showToast, showConfirmDialog, showImagePreview, closeToast, showLoadingToast } from 'vant'
 import { useGlobalStore } from '@/stores/global'
+import { usePermissionStore } from '@/stores/permission'
 import { usePageSafeArea } from '@/utils/safeArea'
 import AisPopup from '@/libs/components/AisPopup.vue'
 import AisCascader from '@/components/AisCascader/index.vue'
 import PackageDetailPopup from '@/components/PackageDetailPopup.vue'
 import RepairItemContent from '@/components/SelectRepairItem/RepairItemContent.vue'
 import { useRepairItemBusinessRules, useRepairItemData } from '@/components/SelectRepairItem/hooks'
+import dayjs from 'dayjs'
 import {
   uploadFileByUrl,
   getUploadConfig,
@@ -844,8 +846,6 @@ import {
   hasDuplicateFileId,
   getAlarmColor,
   getAlarmLabel,
-  generateDeliveryDates as _generateDeliveryDates,
-  generateDeliveryTimes as _generateDeliveryTimes,
   validateMileage,
   validateRepairPerson as _validateRepairPerson,
   scrollToErrorField,
@@ -857,7 +857,7 @@ import {
   applyRecentInspectionByVin
 } from '@/utils/receptionCommon'
 import PlateKeyboard from '@/libs/components/PlateKeyboard.vue'
-import DeliveryTimePicker from '@/libs/components/DeliveryTimePicker.vue'
+import DateTimePicker from '@/libs/components/DateTimePicker.vue'
 import ChangeCarPopup from '../components/ChangeCarPopup.vue'
 import FaultInfoSection from '../components/FaultInfoSection.vue'
 import '../create/create.scss'
@@ -865,6 +865,7 @@ import '../create/create.scss'
 const route = useRoute()
 const router = useRouter()
 const globalStore = useGlobalStore()
+const permissionStore = usePermissionStore()
 usePageSafeArea({ bodyClass: 'ais-page-nav-safe-area' })
 // 换车
 const changeCarDialog = ref(false)
@@ -1005,13 +1006,17 @@ const moreActionsList = computed(() => {
     { name: '权益查询', tag: '1', color: '#191a1b' },
     { name: '维修履历', tag: '2', color: '#191a1b' },
     { name: '实时故障', tag: '3', color: '#191a1b' },
-    {
-      name: '作废',
-      tag: '4',
-      color: isCancelDisabled ? '#888888' : '#191a1b',
-      disabled: isCancelDisabled,
-      disabledReason: disabledReason
-    }
+    ...(
+      permissionStore.hasPermission('AISMC-app-serviceProxy-cancel')
+        ? [{
+          name: '作废',
+          tag: '4',
+          color: isCancelDisabled ? '#888888' : '#191a1b',
+          disabled: isCancelDisabled,
+          disabledReason: disabledReason
+        }]
+        : []
+    )
   ]
 })
 
@@ -1438,11 +1443,8 @@ const showDeliveryTimePicker = ref(false)
 const showSignatureChannelPicker = ref(false)
 const tempSignatureChannel = ref('')
 
-// 预计交车日期列表（生成未来7天）
-const deliveryDateList = ref([])
-const generateDeliveryDates = () => { deliveryDateList.value = _generateDeliveryDates() }
-const deliveryTimeList = ref([])
-const generateDeliveryTimes = () => { deliveryTimeList.value = _generateDeliveryTimes() }
+const maxDeliveryDate = new Date(Date.now() + 100 * 86400000)
+const minTime = dayjs().format('HH:mm:ss')
 
 // 签字渠道列表
 const signatureChannelList = ref([
@@ -2444,7 +2446,8 @@ const onAddParts = () => {
     query: {
       serviceProxyId: route.query.id,
       vehModelName: detail.vehicleModelName,
-      currentFault: detail.currentFault
+      currentFault: detail.currentFault,
+      isCreatePreAuth: detail.isCreatePreAuth
     }
   })
 }
@@ -2725,10 +2728,6 @@ onMounted(() => {
   // 初始化送修人输入框
   repairPersonNameInput.value = detail.repairPerson
   repairPersonPhoneInput.value = detail.repairPersonPhone
-  // 初始化预计交车日期列表
-  generateDeliveryDates()
-  // 初始化预计交车时间列表
-  generateDeliveryTimes()
   // 获取上传配置
   if (route.query.id) {
     getUploadConfig({ configCode: 'mcs_serviceproxy' }).then((res) => {

@@ -129,7 +129,7 @@ const getFilterParams = (filterValue) => {
       createTimeEnd: formatDateTime(end)
     }
   }
-  if (filterValue === 'mine' && activeTab.value !== 'dispatch') {
+  if (filterValue === 'mine') {
     const userStore = useUserStore()
     return { repairTechnicianId: userStore.userId }
   }

@@ -43,7 +43,7 @@
     </div>
 
     <!-- 底部按钮 -->
-    <div class="bottom-bar">
+    <div class="bottom-bar" v-if="permissionStore.hasPermission('AISMC-app-serviceProxy-addOrUpdate')">
       <div class="create-btn" @click="onCreateOrder">新建施工单</div>
     </div>
 
@@ -62,6 +62,7 @@ import { useRouter } from 'vue-router'
 import { showToast } from 'vant'
 import FilterHeader from '@/libs/components/FilterHeader.vue'
 import { useGlobalStore } from '@/stores/global'
+import { usePermissionStore } from '@/stores/permission'
 import ListItem from '@/components/ListItem.vue'
 import RefreshList from '@/libs/components/RefreshList.vue'
 import WorkOrderCard from '@/components/WorkOrderCard.vue'
@@ -72,6 +73,7 @@ defineOptions({
 })
 const router = useRouter()
 const globalStore = useGlobalStore()
+const permissionStore = usePermissionStore()
 usePageSafeArea({ bodyClass: 'ais-page-nav-safe-area' })
 globalStore.getEnumData()
 const needRefresh = ref(false)

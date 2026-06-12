@@ -2,13 +2,15 @@
 import { onMounted } from 'vue'
 import { RouterView } from 'vue-router'
 import { useUserStore } from '@/stores/user'
+import { usePermissionStore } from '@/stores/permission'
 
 const userStore = useUserStore()
+const permissionStore = usePermissionStore()
 
 onMounted(async() => {
-  // 应用初始化时获取用户信息
   if (userStore.token) {
     await userStore.fetchUserInfo()
+    permissionStore.fetchPermissions()
   }
 })
 </script>

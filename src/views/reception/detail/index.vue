@@ -449,6 +449,7 @@ import { ref, reactive, onMounted, nextTick, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { showToast, showImagePreview } from 'vant'
 import { useGlobalStore } from '@/stores/global'
+import { usePermissionStore } from '@/stores/permission'
 import { usePageSafeArea } from '@/utils/safeArea'
 import AisPopup from '@/libs/components/AisPopup.vue'
 import { getDetail, serviceProxyCancel } from '@/api/reception'
@@ -466,6 +467,7 @@ import './detail.scss'
 const route = useRoute()
 const router = useRouter()
 const globalStore = useGlobalStore()
+const permissionStore = usePermissionStore()
 usePageSafeArea({ bodyClass: 'ais-page-nav-safe-area' })
 const loading = ref(false)
 const cancelLoading = ref(false)
@@ -492,13 +494,17 @@ const moreActionsList = computed(() => {
     { name: '权益查询', tag: '1', color: '#191a1b' },
     { name: '维修履历', tag: '2', color: '#191a1b' },
     { name: '实时故障', tag: '3', color: '#191a1b' },
-    {
-      name: '作废',
-      tag: '4',
-      color: isCancelDisabled ? '#888888' : '#191a1b',
-      disabled: isCancelDisabled,
-      disabledReason: disabledReason
-    }
+    ...(
+      permissionStore.hasPermission('AISMC-app-serviceProxy-cancel')
+        ? [{
+          name: '作废',
+          tag: '4',
+          color: isCancelDisabled ? '#888888' : '#191a1b',
+          disabled: isCancelDisabled,
+          disabledReason: disabledReason
+        }]
+        : []
+    )
   ]
 })
 // 作废原因弹框状态
