@@ -439,35 +439,39 @@ const onSave = async() => {
   try {
     const success = await handleSave(onSaveSuccess)
     // 未创建预授权且是页面模式，则获取提醒信息
-    if (success && Number(props.isCreatePreAuth) !== 1 && props.isPageMode) {
-      getRemindInfo(props.serviceProxyId).then((remindRes) => {
-        if (remindRes?.code === 200) {
-          const remindData = remindRes.data || []
-          const preAuthItems = remindData.filter((item) => item.type === '3')
-          if (preAuthItems.length > 0) {
-            const messages = preAuthItems.map((item) => item.content || '暂无提醒信息').join('<br/>')
-            showDialog({
-              title: '提醒',
-              message: messages,
-              allowHtml: true,
-              confirmButtonText: '生成预授权',
-              showCancelButton: true,
-              cancelButtonText: '取消',
-              onConfirm: async() => {
-                const res = await preAuthAddOrUpdate({ serviceProxyId: props.serviceProxyId })
-                if (res.code === 200) {
-                  showToast('已成功生成预授权申请，您可至预授权申请管理查看数据并提交审批')
-                  router.go(-1)
-                } else {
-                  showToast(res.msg || '生成预授权失败')
+    if (success && props.isPageMode) {
+      if (Number(props.isCreatePreAuth) !== 1) {
+        getRemindInfo(props.serviceProxyId).then((remindRes) => {
+          if (remindRes?.code === 200) {
+            const remindData = remindRes.data || []
+            const preAuthItems = remindData.filter((item) => item.type === '3')
+            if (preAuthItems.length > 0) {
+              const messages = preAuthItems.map((item) => item.content || '暂无提醒信息').join('<br/>')
+              showDialog({
+                title: '提醒',
+                message: messages,
+                allowHtml: true,
+                confirmButtonText: '生成预授权',
+                showCancelButton: true,
+                cancelButtonText: '取消',
+                onConfirm: async() => {
+                  const res = await preAuthAddOrUpdate({ serviceProxyId: props.serviceProxyId })
+                  if (res.code === 200) {
+                    showToast('已成功生成预授权申请，您可至预授权申请管理查看数据并提交审批')
+                    router.go(-1)
+                  } else {
+                    showToast(res.msg || '生成预授权失败')
+                  }
                 }
-              }
-            })
+              })
+            }
+          } else {
+            router.go(-1)
           }
-        } else {
-          router.go(-1)
-        }
-      }).catch(() => {})
+        }).catch(() => {})
+      } else {
+        router.go(-1)
+      }
       searchBarRef.value?.reset()
       emit('close')
     }
@@ -526,6 +530,8 @@ watch(
 
 // 组件挂载时，如果有外部数据则使用外部数据，否则加载枚举数据
 onMounted(async() => {
+  // 页面模式下由父组件 index.vue 统一控制初始化
+  if (props.isPageMode) return
   if (props.isComponent && (props.initialItems || props.initialParts)) {
     // 有外部数据时，只加载枚举数据（用于分类选择器）
     await loadInitialData()
