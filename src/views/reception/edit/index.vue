@@ -2446,7 +2446,8 @@ const onAddParts = () => {
     query: {
       serviceProxyId: route.query.id,
       vehModelName: detail.vehicleModelName,
-      currentFault: detail.currentFault
+      currentFault: detail.currentFault,
+      isCreatePreAuth: detail.isCreatePreAuth
     }
   })
 }

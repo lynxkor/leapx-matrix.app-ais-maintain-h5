@@ -213,6 +213,14 @@ const props = defineProps({
   currentFault: {
     type: [String, Number],
     default: ''
+  },
+  isCreatePreAuth: {
+    type: [String, Number],
+    default: ''
+  },
+  isPageMode: {
+    type: Boolean,
+    default: false
   }
 })
 
@@ -220,6 +228,8 @@ const emit = defineEmits(['close', 'confirm', 'replace', 'delete'])
 
 import { useRouter } from 'vue-router'
 import { getRemindInfo } from '@/api/reception'
+import { preAuthAddOrUpdate } from '@/api/authorization'
+
 // UI 状态
 const searchBarRef = ref(null)
 const activeTab = ref('item')
@@ -428,7 +438,8 @@ const onSave = async() => {
   checkFaultOnSave(true)
   try {
     const success = await handleSave(onSaveSuccess)
-    if (success) {
+    // 未创建预授权且是页面模式，则获取提醒信息
+    if (success && Number(props.isCreatePreAuth) !== 1 && props.isPageMode) {
       getRemindInfo(props.serviceProxyId).then((remindRes) => {
         if (remindRes?.code === 200) {
           const remindData = remindRes.data || []
@@ -439,10 +450,22 @@ const onSave = async() => {
               title: '提醒',
               message: messages,
               allowHtml: true,
-              confirmButtonText: '确定',
-              showCancelButton: false
+              confirmButtonText: '生成预授权',
+              showCancelButton: true,
+              cancelButtonText: '取消',
+              onConfirm: async() => {
+                const res = await preAuthAddOrUpdate({ serviceProxyId: props.serviceProxyId })
+                if (res.code === 200) {
+                  showToast('已成功生成预授权申请，您可至预授权申请管理查看数据并提交审批')
+                  router.go(-1)
+                } else {
+                  showToast(res.msg || '生成预授权失败')
+                }
+              }
             })
           }
+        } else {
+          router.go(-1)
         }
       }).catch(() => {})
       searchBarRef.value?.reset()
