@@ -417,11 +417,7 @@ const checkFaultOnSave = (flag) => {
   const hadBefore = hasType(itemsSnapshot.value.items) || hasType(itemsSnapshot.value.parts)
   const hasNow = hasType(selectedItems.value) || hasType(selectedParts.value)
   if (!hadBefore && hasNow && String(props.currentFault) === '0') {
-    showToast({ message: '维修类型为一般维修或三电维修，系统默认调整 【本次进店是否存在故障】为是，存在故障，请填写故障模块信息!', duration: 3000, onClose: () => {
-      if (!flag) {
-        router.go(-1)
-      }
-    } })
+    showToast({ message: '维修类型为一般维修或三电维修，系统默认调整 【本次进店是否存在故障】为是，存在故障，请填写故障模块信息!' })
     sessionStorage.setItem('faultDetected', '1')
   }
 }
@@ -464,6 +460,8 @@ const onSave = async() => {
                   }
                 }
               })
+            } else {
+              router.go(-1)
             }
           } else {
             router.go(-1)
