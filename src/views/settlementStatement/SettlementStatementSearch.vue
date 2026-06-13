@@ -131,7 +131,7 @@
                 >
                   作废
                 </div>
-                <div class="btn-pill btn-outline" @click.stop="handleContact(item)">联系车主</div>
+                <div class="btn-pill btn-outline" @click.stop="handleContact(item)">联系送修人</div>
                 <div
                   v-if="currentTab === 'pending' && item.isCreateStatementInfo === 0"
                   class="btn-pill btn-primary"
@@ -409,9 +409,9 @@ const handleGoBack = () => {
   router.back()
 }
 
-// 联系车主
+// 联系送修人
 const handleContact = (item) => {
-  const phone = item.customerPhone
+  const phone = item.shuttlePhone
   if (phone) {
     showConfirmDialog({
       title: '提示',
