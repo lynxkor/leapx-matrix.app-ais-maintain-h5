@@ -293,7 +293,7 @@ const handleRefresh = () => emit('refresh')
           font-size: 14px;
           font-weight: 400;
           line-height: 20px;
-          width: 56px;
+          width: 70px;
           flex-shrink: 0;
         }
 
