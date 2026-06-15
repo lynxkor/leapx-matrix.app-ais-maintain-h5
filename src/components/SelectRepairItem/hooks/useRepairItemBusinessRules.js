@@ -1,6 +1,20 @@
 import { ref } from 'vue'
-import { CheckoutTypeEnum, WarrantyTypeEnum, UNIVERSAL_LABOR_HOUR_ITEM_ID } from '@/views/repairWork/constant'
+import { CheckoutTypeEnum, WarrantyTypeEnum, UNIVERSAL_LABOR_HOUR_ITEM_ID, GENERAL_REPAIR_ID } from '@/views/repairWork/constant'
 import { checkoutTypeIncluded, isWorkHourEditable, isQuantityEditable, isDiscountEditable, isNameEditable, isItemDeletable, isPartDeletable } from './repairItemRules'
+
+/**
+ * 把"一般整车保修"置顶到列表首位（仅用于弹窗展示，不污染原始数组）
+ * @param {Array} list - 原始保修类型列表
+ * @returns {Array} 置顶后的新数组
+ */
+const topGeneralFirst = (list) => {
+  const idx = list.findIndex(it => it.id === GENERAL_REPAIR_ID)
+  if (idx <= 0) return list
+  const next = list.slice()
+  const [target] = next.splice(idx, 1)
+  next.unshift(target)
+  return next
+}
 
 /**
  * 业务规则和级联选择器管理 Hook
@@ -32,6 +46,13 @@ export default function useRepairItemBusinessRules({
   const editingItem = ref(null)
   /** 级联选择器选项 */
   const cascaderOptions = ref([])
+  /**
+   * 级联选择器挂载 key
+   * 每次打开弹窗时自增，强制 AisCascader（含内部 van-cascader）销毁重建，
+   * 避免 vant Cascader 内部 tabs.value 在弹窗关闭后保留陈旧状态，
+   * 进而与下一次打开时新传入的 model-value/options 产生时序错位。
+   */
+  const cascaderKey = ref(0)
 
   /**
    * 根据编辑项上下文动态构建级联选项（带禁用规则 + 权限过滤）
@@ -78,7 +99,7 @@ export default function useRepairItemBusinessRules({
             text: ct.message,
             value: ct.code,
             disabled: ctDisabled,
-            children: repairItemTypes
+            children: topGeneralFirst(repairItemTypes)
               .filter(rit => rit.checkoutTypeId === ct.code)
               // 权限过滤：不显示不被允许的保修类型
               .filter(rit => !hasPerm || !permWarrantyTypeIds.length || permWarrantyTypeIds.includes(rit.id))
@@ -116,6 +137,8 @@ export default function useRepairItemBusinessRules({
   const openCheckoutPicker = (item) => {
     editingItem.value = item
     cascaderOptions.value = buildCascaderOptions(item)
+    // 自增 key，强制 AisCascader 销毁重建，确保 van-cascader 内部状态全新
+    cascaderKey.value++
     showCheckoutPicker.value = true
   }
 
@@ -126,16 +149,22 @@ export default function useRepairItemBusinessRules({
    */
   const onCheckoutConfirm = ({ selectedOptions }) => {
     const [level1, level2, level3] = selectedOptions || []
+    // 防御性校验：三级选项必须完整，否则视为无效选择，不更新数据
+    if (!level1 || !level2 || !level3) {
+      showCheckoutPicker.value = false
+      editingItem.value = null
+      return
+    }
     if (editingItem.value) {
       const item = editingItem.value
       const wasEditable = isWorkHourEditable(item)
       Object.assign(item, {
-        repairItemTypeId: level1?.value || '',
-        repairItemTypeName: level1?.text || '',
-        checkoutTypeId: level2?.value || '',
-        checkoutTypeName: level2?.text || '',
-        warrantyTypeId: level3?.rawValue ?? level3?.value ?? '',
-        warrantyTypeName: level3?.text || ''
+        repairItemTypeId: level1.value,
+        repairItemTypeName: level1.text || '',
+        checkoutTypeId: level2.value,
+        checkoutTypeName: level2.text || '',
+        warrantyTypeId: level3.rawValue ?? level3.value ?? '',
+        warrantyTypeName: level3.text || ''
       })
       // 维修项目：工时从可编辑变为不可编辑时，恢复原始工时
       if (!item.partsId && wasEditable && !isWorkHourEditable(item)) {
@@ -143,7 +172,7 @@ export default function useRepairItemBusinessRules({
         item.workHour = item.originalQuantity
       }
       // 保修或合同清空折扣价格
-      if (checkoutTypeIncluded(level2?.value)) {
+      if (checkoutTypeIncluded(level2.value)) {
         item.discountAmount = 0
       }
     }
@@ -172,6 +201,7 @@ export default function useRepairItemBusinessRules({
 
     // 级联选择器
     cascaderOptions,
+    cascaderKey,
     editingItem,
     showCheckoutPicker,
     buildCascaderOptions,

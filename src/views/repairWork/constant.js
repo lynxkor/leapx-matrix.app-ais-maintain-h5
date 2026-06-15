@@ -230,3 +230,6 @@ export const PackageTypeEnum = {
   /** 关爱服务活动 */
   CARE_ACTIVITY: '60'
 }
+
+// 一般整车保修
+export const GENERAL_REPAIR_ID = '5EA3066F-82AC-E911-B0BB-FC82BA5F9EDF'
