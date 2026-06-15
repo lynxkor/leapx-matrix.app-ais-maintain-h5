@@ -133,6 +133,7 @@
 
     <!-- 结算类型选择弹窗 -->
     <AisCascader
+      :key="cascaderKey"
       v-model:show="showCheckoutPicker"
       title="请选择"
       :options="cascaderOptions"
@@ -248,6 +249,7 @@ const {
   normalizeItem,
   normalizePart,
   getPermFilteredDefaults,
+  loadEnumData,
   loadInitialData,
   resetData
 } = useRepairItemData({ serviceProxyId: props.serviceProxyId })
@@ -261,6 +263,7 @@ const {
   isItemDeletable,
   isPartDeletable,
   cascaderOptions,
+  cascaderKey,
   editingItem,
   showCheckoutPicker,
   openCheckoutPicker,
@@ -531,8 +534,10 @@ onMounted(async() => {
   // 页面模式下由父组件 index.vue 统一控制初始化
   if (props.isPageMode) return
   if (props.isComponent && (props.initialItems || props.initialParts)) {
-    // 有外部数据时，只加载枚举数据（用于分类选择器）
-    await loadInitialData()
+    // 组件模式：项目/零件数据来自 initialItems/initialParts（由父组件传入）
+    // 仅加载枚举数据（维修类型/结算类型/保修类型），不能用 getRepairItemInfo 覆盖 selectedItems，
+    // 否则在异步加载完成时会覆盖用户已经在 initialItems 上做的修改，导致 handlePartsReplace 收到旧数据
+    await loadEnumData()
   } else if (props.serviceProxyId) {
     // 无外部数据时，调用完整加载
     await loadInitialData()

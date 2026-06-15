@@ -152,7 +152,7 @@
               >
                 作废
               </div>
-              <div class="btn-pill btn-outline" @click.stop="handleContact(item)">联系车主</div>
+              <div class="btn-pill btn-outline" @click.stop="handleContact(item)">联系送修人</div>
               <div
                 v-if="activeTab === 'pending' && item.isCreateStatementInfo === 0"
                 class="btn-pill btn-primary"
