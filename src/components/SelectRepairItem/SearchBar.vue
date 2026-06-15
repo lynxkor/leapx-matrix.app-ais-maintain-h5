@@ -23,7 +23,7 @@
     v-model:show="showResult"
     position="top"
     z-index="8"
-    :style="{ maxHeight: '60vh', top: '125px' }"
+    :style="{ maxHeight: '60vh', top: `calc(125px + var(--page-safe-area-top, 0px))` }"
     class="search-result-popup"
   >
     <!-- 搜索结果列表 -->
