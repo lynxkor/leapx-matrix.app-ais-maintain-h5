@@ -119,12 +119,7 @@
       </van-collapse>
 
       <!-- 业务类型 -->
-      <div class="select-row">
-        <span class="label">业务类型</span>
-        <span class="value">{{
-          businessTypeList.find((i) => i.value === computedBusinessType)?.label
-        }}</span>
-      </div>
+      <BusinessTypeSelector v-model="detail.businessType" :readonly="detail.isAppointment" />
     </div>
 
     <!-- Tab导航 -->
@@ -772,15 +767,6 @@
       <div class="alert-confirm-btn" @click="onConfirmWarrantyAlert">我知道了</div>
     </van-dialog>
 
-    <!-- 维修类型选择弹窗 -->
-    <AisCascader
-      v-model:show="showCheckoutPicker"
-      title="请选择"
-      :options="categoryCascaderOptions"
-      :model-value="currentEditItem?.warrantyTypeId || ''"
-      @confirm="onCheckoutConfirm"
-    />
-
     <!-- 套餐详情弹窗 -->
     <PackageDetailPopup
       :show="showPackageDetail"
@@ -807,10 +793,8 @@ import { useGlobalStore } from '@/stores/global'
 import { usePermissionStore } from '@/stores/permission'
 import { usePageSafeArea } from '@/utils/safeArea'
 import AisPopup from '@/libs/components/AisPopup.vue'
-import AisCascader from '@/components/AisCascader/index.vue'
 import PackageDetailPopup from '@/components/PackageDetailPopup.vue'
 import RepairItemContent from '@/components/SelectRepairItem/RepairItemContent.vue'
-import { useRepairItemBusinessRules, useRepairItemData } from '@/components/SelectRepairItem/hooks'
 import dayjs from 'dayjs'
 import {
   uploadFileByUrl,
@@ -860,6 +844,7 @@ import PlateKeyboard from '@/libs/components/PlateKeyboard.vue'
 import DateTimePicker from '@/libs/components/DateTimePicker.vue'
 import ChangeCarPopup from '../components/ChangeCarPopup.vue'
 import FaultInfoSection from '../components/FaultInfoSection.vue'
+import BusinessTypeSelector from '../components/BusinessTypeSelector.vue'
 import '../create/create.scss'
 
 const route = useRoute()
@@ -948,34 +933,6 @@ const onConfirmWarrantyAlert = () => {
   showWarrantyAlertDialog.value = false
 }
 
-// 获取预警等级颜色
-// 预警相关已从 receptionCommon 导入
-
-// 维修项目数据 Hook
-const {
-  rawCheckoutTypes,
-  rawRepairItemTypes,
-  rawMaintenanceTypes,
-  selectedItems,
-  selectedParts,
-  dealerPermission,
-  loadInitialData
-} = useRepairItemData({ serviceProxyId: route.query.id })
-
-// 业务规则 Hook
-const {
-  cascaderOptions: categoryCascaderOptions,
-  showCheckoutPicker,
-  onCheckoutConfirm
-} = useRepairItemBusinessRules({
-  dealerPermission,
-  rawMaintenanceTypes,
-  rawCheckoutTypes,
-  rawRepairItemTypes,
-  selectedItems,
-  selectedParts
-})
-
 // 初始化数据
 // 送修人类型选择
 const repairPersonType = ref('other') // owner/bindingUser/other
@@ -984,7 +941,6 @@ const repairPersonPhoneInput = ref('')
 
 // 折叠面板状态
 const repairPersonCollapse = ref([])
-// const businessTypeCollapse = ref([])
 
 // 更多操作列表 - 动态计算作废按钮状态
 const moreActionsList = computed(() => {
@@ -1100,17 +1056,6 @@ const onTabScroll = (e) => {
 const activeTab = ref('inspection')
 // 选择器显示状态
 const showMoreActions = ref(false)
-
-const currentEditItem = null // 当前编辑的项目
-
-// 业务类型列表
-const businessTypeList = ref([
-  { value: 10, label: '自然到店' },
-  { value: 20, label: '取送车到店' },
-  { value: 30, label: '上门服务' },
-  { value: 40, label: '外出驻点服务' },
-  { value: 50, label: '预约到店' }
-])
 
 // 详情数据
 const detail = reactive({
@@ -2006,13 +1951,6 @@ const onRepairPersonPhoneChange = () => {
   detail.repairPersonPhone = repairPersonPhoneInput.value
 }
 
-// 选择业务类型
-// const onSelectBusinessType = (item) => {
-//   detail.businessType = item.value
-//   // 收起面板
-//   businessTypeCollapse.value = []
-// }
-
 // 更多操作
 const onMore = () => {
   showMoreActions.value = !showMoreActions.value
@@ -2721,7 +2659,6 @@ const fetchRemindInfo = () => {
 }
 
 onMounted(() => {
-  loadInitialData()
   fetchDetail()
   // 获取枚举数据
   globalStore.getEnumData()

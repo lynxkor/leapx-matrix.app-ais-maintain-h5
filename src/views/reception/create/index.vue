@@ -119,12 +119,7 @@
       </van-collapse>
 
       <!-- 业务类型 -->
-      <div class="select-row">
-        <span class="label">业务类型</span>
-        <span class="value">{{
-          businessTypeList.find((i) => i.value === computedBusinessType)?.label
-        }}</span>
-      </div>
+      <BusinessTypeSelector v-model="detail.businessType" />
     </div>
 
     <!-- Tab导航 -->
@@ -345,6 +340,7 @@ import { useGlobalStore } from '@/stores/global'
 import { usePageSafeArea } from '@/utils/safeArea'
 import ChangeCarPopup from '../components/ChangeCarPopup.vue'
 import FaultInfoSection from '../components/FaultInfoSection.vue'
+import BusinessTypeSelector from '../components/BusinessTypeSelector.vue'
 import {
   uploadFileByUrl,
   getUploadConfig,
@@ -362,14 +358,6 @@ const interiorConfig = computed(() => getAttachConfig('车内照片'))
 
 // 车外检查
 const exteriorConfig = computed(() => getAttachConfig('车外照片'))
-
-// 业务类型计算：优先使用已有值，否则根据是否预约判断
-const computedBusinessType = computed(() => {
-  if (route.query.appointId) {
-    return 50
-  }
-  return detail.businessType || (detail.isAppointment ? 50 : 10)
-})
 
 // 图片上传相关
 const currentUploadType = ref('') // 'interior' or 'exterior'
@@ -410,7 +398,7 @@ import {
   handleFileDelete as _handleFileDelete,
   applyRecentInspectionByVin
 } from '@/utils/receptionCommon'
-import { RepairOrderStatusEnum } from '../constant'
+import { RepairOrderStatusEnum, BusinessTypeEnum } from '../constant'
 import PlateKeyboard from '@/libs/components/PlateKeyboard.vue'
 import './create.scss'
 
@@ -442,14 +430,6 @@ const onTabScroll = (e) => {
 }
 // Tab状态
 const activeTab = ref('inspection')
-// 业务类型列表
-const businessTypeList = ref([
-  { value: 10, label: '自然到店' },
-  { value: 20, label: '取送车到店' },
-  { value: 30, label: '上门服务' },
-  { value: 40, label: '外出驻点服务' },
-  { value: 50, label: '预约到店' }
-])
 
 // 详情数据
 const detail = reactive({
@@ -470,7 +450,7 @@ const detail = reactive({
   repairPerson: '',
   repairPersonPhone: '',
   repairPersonTag: '送修人',
-  businessType: null, // 初始为null，后续根据isAppointment计算
+  businessType: route.query.appointId ? BusinessTypeEnum.APPOINTMENT_ARRIVAL : BusinessTypeEnum.NATURAL_ARRIVAL,
   mileage: '',
   networkMileageTotal: '',
   networkMileageAdd: '',
@@ -919,7 +899,7 @@ const onSave = async() => {
       // batteryModel: detail.batteryModel,
       // batterySerialNumber: detail.batterySerialNumber,
       // engineNumber: detail.enginenNumber,
-      businessType: computedBusinessType.value,
+      businessType: detail.businessType,
       haveRework: 0,
       customerComment: detail.customerComment,
       isCarWash: 0,

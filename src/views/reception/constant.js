@@ -55,3 +55,17 @@ export const ConfirmFaultEnum = {
   INACCURATE: 2
 }
 
+/** 业务类型 */
+export const BusinessTypeEnum = {
+  /** 自然到店 */
+  NATURAL_ARRIVAL: 10,
+  /** 取送车到店 */
+  PICKUP_DELIVERY_ARRIVAL: 20,
+  /** 上门服务 */
+  DOOR_SERVICE: 30,
+  /** 外出驻点服务 */
+  ONSITE_SERVICE: 40,
+  /** 预约到店 */
+  APPOINTMENT_ARRIVAL: 50
+}
+
