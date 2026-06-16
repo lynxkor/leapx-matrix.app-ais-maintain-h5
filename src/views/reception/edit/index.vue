@@ -2001,8 +2001,9 @@ const onInspectionSave = async(type) => {
   // 已生成结算单时跳过故障和照片校验
   if (!isSettled.value) {
     // 如果currentFault为1，客户故障描述必填
-    if (Number(detail.currentFault) === 1 && !detail.customerFaultDesc.trim()) {
-      showToast('请输入客户故障描述')
+    const trimedCustomerFaultDesc = detail.customerFaultDesc.trim() || ''
+    if (Number(detail.currentFault) === 1 && trimedCustomerFaultDesc.length <= 4) {
+      showToast('请输入客户故障描述，【客户故障描述】字段需要大于4个字')
       scrollToErrorField({ errorField: 'customerFaultDesc', activeTab, repairPersonCollapse })
       return { code: -1 }
     }
