@@ -2004,7 +2004,7 @@ const onInspectionSave = async(type) => {
     const trimedCustomerFaultDesc = detail.customerFaultDesc.trim() || ''
     if (Number(detail.currentFault) === 1 && trimedCustomerFaultDesc.length <= 4) {
       showToast('请输入客户故障描述，【客户故障描述】字段需要大于4个字')
-      scrollToErrorField({ errorField: 'faultModules', activeTab, repairPersonCollapse })
+      scrollToErrorField({ errorField: 'customerFaultDesc', activeTab, repairPersonCollapse })
       return { code: -1 }
     }
     // 如果currentFault为1，必须添加故障模块
