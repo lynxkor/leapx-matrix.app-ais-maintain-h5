@@ -119,12 +119,7 @@
       </van-collapse>
 
       <!-- 业务类型 -->
-      <div class="select-row">
-        <span class="label">业务类型</span>
-        <span class="value">{{
-          businessTypeList.find((i) => i.value === computedBusinessType)?.label
-        }}</span>
-      </div>
+      <BusinessTypeSelector v-model="detail.businessType" />
     </div>
 
     <!-- Tab导航 -->
@@ -345,6 +340,7 @@ import { useGlobalStore } from '@/stores/global'
 import { usePageSafeArea } from '@/utils/safeArea'
 import ChangeCarPopup from '../components/ChangeCarPopup.vue'
 import FaultInfoSection from '../components/FaultInfoSection.vue'
+import BusinessTypeSelector from '../components/BusinessTypeSelector.vue'
 import {
   uploadFileByUrl,
   getUploadConfig,
@@ -442,14 +438,6 @@ const onTabScroll = (e) => {
 }
 // Tab状态
 const activeTab = ref('inspection')
-// 业务类型列表
-const businessTypeList = ref([
-  { value: 10, label: '自然到店' },
-  { value: 20, label: '取送车到店' },
-  { value: 30, label: '上门服务' },
-  { value: 40, label: '外出驻点服务' },
-  { value: 50, label: '预约到店' }
-])
 
 // 详情数据
 const detail = reactive({
