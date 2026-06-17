@@ -119,7 +119,7 @@
       </van-collapse>
 
       <!-- 业务类型 -->
-      <BusinessTypeSelector v-model="detail.businessType" />
+      <BusinessTypeSelector v-model="detail.businessType" :readonly="isAppointment" />
     </div>
 
     <!-- Tab导航 -->
@@ -408,6 +408,9 @@ const globalStore = useGlobalStore()
 usePageSafeArea({ bodyClass: 'ais-page-nav-safe-area' })
 const changeCarDialog = ref(false)
 const changePlateDialog = ref(false)
+
+// 是否从预约单进入：业务类型锁定为「预约到店」并只读
+const isAppointment = computed(() => !!route.query.appointId)
 
 // 施工单状态
 const serviceProxyId = ref('') // 新建保存后返回的施工单id
