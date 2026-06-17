@@ -1,7 +1,7 @@
 import { ref } from 'vue'
-import { showToast, showConfirmDialog, closeToast, showLoadingToast } from 'vant'
+import { showToast, closeToast, showLoadingToast } from 'vant'
 import { filterRepairItems, filterRepairParts, saveRepairItemInfo } from '@/api/repairWork'
-import { WarrantyTypeEnum, UNIVERSAL_LABOR_HOUR_ITEM_ID, WorkRecordStatusEnum, PackageTypeEnum } from '@/views/repairWork/constant'
+import { WarrantyTypeEnum, UNIVERSAL_LABOR_HOUR_ITEM_ID, WorkRecordStatusEnum } from '@/views/repairWork/constant'
 
 /**
  * 维修项目和零件的增删改查操作 Hook
@@ -146,13 +146,20 @@ export default function useRepairItemOperations({
 
     // 如果删除的是维修项目，同步删除关联的维修配件
     if (type === 'item') {
-      const repairItemTypeId = item.id
+      const repairItemTypeId = item.repairItemId
       // 删除 repairItemTypeId 等于该维修项目 id 的配件
       selectedParts.value = selectedParts.value.filter(
-        (part) => part.repairItemTypeId !== repairItemTypeId
+        (part) => part.repairItemId !== repairItemTypeId || part.isOutstock === 1 // 同时删除绑定项目且未出库的件
       )
     }
+    // 需求变更：套餐删除项目，附带删除相关零件；删除零件，只单独删除零件
+    list.value.splice(idx, 1)
+    successCallback && successCallback({
+      selectedItems: selectedItems.value,
+      selectedParts: selectedParts.value
+    })
     // 如果是套餐内的项目或零件，需要确认删除整个套餐
+    /*
     if (item.packageId) {
       const packageTypeLabelMap = {
         [PackageTypeEnum.REPAIR]: '维修套餐',
@@ -189,6 +196,7 @@ export default function useRepairItemOperations({
         selectedParts: selectedParts.value
       })
     }
+    */
   }
 
   // ============ 保存操作 ============
