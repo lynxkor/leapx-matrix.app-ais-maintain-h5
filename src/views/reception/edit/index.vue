@@ -2261,7 +2261,7 @@ const onPartsSave = async() => {
     // 判断：原来不包含一般维修或三电维修，保存后包含了一般维修或三电维修，且本次进店是否存在故障为否
     const newRepairItemTypeDetailCollect = detail.repairItemTypeDetailCollect
     const hadGeneralOrThreeElectric = oldRepairItemTypeDetailCollect.includes('一般维修') || oldRepairItemTypeDetailCollect.includes('三电维修') || oldRepairItemTypeDetailCollect.includes('保修')
-    const hasGeneralOrThreeElectric = newRepairItemTypeDetailCollect.includes('一般维修') || newRepairItemTypeDetailCollect.includes('三电维修') || oldRepairItemTypeDetailCollect.includes('保修')
+    const hasGeneralOrThreeElectric = newRepairItemTypeDetailCollect.includes('一般维修') || newRepairItemTypeDetailCollect.includes('三电维修') || newRepairItemTypeDetailCollect.includes('保修')
     console.log('hadGeneralOrThreeElectric', hadGeneralOrThreeElectric, hasGeneralOrThreeElectric, detail.currentFault)
     if (!hadGeneralOrThreeElectric && hasGeneralOrThreeElectric && Number(detail.currentFault) === 0) {
       faultInfoSectionRef.value?.setCurrentFaultSilent('1')
