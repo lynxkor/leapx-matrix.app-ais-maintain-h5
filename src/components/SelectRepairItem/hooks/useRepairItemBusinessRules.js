@@ -77,8 +77,8 @@ export default function useRepairItemBusinessRules({
     const repairItemDisabled = isPart ? item.repairItemDisabled : (!!item.id || item.repairItemDisabled)
 
     return maintenanceTypes.map(mt => ({
-      text: mt.message,
-      value: mt.code,
+      text: mt.name,
+      value: mt.id,
       disabled: repairItemDisabled,
       children: checkoutTypes
         // 权限过滤：不显示不被允许的结算类型
@@ -120,7 +120,7 @@ export default function useRepairItemBusinessRules({
                 }
                 return {
                   text: rit.name,
-                  value: `${mt.code}-${ct.code}-${rit.id}`,
+                  value: `${mt.id}-${ct.code}-${rit.id}`,
                   rawValue: rit.id,
                   disabled: wtDisabled
                 }

@@ -1,5 +1,5 @@
 import { ref } from 'vue'
-import { getEnum, getRepairItemTypeMap, getRepairItemInfo, getDealerPermission } from '@/api/repairWork'
+import { getEnum, getRepairItemTypeMap, getRepairItemTypeList, getRepairItemInfo, getDealerPermission } from '@/api/repairWork'
 import { UNIVERSAL_LABOR_HOUR_ITEM_ID, CheckoutTypeEnum } from '@/views/repairWork/constant'
 
 /**
@@ -212,7 +212,7 @@ export default function useRepairItemData({ serviceProxyId }) {
    */
   const loadEnumData = async() => {
     const [mtRes, ctRes, ritRes] = await Promise.all([
-      getEnum('MaintenanceTypeEnum'),
+      getRepairItemTypeList(),
       getEnum('StatementTypeEnum'),
       getRepairItemTypeMap()
     ])
@@ -238,8 +238,8 @@ export default function useRepairItemData({ serviceProxyId }) {
       ? repairItemTypes.find(rit => rit.id === permDefaults.warrantyTypeId)
       : repairItemTypes.find(rit => rit.checkoutTypeId === firstCt?.code)
     enumDefaults.value = {
-      repairItemTypeId: firstMt?.code || '',
-      repairItemTypeName: firstMt?.message || '',
+      repairItemTypeId: firstMt?.id || '',
+      repairItemTypeName: firstMt?.name || '',
       checkoutTypeId: firstCt?.code || '',
       checkoutTypeName: firstCt?.message || '',
       warrantyTypeId: firstRit?.id || '',
