@@ -238,7 +238,7 @@ export default function useRepairItemData({ serviceProxyId }) {
       ? repairItemTypes.find(rit => rit.id === permDefaults.warrantyTypeId)
       : repairItemTypes.find(rit => rit.checkoutTypeId === firstCt?.code)
     enumDefaults.value = {
-      repairItemTypeId: firstMt?.code || '',
+      repairItemTypeId: firstMt?.id || '',
       repairItemTypeName: firstMt?.name || '',
       checkoutTypeId: firstCt?.code || '',
       checkoutTypeName: firstCt?.message || '',

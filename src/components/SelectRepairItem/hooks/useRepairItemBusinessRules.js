@@ -78,7 +78,7 @@ export default function useRepairItemBusinessRules({
 
     return maintenanceTypes.map(mt => ({
       text: mt.name,
-      value: mt.code,
+      value: mt.id,
       disabled: repairItemDisabled,
       children: checkoutTypes
         // 权限过滤：不显示不被允许的结算类型
