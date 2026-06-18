@@ -120,7 +120,7 @@ export default function useRepairItemBusinessRules({
                 }
                 return {
                   text: rit.name,
-                  value: `${mt.code}-${ct.code}-${rit.id}`,
+                  value: `${mt.id}-${ct.code}-${rit.id}`,
                   rawValue: rit.id,
                   disabled: wtDisabled
                 }
