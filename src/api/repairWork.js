@@ -239,7 +239,7 @@ export function getEnum(key) {
  * 获取保修类型和结算类型映射关系
  */
 export function getRepairItemTypeMap() {
-  return post(`maintain/app/sp/serviceProxy/type/list`, { 'categorys': [20] })
+  return post(`maintain/app/sp/serviceProxy/type/list`, { 'categorys': [20], status: 1 }) // 20: 保修, 1: 启用
 }
 
 /**
