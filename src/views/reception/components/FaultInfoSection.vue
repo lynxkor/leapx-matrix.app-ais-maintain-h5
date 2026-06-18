@@ -158,6 +158,7 @@ import { showToast, showConfirmDialog } from 'vant'
 import AisPopup from '@/libs/components/AisPopup.vue'
 import { fetchFaultModuleList as _fetchFaultModuleList } from '@/utils/receptionCommon'
 import { saveSpFaultModule, deleteSpFaultModule } from '@/api/reception'
+import { updateFaultAlertRecord } from '@/api/repairWork'
 
 const props = defineProps({
   /** 'create' | 'edit'，edit 模式下增删故障模块走接口 */
@@ -201,6 +202,9 @@ const displayModules = computed(() =>
 // 添加故障模块时的请求锁（仅 edit 模式生效）
 const addingFaultModule = ref(false)
 
+// 清空故障时的请求锁
+const clearingFault = ref(false)
+
 // 客户故障描述禁用条件：选择"否" 或 已确认存在/不存在故障
 const customerFaultDescDisabled = computed(() => {
   const cf = String(currentFault.value)
@@ -242,13 +246,59 @@ const onCancelFaultConfirm = () => {
   isSettingFaultProgrammatically.value = true
 }
 
-const onConfirmFaultChange = () => {
+const onConfirmFaultChange = async() => {
+  // 捕获还原快照（API 失败时回滚）
+  const prevCustomerFaultDesc = customerFaultDesc.value
+  const prevFaultModules = [...faultModules.value]
+
+  // 乐观更新本地状态
   showFaultConfirm.value = false
   faultModules.value = []
   if (Number(props.confirmFault) !== 1) {
     customerFaultDesc.value = '本次进店车辆无故障'
   }
   currentFault.value = '0'
+
+  // 未保存（无 serviceProxyId）：仅本地清空
+  if (!props.serviceProxyId) {
+    emit('change')
+    return
+  }
+
+  if (clearingFault.value) return
+  clearingFault.value = true
+
+  // confirmFault===1（已确认为"准确"）保留原客户描述，否则用默认文案
+  const newCustomerContent = Number(props.confirmFault) === 1
+    ? prevCustomerFaultDesc
+    : '本次进店车辆无故障'
+
+  try {
+    const res = await updateFaultAlertRecord({
+      id: props.serviceProxyId,
+      currentFault: 0,
+      customerContent: newCustomerContent
+    })
+    if (res.code === 200) {
+      emit('change')
+    } else {
+      rollbackFaultState(prevCustomerFaultDesc, prevFaultModules)
+      showToast(res.message || res.msg || '操作失败')
+    }
+  } catch (err) {
+    rollbackFaultState(prevCustomerFaultDesc, prevFaultModules)
+    showToast(err?.msg || err?.message || '操作失败')
+  } finally {
+    clearingFault.value = false
+  }
+}
+
+// 回滚本地状态：还原描述/模块，并通过程序化标志抑制 @change 弹窗
+const rollbackFaultState = (prevDesc, prevModules) => {
+  customerFaultDesc.value = prevDesc
+  faultModules.value = prevModules
+  isSettingFaultProgrammatically.value = true
+  currentFault.value = '1'
 }
 
 // ========== 故障模块弹框 ==========
