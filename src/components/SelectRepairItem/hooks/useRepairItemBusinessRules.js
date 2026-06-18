@@ -77,7 +77,7 @@ export default function useRepairItemBusinessRules({
     const repairItemDisabled = isPart ? item.repairItemDisabled : (!!item.id || item.repairItemDisabled)
 
     return maintenanceTypes.map(mt => ({
-      text: mt.message,
+      text: mt.name,
       value: mt.code,
       disabled: repairItemDisabled,
       children: checkoutTypes
