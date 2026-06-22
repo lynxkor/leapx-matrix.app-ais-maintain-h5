@@ -1622,6 +1622,10 @@ const fetchDetail = async(cb) => {
       sessionStorage.removeItem('receptionEditActiveTab')
       nextTick(() => { activeTab.value = savedTab })
     }
+    // 从添加项目/零件页面保存后返回，触发提醒信息刷新
+    if (sessionStorage.getItem('receptionPartsSaved') === '1') {
+      fetchRemindInfo()
+    }
     nextTick(() => {
       cb && cb()
     })
@@ -2625,7 +2629,7 @@ const onConfirmSignatureChannel = () => {
 const fetchRemindInfo = () => {
   if (!route.query.id) return
   const remindKey = `remind_shown_${route.query.id}`
-  if (sessionStorage.getItem(remindKey)) return
+  if (sessionStorage.getItem(remindKey) && !sessionStorage.getItem('receptionPartsSaved')) return
   getRemindInfo(route.query.id).then((res) => {
     if (res.code === 200) {
       const rawData = res.data || []
@@ -2638,6 +2642,8 @@ const fetchRemindInfo = () => {
         sessionStorage.setItem(remindKey, '1')
       }
     }
+  }).finally(() => {
+    sessionStorage.removeItem('receptionPartsSaved')
   })
 }
 
