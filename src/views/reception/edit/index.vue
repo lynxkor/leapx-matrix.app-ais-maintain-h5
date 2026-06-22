@@ -556,11 +556,7 @@
     <div class="bottom-bar">
       <span v-if="!isSettled && activeTab === 'inspection'" class="more-btn" @click="onMore">更多</span>
       <template v-if="activeTab === 'inspection'">
-        <span
-          :class="['save-btn', { disabled: isInspectionSaveDisabled }]"
-          @click="onInspectionSave"
-          >保存</span
-        >
+        <span class="save-btn" @click="onInspectionSave">保存</span>
         <span v-if="!isSettled && !detail.previewingFinishAt && permissionStore.hasPermission('AISMC-app-serviceProxy-precheck')" class="complete-btn" @click="onComplete"
           >预检确认</span
         >
@@ -568,7 +564,7 @@
       <template v-else-if="activeTab === 'parts'">
         <span
           v-if="!isSettled"
-          :class="['save-btn', { disabled: isPartsSaveDisabled }]"
+          class="save-btn"
           @click="onPartsSave"
           >保存</span
         >
@@ -1200,7 +1196,8 @@ const saveDataSnapshot = () => {
     testResult: detail.testResult,
     repairItemRespList: JSON.parse(JSON.stringify(partsData.repairItemRespList)),
     sparePartRespList: JSON.parse(JSON.stringify(partsData.sparePartRespList)),
-    repairItemTypeDetailCollect: detail.repairItemTypeDetailCollect
+    repairItemTypeDetailCollect: detail.repairItemTypeDetailCollect,
+    expectFinishAt: signatureData.expectFinishAt
   }
 }
 
@@ -1251,6 +1248,12 @@ const hasPartsDataChanged = () => {
     JSON.stringify(initial.repairItemRespList) !== JSON.stringify(partsData.repairItemRespList) ||
     JSON.stringify(initial.sparePartRespList) !== JSON.stringify(partsData.sparePartRespList)
   )
+}
+
+// 检查预计交车时间是否有改动
+const hasDeliveryTimeChanged = () => {
+  if (!initialInspectionData.value) return false
+  return initialInspectionData.value.expectFinishAt !== signatureData.expectFinishAt
 }
 
 // 检查文件列表中是否有重复的fileId
@@ -1318,31 +1321,6 @@ const isConfirmAndSignDisabled = computed(() => {
     return false
   }
   return !signatureData.expectFinishAt
-})
-
-// 项目零件保存按钮是否禁用：没有添加项目或者零件
-const isPartsSaveDisabled = computed(() => {
-  return false
-  // const items = repairItemContentRef.value?.selectedItems || []
-  // const parts = repairItemContentRef.value?.selectedParts || []
-  // return items.length === 0 && parts.length === 0
-})
-
-// 环检信息保存按钮是否禁用：进店里程数、送修人信息、车内车外照片、异常描述、经理建议为空
-const isInspectionSaveDisabled = computed(() => {
-  // 进店里程数
-  if (!detail.mileage) return true
-  // 送修人信息
-  if (!detail.repairPerson || !detail.repairPersonPhone) return true
-  // 车内照片（已生成结算单时不再必填）
-  if (!isSettled.value && interiorConfig.value.required === '1' && detail.interiorImages.length === 0) return true
-  // 车外照片（已生成结算单时不再必填）
-  if (!isSettled.value && exteriorConfig.value.required === '1' && detail.exteriorImages.length === 0) return true
-  // 异常描述
-  if (!detail.abnormalDesc) return true
-  // 经理建议
-  if (!detail.testResult) return true
-  return false
 })
 
 // 重新计算费用合计
@@ -1964,7 +1942,6 @@ const cancelLoading = ref(false)
 
 // 环检信息保存（新增或编辑）
 const onInspectionSave = async(type) => {
-  if (isInspectionSaveDisabled.value) return
   // 进店里程数必填校验
   if (!detail.mileage) {
     showToast('请输入进店里程数')
@@ -2040,9 +2017,8 @@ const onInspectionSave = async(type) => {
 
   // 检查数据是否有改动
   if (!hasInspectionDataChanged()) {
-    // 数据没有变化，更新快照并返回
-    saveDataSnapshot()
-    // return { code: 200 }
+    showToast('数据未变更，无需保存')
+    return
   }
   savingLoading.value = true
   // TODO: 待修复，不需要提交这么多字段
@@ -2208,7 +2184,6 @@ const handlePartsDelete = (data) => {
 
 // 项目零件保存
 const onPartsSave = async() => {
-  if (isPartsSaveDisabled.value) return
   // 数据未变更，不调接口
   if (!hasPartsDataChanged()) {
     showToast('数据未变更，无需保存')
@@ -2255,7 +2230,9 @@ const onPartsSave = async() => {
     }
     // 同步更新快照，确保返回拦截判断准确
     saveDataSnapshot()
-    await fetchDetail()
+    await fetchDetail(() => {
+      activeTab.value = 'signature'
+    })
     fetchRemindInfo()
 
     // 判断：原来不包含一般维修或三电维修，保存后包含了一般维修或三电维修，且本次进店是否存在故障为否
@@ -2557,6 +2534,10 @@ const onOpenDeliveryTimePicker = () => {
 const onSaveDeliveryTime = () => {
   if (!signatureData.expectFinishAt) {
     showToast('请选择预计交车时间')
+    return
+  }
+  if (!hasDeliveryTimeChanged()) {
+    showToast('数据未变更，无需保存')
     return
   }
   savingLoading.value = true
