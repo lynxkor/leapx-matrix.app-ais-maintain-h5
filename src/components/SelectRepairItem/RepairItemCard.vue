@@ -252,10 +252,10 @@ const onSelectReplacePart = (part) => {
     showToast('该零件已出库')
     return
   }
-  if (props.selectedPartsCodes.includes(part.partsCode)) {
-    showToast('该零件已在列表中，请勿重复添加')
-    return
-  }
+  // if (props.selectedPartsCodes.includes(part.partsCode)) {
+  //   showToast('该零件已在列表中，请勿重复添加')
+  //   return
+  // }
   selectedReplacePart.value = part
 }
 

@@ -344,7 +344,7 @@ const repairItemContentReplace = (content) => {
 
   // 在 selectedParts 中查找并替换
   const index = selectedParts.value.findIndex(
-    (part) => part.partsId === oldPart.partsId || part.partsCode === oldPart.partsCode
+    (part) => (part.partsId === oldPart.partsId || part.partsCode === oldPart.partsCode) && !part.isOutstock
   )
 
   if (index !== -1) {
