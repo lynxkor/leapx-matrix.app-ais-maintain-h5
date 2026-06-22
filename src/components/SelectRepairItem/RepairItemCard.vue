@@ -234,6 +234,8 @@ const selectedReplacePart = ref(null)
 const replaceSparePartRespList = ref([])
 
 const onReplaceTagClick = (item) => {
+  // 已出库不允许更换替换件
+  if (item.isOutstock) return
   const list = item.replaceSparePartRespList
   if (!list || list.length === 0) {
     showToast('当前无替换件')
