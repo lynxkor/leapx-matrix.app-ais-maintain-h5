@@ -415,12 +415,12 @@ const saveItemsSnapshot = () => {
 
 // 保存后检查：原来不含一般维修/三电维修，保存后包含了，且currentFault为否
 const checkFaultOnSave = (flag) => {
-  const targetTypes = ['一般维修', '三电维修']
+  const targetTypes = ['一般维修', '三电维修', '保修']
   const hasType = (list) => list.some((item) => targetTypes.includes(item.repairItemTypeName))
   const hadBefore = hasType(itemsSnapshot.value.items) || hasType(itemsSnapshot.value.parts)
   const hasNow = hasType(selectedItems.value) || hasType(selectedParts.value)
   if (!hadBefore && hasNow && String(props.currentFault) === '0') {
-    showToast({ message: '维修类型为一般维修或三电维修，系统默认调整 【本次进店是否存在故障】为是，存在故障，请填写故障模块信息!' })
+    showToast({ message: '维修类型为一般维修或三电维修或保修，系统默认调整 【本次进店是否存在故障】为是，存在故障，请填写故障模块信息!' })
     sessionStorage.setItem('faultDetected', '1')
   }
 }
