@@ -280,7 +280,7 @@ const onConfirmFaultChange = async() => {
       customerContent: newCustomerContent
     })
     if (res.code === 200) {
-      emit('change')
+      showToast('保存成功')
     } else {
       rollbackFaultState(prevCustomerFaultDesc, prevFaultModules)
       showToast(res.message || res.msg || '操作失败')
@@ -346,10 +346,9 @@ const onAddFaultModuleItem = (item) => {
             vfgName: item.vfgName,
             faultDesc: item.faultDescription || item.faultDesc
           })
-          showToast(res.data || '添加成功')
+          showToast(res.data || '保存成功')
           addFaultModuleShow.value = false
           faultSearchValue.value = ''
-          emit('change')
         } else {
           showToast(res.msg || '添加失败')
         }
@@ -386,7 +385,6 @@ const onDeleteFaultModule = async(module) => {
         const index = faultModules.value.findIndex((m) => m.id === module.id)
         if (index > -1) faultModules.value.splice(index, 1)
         showToast('删除成功')
-        emit('change')
         if (faultModules.value.length === 0) {
           showConfirmDialog({
             title: '提示',

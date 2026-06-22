@@ -244,8 +244,8 @@ export default function useRepairItemOperations({
     // 善意保修只能单独开单
     if (!validateGoodWillWarranty()) return false
 
-    // 如果数量为0，不允许保存
-    if (selectedItems.value.some(i => i.quantity <= 0) || selectedParts.value.some(i => i.quantity <= 0)) {
+    // 零件如果数量为0，不允许保存，项目允许为0
+    if (selectedParts.value.some(i => i.quantity <= 0)) {
       showToast({ message: '数量必须要大于0', 'z-index': 5100 })
       return false
     }
