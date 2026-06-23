@@ -144,14 +144,6 @@ export default function useRepairItemOperations({
     const idx = list.value.indexOf(item)
     if (idx === -1) return
 
-    // 如果删除的是维修项目，同步删除关联的维修配件
-    if (type === 'item') {
-      const repairItemTypeId = item.repairItemId
-      // 删除 repairItemTypeId 等于该维修项目 id 的配件
-      selectedParts.value = selectedParts.value.filter(
-        (part) => part.repairItemId !== repairItemTypeId || part.isOutstock === 1 // 同时删除绑定项目且未出库的件
-      )
-    }
     // 需求变更：非维修套餐删除项目，附带删除相关零件；维修套餐或者其他删除零件，只单独删除零件
     const packageTypeLabelMap = {
       // [PackageTypeEnum.REPAIR]: '维修套餐',
@@ -182,6 +174,14 @@ export default function useRepairItemOperations({
         // 取消删除，不做任何操作
       })
     } else {
+      // 如果删除的是维修项目，同步删除关联的维修配件
+      if (type === 'item') {
+        const repairItemTypeId = item.repairItemId
+        // 删除 repairItemTypeId 等于该维修项目 id 的配件
+        selectedParts.value = selectedParts.value.filter(
+          (part) => part.repairItemId !== repairItemTypeId || part.isOutstock === 1 // 同时删除绑定项目且未出库的件
+        )
+      }
       // 普通项目/零件，直接删除
       list.value.splice(idx, 1)
       successCallback && successCallback({
