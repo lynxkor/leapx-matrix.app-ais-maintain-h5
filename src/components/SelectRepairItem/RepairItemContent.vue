@@ -471,6 +471,7 @@ const onSave = async() => {
           }
         }).catch(() => {})
       } else {
+        sessionStorage.setItem('receptionPartsSaved', '1')
         router.go(-1)
       }
       searchBarRef.value?.reset()
