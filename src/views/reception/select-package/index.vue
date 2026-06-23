@@ -1110,6 +1110,7 @@ const onConfirmPackage = () => {
       if (res.code === 200) {
         showToast('已添加')
         showPackageDetail.value = false
+        sessionStorage.setItem('packageFaultCheck', '1')
         router.back()
       } else {
         showToast({ message: res.msg || '保存失败', duration: 3000 })
@@ -1205,6 +1206,7 @@ const onConfirmService = () => {
       if (res.code === 200) {
         showToast('已添加')
         showServiceDetail.value = false
+        sessionStorage.setItem('packageFaultCheck', '1')
         router.back()
       } else {
         showToast({ message: res.msg || '保存失败', duration: 3000 })
@@ -1229,6 +1231,7 @@ const onConfirmFree = () => {
       if (res.code === 200) {
         showToast('已添加')
         showFreeDetail.value = false
+        sessionStorage.setItem('packageFaultCheck', '1')
         router.back()
       } else {
         showToast({ message: res.msg || '保存失败', duration: 3000 })
@@ -1253,6 +1256,7 @@ const onConfirmMall = () => {
       if (res.code === 200) {
         showToast('已添加')
         showMallDetail.value = false
+        sessionStorage.setItem('packageFaultCheck', '1')
         router.back()
       } else {
         showToast({ message: res.msg || '保存失败', duration: 3000 })
@@ -1297,6 +1301,7 @@ const onConfirmEquity = () => {
       if (res.code === 200) {
         showToast('已添加')
         showEquityDetail.value = false
+        sessionStorage.setItem('packageFaultCheck', '1')
         router.back()
         specialEquityRemind({ id: serviceProxyId.value }).then((remindRes) => {
           const remindData = remindRes.code === 200 ? remindRes.data : null

@@ -69,3 +69,10 @@ export const BusinessTypeEnum = {
   APPOINTMENT_ARRIVAL: 50
 }
 
+/** 故障提醒涉及的维修类型 */
+export const FAULT_REMIND_REPAIR_TYPES = ['一般维修', '三电维修', '保修']
+
+/** 故障提醒文案 */
+export const FAULT_REMIND_MESSAGE =
+  '维修类型为一般维修或三电维修或保修，系统默认调整 【本次进店是否存在故障】为是，存在故障，请填写故障模块信息!'
+

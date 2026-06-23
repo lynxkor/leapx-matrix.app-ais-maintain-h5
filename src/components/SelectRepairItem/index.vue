@@ -113,17 +113,15 @@ watch(() => props.visible, async(newVal) => {
     await nextTick()
     contentRef.value?.resetData()
     await contentRef.value?.loadInitialData()
-    contentRef.value?.saveItemsSnapshot()
   }
 }, {
   immediate: true
 })
 
-// 页面模式：挂载时自动加载并保存初始快照
+// 页面模式：挂载时自动加载
 onMounted(async() => {
   if (isPageMode.value) {
     await contentRef.value?.loadInitialData()
-    contentRef.value?.saveItemsSnapshot()
   }
 })
 </script>
