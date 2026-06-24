@@ -190,8 +190,6 @@ const faultModuleList = ref([])
 
 // 故障确认弹框
 const showFaultConfirm = ref(false)
-// 程序化设置 currentFault 标志（防止取消还原触发重复弹窗）
-const isSettingFaultProgrammatically = ref(false)
 
 // 故障模块展开状态
 const showAllModules = ref(false)
@@ -214,16 +212,14 @@ const customerFaultDescDisabled = computed(() => {
 
 // ========== 是否存在故障 切换处理 ==========
 const onHasFaultChange = (value) => {
-  // 数据加载中或程序化赋值导致的改变，不弹窗
-  if (props.loading || isSettingFaultProgrammatically.value) {
-    isSettingFaultProgrammatically.value = false
-    return
-  }
+  // 数据加载中导致的改变，不弹窗（程序化改 v-model 不会触发 @change，无需额外标志）
+  if (props.loading) return
   if (Number(value) === 0) {
     // create 模式：只有已保存（serviceProxyId 存在）且有故障数据时才弹确认
     // edit 模式：只要存在故障数据就弹确认
-    const hasData = faultModules.value.length > 0 || customerFaultDesc.value
-    const needConfirm = props.mode === 'create' ? !!props.serviceProxyId && hasData : hasData
+    // const hasData = faultModules.value.length > 0 || customerFaultDesc.value
+    // const needConfirm = props.mode === 'create' ? !!props.serviceProxyId && hasData : hasData
+    const needConfirm = props.mode !== 'create'
     if (needConfirm) {
       showFaultConfirm.value = true
     } else {
@@ -243,7 +239,6 @@ const onHasFaultChange = (value) => {
 const onCancelFaultConfirm = () => {
   showFaultConfirm.value = false
   currentFault.value = '1'
-  isSettingFaultProgrammatically.value = true
 }
 
 const onConfirmFaultChange = async() => {
@@ -293,11 +288,10 @@ const onConfirmFaultChange = async() => {
   }
 }
 
-// 回滚本地状态：还原描述/模块，并通过程序化标志抑制 @change 弹窗
+// 回滚本地状态：还原描述/模块/单选项（程序化写入不触发 @change，无需额外抑制）
 const rollbackFaultState = (prevDesc, prevModules) => {
   customerFaultDesc.value = prevDesc
   faultModules.value = prevModules
-  isSettingFaultProgrammatically.value = true
   currentFault.value = '1'
 }
 
@@ -406,14 +400,6 @@ const onDeleteFaultModule = async(module) => {
 const onViewAllModules = () => {
   showAllModules.value = !showAllModules.value
 }
-
-// 暴露给父级：编程式设置 currentFault 同时抑制本次 @change 弹窗
-function setCurrentFaultSilent(value) {
-  isSettingFaultProgrammatically.value = true
-  currentFault.value = value
-}
-
-defineExpose({ setCurrentFaultSilent })
 </script>
 
 <style lang="scss">
