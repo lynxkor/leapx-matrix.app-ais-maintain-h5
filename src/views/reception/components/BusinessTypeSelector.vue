@@ -15,7 +15,7 @@
       <div class="collapse-content">
         <div class="type-selector">
           <div
-            v-for="item in businessTypeList"
+            v-for="item in computedBusinessTypeList"
             :key="item.value"
             :class="['type-item', { active: modelValue === item.value }]"
             @click="onSelect(item)"
@@ -35,6 +35,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { getEnum } from '@/api/repairWork'
+import { BusinessTypeEnum } from '../constant'
 
 const props = defineProps({
   /** 当前业务类型值 */
@@ -54,17 +55,27 @@ const collapse = ref(props.defaultExpanded ? ['businessType'] : [])
 
 // 当前业务类型文案
 const currentLabel = computed(() => {
-  return businessTypeList.value.find((i) => i.value === props.modelValue)?.label || ''
+  const label = computedBusinessTypeList.value.find((i) => i.value === props.modelValue)?.label || ''
+  return label
+})
+
+// 动态的业务类型
+const computedBusinessTypeList = computed(() => {
+  if (!props.readonly) {
+    return businessTypeList.value.filter((item) => item.value !== BusinessTypeEnum.APPOINTMENT_ARRIVAL)
+  }
+  return businessTypeList.value
 })
 
 // 加载业务类型枚举
 const loadBusinessTypeEnum = async() => {
   try {
     const res = await getEnum('BusinessTypeEnum')
-    businessTypeList.value = (res?.data || []).map((item) => ({
+    const list = (res?.data || []).map((item) => ({
       value: Number(item.code),
       label: item.message
     }))
+    businessTypeList.value = list
   } catch {
     businessTypeList.value = []
   }

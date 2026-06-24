@@ -177,6 +177,8 @@ import RepairItemCard from './RepairItemCard.vue'
 import AisCascader from '@/components/AisCascader/index.vue'
 import PackageDetailPopup from '@/components/PackageDetailPopup.vue'
 import { usePageSafeArea } from '@/utils/safeArea'
+import { hasFaultRemindType } from '@/utils/receptionCommon'
+import { FAULT_REMIND_MESSAGE } from '@/views/reception/constant'
 import {
   useRepairItemData,
   useRepairItemBusinessRules,
@@ -403,24 +405,14 @@ const onSearchDone = () => {
   searchBarRef.value?.reset()
 }
 
-// 项目零件初始快照（用于保存后比较维修类型变化）
-const itemsSnapshot = ref({ items: [], parts: [] })
-
-const saveItemsSnapshot = () => {
-  itemsSnapshot.value = {
-    items: JSON.parse(JSON.stringify(selectedItems.value)),
-    parts: JSON.parse(JSON.stringify(selectedParts.value))
-  }
-}
-
-// 保存后检查：原来不含一般维修/三电维修，保存后包含了，且currentFault为否
-const checkFaultOnSave = (flag) => {
-  const targetTypes = ['一般维修', '三电维修', '保修']
-  const hasType = (list) => list.some((item) => targetTypes.includes(item.repairItemTypeName))
-  const hadBefore = hasType(itemsSnapshot.value.items) || hasType(itemsSnapshot.value.parts)
-  const hasNow = hasType(selectedItems.value) || hasType(selectedParts.value)
-  if (!hadBefore && hasNow && String(props.currentFault) === '0') {
-    showToast({ message: '维修类型为一般维修或三电维修或保修，系统默认调整 【本次进店是否存在故障】为是，存在故障，请填写故障模块信息!' })
+// 保存后检查：本次包含 一般维修/三电维修/保修，且 currentFault 为否时提示
+const checkFaultOnSave = () => {
+  const collect = [...selectedItems.value, ...selectedParts.value]
+    .map((item) => item.repairItemTypeName)
+    .filter(Boolean)
+    .join(',')
+  if (hasFaultRemindType(collect) && String(props.currentFault) === '0') {
+    showToast({ message: FAULT_REMIND_MESSAGE })
     sessionStorage.setItem('faultDetected', '1')
   }
 }
@@ -434,7 +426,7 @@ const saving = ref(false)
 const onSave = async() => {
   if (isAuditComplete.value || saving.value) return
   saving.value = true
-  checkFaultOnSave(true)
+  checkFaultOnSave()
   try {
     const success = await handleSave(onSaveSuccess)
     // 未创建预授权且是页面模式，则获取提醒信息
@@ -543,8 +535,6 @@ onMounted(async() => {
     // 无外部数据时，调用完整加载
     await loadInitialData()
   }
-  // 保存初始快照，用于保存后比较维修类型变化
-  saveItemsSnapshot()
 })
 
 // 暴露方法供父组件调用
@@ -554,8 +544,7 @@ defineExpose({
   searchBarRef,
   selectedItems,
   selectedParts,
-  onSave,
-  saveItemsSnapshot
+  onSave
 })
 </script>
 

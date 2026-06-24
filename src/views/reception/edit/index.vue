@@ -306,7 +306,6 @@
             </div>
           </div>
           <FaultInfoSection
-            ref="faultInfoSectionRef"
             v-model:current-fault="detail.currentFault"
             v-model:customer-fault-desc="detail.customerFaultDesc"
             v-model:fault-modules="detail.faultModules"
@@ -804,7 +803,8 @@ import {
   SignChannelEnum,
   SignStatusEnum,
   CurrentFaultEnum,
-  ConfirmFaultEnum
+  ConfirmFaultEnum,
+  FAULT_REMIND_MESSAGE
 } from '../constant'
 import {
   getDetail,
@@ -834,7 +834,8 @@ import {
   handleFileDelete as _handleFileDelete,
   validatePreSaleWarranty,
   validateGoodWillWarranty,
-  applyRecentInspectionByVin
+  applyRecentInspectionByVin,
+  hasFaultRemindType
 } from '@/utils/receptionCommon'
 import PlateKeyboard from '@/libs/components/PlateKeyboard.vue'
 import DateTimePicker from '@/libs/components/DateTimePicker.vue'
@@ -854,8 +855,6 @@ const changePlateDialog = ref(false)
 
 // 数据加载标志（用于区分用户手动操作和数据赋值）
 const isDataLoading = ref(false)
-// 故障信息区块子组件引用
-const faultInfoSectionRef = ref(null)
 
 // RepairItemContent 组件引用
 const repairItemContentRef = ref(null)
@@ -1599,7 +1598,7 @@ const fetchDetail = async(cb) => {
 
       // 检查是否从添加项目/零件页面返回，需要更新故障状态
       if (sessionStorage.getItem('faultDetected') === '1') {
-        faultInfoSectionRef.value?.setCurrentFaultSilent('1')
+        detail.currentFault = '1'
         sessionStorage.removeItem('faultDetected')
       }
 
@@ -1629,6 +1628,13 @@ const fetchDetail = async(cb) => {
     nextTick(() => {
       cb && cb()
     })
+    // 从导入套餐页面返回：判断是否需要故障提醒（nextTick 排在最后，确保覆盖上方 tab 恢复）
+    if (sessionStorage.getItem('packageFaultCheck') === '1') {
+      sessionStorage.removeItem('packageFaultCheck')
+      nextTick(() => {
+        triggerFaultRemind()
+      })
+    }
   }
 }
 // 打开换车弹框
@@ -2186,6 +2192,19 @@ const handlePartsDelete = (data) => {
   console.log('删除后的 partsData:', partsData)
 }
 
+// 触发故障提醒：本次含 一般维修/三电维修/保修 且 currentFault=0 时，默认置为有故障并提示、切到环检 tab
+const triggerFaultRemind = () => {
+  if (!hasFaultRemindType(detail.repairItemTypeDetailCollect) || Number(detail.currentFault) !== 0) return
+  detail.currentFault = '1'
+  // 清空默认文本
+  if (detail.customerFaultDesc === '本次进店车辆无故障') {
+    detail.customerFaultDesc = ''
+  }
+  showToast({ message: FAULT_REMIND_MESSAGE, duration: 3000 })
+  // 切换tab到环检信息
+  activeTab.value = 'inspection'
+}
+
 // 项目零件保存
 const onPartsSave = async() => {
   // 数据未变更，不调接口
@@ -2210,8 +2229,6 @@ const onPartsSave = async() => {
 
   // 善意保修只能单独开单
   if (!validateGoodWillWarranty(items, parts)) return
-  // 记录保存前的维修类型（从当前detail取值，确保准确反映保存前的状态）
-  const oldRepairItemTypeDetailCollect = detail.repairItemTypeDetailCollect || ''
 
   savingLoading.value = true
   try {
@@ -2239,21 +2256,8 @@ const onPartsSave = async() => {
     })
     fetchRemindInfo()
 
-    // 判断：原来不包含一般维修或三电维修，保存后包含了一般维修或三电维修，且本次进店是否存在故障为否
-    const newRepairItemTypeDetailCollect = detail.repairItemTypeDetailCollect
-    const hadGeneralOrThreeElectric = oldRepairItemTypeDetailCollect.includes('一般维修') || oldRepairItemTypeDetailCollect.includes('三电维修') || oldRepairItemTypeDetailCollect.includes('保修')
-    const hasGeneralOrThreeElectric = newRepairItemTypeDetailCollect.includes('一般维修') || newRepairItemTypeDetailCollect.includes('三电维修') || newRepairItemTypeDetailCollect.includes('保修')
-    console.log('hadGeneralOrThreeElectric', hadGeneralOrThreeElectric, hasGeneralOrThreeElectric, detail.currentFault)
-    if (!hadGeneralOrThreeElectric && hasGeneralOrThreeElectric && Number(detail.currentFault) === 0) {
-      faultInfoSectionRef.value?.setCurrentFaultSilent('1')
-      // 清空默认文本
-      if (detail.customerFaultDesc === '本次进店车辆无故障') {
-        detail.customerFaultDesc = ''
-      }
-      showToast({ message: '维修类型为一般维修或三电维修或保修，系统默认调整 【本次进店是否存在故障】为是，存在故障，请填写故障模块信息!', duration: 3000 })
-      // 切换tab到环检信息
-      activeTab.value = 'inspection'
-    }
+    // 故障提醒：本次包含 一般维修/三电维修/保修 且 currentFault=0 时触发
+    triggerFaultRemind()
   } catch (error) {
     console.error('保存失败:', error)
     showToast('保存失败')

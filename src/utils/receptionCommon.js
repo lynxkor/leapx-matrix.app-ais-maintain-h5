@@ -1,7 +1,7 @@
 import { showToast } from 'vant'
 import { nextTick } from 'vue'
 import { AlarmLevelEnum, WarrantyTypeEnum } from '@/views/repairWork/constant'
-import { RepairOrderStatusEnum } from '@/views/reception/constant'
+import { RepairOrderStatusEnum, FAULT_REMIND_REPAIR_TYPES } from '@/views/reception/constant'
 import { deleteAttachmentConfig } from '@/libs/api/fileConfig'
 import { getFaultModule, getRecentlyServiceProxy } from '@/api/reception'
 
@@ -428,4 +428,17 @@ export async function applyRecentInspectionByVin(vin, detail, { businessId = nul
   } catch (error) {
     console.error('获取上次环检信息失败:', error)
   }
+}
+
+// ==================== 故障提醒 ====================
+
+/**
+ * 判断本次维修类型是否包含故障提醒的三类维修（一般维修/三电维修/保修）
+ * @param {string} typeCollect 维修类型汇总字符串（如 repairItemTypeDetailCollect，或由项目/零件类型名拼接而成）
+ * @returns {boolean}
+ */
+export function hasFaultRemindType(typeCollect) {
+  if (!typeCollect) return false
+  const collect = String(typeCollect)
+  return FAULT_REMIND_REPAIR_TYPES.some((t) => collect.includes(t))
 }
