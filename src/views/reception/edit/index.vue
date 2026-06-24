@@ -306,7 +306,6 @@
             </div>
           </div>
           <FaultInfoSection
-            ref="faultInfoSectionRef"
             v-model:current-fault="detail.currentFault"
             v-model:customer-fault-desc="detail.customerFaultDesc"
             v-model:fault-modules="detail.faultModules"
@@ -856,8 +855,6 @@ const changePlateDialog = ref(false)
 
 // 数据加载标志（用于区分用户手动操作和数据赋值）
 const isDataLoading = ref(false)
-// 故障信息区块子组件引用
-const faultInfoSectionRef = ref(null)
 
 // RepairItemContent 组件引用
 const repairItemContentRef = ref(null)
@@ -1601,7 +1598,7 @@ const fetchDetail = async(cb) => {
 
       // 检查是否从添加项目/零件页面返回，需要更新故障状态
       if (sessionStorage.getItem('faultDetected') === '1') {
-        faultInfoSectionRef.value?.setCurrentFaultSilent('1')
+        detail.currentFault = '1'
         sessionStorage.removeItem('faultDetected')
       }
 
@@ -2198,7 +2195,7 @@ const handlePartsDelete = (data) => {
 // 触发故障提醒：本次含 一般维修/三电维修/保修 且 currentFault=0 时，默认置为有故障并提示、切到环检 tab
 const triggerFaultRemind = () => {
   if (!hasFaultRemindType(detail.repairItemTypeDetailCollect) || Number(detail.currentFault) !== 0) return
-  faultInfoSectionRef.value?.setCurrentFaultSilent('1')
+  detail.currentFault = '1'
   // 清空默认文本
   if (detail.customerFaultDesc === '本次进店车辆无故障') {
     detail.customerFaultDesc = ''
