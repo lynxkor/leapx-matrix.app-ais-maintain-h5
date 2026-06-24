@@ -35,6 +35,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { getEnum } from '@/api/repairWork'
+import { BusinessTypeEnum } from '../constant'
 
 const props = defineProps({
   /** 当前业务类型值 */
@@ -61,10 +62,15 @@ const currentLabel = computed(() => {
 const loadBusinessTypeEnum = async() => {
   try {
     const res = await getEnum('BusinessTypeEnum')
-    businessTypeList.value = (res?.data || []).map((item) => ({
+    let list = (res?.data || []).map((item) => ({
       value: Number(item.code),
       label: item.message
     }))
+    // 非预约（非只读）时，预约到店不可选
+    if (!props.readonly) {
+      list = list.filter((item) => item.value !== BusinessTypeEnum.APPOINTMENT_ARRIVAL)
+    }
+    businessTypeList.value = list
   } catch {
     businessTypeList.value = []
   }
