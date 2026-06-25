@@ -223,7 +223,7 @@
 
     <!-- 底部提交按钮 -->
     <div class="bottom-action">
-      <div class="submit-btn" @click="handleSubmit">
+      <div class="submit-btn" @click="handleSubmit" v-if="permissionStore.hasPermission('AISMC-app-preAuth-submit')">
         提交申请
       </div>
     </div>
@@ -412,8 +412,10 @@ import { uploadFileByUrl, deleteAttachmentConfig, getUploadConfig } from '@/libs
 import { batchUploadImageLimit } from '@/libs/utils/nativeFn'
 import { usePageSafeArea } from '@/utils/safeArea'
 import { getEnumValue } from '@/libs/api/common'
+import { usePermissionStore } from '@/stores/permission'
 
 const router = useRouter()
+const permissionStore = usePermissionStore()
 usePageSafeArea({ bodyClass: 'ais-page-nav-safe-area' })
 const PRE_AUTH_ATTACHMENT_CONFIG_CODE = 'mcs_preauth'
 const uploadConfig = ref({})
