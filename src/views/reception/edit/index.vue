@@ -1629,7 +1629,7 @@ const fetchDetail = async(cb) => {
     if (sessionStorage.getItem('packageFaultCheck') === '1') {
       sessionStorage.removeItem('packageFaultCheck')
       nextTick(() => {
-        triggerFaultRemind()
+        triggerFaultRemind('0') // 导入套餐页控制了满足条件才会返回
       })
     }
   }
@@ -2180,8 +2180,8 @@ const handlePartsDelete = (data) => {
 }
 
 // 触发故障提醒：本次含 一般维修/三电维修/保修 且 currentFault=0 时，默认置为有故障并提示、切到环检 tab
-const triggerFaultRemind = () => {
-  if (!hasFaultRemindType(detail.repairItemTypeDetailCollect) || Number(detail.currentFault) !== 0) return
+const triggerFaultRemind = (currentFault) => {
+  if (!hasFaultRemindType(detail.repairItemTypeDetailCollect) || Number(currentFault || detail.currentFault) !== 0) return
   detail.currentFault = '1'
   // 清空默认文本
   if (detail.customerFaultDesc === '本次进店车辆无故障') {
@@ -2370,7 +2370,8 @@ const onAddPackage = () => {
   router.push({
     path: '/reception/select-package',
     query: {
-      serviceProxyId: route.query.id
+      serviceProxyId: route.query.id,
+      currentFault: detail.currentFault
     }
   })
 }

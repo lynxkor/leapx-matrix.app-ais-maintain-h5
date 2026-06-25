@@ -1110,7 +1110,7 @@ const onConfirmPackage = () => {
       if (res.code === 200) {
         showToast('已添加')
         showPackageDetail.value = false
-        sessionStorage.setItem('packageFaultCheck', '1')
+        setFaultCheckFlag()
         router.back()
       } else {
         showToast({ message: res.msg || '保存失败', duration: 3000 })
@@ -1134,6 +1134,12 @@ const onTogglePart = (part) => {
   // allowDelete == 0 时不可编辑
   if (Number(part.allowDelete) === 0) return
   part.selected = !part.selected
+}
+
+const setFaultCheckFlag = () => {
+  if (String(route.query.currentFault) === '0') {
+    sessionStorage.setItem('packageFaultCheck', '1')
+  }
 }
 
 // 确认选择服务活动
@@ -1206,7 +1212,7 @@ const onConfirmService = () => {
       if (res.code === 200) {
         showToast('已添加')
         showServiceDetail.value = false
-        sessionStorage.setItem('packageFaultCheck', '1')
+        setFaultCheckFlag()
         router.back()
       } else {
         showToast({ message: res.msg || '保存失败', duration: 3000 })
@@ -1231,7 +1237,7 @@ const onConfirmFree = () => {
       if (res.code === 200) {
         showToast('已添加')
         showFreeDetail.value = false
-        sessionStorage.setItem('packageFaultCheck', '1')
+        setFaultCheckFlag()
         router.back()
       } else {
         showToast({ message: res.msg || '保存失败', duration: 3000 })
@@ -1256,7 +1262,7 @@ const onConfirmMall = () => {
       if (res.code === 200) {
         showToast('已添加')
         showMallDetail.value = false
-        sessionStorage.setItem('packageFaultCheck', '1')
+        setFaultCheckFlag()
         router.back()
       } else {
         showToast({ message: res.msg || '保存失败', duration: 3000 })
@@ -1301,7 +1307,7 @@ const onConfirmEquity = () => {
       if (res.code === 200) {
         showToast('已添加')
         showEquityDetail.value = false
-        sessionStorage.setItem('packageFaultCheck', '1')
+        setFaultCheckFlag()
         router.back()
         specialEquityRemind({ id: serviceProxyId.value }).then((remindRes) => {
           const remindData = remindRes.code === 200 ? remindRes.data : null
