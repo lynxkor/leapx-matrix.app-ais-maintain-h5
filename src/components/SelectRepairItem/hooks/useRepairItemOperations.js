@@ -2,6 +2,7 @@ import { ref } from 'vue'
 import { showToast, closeToast, showLoadingToast, showConfirmDialog } from 'vant'
 import { filterRepairItems, filterRepairParts, saveRepairItemInfo } from '@/api/repairWork'
 import { WarrantyTypeEnum, UNIVERSAL_LABOR_HOUR_ITEM_ID, WorkRecordStatusEnum, PackageTypeEnum } from '@/views/repairWork/constant'
+import { checkoutTypeIncluded } from './repairItemRules'
 
 /**
  * 维修项目和零件的增删改查操作 Hook
@@ -63,6 +64,22 @@ export default function useRepairItemOperations({
   // ============ 添加操作 ============
 
   /**
+   * 继承上一条记录的结算类型（仅自费/保险/内部结算）
+   * 移动端 cascader 将「结算类型+保修类型」耦合为一级，无自动重算，
+   * 故同时复制保修类型以保证配对合法
+   * @param {Object} target - 新增的项目/零件
+   * @param {Object} lastRow - 上一条记录
+   */
+  const applyInheritedCheckout = (target, lastRow) => {
+    if (lastRow && lastRow.checkoutTypeId && !checkoutTypeIncluded(lastRow.checkoutTypeId)) {
+      target.checkoutTypeId = lastRow.checkoutTypeId
+      target.checkoutTypeName = lastRow.checkoutTypeName
+      target.warrantyTypeId = lastRow.warrantyTypeId
+      target.warrantyTypeName = lastRow.warrantyTypeName
+    }
+  }
+
+  /**
    * 添加维修项目或零件
    * @param {Object} rawItem - 原始项目/零件数据
    */
@@ -81,6 +98,8 @@ export default function useRepairItemOperations({
       // 如果有自带的维修类型，增加不允许修改标志位
       rawItem.repairItemDisabled = !!rawItem.repairItemTypeId
       const projectItem = normalizeItem(rawItem)
+      // 优先继承上一条维修项目的结算类型
+      applyInheritedCheckout(projectItem, selectedItems.value[selectedItems.value.length - 1])
       selectedItems.value.push(projectItem)
 
       // 同时添加附带零件
@@ -110,6 +129,8 @@ export default function useRepairItemOperations({
       rawItem.partsId = rawItem.id
       delete rawItem.id
       const newItem = normalizePart(rawItem)
+      // 优先继承上一条维修配件的结算类型
+      applyInheritedCheckout(newItem, selectedParts.value[selectedParts.value.length - 1])
       selectedParts.value.push(newItem)
       searchBarRef.value?.showActiveCards([newItem])
       showToast({ message: '添加成功', 'z-index': 5100 })

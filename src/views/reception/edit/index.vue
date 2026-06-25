@@ -25,10 +25,7 @@
       <div class="vehicle-model">{{ detail.vehicleModel }} · {{ detail.vin }}</div>
       <div class="info-row">
         <span class="label">保修日期：</span>
-        <span class="value"
-          >{{ detail.vehicleProfileServiceResp.warrantyStartdate }} 至
-          {{ detail.vehicleProfileServiceResp.warrantyEnddate }}</span
-        >
+        <span class="value">{{ detail.startWarrantyDate }} 至 {{ detail.endWarrantyDate }}</span>
       </div>
       <div class="info-row">
         <span class="label">车主：</span>
@@ -1055,7 +1052,6 @@ const showMoreActions = ref(false)
 // 详情数据
 const detail = reactive({
   id: '', // 施工单ID
-  vehicleProfileServiceResp: {}, // 车辆档案
   plateNo: '',
   custTypeLabel: '',
   isAppointment: false,
@@ -1416,6 +1412,8 @@ const fetchDetail = async(cb) => {
       detail.shuttlePhone = data.shuttlePhone || ''
       detail.repairPerson = data.shuttleName || data.customerName || ''
       detail.repairPersonPhone = data.shuttlePhone || data.customerPhone || ''
+      detail.startWarrantyDate = data.startWarrantyDate || ''
+      detail.endWarrantyDate = data.endWarrantyDate || ''
       // 计算送修人类型
       // detail.repairPersonTag =
       //   detail.repairPerson === data.customerName
@@ -1447,7 +1445,6 @@ const fetchDetail = async(cb) => {
         vfgName: item.vfgName,
         faultDesc: item.faultDescription
       }))
-      detail.vehicleProfileServiceResp = data.vehicleProfileServiceResp || {}
 
       // 获取附件列表并分类回显
       const fileRes = await getFileList({ businessId: route.query.id, pageSize: 100 })
@@ -1671,7 +1668,6 @@ const onChangeCarSelected = (carInfo) => {
   detail.customerPhone = carInfo.vehicleProfileOwnerResp?.mobilephone || ''
   detail.bindingUser = carInfo.vehicleProfileOwnerResp?.bindingUser || ''
   detail.binderPhone = carInfo.vehicleProfileOwnerResp?.bindingPhone || ''
-  detail.vehicleProfileServiceResp = carInfo.vehicleProfileServiceResp || {}
 
   // 更新送修人信息为当前车主
   detail.repairPerson = detail.customerName
@@ -2049,7 +2045,6 @@ const onInspectionSave = async(type) => {
     appointmentNo: detail.appointmentNo,
     mileage: detail.mileage,
     lastMileage: detail.lastMileage,
-    startWarrantyDate: detail.vehicleProfileServiceResp.warrantyStartdate,
     expectFinishAt: signatureData.expectFinishAt,
     remark: detail.remark,
     status: detail.status,
@@ -2094,15 +2089,7 @@ const onInspectionSave = async(type) => {
     netMileageElectricity: detail.electricalMileage,
     netMileageExtend: detail.networkMileageAdd,
     vehProfileVin: detail.vin,
-    maintenanceMileage: detail.vehicleProfileServiceResp.nextMaintainMileages,
-    maintenanceTime: detail.vehicleProfileServiceResp.nextMaintainDate,
-    saleDate: detail.vehicleProfileServiceResp.salesDate,
     vehModelId: detail.vehicleModelId,
-    vehRegisteredModelId: detail.vehicleProfileServiceResp.carSaleSversionId,
-    vehRegisteredModelName: detail.vehicleProfileServiceResp.carSalesVersionName,
-    vehYearTypeId: detail.vehicleProfileServiceResp.vehicleYearId,
-    vehYearTypeName: detail.vehicleProfileServiceResp.vehicleYearName,
-    dedicatedServiceManager: detail.vehicleProfileServiceResp.serviceUserName,
     motorModel: detail.motorModel,
     motorSerialNumber: detail.motorSerialNumber,
     // batteryModel: detail.batteryModel,
