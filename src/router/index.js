@@ -50,7 +50,8 @@ const router = createRouter({
           component: () => import('../views/repairWork/index.vue'),
           meta: {
             title: '维修作业',
-            keepAlive: true
+            keepAlive: true,
+            closeWindow: 1
           }
         },
         {
@@ -163,7 +164,8 @@ const router = createRouter({
           component: () => import('../views/preAuthorization/PreAuthorizationList.vue'),
           meta: {
             title: '预授权管理',
-            keepAlive: true
+            keepAlive: true,
+            closeWindow: 1
           }
         },
         {
@@ -198,7 +200,8 @@ const router = createRouter({
           component: () => import('../views/settlementStatement/SettlementStatementList.vue'),
           meta: {
             title: '结算交车',
-            keepAlive: false
+            keepAlive: false,
+            closeWindow: 1
           }
         },
         {
