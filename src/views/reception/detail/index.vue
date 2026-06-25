@@ -12,7 +12,7 @@
       <div class="vehicle-model">{{ detail.vehModelName }} · {{ detail.vehProfileVin }}</div>
       <div class="info-row">
         <span class="label">保修日期：</span>
-        <span class="value">{{ detail.startWarrantyDate }}</span>
+        <span class="value">{{ detail.startWarrantyDate }} 至 {{ detail.endWarrantyDate }}</span>
       </div>
       <div class="info-row">
         <span class="label">车主：</span>

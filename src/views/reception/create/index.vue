@@ -27,7 +27,7 @@
         <span class="label">保修日期：</span>
         <span class="value"
           >{{ detail.vehicleProfileServiceResp.warrantyStartdate }} 至
-          {{ detail.vehicleProfileServiceResp.warrantyEnddate }}</span
+          {{ detail.vehicleProfileServiceResp.warrantyEnddateForecast }}</span
         >
       </div>
       <div class="info-row">
