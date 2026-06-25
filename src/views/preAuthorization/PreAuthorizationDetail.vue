@@ -353,7 +353,7 @@
     </div>
 
     <!-- 底部激活按钮 (已拒绝状态且非善意保修时显示) -->
-    <div v-if="detail.status === AUDIT_STATUS.REFUSED && detail.isGoodWarranty !== true && permissionStore.hasPermission('AISMC-app-preAuth-enableOrDisable')" class="bottom-actions">
+    <div v-if="detail.status === AUDIT_STATUS.REFUSED && detail.isGoodWarranty !== true && permissionStore.hasPermission('AISMC-app-preAuth-audit')" class="bottom-actions">
       <div class="action-btn back" @click="router.back()">返回</div>
       <div class="action-btn audit" @click="handleAudit">激活</div>
     </div>
