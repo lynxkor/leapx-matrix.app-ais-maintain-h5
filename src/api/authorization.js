@@ -42,7 +42,12 @@ export function preAuthAudit(data) {
 
 // 作废
 export function preAuthCancel(data) {
-  return post('maintain/app/sp/preAuth/cancel', data)
+  return postJson('maintain/app/sp/preAuth/cancel', data)
+}
+
+// 撤回（审核撤回，重置为已驳回状态）
+export function preAuthRevoke(data) {
+  return postJson('maintain/app/sp/preAuth/revoke', data)
 }
 
 // 重新生成

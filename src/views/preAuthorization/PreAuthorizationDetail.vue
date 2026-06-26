@@ -353,14 +353,24 @@
     </div>
 
     <!-- 底部激活按钮 (已拒绝状态且非善意保修时显示) -->
-    <div v-if="detail.status === AUDIT_STATUS.REFUSED && detail.isGoodWarranty !== true && permissionStore.hasPermission('AISMC-app-preAuth-audit')" class="bottom-actions">
+    <div v-if="detail.status === AUDIT_STATUS.REFUSED && detail.isGoodWarranty !== true && permissionStore.hasPermission('AISMC-app-preAuth-activate')" class="bottom-actions">
       <div class="action-btn back" @click="router.back()">返回</div>
       <div class="action-btn audit" @click="handleAudit">激活</div>
     </div>
 
-    <!-- 底部提交按钮 (未提交或已驳回状态显示) -->
-    <div v-if="isEditable && permissionStore.hasPermission('AISMC-app-preAuth-addOrUpdate')" class="bottom-actions">
-      <div class="action-btn submit" @click="handleSubmit">提交申请</div>
+    <!-- 底部操作：待提交/已驳回状态，作废 + 提交申请（按权限点分别控制） -->
+    <div
+      v-if="isEditable && (permissionStore.hasPermission('AISMC-app-preAuth-cancel') || permissionStore.hasPermission('AISMC-app-preAuth-submit'))"
+      class="bottom-actions"
+    >
+      <div v-if="permissionStore.hasPermission('AISMC-app-preAuth-cancel')" class="action-btn back" @click="handleCancel">作废</div>
+      <div v-if="permissionStore.hasPermission('AISMC-app-preAuth-submit')" class="action-btn submit" @click="handleSubmit">提交申请</div>
+    </div>
+
+    <!-- 底部撤回按钮 (审批通过状态显示，复用审核权限点) -->
+    <div v-if="detail.status === AUDIT_STATUS.APPROVED && permissionStore.hasPermission('AISMC-app-preAuth-revoke')" class="bottom-actions">
+      <div class="action-btn back" @click="router.back()">返回</div>
+      <div class="action-btn audit" @click="handleWithdraw">撤回</div>
     </div>
 
     <!-- 审核弹窗 -->
@@ -573,10 +583,10 @@
 <script setup>
 import { ref, reactive, onMounted, onUnmounted, nextTick, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { showToast, showLoadingToast, closeToast, showImagePreview } from 'vant'
+import { showToast, showLoadingToast, closeToast, showImagePreview, showConfirmDialog } from 'vant'
 import AisPopup from '@/components/AisPopup.vue'
 import RefreshList from '@/libs/components/RefreshList.vue'
-import { preAuthGet, preAuthAudit, preAuthGetErrorCodeList, preAuthAddOrUpdate, preAuthGetConstructionList, preAuthGetPreAuthInfoDetail, preAuthGetQualityFeedbackList } from '@/api/authorization'
+import { preAuthGet, preAuthAudit, preAuthGetErrorCodeList, preAuthAddOrUpdate, preAuthGetConstructionList, preAuthGetPreAuthInfoDetail, preAuthGetQualityFeedbackList, preAuthCancel, preAuthRevoke } from '@/api/authorization'
 import { getAttachmentList, uploadFileByUrl, deleteAttachmentConfig, getUploadConfig } from '@/libs/api/fileConfig'
 import { getEnumValue } from '@/libs/api/common'
 import { batchUploadImageLimit } from '@/libs/utils/nativeFn'
@@ -1166,6 +1176,64 @@ const handleSubmit = async() => {
     closeToast()
     showToast(error.msg)
   }
+}
+
+// 作废
+const handleCancel = () => {
+  const id = route.params.id
+  if (!id) {
+    showToast('缺少预授权ID')
+    return
+  }
+  showConfirmDialog({ title: '作废确认', message: '确定要作废该记录吗?' })
+    .then(async() => {
+      try {
+        showLoadingToast({ message: '处理中...', forbidClick: true })
+        const res = await preAuthCancel(id)
+        closeToast()
+        if (res.code === 200 || res.code === 0) {
+          showToast('作废成功')
+          fetchDetail()
+        } else {
+          showToast(res.msg || '作废失败')
+        }
+      } catch (error) {
+        closeToast()
+        showToast(error?.msg || '作废失败')
+      }
+    })
+    .catch(() => {
+      // 用户取消，忽略
+    })
+}
+
+// 撤回（审核撤回，重置为已驳回状态）
+const handleWithdraw = () => {
+  const id = route.params.id
+  if (!id) {
+    showToast('缺少预授权ID')
+    return
+  }
+  showConfirmDialog({ title: '撤回确认', message: '确定审核撤回吗?撤回后将重置为【已驳回】状态。' })
+    .then(async() => {
+      try {
+        showLoadingToast({ message: '处理中...', forbidClick: true })
+        const res = await preAuthRevoke(id)
+        closeToast()
+        if (res.code === 200 || res.code === 0) {
+          showToast('撤回成功')
+          fetchDetail()
+        } else {
+          showToast(res.msg || '撤回失败')
+        }
+      } catch (error) {
+        closeToast()
+        showToast(error?.msg || '撤回失败')
+      }
+    })
+    .catch(() => {
+      // 用户取消，忽略
+    })
 }
 
 // 审核状态映射
