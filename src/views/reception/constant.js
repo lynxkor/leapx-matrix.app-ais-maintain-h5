@@ -69,6 +69,20 @@ export const BusinessTypeEnum = {
   APPOINTMENT_ARRIVAL: 50
 }
 
+/** 客户类型 */
+export const CustTypeEnum = {
+  /** 预约客户 */
+  APPOINTMENT: '10',
+  /** 随到客户 */
+  WALK_IN: '20'
+}
+
+/** 客户类型标签映射 */
+export const CustTypeLabelMap = {
+  [CustTypeEnum.APPOINTMENT]: '预约客户',
+  [CustTypeEnum.WALK_IN]: '随到客户'
+}
+
 /** 故障提醒涉及的维修类型 */
 export const FAULT_REMIND_REPAIR_TYPES = ['一般维修', '三电维修', '保修']
 
