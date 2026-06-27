@@ -368,7 +368,7 @@
     </div>
 
     <!-- 底部撤回按钮 (审批通过状态显示，复用审核权限点) -->
-    <div v-if="detail.status === AUDIT_STATUS.APPROVED && permissionStore.hasPermission('AISMC-app-preAuth-revoke')" class="bottom-actions">
+    <div v-if="detail.status === AUDIT_STATUS.APPROVED && detail.isGoodWarranty !== true  && permissionStore.hasPermission('AISMC-app-preAuth-revoke')" class="bottom-actions">
       <div class="action-btn back" @click="router.back()">返回</div>
       <div class="action-btn audit" @click="handleWithdraw">撤回</div>
     </div>

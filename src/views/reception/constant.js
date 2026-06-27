@@ -50,9 +50,9 @@ export const CurrentFaultEnum = {
 /** 故障确认结果 */
 export const ConfirmFaultEnum = {
   /** 准确 */
-  ACCURATE: 1,
+  ACCURATE: 10,
   /** 不准确 */
-  INACCURATE: 2
+  INACCURATE: 20
 }
 
 /** 业务类型 */
@@ -67,6 +67,20 @@ export const BusinessTypeEnum = {
   ONSITE_SERVICE: 40,
   /** 预约到店 */
   APPOINTMENT_ARRIVAL: 50
+}
+
+/** 客户类型 */
+export const CustTypeEnum = {
+  /** 预约客户 */
+  APPOINTMENT: '10',
+  /** 随到客户 */
+  WALK_IN: '20'
+}
+
+/** 客户类型标签映射 */
+export const CustTypeLabelMap = {
+  [CustTypeEnum.APPOINTMENT]: '预约客户',
+  [CustTypeEnum.WALK_IN]: '随到客户'
 }
 
 /** 故障提醒涉及的维修类型 */

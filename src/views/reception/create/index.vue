@@ -4,7 +4,7 @@
     <div class="vehicle-card">
       <div class="plate-row">
         <span class="plate-no">{{ detail.plateNo }}</span>
-        <span class="appointment-tag" style="opacity: 0">预约客户</span>
+        <span class="appointment-tag">{{ detail.custTypeLabel }}</span>
         <span
           v-if="Number(detail.orderStatus) === RepairOrderStatusEnum.RECEPTION_INSPECTION"
           class="edit-plate edit-plate-after"
@@ -398,7 +398,7 @@ import {
   handleFileDelete as _handleFileDelete,
   applyRecentInspectionByVin
 } from '@/utils/receptionCommon'
-import { RepairOrderStatusEnum, BusinessTypeEnum } from '../constant'
+import { RepairOrderStatusEnum, BusinessTypeEnum, CustTypeEnum, CustTypeLabelMap } from '../constant'
 import PlateKeyboard from '@/libs/components/PlateKeyboard.vue'
 import './create.scss'
 
@@ -473,8 +473,9 @@ const detail = reactive({
   dataSource: 180,
   orderStatus: '',
   warrantyTypeCollect: '',
-  custType: '',
-  custTypeLabel: '',
+  // 预约开单(有appointId)为预约客户，否则为随到客户
+  custType: route.query.appointId ? CustTypeEnum.APPOINTMENT : CustTypeEnum.WALK_IN,
+  custTypeLabel: CustTypeLabelMap[route.query.appointId ? CustTypeEnum.APPOINTMENT : CustTypeEnum.WALK_IN],
   salesDealerName: '',
   salesDealerCode: '',
   appointmentNo: '',
@@ -904,6 +905,7 @@ const onSave = async() => {
       // batterySerialNumber: detail.batterySerialNumber,
       // engineNumber: detail.enginenNumber,
       businessType: detail.businessType,
+      custType: detail.custType,
       haveRework: 0,
       customerComment: detail.customerComment,
       isCarWash: 0,

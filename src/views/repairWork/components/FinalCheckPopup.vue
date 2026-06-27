@@ -296,7 +296,7 @@ const handlePartUnitClear = (part) => {
 const canSubmit = computed(() => {
   // 电池更换信息必填项（如果展示了电池区域）
   const batteryValid = !detailData.value?.batteryFlag ||
-    (formData.value.batteryUnitId && formData.value.beforeChangeCode && formData.value.afterChangeCode)
+    (formData.value.beforeChangeCode && formData.value.afterChangeCode)
 
   // 配件追溯必填项（如果展示了追溯区域）
   const partsValid = !detailData.value?.tranceFlag ||
