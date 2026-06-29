@@ -296,11 +296,11 @@ const handlePartUnitClear = (part) => {
 const canSubmit = computed(() => {
   // 电池更换信息必填项（如果展示了电池区域）
   const batteryValid = !detailData.value?.batteryFlag ||
-    (formData.value.beforeChangeCode && formData.value.afterChangeCode)
+      (formData.value.batteryUnitId && formData.value.beforeChangeCode && formData.value.afterChangeCode)
 
   // 配件追溯必填项（如果展示了追溯区域）
   const partsValid = !detailData.value?.tranceFlag ||
-    partsList.value.every((part) => part.beforeChangeCode && part.afterChangeCode && part.targetUnitId && part.targetUnitName)
+    partsList.value.every((part) => part.beforeChangeCode && part.afterChangeCode)
 
   return batteryValid && partsValid
 })
@@ -563,6 +563,10 @@ const handleSubmit = () => {
               font-weight: 400;
               color: var(--leap-color-default);
               line-height: 20px;
+              .required {
+                color: var(--leap-color-danger);
+                margin-right: 2px;
+              }
             }
 
             :deep(.van-cell) {
