@@ -23,7 +23,7 @@
         <div v-if="detailData?.batteryFlag" class="info-card">
           <div class="card-title">电池更换信息</div>
           <div class="form-item">
-            <div class="form-label">去向单位</div>
+            <div class="form-label"><span class="required">*</span>去向单位</div>
             <div class="form-field">
               <SearchDropdown
                 v-model="formData.batteryUnitId"
@@ -48,7 +48,7 @@
             />
           </div>
           <div class="form-item">
-            <div class="form-label">更换前编号</div>
+            <div class="form-label"><span class="required">*</span>更换前编号</div>
             <van-field
               v-model="formData.beforeChangeCode"
               placeholder="请输入"
@@ -57,7 +57,7 @@
             />
           </div>
           <div class="form-item last-item">
-            <div class="form-label">更换后编号</div>
+            <div class="form-label"><span class="required">*</span>更换后编号</div>
             <van-field
               v-model="formData.afterChangeCode"
               placeholder="请输入"
@@ -102,7 +102,7 @@
                 />
               </div>
               <div class="part-form-item">
-                <div class="form-label">更换前编号</div>
+                <div class="form-label"><span class="required">*</span>更换前编号</div>
                 <van-field
                   v-model="part.beforeChangeCode"
                   placeholder="请输入"
@@ -111,7 +111,7 @@
                 />
               </div>
               <div class="part-form-item last-item">
-                <div class="form-label">更换后编号</div>
+                <div class="form-label"><span class="required">*</span>更换后编号</div>
                 <van-field
                   v-model="part.afterChangeCode"
                   placeholder="请输入"
@@ -466,6 +466,10 @@ const handleSubmit = () => {
           color: var(--leap-color-default);
           line-height: 20px;
           margin-right: 10px;
+          .required {
+            color: var(--leap-color-danger);
+            margin-right: 2px;
+          }
         }
 
         .form-field {
