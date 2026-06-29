@@ -85,7 +85,11 @@
 
       <!-- 底部保存按钮 -->
       <div class="bottom-bar">
-        <div class="save-btn" @click="handleSubmit">
+        <div
+          class="save-btn"
+          :class="{ 'is-disabled': submitting }"
+          @click="handleSubmit"
+        >
           保存
         </div>
       </div>
@@ -156,6 +160,9 @@ const faultDescription = ref('')
 // 显示添加模块弹窗
 const showAddModulePopup = ref(false)
 
+// 提交中标志（防重复提交）
+const submitting = ref(false)
+
 // 删除故障模块
 const handleDeleteModule = (index) => {
   faultModules.value.splice(index, 1)
@@ -168,6 +175,7 @@ const handleModuleSelect = (module) => {
 
 // 提交保存
 const handleSubmit = async() => {
+  if (submitting.value) return
   if (!faultModules.value.length) {
     showToast({
       message: '请选择故障模块',
@@ -182,6 +190,7 @@ const handleSubmit = async() => {
     })
     return
   }
+  submitting.value = true
   try {
     const faultModulesArr = faultModules.value.map(item => {
       delete item.id
@@ -212,6 +221,8 @@ const handleSubmit = async() => {
       message: '保存失败',
       'z-index': 5100
     })
+  } finally {
+    submitting.value = false
   }
 }
 
@@ -433,6 +444,11 @@ const handleClose = () => {
       font-weight: 400;
       color: #fff;
       cursor: pointer;
+
+      &.is-disabled {
+        opacity: 0.6;
+        pointer-events: none;
+      }
     }
   }
 }
