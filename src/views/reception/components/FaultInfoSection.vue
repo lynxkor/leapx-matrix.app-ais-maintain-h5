@@ -159,6 +159,7 @@ import AisPopup from '@/libs/components/AisPopup.vue'
 import { fetchFaultModuleList as _fetchFaultModuleList } from '@/utils/receptionCommon'
 import { saveSpFaultModule, deleteSpFaultModule } from '@/api/reception'
 import { updateFaultAlertRecord } from '@/api/repairWork'
+import { ConfirmFaultEnum } from '../constant'
 
 const props = defineProps({
   /** 'create' | 'edit'，edit 模式下增删故障模块走接口 */
@@ -206,7 +207,7 @@ const clearingFault = ref(false)
 // 客户故障描述禁用条件：选择"否" 或 已确认存在/不存在故障
 const customerFaultDescDisabled = computed(() => {
   const cf = String(currentFault.value)
-  const confirmed = Number(props.confirmFault) === 1
+  const confirmed = Number(props.confirmFault) === ConfirmFaultEnum.ACCURATE
   return cf === '0' || confirmed
 })
 
@@ -224,13 +225,13 @@ const onHasFaultChange = (value) => {
       showFaultConfirm.value = true
     } else {
       currentFault.value = '0'
-      if (Number(props.confirmFault) !== 1) {
+      if (Number(props.confirmFault) !== ConfirmFaultEnum.ACCURATE) {
         customerFaultDesc.value = '本次进店车辆无故障'
       }
       faultModules.value = []
     }
   } else if (Number(value) === 1) {
-    if (Number(props.confirmFault) !== 1) {
+    if (Number(props.confirmFault) !== ConfirmFaultEnum.ACCURATE) {
       customerFaultDesc.value = ''
     }
   }
@@ -249,7 +250,7 @@ const onConfirmFaultChange = async() => {
   // 乐观更新本地状态
   showFaultConfirm.value = false
   faultModules.value = []
-  if (Number(props.confirmFault) !== 1) {
+  if (Number(props.confirmFault) !== ConfirmFaultEnum.ACCURATE) {
     customerFaultDesc.value = '本次进店车辆无故障'
   }
   currentFault.value = '0'
@@ -264,7 +265,7 @@ const onConfirmFaultChange = async() => {
   clearingFault.value = true
 
   // confirmFault===1（已确认为"准确"）保留原客户描述，否则用默认文案
-  const newCustomerContent = Number(props.confirmFault) === 1
+  const newCustomerContent = Number(props.confirmFault) === ConfirmFaultEnum.ACCURATE
     ? prevCustomerFaultDesc
     : '本次进店车辆无故障'
 

@@ -347,13 +347,13 @@
       </div>
     </div>
     <!-- 底部审核按钮 (仅审批中状态且非善意保修时显示) -->
-    <div v-if="detail.status === AUDIT_STATUS.IN_PROGRESS && detail.isGoodWarranty !== true && permissionStore.hasPermission('AISMC-app-preAuth-audit')" class="bottom-actions">
+    <div v-if="detail.status === AUDIT_STATUS.IN_PROGRESS && !detail.isGoodWarranty && permissionStore.hasPermission('AISMC-app-preAuth-audit')" class="bottom-actions">
       <div class="action-btn back" @click="router.back()">返回</div>
       <div class="action-btn audit" @click="handleAudit">审核</div>
     </div>
 
     <!-- 底部激活按钮 (已拒绝状态且非善意保修时显示) -->
-    <div v-if="detail.status === AUDIT_STATUS.REFUSED && detail.isGoodWarranty !== true && permissionStore.hasPermission('AISMC-app-preAuth-activate')" class="bottom-actions">
+    <div v-if="detail.status === AUDIT_STATUS.REFUSED && !detail.isGoodWarranty && permissionStore.hasPermission('AISMC-app-preAuth-activate')" class="bottom-actions">
       <div class="action-btn back" @click="router.back()">返回</div>
       <div class="action-btn audit" @click="handleAudit">激活</div>
     </div>
@@ -368,7 +368,7 @@
     </div>
 
     <!-- 底部撤回按钮 (审批通过状态显示，复用审核权限点) -->
-    <div v-if="detail.status === AUDIT_STATUS.APPROVED && detail.isGoodWarranty !== true  && permissionStore.hasPermission('AISMC-app-preAuth-revoke')" class="bottom-actions">
+    <div v-if="detail.status === AUDIT_STATUS.APPROVED && !detail.isGoodWarranty  && permissionStore.hasPermission('AISMC-app-preAuth-revoke')" class="bottom-actions">
       <div class="action-btn back" @click="router.back()">返回</div>
       <div class="action-btn audit" @click="handleWithdraw">撤回</div>
     </div>
