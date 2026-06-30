@@ -84,7 +84,7 @@
           color="var(--leap-color-primary)"
           round
           block
-          :disabled="!canSubmit"
+          :disabled="!canSubmit || submitting"
           @click="handleSubmit"
         >
           确定派工
@@ -161,6 +161,9 @@ const technicians = ref([])
 const selectedStation = ref(null)
 const selectedTeam = ref(null)
 const selectedTechnician = ref(null)
+
+// 提交中标志（防重复提交）
+const submitting = ref(false)
 
 // 加载工位和班组
 const loadOptions = async() => {
@@ -290,6 +293,8 @@ const buildDispatchBase = () => {
 // 提交派工
 const handleSubmit = async() => {
   if (!canSubmit.value) return
+  if (submitting.value) return
+  submitting.value = true
 
   try {
     let dispatchItems = []
@@ -320,6 +325,8 @@ const handleSubmit = async() => {
     }
   } catch {
     showToast('派工失败')
+  } finally {
+    submitting.value = false
   }
 }
 </script>
