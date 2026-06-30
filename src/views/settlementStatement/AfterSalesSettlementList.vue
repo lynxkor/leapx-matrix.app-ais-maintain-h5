@@ -68,6 +68,10 @@
           <div class="info-title">结算信息</div>
           <div class="info-rows">
             <div class="info-row">
+              <span class="row-label">结算单号</span>
+              <span class="row-value">{{ detailData.code }}</span>
+            </div>
+            <div class="info-row">
               <span class="row-label">总金额</span>
               <span class="row-value">¥{{ formatPrice(detailData.totalAmount) }}</span>
             </div>
