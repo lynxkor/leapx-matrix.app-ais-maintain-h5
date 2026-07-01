@@ -125,7 +125,7 @@
             <template #btn-content>
               <div class="action-btns">
                 <div
-                  v-if="showCancelBtn(item) && permissionStore.hasPermission('AISMC-app-serviceStatement-cancel')"
+                  v-if="showCancelBtn(item) && permissionStore.hasPermission('AISMC-app-serviceProxy-cancel')"
                   class="btn-pill btn-outline"
                   @click.stop="handleCancel(item)"
                 >
