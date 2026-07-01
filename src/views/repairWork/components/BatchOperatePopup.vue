@@ -54,7 +54,7 @@
                   }}<template v-if="workOrder.vehProfileVin"> · {{ workOrder.vehProfileVin }}</template>
                 </div>
               </div>
-              <div class="void-btn" @click="handleVoid">
+              <div class="void-btn" @click="handleVoid" v-if="permissionStore.hasPermission('AISMC-app-serviceProxy-cancel')">
                 <span>作废</span>
               </div>
             </div>
