@@ -550,11 +550,13 @@ const bottomActionConfig = computed(() => {
         }
         : null
     }
-    return {
-      type: 'button',
-      text: '提交结算',
-      action: 'submitSettlement'
-    }
+    return permissionStore.hasPermission('AISMC-app-serviceStatement-submitSettlementAndSign')
+      ? {
+        type: 'button',
+        text: '提交结算',
+        action: 'submitSettlement'
+      }
+      : null
   }
 
   // 2. isCheck === true：已提交结算，判断签字状态
@@ -580,17 +582,21 @@ const bottomActionConfig = computed(() => {
     // 已签字：根据剩余金额显示收款按钮
     if (signStatus.value === 'signed') {
       if (remainingAmount.value > 0) {
-        return {
+        return permissionStore.hasPermission('AISMC-app-serviceStatement-addReceiptRecord')
+          ? {
+            type: 'button',
+            text: '添加收款',
+            action: 'addPayment'
+          }
+          : null
+      }
+      return permissionStore.hasPermission('AISMC-app-serviceStatement-receiptCompletion')
+        ? {
           type: 'button',
-          text: '添加收款',
-          action: 'addPayment'
+          text: '确认收款',
+          action: 'confirmPayment'
         }
-      }
-      return {
-        type: 'button',
-        text: '确认收款',
-        action: 'confirmPayment'
-      }
+        : null
     }
   }
 

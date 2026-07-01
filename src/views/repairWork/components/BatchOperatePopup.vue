@@ -132,7 +132,7 @@
           <div class="action-buttons">
             <!-- 待派工: 派工 -->
             <div
-              v-if="activeTagIndex === 0"
+              v-if="activeTagIndex === 0 && permissionStore.hasPermission('AISMC-app-serviceProxy-dispatchWorkers')"
               class="action-btn primary-btn"
               :class="{ disabled: !hasSelectedItems }"
               @click="showBatchDispatch"
@@ -142,6 +142,7 @@
             <!-- 未作业: 作业开始 -->
             <template v-if="activeTagIndex === 1">
               <div
+                  v-if="permissionStore.hasPermission('AISMC-app-serviceProxy-deleteWorkers')"
                   class="action-btn"
                   :class="{ disabled: !hasSelectedItems }"
                   @click="showDeleteConfirm"
@@ -149,7 +150,7 @@
                   <span>删除派工</span>
               </div>
               <div
-                v-if="activeTagIndex === 1"
+                v-if="activeTagIndex === 1 && permissionStore.hasPermission('AISMC-app-serviceProxy-startWork')"
                 class="action-btn primary-btn"
                 :class="{ disabled: !hasSelectedItems }"
                 @click="showStartConfirm"
@@ -160,6 +161,7 @@
             <!-- 作业中: 作业结束 + 删除派工 -->
             <template v-if="activeTagIndex === 2">
               <div
+                v-if="permissionStore.hasPermission('AISMC-app-serviceProxy-deleteWorkers')"
                 class="action-btn"
                 :class="{ disabled: !hasSelectedItems }"
                 @click="showDeleteConfirm"
@@ -167,6 +169,7 @@
                 <span>删除派工</span>
               </div>
               <div
+                v-if="permissionStore.hasPermission('AISMC-app-serviceProxy-endWork')"
                 class="action-btn"
                 :class="{ disabled: !hasSelectedItems }"
                 @click="showEndConfirm"
@@ -176,7 +179,7 @@
             </template>
             <!-- 待质检: 质检 -->
              <div
-              v-if="activeTagIndex === 3 || activeTagIndex === 4"
+              v-if="(activeTagIndex === 3 || activeTagIndex === 4) && permissionStore.hasPermission('AISMC-app-serviceProxy-repaired')"
               class="action-btn"
               :class="{ disabled: !hasSelectedItems }"
               @click="showReworkConfirm"
@@ -184,7 +187,7 @@
               <span>返修</span>
             </div>
             <div
-              v-if="activeTagIndex === 3"
+              v-if="activeTagIndex === 3 && permissionStore.hasPermission('AISMC-app-serviceProxy-qualityInspection')"
               class="action-btn"
               :class="{ disabled: !hasSelectedItems }"
               @click="showQualityConfirm"
@@ -221,6 +224,7 @@ import { cancel, repairWorkRecord } from '../../../api/repairWork'
 import { formatDateTime } from '@/libs/utils'
 import { executeBatchOperation, filterByTag /* handleFinalCheckFlow*/ } from '../utils'
 import { useUserStore } from '@/stores/user'
+import { usePermissionStore } from '@/stores/permission'
 
 const props = defineProps({
   modelValue: {
@@ -244,6 +248,7 @@ const props = defineProps({
 const emit = defineEmits(['update:modelValue', 'refresh'])
 
 const userStore = useUserStore()
+const permissionStore = usePermissionStore()
 const visible = ref(props.modelValue)
 const showCancelPopup = ref(false)
 const showDispatchPopup = ref(false)
