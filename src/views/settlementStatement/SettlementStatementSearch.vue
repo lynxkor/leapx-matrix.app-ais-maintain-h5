@@ -125,7 +125,7 @@
             <template #btn-content>
               <div class="action-btns">
                 <div
-                  v-if="showCancelBtn(item)"
+                  v-if="showCancelBtn(item) && permissionStore.hasPermission('AISMC-app-serviceStatement-cancel')"
                   class="btn-pill btn-outline"
                   @click.stop="handleCancel(item)"
                 >
@@ -133,7 +133,7 @@
                 </div>
                 <div class="btn-pill btn-outline" @click.stop="handleContact(item)">联系送修人</div>
                 <div
-                  v-if="currentTab === 'pending' && item.isCreateStatementInfo === 0"
+                  v-if="currentTab === 'pending' && item.isCreateStatementInfo === 0 && permissionStore.hasPermission('AISMC-app-serviceStatement-submitSettlementAndSign')"
                   class="btn-pill btn-primary"
                   @click.stop="handleSettle(item)"
                 >
@@ -267,9 +267,11 @@ import { callPhone } from '@/libs/utils/nativeFn'
 import { copyText } from '@/libs/utils'
 import copyIcon from '@/libs/assets/image/copy_icon.svg'
 import { usePageSafeArea } from '@/utils/safeArea'
+import { usePermissionStore } from '@/stores/permission'
 
 const router = useRouter()
 const route = useRoute()
+const permissionStore = usePermissionStore()
 
 usePageSafeArea()
 

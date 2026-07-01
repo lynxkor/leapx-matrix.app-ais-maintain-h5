@@ -538,11 +538,11 @@
 
     <!-- 添加零件浮动栏 -->
     <div v-if="!isSettled && activeTab === 'parts'" class="add-parts-bar">
-      <div class="add-btn" @click="onAddParts">
+      <div v-if="permissionStore.hasPermission('AISMC-app-serviceProxy-repairItem-save')" class="add-btn" @click="onAddParts">
         <van-icon name="plus" />
         <span>添加项目/零件</span>
       </div>
-      <div class="add-btn" @click="onAddPackage">
+      <div v-if="permissionStore.hasPermission('AISMC-app-serviceProxy-repairItem-save')" class="add-btn" @click="onAddPackage">
         <van-icon name="plus" />
         <span>添加套餐及其他</span>
       </div>
@@ -552,14 +552,14 @@
     <div class="bottom-bar">
       <span v-if="!isSettled && activeTab === 'inspection'" class="more-btn" @click="onMore">更多</span>
       <template v-if="activeTab === 'inspection'">
-        <span class="save-btn" @click="onInspectionSave">保存</span>
+        <span v-if="permissionStore.hasPermission('AISMC-app-serviceProxy-addOrUpdate')" class="save-btn" @click="onInspectionSave">保存</span>
         <span v-if="!isSettled && !detail.previewingFinishAt && permissionStore.hasPermission('AISMC-app-serviceProxy-precheck')" class="complete-btn" @click="onComplete"
           >预检确认</span
         >
       </template>
       <template v-else-if="activeTab === 'parts'">
         <span
-          v-if="!isSettled"
+          v-if="!isSettled && permissionStore.hasPermission('AISMC-app-serviceProxy-repairItem-save')"
           class="save-btn"
           @click="onPartsSave"
           >保存</span
@@ -567,7 +567,7 @@
       </template>
       <template v-else-if="activeTab === 'signature'">
         <span
-          v-if="Number(detail.orderStatus) !== RepairOrderStatusEnum.DELIVERED && Number(detail.orderStatus) !== RepairOrderStatusEnum.CANCEL"
+          v-if="Number(detail.orderStatus) !== RepairOrderStatusEnum.DELIVERED && Number(detail.orderStatus) !== RepairOrderStatusEnum.CANCEL && permissionStore.hasPermission('AISMC-app-serviceProxy-addOrUpdate')"
           class="save-btn"
           @click="onSaveDeliveryTime"
           >保存</span
