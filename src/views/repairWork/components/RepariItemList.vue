@@ -36,7 +36,7 @@
             <div class="item-actions">
               <!-- 派工tab：显示派工操作 -->
               <template
-                v-if="item.status === WorkRecordStatusEnum.NOT_STARTED && item.isDispatch !== 1"
+                v-if="item.status === WorkRecordStatusEnum.NOT_STARTED && item.isDispatch !== 1 && permissionStore.hasPermission('AISMC-app-serviceProxy-dispatchWorkers')"
               >
                 <span class="action-text dispatch" @click="handleAction('dispatch', item)"
                   >派工</span
@@ -45,27 +45,27 @@
 
               <!-- 施工tab：删除派工 + 作业开始/结束 + 质检 -->
               <span
-                v-if="item.isDispatch === 1 && item.status !== WorkRecordStatusEnum.COMPLETED"
+                v-if="item.isDispatch === 1 && item.status !== WorkRecordStatusEnum.COMPLETED && permissionStore.hasPermission('AISMC-app-serviceProxy-deleteWorkers')"
                 class="action-text delete"
                 @click="handleAction('delete', item)"
                 >删除派工</span
               >
               <span
-                v-if="item.status === WorkRecordStatusEnum.IN_PROGRESS"
+                v-if="item.status === WorkRecordStatusEnum.IN_PROGRESS && permissionStore.hasPermission('AISMC-app-serviceProxy-endWork')"
                 class="action-text start"
                 @click="handleAction('end', item)"
                 >作业结束</span
               >
               <span
-                v-if="item.status === WorkRecordStatusEnum.NOT_STARTED && item.isDispatch === 1"
+                v-if="item.status === WorkRecordStatusEnum.NOT_STARTED && item.isDispatch === 1 && permissionStore.hasPermission('AISMC-app-serviceProxy-startWork')"
                 class="action-text start"
                 @click="handleAction('start', item)"
                 >作业开始</span
               >
 
               <!-- 终检tab：返修 + 终检 -->
-              <span v-if="item.status === WorkRecordStatusEnum.COMPLETED" class="action-text rework" @click="handleAction('rework', item)">返修</span>
-              <span v-if="item.status === WorkRecordStatusEnum.COMPLETED && item.qualityCheckStatus !== 30" class="action-text rework" @click="handleAction('quality', item)">质检</span>
+              <span v-if="item.status === WorkRecordStatusEnum.COMPLETED && permissionStore.hasPermission('AISMC-app-serviceProxy-repaired')" class="action-text rework" @click="handleAction('rework', item)">返修</span>
+              <span v-if="item.status === WorkRecordStatusEnum.COMPLETED && item.qualityCheckStatus !== 30 && permissionStore.hasPermission('AISMC-app-serviceProxy-qualityInspection')" class="action-text rework" @click="handleAction('quality', item)">质检</span>
               <!-- <span v-if="item.status === WorkRecordStatusEnum.COMPLETED" class="action-text final-check" @click="handleAction('finalCheck', item)">终检</span> -->
             </div>
           </div>
@@ -90,6 +90,9 @@ import { ref, computed, watch } from 'vue'
 import DispatchWorkPopup from './DispatchWorkPopup.vue'
 import { WorkRecordStatusEnum } from '../constant'
 import { executeSingleItemOperation, filterByTag } from '../utils'
+import { usePermissionStore } from '@/stores/permission'
+
+const permissionStore = usePermissionStore()
 
 const VisibleItemLength = 10
 
