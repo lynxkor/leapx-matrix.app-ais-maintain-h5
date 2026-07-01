@@ -968,6 +968,7 @@ onMounted(async() => {
       const reservationRes = await getReservationList(route.query.appointId)
       if (reservationRes.code === 200 && reservationRes.data?.vin) {
         detail.appointmentType = reservationRes?.data?.appointmentSource || 0
+        detail.businessType = reservationRes?.data?.mcsBusinesstype || 10
         const vehicleRes = await getVehicleInfo({ searchVin: reservationRes.data.vin })
         if (vehicleRes.code === 200 && vehicleRes.data?.length > 0) {
           sessionStorage.setItem('vehicleInfo', JSON.stringify(vehicleRes.data[0]))
