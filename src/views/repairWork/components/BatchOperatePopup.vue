@@ -63,7 +63,7 @@
           <!-- 维修项目标题 -->
           <div class="repair-title-row">
             <span class="repair-title">维修项目</span>
-            <div class="add-repair" @click="handleAddRepair">
+            <div class="add-repair" @click="handleAddRepair" v-if="permissionStore.hasPermission('AISMC-app-serviceProxy-repairItem-save')">
               <span class="add-text">添加项目/零件</span>
               <van-icon name="arrow" class="arrow-icon" />
             </div>

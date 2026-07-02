@@ -1,6 +1,6 @@
 <template>
   <div class="repair-item-card">
-    <div v-if="deletable && !disabled" class="card-delete" @click="$emit('delete')">
+    <div v-if="deletable && !disabled && permissionStore.hasPermission('AISMC-app-serviceProxy-repairItem-save')" class="card-delete" @click="$emit('delete')">
       <div class="delete-circle">
         <img :src="icon_delete" />
       </div>
@@ -180,6 +180,7 @@ import { showToast } from 'vant'
 import icon_delete from '@/assets/images/icon_delete.svg'
 import icon_edit from '@/assets/images/icon_edit.svg'
 import AisPopup from '@/libs/components/AisPopup.vue'
+import { usePermissionStore } from '@/stores/permission'
 
 const props = defineProps({
   item: {
@@ -217,6 +218,7 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['delete', 'update-item', 'replace'])
+const permissionStore = usePermissionStore()
 
 // 名称编辑
 const showNameEditPopup = ref(false)
