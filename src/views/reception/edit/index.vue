@@ -1899,6 +1899,8 @@ const showConfirmAndSignBtn = computed(() => {
   const hasFaultConflict =
     Number(detail.currentFault) === CurrentFaultEnum.NONE &&
     Number(detail.confirmFault) === ConfirmFaultEnum.INACCURATE
+
+  console.log('showConfirmAndSignBtn', isCreatingAndUnsigned, hasFaultConflict)
   return isCreatingAndUnsigned || hasFaultConflict
 })
 
@@ -2055,10 +2057,10 @@ const onInspectionSave = async(type) => {
     payType: detail.payType,
     warrantyCompany: detail.warrantyCompany,
     signChannel: signatureData.signChannel === '纸质单据' || Number(detail.signChannel) === SignChannelEnum.PAPER ? String(SignChannelEnum.PAPER) : '',
-    signCompletedOn: detail.signCompletedOn,
-    signGeneratedOn: detail.signGeneratedOn,
-    signStatus: detail.signStatus,
-    signUrlExpiredOn: detail.signUrlExpiredOn,
+    // signCompletedOn: detail.signCompletedOn,
+    // signGeneratedOn: detail.signGeneratedOn,
+    // signStatus: detail.signStatus,
+    // signUrlExpiredOn: detail.signUrlExpiredOn,
     appointmentType: detail.appointmentType,
     preAuthType: detail.preAuthType,
     isLockLive: detail.isLockLive,
