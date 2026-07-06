@@ -1900,7 +1900,6 @@ const showConfirmAndSignBtn = computed(() => {
     Number(detail.currentFault) === CurrentFaultEnum.NONE &&
     Number(detail.confirmFault) === ConfirmFaultEnum.INACCURATE
 
-  console.log('showConfirmAndSignBtn', isCreatingAndUnsigned, hasFaultConflict)
   return isCreatingAndUnsigned || hasFaultConflict
 })
 
