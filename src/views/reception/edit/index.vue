@@ -1447,7 +1447,12 @@ const fetchDetail = async(cb) => {
       }))
 
       // 获取附件列表并分类回显
-      const fileRes = await getFileList({ businessId: route.query.id, pageSize: 100 })
+      const fileRes = await getFileList({
+        businessId: route.query.id,
+        sortColumns: [
+          { 'column': 'id', 'sort': 'asc' }
+        ]
+      })
       if (fileRes.code === 200) {
         const fileList = fileRes.data || []
         // 清空列表

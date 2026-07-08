@@ -626,7 +626,12 @@ const fetchDetail = async() => {
   console.log('获取详情:', id)
 
   // 获取附件列表并分类回显
-  getFileList({ businessId: id, pageSize: 100 }).then((fileRes) => {
+  getFileList({
+    businessId: id,
+    sortColumns: [
+      { 'column': 'id', 'sort': 'asc' }
+    ]
+  }).then((fileRes) => {
     if (fileRes.code === 200) {
       const fileList = fileRes.data || []
       // 清空列表
