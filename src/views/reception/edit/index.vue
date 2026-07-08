@@ -749,7 +749,7 @@
             <div class="info-content">{{ item.content || '暂无提醒信息' }}</div>
           </template>
           <!-- 车辆标识 -->
-          <template v-else-if="item.type === '5'">
+          <template v-else-if="item.type === RemindInfoTypeEnum.VEHICLE_FLAG">
             <div class="info-title">{{ item.typeLabel }}</div>
             <div class="info-content"><span style="white-space: nowrap">该车辆为</span><span v-for="(tag, index) in item.content.split(',')" :key="index" style="white-space: nowrap">【{{ tag }}】</span>，请注意接待</div>
           </template>
@@ -1447,7 +1447,12 @@ const fetchDetail = async(cb) => {
       }))
 
       // 获取附件列表并分类回显
-      const fileRes = await getFileList({ businessId: route.query.id, pageSize: 100 })
+      const fileRes = await getFileList({
+        businessId: route.query.id,
+        sortColumns: [
+          { 'column': 'id', 'sort': 'ASC' }
+        ]
+      })
       if (fileRes.code === 200) {
         const fileList = fileRes.data || []
         // 清空列表

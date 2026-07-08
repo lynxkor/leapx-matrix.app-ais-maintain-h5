@@ -761,7 +761,13 @@ const handleSignClick = async() => {
       return
     }
     try {
-      const res = await getFileList({ businessId: currentStatementId, attachType: '制单签字' })
+      const res = await getFileList({
+        businessId: currentStatementId,
+        attachType: '制单签字',
+        sortColumns: [
+          { 'column': 'id', 'sort': 'ASC' }
+        ]
+      })
       if (res.code === 200 && res.data && res.data.length > 0) {
         const images = res.data.map(item => item.fileUrl || item.authFileUrl || item.url)
         showImagePreview({
