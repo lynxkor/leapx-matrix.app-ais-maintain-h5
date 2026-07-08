@@ -1164,7 +1164,7 @@ const onConfirmService = () => {
     checkoutTypeName: activityResp.checkoutTypeName || '',
     warrantyTypeId: activityResp.repairItemTypeId,
     warrantyTypeName: activityResp.repairItemTypeName,
-    workHour: item.workHour || 1,
+    workHour: item.workHour || item.quantity || 1,
     price: item.amount,
     packageType: String(activityResp.activityType) === '4' ? '60' : '50',
     packageId: selectedService.activityId + '#' + selectedService.id,

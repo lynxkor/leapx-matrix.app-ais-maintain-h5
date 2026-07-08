@@ -328,7 +328,9 @@ const beforeStepperChange = (val) => {
   const str = String(val ?? '')
   if (str.includes('.')) {
     const [, decPart = ''] = str.split('.')
-    if (decPart.length > 4) {
+    // 保留2位小数
+    const number = 2
+    if (decPart.length > number) {
       return false
     }
   }

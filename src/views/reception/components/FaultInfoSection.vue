@@ -139,6 +139,7 @@
       :show-cancel="true"
       cancel-text="取消"
       @cancel="onCancelFaultConfirm"
+      @close="onCancelFaultConfirm"
     >
       <div class="fault-confirm-content">
         <div class="confirm-text">
@@ -153,7 +154,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, nextTick } from 'vue'
 import { showToast, showConfirmDialog } from 'vant'
 import AisPopup from '@/libs/components/AisPopup.vue'
 import { fetchFaultModuleList as _fetchFaultModuleList } from '@/utils/receptionCommon'
@@ -191,6 +192,22 @@ const faultModuleList = ref([])
 
 // 故障确认弹框
 const showFaultConfirm = ref(false)
+// 弹框打开时的状态快照（取消 / 点击空白处关闭时还原）
+const faultConfirmSnapshot = ref({ currentFault: '1', customerFaultDesc: '', faultModules: [] })
+// 标记弹框是否由"确定"触发关闭：避免 @close 在确定后误执行还原逻辑
+let confirmedFaultClose = false
+// 程序化写入 currentFault 会被 van-radio-group 的 watch 转成 @change，
+// 进而触发 onHasFaultChange 的副作用（清空描述 / 重开弹窗 / 重新清空）。
+// 该标志在程序化变更期间临时抑制其副作用，nextTick 后自动恢复。
+let suppressFaultChange = false
+const withFaultChangeSuppressed = (fn) => {
+  suppressFaultChange = true
+  fn()
+  // radio-group 的 watch（flush:'pre'）在本轮 flush 内触发，nextTick 之后才复位
+  nextTick(() => {
+    suppressFaultChange = false
+  })
+}
 
 // 故障模块展开状态
 const showAllModules = ref(false)
@@ -213,8 +230,8 @@ const customerFaultDescDisabled = computed(() => {
 
 // ========== 是否存在故障 切换处理 ==========
 const onHasFaultChange = (value) => {
-  // 数据加载中导致的改变，不弹窗（程序化改 v-model 不会触发 @change，无需额外标志）
-  if (props.loading) return
+  // 数据加载中 / 程序化还原写入导致的 change，忽略其副作用
+  if (props.loading || suppressFaultChange) return
   if (Number(value) === 0) {
     // create 模式：只有已保存（serviceProxyId 存在）且有故障数据时才弹确认
     // edit 模式：只要存在故障数据就弹确认
@@ -222,6 +239,12 @@ const onHasFaultChange = (value) => {
     // const needConfirm = props.mode === 'create' ? !!props.serviceProxyId && hasData : hasData
     const needConfirm = props.mode !== 'create'
     if (needConfirm) {
+      // 弹窗仅在"是→否"时出现，故 currentFault 原值必为 '1'；其余字段拍快照供取消时还原
+      faultConfirmSnapshot.value = {
+        currentFault: '1',
+        customerFaultDesc: customerFaultDesc.value,
+        faultModules: [...faultModules.value]
+      }
       showFaultConfirm.value = true
     } else {
       currentFault.value = '0'
@@ -238,22 +261,30 @@ const onHasFaultChange = (value) => {
 }
 
 const onCancelFaultConfirm = () => {
+  // 关闭来自"确定"：仅复位标志，还原逻辑由 onConfirmFaultChange 按接口结果处理
+  if (confirmedFaultClose) {
+    confirmedFaultClose = false
+    return
+  }
   showFaultConfirm.value = false
-  currentFault.value = '1'
+  // 还原弹框打开前的状态：单选 / 客户故障描述 / 故障模块
+  // 程序化写 currentFault 会触发 radio-group 的 @change，需抑制以免再次清空描述
+  withFaultChangeSuppressed(() => {
+    currentFault.value = faultConfirmSnapshot.value.currentFault
+    customerFaultDesc.value = faultConfirmSnapshot.value.customerFaultDesc
+    faultModules.value = faultConfirmSnapshot.value.faultModules
+  })
 }
 
 const onConfirmFaultChange = async() => {
+  // 标记本次关闭来自"确定"，防止随后的 @close 误触发还原
+  confirmedFaultClose = true
   // 捕获还原快照（API 失败时回滚）
   const prevCustomerFaultDesc = customerFaultDesc.value
   const prevFaultModules = [...faultModules.value]
 
-  // 乐观更新本地状态
+  // 关闭弹框（会触发 @close，已被 confirmedFaultClose 标记拦截）
   showFaultConfirm.value = false
-  faultModules.value = []
-  if (Number(props.confirmFault) !== ConfirmFaultEnum.ACCURATE) {
-    customerFaultDesc.value = '本次进店车辆无故障'
-  }
-  currentFault.value = '0'
 
   // 未保存（无 serviceProxyId）：仅本地清空
   if (!props.serviceProxyId) {
@@ -276,6 +307,12 @@ const onConfirmFaultChange = async() => {
       customerContent: newCustomerContent
     })
     if (res.code === 200) {
+      // 程序化写 currentFault='0' 会触发 @change 重开确认弹窗，需抑制
+      withFaultChangeSuppressed(() => {
+        faultModules.value = []
+        customerFaultDesc.value = newCustomerContent
+        currentFault.value = '0'
+      })
       showToast('保存成功')
     } else {
       rollbackFaultState(prevCustomerFaultDesc, prevFaultModules)
@@ -289,11 +326,13 @@ const onConfirmFaultChange = async() => {
   }
 }
 
-// 回滚本地状态：还原描述/模块/单选项（程序化写入不触发 @change，无需额外抑制）
+// 回滚本地状态：还原描述/模块/单选项（程序化写 currentFault 会触发 @change，需抑制）
 const rollbackFaultState = (prevDesc, prevModules) => {
-  customerFaultDesc.value = prevDesc
-  faultModules.value = prevModules
-  currentFault.value = '1'
+  withFaultChangeSuppressed(() => {
+    customerFaultDesc.value = prevDesc
+    faultModules.value = prevModules
+    currentFault.value = '1'
+  })
 }
 
 // ========== 故障模块弹框 ==========
