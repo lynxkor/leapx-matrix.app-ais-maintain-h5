@@ -23,7 +23,6 @@
     <div class="common-scroll-content" ref="scrollEle">
       <RefreshList
         :requestData="requestData"
-        :needRefresh="needRefresh"
         :hasNoData="list.length === 0"
         :showResetButton="false"
         @setData="onSetData"
@@ -48,7 +47,7 @@
     </div>
 
     <!-- 全屏Loading -->
-    <van-overlay :show="loading && isExplicitRefresh">
+    <van-overlay :show="loading">
       <div class="loading-wrapper">
         <van-loading size="24px" vertical color="#009100">请稍候...</van-loading>
       </div>
@@ -57,7 +56,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { showToast } from 'vant'
 import FilterHeader from '@/libs/components/FilterHeader.vue'
@@ -76,9 +75,9 @@ const globalStore = useGlobalStore()
 const permissionStore = usePermissionStore()
 usePageSafeArea({ bodyClass: 'ais-page-nav-safe-area' })
 globalStore.getEnumData()
-const needRefresh = ref(false)
 const loading = ref(false)
-const isExplicitRefresh = ref(false) // 是否显式刷新（搜索/Tab切换）
+// 记录上一次实际加载列表时所用的查询条件（关键字+筛选+Tab），用于判断 RefreshList 是否会去重跳过
+const lastQueryKey = ref('')
 
 // Tab状态
 const activeTab = ref('today')
@@ -174,47 +173,55 @@ const requestData = computed(() => {
   }
 })
 
+// 当前查询条件快照（关键字+筛选+Tab）。不含 requestData 里随时间变化的日期字符串，
+// 仅用于判断两次查询的条件是否一致
+const queryKey = () => JSON.stringify({ ...searchParams.value, tab: activeTab.value })
+
+// 触发查询：RefreshList 内部 watch 会在 requestData 变化时发请求，完成后通过 setData 关闭 loading。
+// 若条件与上次实际加载一致，watch 会去重跳过（不发请求、不回调），此处兜底关闭 loading，避免遮罩卡死。
+const triggerRefresh = () => {
+  loading.value = true
+  nextTick(() => {
+    if (queryKey() === lastQueryKey.value) {
+      loading.value = false
+    }
+  })
+}
+
 // 搜索事件
 const onFilterSearch = (params) => {
-  searchParams.value = params
-  loading.value = true
-  isExplicitRefresh.value = true
-  needRefresh.value = true
+  // 叠加而非覆盖：保留关键字，同时套用筛选条件
+  searchParams.value = { ...searchParams.value, ...params }
+  triggerRefresh()
 }
 const onSearch = (e) => {
   searchParams.value = {
     ...searchParams.value,
     appSearchKeyWord: e.searchValue
   }
-  loading.value = true
-  isExplicitRefresh.value = true
-  needRefresh.value = true
+  triggerRefresh()
 }
 
 // Tab切换
 const onTabChange = (e) => {
   activeTab.value = e
-  loading.value = true
-  isExplicitRefresh.value = true
-  needRefresh.value = true
+  triggerRefresh()
 }
 
 // 设置列表数据
 const onSetData = (data) => {
   if (data.isRefresh) {
     list.value = data.list
+    lastQueryKey.value = queryKey()
   } else {
     list.value.push(...data.list)
   }
-  needRefresh.value = false
   loading.value = false
-  isExplicitRefresh.value = false
 }
 
 // 列表请求错误处理
 const onListError = (msg) => {
   loading.value = false
-  isExplicitRefresh.value = false
   showToast(msg)
 }
 
