@@ -749,7 +749,7 @@
             <div class="info-content">{{ item.content || '暂无提醒信息' }}</div>
           </template>
           <!-- 车辆标识 -->
-          <template v-else-if="item.type === '5'">
+          <template v-else-if="item.type === RemindInfoTypeEnum.VEHICLE_FLAG">
             <div class="info-title">{{ item.typeLabel }}</div>
             <div class="info-content"><span style="white-space: nowrap">该车辆为</span><span v-for="(tag, index) in item.content.split(',')" :key="index" style="white-space: nowrap">【{{ tag }}】</span>，请注意接待</div>
           </template>

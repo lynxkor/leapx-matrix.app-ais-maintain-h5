@@ -936,6 +936,7 @@ const onSave = async() => {
         serviceProxyId.value = res.data
         detail.id = res.data
       }
+      sessionStorage.setItem('receptionPartsSaved', '1')
       router.replace({
         path: '/reception/work-order/edit',
         query: {

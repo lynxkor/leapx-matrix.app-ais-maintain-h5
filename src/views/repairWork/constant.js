@@ -83,7 +83,9 @@ export const RemindInfoTypeEnum = {
   /** 预授权提醒 */
   PRE_AUTH: '3',
   /** 差价提醒 */
-  PRICE_DIFFERENCE: '4'
+  PRICE_DIFFERENCE: '4',
+  /** 车辆标识 */
+  VEHICLE_FLAG: '5'
 }
 
 // 三包预警等级枚举
