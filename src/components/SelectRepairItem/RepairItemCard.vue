@@ -85,10 +85,12 @@
           v-if="!stepperDisabled && !disabled"
           :model-value="item.quantity"
           min="0"
+          max="9999"
           class="card-stepper"
-          input-width="32px"
+          input-width="48px"
           button-size="32px"
-          @change="(val) => emit('update-item', item, { quantity: val, workHour: val })"
+          :before-change="beforeStepperChange"
+          @change="onStepperChange"
         />
         <span v-else class="static-quantity">{{ item.quantity }}</span>
       </div>
@@ -317,6 +319,25 @@ const saveDiscountAmount = () => {
   }
   emit('update-item', props.item, { discountAmount: amount })
   editingDiscount.value = false
+}
+
+// 步进器拦截：小数位最多4位，超出则拒绝并自动回退（不补零，1.1 仍显示 1.1）
+// 用 before-change 而非 change：before-change 在 vant onInput 内同步执行，
+// 返回 false 会直接拒绝赋值并把输入框 DOM 重置为上一个合法值，不依赖响应式回写，实时可靠
+const beforeStepperChange = (val) => {
+  const str = String(val ?? '')
+  if (str.includes('.')) {
+    const [, decPart = ''] = str.split('.')
+    if (decPart.length > 4) {
+      return false
+    }
+  }
+  return true
+}
+
+// 步进器变化：同步数量与工时（走到这里的值已通过 before-change 校验）
+const onStepperChange = (val) => {
+  emit('update-item', props.item, { quantity: val, workHour: val })
 }
 
 // 取消名称编辑
