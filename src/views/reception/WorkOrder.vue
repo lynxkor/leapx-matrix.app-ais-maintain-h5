@@ -155,7 +155,6 @@ const requestData = computed(() => {
     ],
     ...searchParams.value
   }
-  console.log('data', data, activeTab.value)
   if (activeTab.value === 'today') {
     data.createTimeStart = formatDate(todayStart)
     data.createTimeEnd = formatDate(todayEnd)
