@@ -328,7 +328,9 @@ const beforeStepperChange = (val) => {
   const str = String(val ?? '')
   if (str.includes('.')) {
     const [, decPart = ''] = str.split('.')
-    if (decPart.length > 4) {
+    // 零件2位小数，项目4位小数
+    const number = props.item.partsId ? 2 : 4
+    if (decPart.length > number) {
       return false
     }
   }

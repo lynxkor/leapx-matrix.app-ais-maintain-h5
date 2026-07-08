@@ -7,7 +7,7 @@
         v-model="appSearchKeyWord"
         shape="round"
         :autofocus="true"
-        placeholder="输入VIN/车牌号/姓名"
+        placeholder="输入VIN/车牌号"
         @update:model-value="onInputChange"
         @search="onLocalSearch"
         class="page-search-input"
