@@ -761,7 +761,7 @@ const loadAttachmentList = async() => {
     const res = await getFileList({
       businessId: route.query.id,
       sortColumns: [
-        { 'column': 'id', 'sort': 'asc' }
+        { 'column': 'id', 'sort': 'ASC' }
       ]
     })
     if (res.code === 200 && res.data) {

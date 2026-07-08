@@ -629,7 +629,7 @@ const fetchDetail = async() => {
   getFileList({
     businessId: id,
     sortColumns: [
-      { 'column': 'id', 'sort': 'asc' }
+      { 'column': 'id', 'sort': 'ASC' }
     ]
   }).then((fileRes) => {
     if (fileRes.code === 200) {

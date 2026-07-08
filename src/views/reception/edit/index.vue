@@ -1450,7 +1450,7 @@ const fetchDetail = async(cb) => {
       const fileRes = await getFileList({
         businessId: route.query.id,
         sortColumns: [
-          { 'column': 'id', 'sort': 'asc' }
+          { 'column': 'id', 'sort': 'ASC' }
         ]
       })
       if (fileRes.code === 200) {

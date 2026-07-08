@@ -765,7 +765,7 @@ const handleSignClick = async() => {
         businessId: currentStatementId,
         attachType: '制单签字',
         sortColumns: [
-          { 'column': 'id', 'sort': 'asc' }
+          { 'column': 'id', 'sort': 'ASC' }
         ]
       })
       if (res.code === 200 && res.data && res.data.length > 0) {
