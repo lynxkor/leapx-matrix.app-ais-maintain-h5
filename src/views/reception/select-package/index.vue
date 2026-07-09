@@ -1064,6 +1064,10 @@ const onServiceClick = (item) => {
   //   showToast('已使用')
   //   return
   // }
+  if (item.activityUsed) {
+    showToast(`该活动已被${item.actualDealerName ? item.actualDealerName : ''}使用，您不可重复使用`)
+    return
+  }
   showLoadingToast('请稍候...')
   getSpecialActivityDetail({
     activityId: item.activityId,
@@ -1183,6 +1187,8 @@ const onConfirmService = () => {
     partsCode: part.partCode || part.oldPartCode || '', // 零件代码
     checkoutTypeId: activityResp.checkoutTypeId || '',
     checkoutTypeName: activityResp.checkoutTypeName || '',
+    warrantyTypeId: activityResp.repairItemTypeId,
+    warrantyTypeName: activityResp.repairItemTypeName,
     planPickNumber: part.quantity,
     quantity: part.quantity,
     discountAmount: part.discountAmount || 0,

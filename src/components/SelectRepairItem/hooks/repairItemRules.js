@@ -1,4 +1,4 @@
-import { CheckoutTypeEnum, UNIVERSAL_LABOR_HOUR_ITEM_ID, WorkRecordStatusEnum } from '@/views/repairWork/constant'
+import { CheckoutTypeEnum, UNIVERSAL_LABOR_HOUR_ITEM_ID, WorkRecordStatusEnum, PackageTypeEnum } from '@/views/repairWork/constant'
 
 /**
  * 判断结算类型是否为保修或合同
@@ -40,7 +40,7 @@ export const isQuantityEditable = (item) => {
  * @returns {boolean}
  */
 export const isDiscountEditable = (item) => {
-  return !checkoutTypeIncluded(item.checkoutTypeId)
+  return !checkoutTypeIncluded(item.checkoutTypeId) || String(item.packageType) === PackageTypeEnum.STORE
 }
 
 /**
