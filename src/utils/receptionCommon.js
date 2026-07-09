@@ -152,6 +152,46 @@ export function isUploadSilentFailure(res) {
 }
 
 /**
+ * 以服务端最新数据刷新当前 attachType 对应的文件列表
+ *
+ * 背景：uploadFileByUrl 返回的 id 是前端占位用的"假 id"，不能直接用于
+ *       deleteAttachmentConfig（删除会失败）。必须重新拉 getFileList 拿真实 id。
+ *
+ * @param {object} params
+ * @param {string} params.businessId 业务 id（施工单 id）。create 场景为 null 时跳过 refresh
+ * @param {string} params.attachType 当前上传的 attachType（"车内照片"/"车外照片"/"附件资料"）
+ * @param {Array} params.targetList 要刷新的目标数组（detail.interiorImages 等）
+ * @param {Function} params.getFileListApi getFileList 接口（从 '@/libs/api/fileConfig' 导入）
+ * @returns {Promise<boolean>} true=刷新成功；false=跳过或失败
+ */
+export async function refreshAttachmentList({ businessId, attachType, targetList, getFileListApi }) {
+  // create 场景下没有真实业务 id，跳过 refresh 保留前端拼装对象
+  if (!businessId) return false
+  try {
+    const res = await getFileListApi({
+      businessId,
+      sortColumns: [{ column: 'id', sort: 'ASC' }]
+    })
+    if (res.code !== 200) return false
+
+    const serverList = (res.data || []).filter((item) => item.attachType === attachType)
+    // 用服务端真实数据整体替换（含真实 id / fileUrl / authFileUrl）
+    targetList.splice(0, targetList.length, ...serverList.map((item) => ({
+      ...item,
+      url: item.fileUrl || item.url || '',
+      fileUrl: item.fileUrl || item.url || '',
+      authFileUrl: item.authFileUrl || item.fileUrl || item.url || '',
+      fileType: item.fileType || item.ext || getFileType(item, 'image/jpeg'),
+      status: 'done'
+    })))
+    return true
+  } catch (error) {
+    console.error('刷新附件列表失败:', error)
+    return false
+  }
+}
+
+/**
  * 根据上传类型获取目标文件列表
  */
 export function getTargetFileList(type, detail, signatureData) {

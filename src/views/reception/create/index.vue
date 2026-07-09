@@ -398,7 +398,8 @@ import {
   handleFileDelete as _handleFileDelete,
   applyRecentInspectionByVin,
   validateFileExtension,
-  isUploadSilentFailure
+  isUploadSilentFailure,
+  refreshAttachmentList
 } from '@/utils/receptionCommon'
 import { RepairOrderStatusEnum, BusinessTypeEnum, CustTypeEnum, CustTypeLabelMap } from '../constant'
 import PlateKeyboard from '@/libs/components/PlateKeyboard.vue'
@@ -1041,6 +1042,9 @@ onMounted(async() => {
     }
 
     // 遍历每个 URL 进行上传处理
+    // 本批次是否需要刷新：仅当至少有一张图真正上传成功 + serviceProxyId 有值时 refresh
+    let needRefresh = false
+
     for (const singleUrl of urlList) {
       // 保存当前上传类型，避免异步上传完成时类型已改变
       const uploadType = currentUploadType.value
@@ -1061,7 +1065,7 @@ onMounted(async() => {
         continue
       }
 
-      // 先添加临时预览
+      // 先添加临时预览（乐观 UI：让用户立刻看到上传中状态）
       const fileObj = {
         url: singleUrl,
         fileUrl: singleUrl,
@@ -1105,29 +1109,27 @@ onMounted(async() => {
             continue
           }
 
-          // 兼容两种返回格式：数组或对象
-          const uploadData = Array.isArray(res.data) ? res.data[0] || {} : res.data || {}
-
-          // 更新文件状态 - 使用保存的 uploadType
+          // 注意：uploadFileByUrl 返回的 id 是"前端占位用"的假 id，
+          // 不能直接用于 deleteAttachmentConfig（删除会失败）。
+          // 真实 id 必须等循环结束后统一 refreshAttachmentList 拿。
+          // 这里只更新"乐观"状态，让 UI 看到上传完成（真实数据会被 refresh 覆盖）
           const targetList = getTargetFileList(uploadType)
           if (targetList.length > 0) {
             const lastIndex = targetList.length - 1
-            const rawUrl = uploadData.url || uploadData.fileUrl || singleUrl
-            const currentBusinessId = serviceProxyId.value
+            const uploadData = Array.isArray(res.data) ? res.data[0] || {} : res.data || {}
             targetList[lastIndex] = {
               ...targetList[lastIndex],
               status: 'done',
               message: '',
-              id: currentBusinessId ? uploadData.id : null, // 有施工单id时取上传id，无施工单id时为null
-              uploadId: uploadData.id, // 保存上传成功后的id，用于fileId
-              businessId: currentBusinessId, // 取施工单id（如果有）
-              url: rawUrl,
-              fileUrl: rawUrl,
-              authFileUrl: uploadData.authFileUrl || rawUrl,
-              fileType: uploadData.fileType || uploadData.ext || getFileType({ url: rawUrl }, 'image/jpeg')
+              url: uploadData.fileUrl || uploadData.url || singleUrl,
+              fileUrl: uploadData.fileUrl || uploadData.url || singleUrl,
+              authFileUrl: uploadData.authFileUrl || uploadData.fileUrl || uploadData.url || singleUrl,
+              fileType: uploadData.fileType || uploadData.ext || getFileType({ url: singleUrl }, 'image/jpeg')
             }
           }
 
+          // 本张上传成功 → 标记循环结束后需要 refresh
+          needRefresh = true
           showToast('上传成功')
         } else {
           // 上传失败，移除临时文件 - 使用保存的 uploadType
@@ -1146,6 +1148,27 @@ onMounted(async() => {
         }
         showToast('上传出错')
       }
+    }
+
+    // 所有 url 处理完后，按 attachType 拉服务端真实数据覆盖当前列表：
+    // 1) uploadFileByUrl 返回的 id 是假的，必须靠 getFileList 拿真实 id 才能删除/保存
+    // 2) serviceProxyId 必须有值（保存前为 null 时跳过，保留前端拼装对象）
+    // 3) 仅当至少一张图真正上传成功时才 refresh
+    if (needRefresh && serviceProxyId.value) {
+      const lastUploadType = currentUploadType.value
+      const lastAttachTypeMap = {
+        interior: '车内照片',
+        exterior: '车外照片',
+        attachment: '附件资料'
+      }
+      const lastAttachType = lastAttachTypeMap[lastUploadType]
+      const lastTargetList = getTargetFileList(lastUploadType)
+      await refreshAttachmentList({
+        businessId: serviceProxyId.value,
+        attachType: lastAttachType,
+        targetList: lastTargetList,
+        getFileListApi: getFileList
+      })
     }
   }
 })
