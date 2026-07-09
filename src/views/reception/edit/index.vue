@@ -832,7 +832,9 @@ import {
   validatePreSaleWarranty,
   validateGoodWillWarranty,
   applyRecentInspectionByVin,
-  hasFaultRemindType
+  hasFaultRemindType,
+  validateFileExtension,
+  isUploadSilentFailure
 } from '@/utils/receptionCommon'
 import PlateKeyboard from '@/libs/components/PlateKeyboard.vue'
 import DateTimePicker from '@/libs/components/DateTimePicker.vue'
@@ -1795,6 +1797,20 @@ window.getScanResult = async(url) => {
       exterior: '车外照片',
       attachment: '附件资料'
     }
+    const attachType = attachTypeMap[uploadType]
+
+    // 格式校验（白名单）：native 返回 url 后、调上传接口之前拦截
+    // 未配置 acceptSuffix 时 parseAcceptSuffix 返回 null → validateFileExtension 直接放行
+    const attachCfg = getAttachConfig(attachType)
+    console.log('[format-check][edit] singleUrl:', singleUrl)
+    console.log('[format-check][edit] attachType:', attachType, 'config:', attachCfg)
+    const formatCheck = validateFileExtension(singleUrl, attachCfg)
+    console.log('[format-check][edit] result:', formatCheck)
+    if (!formatCheck.ok) {
+      showToast(`不支持的图片格式：${formatCheck.ext || '未知后缀'}，仅允许 ${formatCheck.allowed || '未配置'}`)
+      continue
+    }
+
     // 先添加临时预览
     const fileObj = {
       url: singleUrl,
@@ -1824,12 +1840,20 @@ window.getScanResult = async(url) => {
         fileUrl: singleUrl,
         businessId: detail.id,
         configCode: 'mcs_serviceproxy',
-        attachType: attachTypeMap[uploadType]
+        attachType
       }
 
       const res = await uploadFileByUrl([params])
 
       if (res.code === 200) {
+        // 兜底：HEIC 等不被支持格式 → res.code=200 但 data 字段全 null
+        if (isUploadSilentFailure(res)) {
+          const targetList = getTargetFileList(uploadType)
+          if (targetList.length > 0) targetList.pop()
+          showToast('上传失败：文件格式不被支持')
+          continue
+        }
+
         // 兼容两种返回格式：数组或对象
         const uploadData = Array.isArray(res.data) ? res.data[0] || {} : res.data || {}
 
