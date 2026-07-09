@@ -62,10 +62,11 @@
             <template v-if="editingDiscount">
               <input
                 ref="discountInputRef"
-                v-model="tempDiscountAmount"
+                :value="tempDiscountAmount"
                 class="discount-input"
-                type="number"
-                :min="0"
+                type="text"
+                inputmode="decimal"
+                @input="onDiscountInput"
                 @blur="saveDiscountAmount"
                 @keydown.enter="saveDiscountAmount"
               />
@@ -306,6 +307,13 @@ const startEditDiscount = () => {
   nextTick(() => {
     discountInputRef.value?.focus()
   })
+}
+
+// 优惠金额输入：仅数字、最多一个小数点、小数位最多2位
+const onDiscountInput = (e) => {
+  const val = (e.target.value.match(/^\d*\.?\d{0,2}/) || [''])[0]
+  tempDiscountAmount.value = val
+  e.target.value = val
 }
 
 // 保存优惠金额
