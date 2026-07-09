@@ -1183,6 +1183,8 @@ const onConfirmService = () => {
     partsCode: part.partCode || part.oldPartCode || '', // 零件代码
     checkoutTypeId: activityResp.checkoutTypeId || '',
     checkoutTypeName: activityResp.checkoutTypeName || '',
+    warrantyTypeId: activityResp.repairItemTypeId,
+    warrantyTypeName: activityResp.repairItemTypeName,
     planPickNumber: part.quantity,
     quantity: part.quantity,
     discountAmount: part.discountAmount || 0,
