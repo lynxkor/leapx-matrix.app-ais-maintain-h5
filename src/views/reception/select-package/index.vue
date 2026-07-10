@@ -319,7 +319,7 @@
         <div class="package-info">
           <div class="package-name">{{ selectedService.activityResponse.activityName }}</div>
         </div>
-        <!-- 维修项目列表 -->
+        <!-- 维修项目列表（含嵌套配件） -->
         <div v-if="selectedService.itemResponseList && selectedService.itemResponseList.length > 0">
           <div class="mall-title">项目零件</div>
           <div class="package-detail">
@@ -328,11 +328,17 @@
               :key="index"
               class="repair-card"
               :class="{ selected: item.selected }"
-              @click="onToggleItem(item)"
             >
-              <div class="repair-card-content">
+              <!-- 项目卡片主体（点击切换选中） -->
+              <div class="repair-card-content" @click="onToggleItem(item)">
                 <div class="checkbox-wrapper">
-                  <div :class="['checkbox', { checked: item.selected }]">
+                  <div
+                    :class="[
+                      'checkbox',
+                      { checked: item.selected },
+                      { disabled: Number(item.allowDelete) === 0 },
+                    ]"
+                  >
                     <van-icon v-if="item.selected" name="success" size="14" color="#fff" />
                   </div>
                 </div>
@@ -361,62 +367,72 @@
                   </span>
                 </div>
               </div>
-            </div>
-          </div>
-        </div>
-        <!-- 维修零件列表 -->
-        <div v-if="selectedService.partResponseList && selectedService.partResponseList.length > 0">
-          <div class="mall-title">维修零件</div>
-          <div v-show="partsExpanded" class="package-detail">
-            <div
-              v-for="(part, pIndex) in selectedService.partResponseList"
-              :key="pIndex"
-              class="repair-card"
-              :class="{ selected: part.selected, disabled: part.allowDelete == 0 }"
-              @click="onTogglePart(part)"
-            >
-              <div class="repair-card-content">
-                <div class="checkbox-wrapper">
-                  <div
-                    :class="[
-                      'checkbox',
-                      { checked: part.selected },
-                      { disabled: part.allowDelete == 0 },
-                    ]"
-                  >
-                    <van-icon v-if="part.selected" name="success" size="14" color="#fff" />
+
+              <!-- 嵌套配件列表（按 serviceActivityItemId 过滤） -->
+              <div v-if="expandedServiceItemIndex === index" class="parts-list">
+                <div
+                  v-for="(part, pIndex) in getPartsByItemId(item.id)"
+                  :key="pIndex"
+                  class="repair-card part-card"
+                  :class="{ selected: part.selected, disabled: Number(part.allowDelete) === 0 }"
+                  @click="onTogglePart(part)"
+                  style="margin-bottom: 8px;"
+                >
+                  <div class="repair-card-content">
+                    <div class="checkbox-wrapper">
+                      <div
+                        :class="[
+                          'checkbox',
+                          { checked: part.selected },
+                          { disabled: Number(part.allowDelete) === 0 },
+                        ]"
+                      >
+                        <van-icon v-if="part.selected" name="success" size="14" color="#fff" />
+                      </div>
+                    </div>
+                    <div class="repair-left">
+                      <div class="repair-name-row">
+                        <span class="repair-name">{{ part.oldPartName }}</span>
+                        <span class="repair-tag">{{ part.repairItemTypeName }}</span>
+                      </div>
+                      <div class="repair-code">{{ part.oldPartCode }}</div>
+                    </div>
+                    <div class="repair-right">
+                      <div class="repair-price">¥{{ part.unitPrice }}</div>
+                      <div class="repair-discount">优惠 ¥{{ part.discountAmount }}</div>
+                    </div>
+                  </div>
+                  <div class="repair-card-bottom">
+                    <div class="repair-info-row">
+                      <span class="info-item">
+                        <span class="info-label">数量</span>
+                        <span class="info-value">x{{ part.quantity }}</span>
+                      </span>
+                      <span class="info-item">
+                        <span class="info-label">是否允许删除:</span>
+                        <span class="info-value">{{ Number(part.allowDelete) === 1 ? '是' : '否' }}</span>
+                      </span>
+                    </div>
                   </div>
                 </div>
-                <div class="repair-left">
-                  <div class="repair-name-row">
-                    <span class="repair-name">{{ part.oldPartName }}</span>
-                    <span class="repair-tag">{{ part.repairItemTypeName }}</span>
-                  </div>
-                  <div class="repair-code">{{ part.oldPartCode }}</div>
-                  <!-- <div class="repair-category">{{ part.checkoutTypeName }}</div> -->
-                </div>
-                <div class="repair-right">
-                  <div class="repair-price">¥{{ part.unitPrice }}</div>
-                  <div class="repair-discount">优惠 ¥{{ part.discountAmount }}</div>
-                </div>
               </div>
-              <div class="repair-card-bottom">
-                <div class="repair-info-row">
-                  <span class="info-item">
-                    <span class="info-label">数量</span>
-                    <span class="info-value">x{{ part.quantity }}</span>
-                  </span>
-                  <span class="info-item">
-                    <span class="info-label">是否允许删除:</span>
-                    <span class="info-value">{{ part.allowDelete == 1 ? '是' : '否' }}</span>
-                  </span>
-                </div>
+
+              <!-- 展开/收起配件按钮 -->
+              <div
+                v-if="getPartsByItemId(item.id).length > 0"
+                class="expand-btn"
+                @click.stop="toggleServiceItemParts(index)"
+              >
+                <span class="expand-text">{{
+                  expandedServiceItemIndex === index ? '收起维修配件' : '查看维修配件'
+                }}</span>
+                <van-icon
+                  :name="expandedServiceItemIndex === index ? 'arrow-up' : 'arrow-down'"
+                  size="12"
+                  color="#009100"
+                />
               </div>
             </div>
-          </div>
-          <div class="expand-btn" @click="partsExpanded = !partsExpanded">
-            <span class="expand-text">{{ partsExpanded ? '收起' : '展开' }}维修配件</span>
-            <van-icon :name="partsExpanded ? 'arrow-up' : 'arrow-down'" size="14" color="#009100" />
           </div>
         </div>
       </template>
@@ -800,7 +816,20 @@ const activeRepairItem = ref([])
 
 // 配件展开状态
 const expandedPartsIndex = ref(-1)
-const partsExpanded = ref(true) // 维修零件默认展开
+// 服务活动详情 - 每个维修项目的配件展开状态（单展开模式，同一时间只展开一个）
+const expandedServiceItemIndex = ref(-1)
+
+// 根据 serviceActivityItemId 获取某个维修项目下的配件列表
+const getPartsByItemId = (itemId) => {
+  return (selectedService.partResponseList || []).filter(
+    (part) => part.serviceActivityItemId === itemId
+  )
+}
+
+// 切换某个维修项目下的配件展开/收起
+const toggleServiceItemParts = (index) => {
+  expandedServiceItemIndex.value = expandedServiceItemIndex.value === index ? -1 : index
+}
 
 // 商城订单零件展开状态
 const expandedMallPartsIndex = ref(-1)
@@ -1087,7 +1116,7 @@ const onServiceClick = (item) => {
       // 为每个项目和配件添加selected字段，默认false
       selectedService.itemResponseList = (data.itemResponseList || []).map((item) => ({
         ...item,
-        selected: false
+        selected: Number(item.allowDelete) === 0 || item.used || false
       }))
       selectedService.partResponseList = (data.partResponseList || []).map((part) => ({
         ...part,
@@ -1130,7 +1159,16 @@ const onConfirmPackage = () => {
 
 // 勾选/取消勾选项目
 const onToggleItem = (item) => {
+  // allowDelete == 0 时不可取消勾选（强制项目）
+  if (Number(item.allowDelete) === 0) return
   item.selected = !item.selected
+  // 勾选时自动展开配件列表，取消勾选时收起
+  if (item.selected) {
+    const idx = selectedService.itemResponseList.findIndex((i) => i.id === item.id)
+    if (idx !== -1) expandedServiceItemIndex.value = idx
+  } else {
+    expandedServiceItemIndex.value = -1
+  }
 }
 
 // 勾选/取消勾选配件
@@ -1138,6 +1176,15 @@ const onTogglePart = (part) => {
   // allowDelete == 0 时不可编辑
   if (Number(part.allowDelete) === 0) return
   part.selected = !part.selected
+  // 选中零件时，自动勾选其所属项目
+  if (part.selected) {
+    const parentItem = selectedService.itemResponseList.find(
+      (item) => item.id === part.serviceActivityItemId
+    )
+    if (parentItem) {
+      parentItem.selected = true
+    }
+  }
 }
 
 const setFaultCheckFlag = () => {
@@ -1152,9 +1199,16 @@ const onConfirmService = () => {
     showToast(`该活动已被${selectedService.actualDealerName ? selectedService.actualDealerName : ''}使用，您不可重复使用`)
     return
   }
-  // 只发送选中的项目和配件
+  // 只发送选中的项目
   const selectedItems = selectedService.itemResponseList.filter((item) => item.selected)
-  const selectedParts = selectedService.partResponseList.filter((part) => part.selected)
+
+  // 获取所有选中项目的ID集合
+  const checkedItemIds = selectedItems.map((item) => item.id)
+
+  // 只提交属于选中项目、且已被勾选的配件（默认勾选 + 手动勾选）
+  const selectedParts = selectedService.partResponseList.filter(
+    (part) => checkedItemIds.includes(part.serviceActivityItemId) && part.selected
+  )
 
   // 从 activityResponse 获取公共字段
   const activityResp = selectedService.activityResponse
