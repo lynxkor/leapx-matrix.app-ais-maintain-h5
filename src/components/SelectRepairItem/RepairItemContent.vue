@@ -351,7 +351,7 @@ const repairItemContentReplace = (content) => {
 
   if (index !== -1) {
     // 需要替换零件的一些属性（如 packageId、isBindltem 等）
-    const replacedProps = ['partsCode', 'partsId', 'price', 'partsName', 'isOemPart', 'stockCount', 'quantity']
+    const replacedProps = ['partsCode', 'partsId', 'price', 'partsName', 'isOemPart', 'stockCount', 'quantity', 'discountRate', 'discountAmount']
 
     const part = JSON.parse(JSON.stringify(oldPart))
     replacedProps.forEach((prop) => {
@@ -381,7 +381,9 @@ const repairItemContentReplace = (content) => {
         stockCount: oldPart.stockCount,
         isOutstock: oldPart.isOutstock,
         quantity: oldPart.quantity,
-        isOemPart: oldPart.isOemPart
+        isOemPart: oldPart.isOemPart,
+        discountRate: oldPart.discountRate,
+        discountAmount: oldPart.discountAmount
       }
       if (idx !== -1) {
         list.splice(idx, 1, oldPartInfo)

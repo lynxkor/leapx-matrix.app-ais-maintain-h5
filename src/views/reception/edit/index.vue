@@ -2233,7 +2233,7 @@ const onPartsSave = async() => {
       partsList: parts
     })
     if (res.code !== 200) {
-      showToast(res.msg || '保存失败')
+      showToast(res.message || '保存失败')
       return
     }
     showToast('保存成功')
@@ -2253,7 +2253,7 @@ const onPartsSave = async() => {
     triggerFaultRemind()
   } catch (error) {
     console.error('保存失败:', error)
-    showToast('保存失败')
+    showToast(error?.message || '保存失败')
   } finally {
     savingLoading.value = false
   }
