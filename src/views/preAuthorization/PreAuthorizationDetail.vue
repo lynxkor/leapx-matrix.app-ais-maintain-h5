@@ -1379,7 +1379,7 @@ const uploadAttachment = (type) => {
   const currentList = detail.value.attachments[type] || []
   const attachType = getAttachmentTypeLabel(type)
   const config = getAttachConfig(attachType)
-  const maxNum = config.maxNum
+  const maxNum = config.maxNum || 20
   if (maxNum != null && currentList.length >= maxNum) {
     showToast(`最多上传${maxNum}个附件`)
     return

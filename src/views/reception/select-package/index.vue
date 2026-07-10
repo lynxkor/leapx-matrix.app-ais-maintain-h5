@@ -1194,11 +1194,7 @@ const setFaultCheckFlag = () => {
 }
 
 // 确认选择服务活动
-const onConfirmService = () => {
-  if (selectedService.activityUsed) {
-    showToast(`该活动已被${selectedService.actualDealerName ? selectedService.actualDealerName : ''}使用，您不可重复使用`)
-    return
-  }
+const doUseService = () => {
   // 只发送选中的项目
   const selectedItems = selectedService.itemResponseList.filter((item) => item.selected)
 
@@ -1284,6 +1280,25 @@ const onConfirmService = () => {
     .finally(() => {
       serviceSubmitting.value = false
     })
+}
+
+// 确认选择服务活动（该车辆已使用其他方案时，提示是否替换为本方案）
+const onConfirmService = () => {
+  if (selectedService.activityUsed) {
+    showDialog({
+      title: '提示',
+      message: '该车辆已使用其他方案，是否确认要替换为本方案？',
+      showCancelButton: true,
+      confirmButtonText: '替换',
+      cancelButtonText: '取消'
+    })
+      .then(() => {
+        doUseService()
+      })
+      .catch(() => {})
+    return
+  }
+  doUseService()
 }
 
 // 确认选择免保项目
