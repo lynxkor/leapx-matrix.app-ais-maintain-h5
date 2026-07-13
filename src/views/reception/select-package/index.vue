@@ -351,15 +351,15 @@
                   <div class="repair-category">{{ item.checkoutTypeName }}</div>
                 </div>
                 <div class="repair-right">
-                  <div class="repair-price">¥{{ item.claimPrice }}</div>
+                  <div class="repair-price">¥{{ (Number(item.quantity) * Number(item.unitPrice) - Number(item.discountAmount)).toFixed(2) }}</div>
                   <div class="repair-discount">优惠 ¥{{ item.discountAmount }}</div>
                 </div>
               </div>
               <div class="repair-card-bottom">
                 <div class="repair-info-row">
                   <span class="info-item">
-                    <span class="info-label">索赔价</span>
-                    <span class="info-value">¥{{ item.claimPrice || '0.00' }}</span>
+                    <span class="info-label">工时单价</span>
+                    <span class="info-value">¥{{ item.unitPrice || '0.00' }}</span>
                   </span>
                   <span class="info-item">
                     <span class="info-label">工时数</span>
