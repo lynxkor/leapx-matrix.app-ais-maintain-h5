@@ -40,7 +40,7 @@ export const isQuantityEditable = (item) => {
  * @returns {boolean}
  */
 export const isDiscountEditable = (item) => {
-  return !checkoutTypeIncluded(item.checkoutTypeId) && String(item.packageType) !== PackageTypeEnum.STORE && String(item.packageType) !== PackageTypeEnum.TECH_ACTIVITY
+  return !checkoutTypeIncluded(item.checkoutTypeId) && String(item.packageType) !== PackageTypeEnum.STORE && String(item.packageType) !== PackageTypeEnum.TECH_ACTIVITY && String(item.packageType) !== PackageTypeEnum.CARE_ACTIVITY
 }
 
 /**
