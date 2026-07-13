@@ -547,8 +547,8 @@ const executeSettle = async() => {
     } else {
       showToast(res.msg || '结算失败')
     }
-  } catch {
-    showToast('结算失败')
+  } catch (error) {
+    showToast(error?.msg || '结算失败')
   } finally {
     submitLoading.value = false
   }
