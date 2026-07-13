@@ -398,7 +398,6 @@
                       <div class="repair-code">{{ part.oldPartCode }}</div>
                     </div>
                     <div class="repair-right">
-                      <div class="repair-price">¥{{ part.unitPrice }}</div>
                       <div class="repair-discount">优惠 ¥{{ part.discountAmount }}</div>
                     </div>
                   </div>
