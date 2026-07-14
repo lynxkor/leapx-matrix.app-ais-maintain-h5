@@ -959,9 +959,9 @@ const onSave = async() => {
     } else {
       showToast(res.msg || '保存失败')
     }
-  } catch {
+  } catch (res) {
     closeToast()
-    showToast('保存失败')
+    showToast(res?.msg || '保存失败')
   } finally {
     savingLoading.value = false
   }
