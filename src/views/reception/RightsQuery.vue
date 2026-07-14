@@ -160,7 +160,7 @@ onMounted(() => {
 }
 
 .card-list {
-  padding: 12px;
+  padding: 12px 0;
   height: auto;
 }
 
