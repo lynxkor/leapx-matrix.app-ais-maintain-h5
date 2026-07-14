@@ -66,10 +66,129 @@ export function hasDuplicateFileId(list) {
 
 /**
  * 根据附件类型获取上传配置
+ *
+ * 后端返回结构（YAPI AttachmentConfigResp）：
+ *   { code, data: { id, configCode, detailList: [{ attachType, acceptSuffix, maxSize, maxNum, required, ... }] } }
+ * 即 res.data 本身就是配置对象，detailList 直接挂在 res.data 下，没有 .value 包裹。
+ * 兼容：传 ref 整体（ref.value 取 detailList）或传 plain object 都行。
  */
 export function getAttachConfig(attachType, uploadConfig) {
-  const detailList = uploadConfig?.value?.detailList || []
+  const cfg = uploadConfig?.value || uploadConfig || {}
+  const detailList = cfg.detailList || []
   return detailList.find((item) => item.attachType === attachType) || {}
+}
+
+/**
+ * 解析后端下发的 acceptSuffix（带点、逗号隔开，如 ".jpg,.png,.heic"）
+ * - 自动 trim、统一小写、缺 `.` 自动补
+ * - 返回 Set<'.ext'> 或 null（未配置时不校验）
+ */
+export function parseAcceptSuffix(acceptSuffix) {
+  if (acceptSuffix == null) return null
+  const raw = String(acceptSuffix).trim()
+  if (!raw) return null
+  const set = new Set()
+  raw.split(',').forEach((item) => {
+    const v = String(item).trim().toLowerCase()
+    if (!v) return
+    set.add(v.startsWith('.') ? v : `.${v}`)
+  })
+  return set.size > 0 ? set : null
+}
+
+/**
+ * 校验 url 后缀是否在白名单内（针对 native 返回的图片地址）
+ * - 未配置 acceptSuffix 时返回 { ok: true }（放行）
+ * - url 无后缀时返回 { ok: true }（保守放行，避免误伤鉴权链接）
+ * @param {string} url native 返回的图片地址
+ * @param {object} config getAttachConfig 返回的单条配置项（含 acceptSuffix）
+ * @returns {{ok: boolean, ext?: string, allowed?: string}}
+ */
+export function validateFileExtension(url, config) {
+  const cfg = config || {}
+  const allowSet = parseAcceptSuffix(cfg.acceptSuffix)
+  console.log('[validateFileExtension] url:', url, 'acceptSuffix:', cfg.acceptSuffix, 'allowSet:', allowSet ? Array.from(allowSet) : null)
+  if (!allowSet) return { ok: true }
+
+  let ext = ''
+  try {
+    const cleaned = String(url || '').split('?')[0].split('#')[0]
+    const slashIdx = cleaned.lastIndexOf('/')
+    const path = slashIdx >= 0 ? cleaned.slice(slashIdx + 1) : cleaned
+    const dotIdx = path.lastIndexOf('.')
+    if (dotIdx > 0 && dotIdx < path.length - 1) {
+      ext = '.' + path.slice(dotIdx + 1).toLowerCase()
+    }
+  } catch {
+    return { ok: true }
+  }
+  console.log('[validateFileExtension] parsed ext:', ext)
+  if (!ext) return { ok: true }
+
+  if (allowSet.has(ext)) return { ok: true }
+  const allowed = Array.from(allowSet)
+    .map((s) => s.replace(/^\./, ''))
+    .join(', ')
+  return { ok: false, ext: ext.replace(/^\./, ''), allowed }
+}
+
+/**
+ * 判断 uploadFileByUrl 返回是否"成功但后端静默失败"
+ * （如 HEIC 等不被支持格式：res.code === 200 但 data 字段全 null）
+ * @param {object} res 接口返回
+ * @returns {boolean}
+ */
+export function isUploadSilentFailure(res) {
+  if (!res || res.code !== 200) return false
+  const data = res.data
+  if (Array.isArray(data)) {
+    const first = data[0] || {}
+    return !first.id && !first.url && !first.authFileUrl && !first.fileUrl
+  }
+  if (data && typeof data === 'object') {
+    return !data.id && !data.url && !data.authFileUrl && !data.fileUrl
+  }
+  return true
+}
+
+/**
+ * 以服务端最新数据刷新当前 attachType 对应的文件列表
+ *
+ * 背景：uploadFileByUrl 返回的 id 是前端占位用的"假 id"，不能直接用于
+ *       deleteAttachmentConfig（删除会失败）。必须重新拉 getFileList 拿真实 id。
+ *
+ * @param {object} params
+ * @param {string} params.businessId 业务 id（施工单 id）。create 场景为 null 时跳过 refresh
+ * @param {string} params.attachType 当前上传的 attachType（"车内照片"/"车外照片"/"附件资料"）
+ * @param {Array} params.targetList 要刷新的目标数组（detail.interiorImages 等）
+ * @param {Function} params.getFileListApi getFileList 接口（从 '@/libs/api/fileConfig' 导入）
+ * @returns {Promise<boolean>} true=刷新成功；false=跳过或失败
+ */
+export async function refreshAttachmentList({ businessId, attachType, targetList, getFileListApi }) {
+  // create 场景下没有真实业务 id，跳过 refresh 保留前端拼装对象
+  if (!businessId) return false
+  try {
+    const res = await getFileListApi({
+      businessId,
+      sortColumns: [{ column: 'id', sort: 'ASC' }]
+    })
+    if (res.code !== 200) return false
+
+    const serverList = (res.data || []).filter((item) => item.attachType === attachType)
+    // 用服务端真实数据整体替换（含真实 id / fileUrl / authFileUrl）
+    targetList.splice(0, targetList.length, ...serverList.map((item) => ({
+      ...item,
+      url: item.fileUrl || item.url || '',
+      fileUrl: item.fileUrl || item.url || '',
+      authFileUrl: item.authFileUrl || item.fileUrl || item.url || '',
+      fileType: item.fileType || item.ext || getFileType(item, 'image/jpeg'),
+      status: 'done'
+    })))
+    return true
+  } catch (error) {
+    console.error('刷新附件列表失败:', error)
+    return false
+  }
 }
 
 /**

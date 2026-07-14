@@ -832,7 +832,10 @@ import {
   validatePreSaleWarranty,
   validateGoodWillWarranty,
   applyRecentInspectionByVin,
-  hasFaultRemindType
+  hasFaultRemindType,
+  validateFileExtension,
+  isUploadSilentFailure,
+  refreshAttachmentList
 } from '@/utils/receptionCommon'
 import PlateKeyboard from '@/libs/components/PlateKeyboard.vue'
 import DateTimePicker from '@/libs/components/DateTimePicker.vue'
@@ -1785,6 +1788,13 @@ window.getScanResult = async(url) => {
   }
 
   // 遍历每个 URL 进行上传处理
+  // 本批次是否需要刷新：仅当至少有一张图真正上传成功 + detail.id 有值时 refresh
+  let needRefresh = false
+  // 记录本批次真正上传成功的类型快照。
+  // 注意：不能用循环外的 currentUploadType.value——循环中存在 await，
+  // 用户可能在等待期间切换上传类型，若读 .value 会 refresh 到错误的列表。
+  let lastUploadedType = null
+
   for (const singleUrl of urlList) {
     // 保存当前上传类型，避免异步上传完成时类型已改变
     const uploadType = currentUploadType.value
@@ -1795,7 +1805,21 @@ window.getScanResult = async(url) => {
       exterior: '车外照片',
       attachment: '附件资料'
     }
-    // 先添加临时预览
+    const attachType = attachTypeMap[uploadType]
+
+    // 格式校验（白名单）：native 返回 url 后、调上传接口之前拦截
+    // 未配置 acceptSuffix 时 parseAcceptSuffix 返回 null → validateFileExtension 直接放行
+    const attachCfg = getAttachConfig(attachType)
+    console.log('[format-check][edit] singleUrl:', singleUrl)
+    console.log('[format-check][edit] attachType:', attachType, 'config:', attachCfg)
+    const formatCheck = validateFileExtension(singleUrl, attachCfg)
+    console.log('[format-check][edit] result:', formatCheck)
+    if (!formatCheck.ok) {
+      showToast(`不支持的图片格式：${formatCheck.ext || '未知后缀'}，仅允许 ${formatCheck.allowed || '未配置'}`)
+      continue
+    }
+
+    // 先添加临时预览（乐观 UI：让用户立刻看到上传中状态）
     const fileObj = {
       url: singleUrl,
       fileUrl: singleUrl,
@@ -1824,33 +1848,45 @@ window.getScanResult = async(url) => {
         fileUrl: singleUrl,
         businessId: detail.id,
         configCode: 'mcs_serviceproxy',
-        attachType: attachTypeMap[uploadType]
+        attachType
       }
 
       const res = await uploadFileByUrl([params])
 
       if (res.code === 200) {
-        // 兼容两种返回格式：数组或对象
-        const uploadData = Array.isArray(res.data) ? res.data[0] || {} : res.data || {}
+        // 兜底：HEIC 等不被支持格式 → res.code=200 但 data 字段全 null
+        if (isUploadSilentFailure(res)) {
+          const targetList = getTargetFileList(uploadType)
+          if (targetList.length > 0) targetList.pop()
+          showToast('上传失败：文件格式不被支持')
+          continue
+        }
 
-        // 更新文件状态 - 使用保存的 uploadType
+        // 注意：uploadFileByUrl 返回的 id 是"前端占位用"的假 id，
+        // 不能直接用于 deleteAttachmentConfig（删除会失败）。
+        // 真实 id 必须等循环结束后统一 refreshAttachmentList 拿。
+        // 这里只更新"乐观"状态，让 UI 看到上传完成（真实数据会被 refresh 覆盖）
         const targetList = getTargetFileList(uploadType)
         if (targetList.length > 0) {
           const lastIndex = targetList.length - 1
-          const rawUrl = uploadData.fileUrl || uploadData.url || singleUrl
+          const uploadData = Array.isArray(res.data) ? res.data[0] || {} : res.data || {}
           targetList[lastIndex] = {
             ...targetList[lastIndex],
             status: 'done',
             message: '',
-            id: uploadData.id, // 取上传成功的id
-            businessId: detail.id, // 取施工单id
-            url: rawUrl,
-            fileUrl: rawUrl,
-            authFileUrl: uploadData.authFileUrl || rawUrl,
-            fileType: uploadData.fileType || uploadData.ext || getFileType({ url: rawUrl }, 'image/jpeg')
+            // 仅用 fileUrl/authFileUrl 让缩略图立刻显示，id 留空等 refresh
+            url: uploadData.fileUrl || uploadData.url || singleUrl,
+            fileUrl: uploadData.fileUrl || uploadData.url || singleUrl,
+            authFileUrl: uploadData.authFileUrl || uploadData.fileUrl || uploadData.url || singleUrl,
+            fileType: uploadData.fileType || uploadData.ext || getFileType({ url: singleUrl }, 'image/jpeg')
           }
         }
 
+        // 本张上传成功 → 标记循环结束后需要 refresh
+        needRefresh = true
+        // 用循环内快照 uploadType（而非 currentUploadType.value），
+        // 避免用户在 await 期间切换类型导致 refresh 到错误列表
+        lastUploadedType = uploadType
         showToast('上传成功')
       } else {
         // 上传失败，移除临时文件 - 使用保存的 uploadType
@@ -1870,6 +1906,27 @@ window.getScanResult = async(url) => {
       }
       showToast('上传出错')
     }
+  }
+
+  // 所有 url 处理完后，按 attachType 拉服务端真实数据覆盖当前列表：
+  // 1) uploadFileByUrl 返回的 id 是假的，必须靠 getFileList 拿真实 id 才能删除/保存
+  // 2) detail.id 必须有值（create 场景为 null 时跳过，保留前端拼装对象）
+  // 3) 仅当至少一张图真正上传成功时才 refresh
+  // 4) 用循环内记录的类型快照 lastUploadedType，不用 currentUploadType.value
+  if (needRefresh && detail.id && lastUploadedType) {
+    const lastAttachTypeMap = {
+      interior: '车内照片',
+      exterior: '车外照片',
+      attachment: '附件资料'
+    }
+    const lastAttachType = lastAttachTypeMap[lastUploadedType]
+    const lastTargetList = getTargetFileList(lastUploadedType)
+    await refreshAttachmentList({
+      businessId: detail.id,
+      attachType: lastAttachType,
+      targetList: lastTargetList,
+      getFileListApi: getFileList
+    })
   }
 }
 
