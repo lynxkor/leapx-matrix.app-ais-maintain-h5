@@ -1044,6 +1044,10 @@ onMounted(async() => {
     // 遍历每个 URL 进行上传处理
     // 本批次是否需要刷新：仅当至少有一张图真正上传成功 + serviceProxyId 有值时 refresh
     let needRefresh = false
+    // 记录本批次真正上传成功的类型快照。
+    // 注意：不能用循环外的 currentUploadType.value——循环中存在 await，
+    // 用户可能在等待期间切换上传类型，若读 .value 会 refresh 到错误的列表。
+    let lastUploadedType = null
 
     for (const singleUrl of urlList) {
       // 保存当前上传类型，避免异步上传完成时类型已改变
@@ -1130,6 +1134,9 @@ onMounted(async() => {
 
           // 本张上传成功 → 标记循环结束后需要 refresh
           needRefresh = true
+          // 用循环内快照 uploadType（而非 currentUploadType.value），
+          // 避免用户在 await 期间切换类型导致 refresh 到错误列表
+          lastUploadedType = uploadType
           showToast('上传成功')
         } else {
           // 上传失败，移除临时文件 - 使用保存的 uploadType
@@ -1154,15 +1161,15 @@ onMounted(async() => {
     // 1) uploadFileByUrl 返回的 id 是假的，必须靠 getFileList 拿真实 id 才能删除/保存
     // 2) serviceProxyId 必须有值（保存前为 null 时跳过，保留前端拼装对象）
     // 3) 仅当至少一张图真正上传成功时才 refresh
-    if (needRefresh && serviceProxyId.value) {
-      const lastUploadType = currentUploadType.value
+    // 4) 用循环内记录的类型快照 lastUploadedType，不用 currentUploadType.value
+    if (needRefresh && serviceProxyId.value && lastUploadedType) {
       const lastAttachTypeMap = {
         interior: '车内照片',
         exterior: '车外照片',
         attachment: '附件资料'
       }
-      const lastAttachType = lastAttachTypeMap[lastUploadType]
-      const lastTargetList = getTargetFileList(lastUploadType)
+      const lastAttachType = lastAttachTypeMap[lastUploadedType]
+      const lastTargetList = getTargetFileList(lastUploadedType)
       await refreshAttachmentList({
         businessId: serviceProxyId.value,
         attachType: lastAttachType,
