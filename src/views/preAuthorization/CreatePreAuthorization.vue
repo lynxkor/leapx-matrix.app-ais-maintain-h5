@@ -137,6 +137,7 @@
           type="textarea"
           placeholder="请输入申请原因"
           :rows="4"
+          maxlength="500"
           autosize
           class="reason-textarea"
         />
