@@ -221,13 +221,13 @@
                 <div class="repair-type">{{item.repairItemTypeName}}-{{ item.checkoutTypeName }}-{{ item.warrantyTypeName }}</div>
               </div>
               <div class="repair-item-right">
-                <div class="repair-price">¥{{ item.price }}</div>
+                <div class="repair-price">¥{{ item.subtotal }}</div>
                 <div class="repair-discount">优惠 ¥{{ item.discount }}</div>
               </div>
             </div>
             <div class="repair-item-bottom">
               <div class="repair-bottom-left">
-                <span class="repair-subtotal">¥{{ item.subtotal }}</span>
+                <span class="repair-subtotal">¥{{ item.price }}</span>
                 <span class="repair-actual">实际领料 {{ item.actualQuantity }}</span>
                 <span class="repair-return">退料 {{ item.returnQuantity }}</span>
               </div>

@@ -160,13 +160,13 @@
               <div class="repair-type">{{ item.type }}</div>
             </div>
             <div class="repair-item-right">
-              <div class="repair-price">¥{{ item.price }}</div>
+              <div class="repair-price">¥{{ item.subtotal }}</div>
               <div class="repair-discount">优惠 ¥{{ item.discount }}</div>
             </div>
           </div>
           <div class="repair-item-bottom">
-            <span class="repair-subtotal">¥{{ item.subtotal }}</span>
-            <span class="repair-quantity">x{{ item.quantity }}</span>
+            <span class="repair-subtotal">¥{{ item.price }}</span>
+            <span class="repair-quantity">x{{ item.workHour }}</span>
           </div>
         </div>
       </div>
@@ -185,15 +185,15 @@
               <div class="parts-type">{{ item.type }}</div>
             </div>
             <div class="parts-item-right">
-              <div class="parts-price">¥{{ item.price }}</div>
+              <div class="parts-price">¥{{ item.subtotal }}</div>
               <div class="parts-discount">优惠 ¥{{ item.discount }}</div>
             </div>
           </div>
           <div class="parts-item-bottom">
-            <span class="parts-subtotal">¥{{ item.subtotal }}</span>
+            <span class="parts-subtotal">¥{{ item.price }}</span>
             <span class="parts-actual">实际领料 {{ item.actualQuantity }}</span>
             <span class="parts-return">退料 {{ item.returnQuantity }}</span>
-            <span class="parts-quantity">x{{ item.planPickNumber }}</span>
+            <span class="parts-quantity">x{{ item.quantity }}</span>
           </div>
         </div>
       </div>
@@ -1148,8 +1148,9 @@ const onConstructionSelect = async(item) => {
         type: item.repairItemTypeName || '',
         price: item.price || '0',
         discount: item.discountAmount || '0',
-        subtotal: item.totalAmount || '0',
+        subtotal: item.repairAmount || '0',
         quantity: item.quantity || '0',
+        workHour: item.workHour || '0',
         actualQuantity: item.actualQuantity || '0',
         returnQuantity: item.returnQuantity || '0',
         tag: ''
@@ -1163,7 +1164,7 @@ const onConstructionSelect = async(item) => {
         tag: item.isOemPart === 1 ? '原厂件' : '',
         price: item.price || '0',
         discount: item.discountAmount || '0',
-        subtotal: item.totalAmount || '0',
+        subtotal: item.partsAmount || '0',
         quantity: item.quantity || '0',
         actualQuantity: item.actualPickNumber || '0',
         returnQuantity: item.refundedNumber || '0'
