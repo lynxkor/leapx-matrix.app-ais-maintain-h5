@@ -176,6 +176,17 @@ export default function useRepairItemOperations({
     }
     if (item.packageId && packageTypeLabelMap[item.packageType]) {
       const packageLabel = packageTypeLabelMap[item.packageType] || '权益'
+      // 校验：套餐内若存在已领料出库的零件，整包不允许删除，需先全部退料
+      const outstockPart = selectedParts.value.find(
+        (part) => part.isOutstock && part.packageId === item.packageId
+      )
+      if (outstockPart) {
+        showToast({
+          message: `权益导入的零件编码:${outstockPart.partsCode}已经领料出库，不允许删除对应权益，请全部退料后再操作，谢谢`,
+          'z-index': 5100
+        })
+        return
+      }
       showConfirmDialog({
         title: '提示',
         message: `本操作视为您取消核销本次${packageLabel}，请确认`,
