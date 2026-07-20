@@ -881,8 +881,8 @@ const handleConfirmPayment = async() => {
     isPaymentConfirmed.value = true
     showToast('确认收款成功')
     await getDetail({ preserveActiveTab: true })
-  } catch {
-    showToast('确认收款失败')
+  } catch (err) {
+    showToast(err?.msg || '确认收款失败')
   } finally {
     submitLoading.value = false
   }

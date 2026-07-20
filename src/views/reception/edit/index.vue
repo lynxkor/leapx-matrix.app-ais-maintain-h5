@@ -2274,6 +2274,12 @@ const onPartsSave = async() => {
   // 从 RepairItemContent 组件获取数据
   const items = partsData.repairItemRespList || []
   const parts = partsData.sparePartRespList || []
+
+  // 零件如果数量为0，不允许保存，项目允许为0
+  if (parts.some(i => i.quantity <= 0)) {
+    showToast('备件数量必须要大于0')
+    return
+  }
   // 售前保修只能单独开单
   if (!validatePreSaleWarranty(items, parts)) return
 
