@@ -972,7 +972,7 @@ const onSave = async() => {
 
 onMounted(async() => {
   // 如果推送开单，默认带vin时
-  if (route.query.appointId) { // 如果从预约单跳转过来，先查询预约信息获取VIN，再查询车辆信息存入sessionStorage
+  if (route.query.appointId && route.query.appointId !== 'null') { // 如果从预约单跳转过来，先查询预约信息获取VIN，再查询车辆信息存入sessionStorage
     try {
       const reservationRes = await getReservationList(route.query.appointId)
       if (reservationRes.code === 200 && reservationRes.data?.vin) {
