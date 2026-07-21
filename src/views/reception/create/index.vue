@@ -413,7 +413,7 @@ const changeCarDialog = ref(false)
 const changePlateDialog = ref(false)
 
 // 是否从预约单进入：业务类型锁定为「预约到店」并只读
-const isAppointment = computed(() => !!route.query.appointId)
+const isAppointment = computed(() => !!route.query.appointId && route.query.appointId !== 'null')
 
 // 施工单状态
 const serviceProxyId = ref('') // 新建保存后返回的施工单id
@@ -456,7 +456,7 @@ const detail = reactive({
   repairPerson: '',
   repairPersonPhone: '',
   repairPersonTag: '送修人',
-  businessType: route.query.appointId ? BusinessTypeEnum.APPOINTMENT_ARRIVAL : BusinessTypeEnum.NATURAL_ARRIVAL,
+  businessType: isAppointment.value ? BusinessTypeEnum.APPOINTMENT_ARRIVAL : BusinessTypeEnum.NATURAL_ARRIVAL,
   mileage: '',
   networkMileageTotal: '',
   networkMileageAdd: '',
@@ -477,8 +477,8 @@ const detail = reactive({
   orderStatus: '',
   warrantyTypeCollect: '',
   // 预约开单(有appointId)为预约客户，否则为随到客户
-  custType: route.query.appointId ? CustTypeEnum.APPOINTMENT : CustTypeEnum.WALK_IN,
-  custTypeLabel: CustTypeLabelMap[route.query.appointId ? CustTypeEnum.APPOINTMENT : CustTypeEnum.WALK_IN],
+  custType: isAppointment.value ? CustTypeEnum.APPOINTMENT : CustTypeEnum.WALK_IN,
+  custTypeLabel: CustTypeLabelMap[isAppointment.value ? CustTypeEnum.APPOINTMENT : CustTypeEnum.WALK_IN],
   salesDealerName: '',
   salesDealerCode: '',
   appointmentNo: '',
@@ -972,7 +972,7 @@ const onSave = async() => {
 
 onMounted(async() => {
   // 如果推送开单，默认带vin时
-  if (route.query.appointId) { // 如果从预约单跳转过来，先查询预约信息获取VIN，再查询车辆信息存入sessionStorage
+  if (route.query.appointId && route.query.appointId !== 'null') { // 如果从预约单跳转过来，先查询预约信息获取VIN，再查询车辆信息存入sessionStorage
     try {
       const reservationRes = await getReservationList(route.query.appointId)
       if (reservationRes.code === 200 && reservationRes.data?.vin) {
