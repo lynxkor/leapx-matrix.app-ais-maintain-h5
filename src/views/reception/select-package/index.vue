@@ -392,10 +392,10 @@
                     </div>
                     <div class="repair-left">
                       <div class="repair-name-row">
-                        <span class="repair-name">{{ part.oldPartName }}</span>
+                        <span class="repair-name">{{ part.partName }}</span>
                         <span class="repair-tag">{{ part.repairItemTypeName }}</span>
                       </div>
-                      <div class="repair-code">{{ part.oldPartCode }}</div>
+                      <div class="repair-code">{{ part.partCode }}</div>
                     </div>
                     <div class="repair-right">
                       <div class="repair-discount">优惠 ¥{{ part.discountAmount }}</div>
