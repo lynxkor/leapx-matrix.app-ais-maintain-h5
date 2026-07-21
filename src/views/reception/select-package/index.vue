@@ -1253,7 +1253,10 @@ const doUseService = () => {
     actualPickNumber: 0,
     refundedNumber: 0
   }))
-
+  if (enrichedItems?.length === 0 && enrichedParts?.length === 0) {
+    showToast('请选择项目和零件')
+    return
+  }
   const params = {
     id: serviceProxyId.value,
     packageId: selectedService.id,
