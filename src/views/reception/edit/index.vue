@@ -1580,7 +1580,7 @@ const fetchDetail = async(cb) => {
       signatureData.repairItemTypeDetailCollect = data.repairItemTypeDetailCollect || ''
       signatureData.expectFinishAt = data.expectFinishAt || ''
       signatureData.isDeliveryTimeFromApi = !!data.expectFinishAt
-      signatureData.signChannel = getSignChannelName(data.signChannel)
+      signatureData.signChannel = data.signChannelLabel || getSignChannelName(data.signChannel)
 
       // 项目零件数据
       if (data.costCountResp) {

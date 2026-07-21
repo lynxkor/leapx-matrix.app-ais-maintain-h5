@@ -718,7 +718,7 @@ const fetchDetail = async() => {
         signatureData.repairItemTypeDetailCollect = data.repairItemTypeDetailCollect || ''
         signatureData.expectFinishAt = data.expectFinishAt || ''
         signatureData.isLive = data.isLive === 1
-        signatureData.signChannel = getSignChannelName(data.signChannel)
+        signatureData.signChannel = data.signChannelLabel || getSignChannelName(data.signChannel)
         signatureData.signStatusLabel = data.signStatusLabel
         signatureData.attachments = data.attachmentPhotos
           ? data.attachmentPhotos.split(',').filter(Boolean)
