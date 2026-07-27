@@ -18,12 +18,10 @@ function extractAismcTags(nodes) {
 
 export const usePermissionStore = defineStore('permission', {
   state: () => ({
-    permissions: new Set(),
-    loaded: false
+    permissions: new Set()
   }),
   getters: {
     hasPermission: (state) => (tag) => {
-      if (!state.loaded) return true
       return state.permissions.has(tag)
     }
   },
@@ -36,8 +34,6 @@ export const usePermissionStore = defineStore('permission', {
         }
       } catch (e) {
         console.error('获取权限失败:', e)
-      } finally {
-        this.loaded = true
       }
     }
   }
