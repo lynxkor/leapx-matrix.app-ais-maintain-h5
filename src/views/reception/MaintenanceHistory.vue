@@ -113,7 +113,7 @@
                 :key="'part-' + index"
                 class="item-row"
               >
-                <span class="item-name">{{ item.partsName }}</span>
+                <span class="item-name">{{ item.partsName }} x{{ item.quantity }}</span>
                 <span
                   class="payment-tag"
                   :class="item.checkoutTypeName === '保险' ? 'insurance' : 'self-pay'"
