@@ -608,10 +608,10 @@ const attachmentSections = [
   { key: 'vehicle', label: '车辆信息' },
   { key: 'license', label: '行驶证' },
   { key: 'fault', label: '故障信息' },
-  { key: 'finalRight', label: '终身权益' },
-  { key: 'firstMaintain', label: '首保凭证' },
+  // { key: 'finalRight', label: '终身权益' },
+  // { key: 'firstMaintain', label: '首保凭证' },
   { key: 'maintainQuality', label: '保养质检' },
-  { key: 'oldParts', label: '施工旧件' },
+  // { key: 'oldParts', label: '施工旧件' },
   { key: 'oldPartInfo', label: '旧件信息' },
   { key: 'other', label: '其他' }
 ]

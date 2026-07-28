@@ -428,10 +428,10 @@ const attachmentTypeMap = {
   vehicle: '车辆信息',
   license: '行驶证',
   fault: '故障信息',
-  finalRight: '终身权益',
-  firstMaintain: '首保凭证',
+  // finalRight: '终身权益',
+  // firstMaintain: '首保凭证',
   maintainQuality: '保养质检',
-  oldParts: '施工旧件',
+  // oldParts: '施工旧件',
   oldPartInfo: '旧件信息',
   other: '其他'
 }
