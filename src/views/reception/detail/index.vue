@@ -136,7 +136,7 @@
             </div>
 
             <!-- 故障模块列表 -->
-            <div class="fault-modules borderB" v-if="detail.faultAlertRecordRespList.length">
+            <div class="fault-modules borderB" v-if="detail.faultAlertRecordRespList?.length">
               <div class="modules-list">
                 <div
                   v-for="(module, index) in detail.faultAlertRecordRespList"
