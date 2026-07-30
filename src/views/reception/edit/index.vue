@@ -346,7 +346,7 @@
 
           <!-- 维修项目零件内容 - 已生成结算单时按 detail 格式只读展示 -->
           <template v-if="isSettled">
-            <div style="padding: 0 12px">
+            <div style="padding: 12px">
               <!-- 维修项目列表（非套餐） -->
               <div v-if="nonPackageItems.length > 0">
                 <div class="section-title" style="margin-bottom: 8px">维修项目</div>
@@ -550,7 +550,7 @@
 
     <!-- 底部操作栏 -->
     <div class="bottom-bar">
-      <span v-if="!isSettled && activeTab === 'inspection'" class="more-btn" @click="onMore">更多</span>
+      <span v-if="!isCanceled && activeTab === 'inspection'" class="more-btn" @click="onMore">更多</span>
       <template v-if="activeTab === 'inspection'">
         <span v-if="permissionStore.hasPermission('AISMC-app-serviceProxy-addOrUpdate')" class="save-btn" @click="onInspectionSave">保存</span>
         <span v-if="!isSettled && !detail.previewingFinishAt && permissionStore.hasPermission('AISMC-app-serviceProxy-precheck')" class="complete-btn" @click="onComplete"
@@ -908,7 +908,7 @@ const remindList = ref([])
 const onGenerateAuthorization = async() => {
   // 生成预授权
   try {
-    showLoadingToast('请稍候...')
+    showLoadingToast({ message: '请稍候...', forbidClick: true })
     const res = await preAuthAddOrUpdate({ serviceProxyId: detail.id || route.query.id })
     closeToast()
     if (res.code === 200) {
@@ -941,13 +941,13 @@ const repairPersonCollapse = ref([])
 const moreActionsList = computed(() => {
   // 已作废210、反结算200、已生成结算单(isCreateStatementInfo == 1)时，作废禁用
   const isCancelDisabled =
-    detail.orderStatus === 210 || detail.orderStatus === 200 || detail.isCreateStatementInfo === 1
+    detail.orderStatus === RepairOrderStatusEnum.CANCEL || detail.orderStatus === RepairOrderStatusEnum.ANTI_SETTLEMENT || detail.isCreateStatementInfo === 1
 
   // 获取禁用原因文本
   let disabledReason = ''
-  if (detail.orderStatus === 210) {
+  if (detail.orderStatus === RepairOrderStatusEnum.CANCEL) {
     disabledReason = '已作废'
-  } else if (detail.orderStatus === 200) {
+  } else if (detail.orderStatus === RepairOrderStatusEnum.ANTI_SETTLEMENT) {
     disabledReason = '反结算'
   } else if (detail.isCreateStatementInfo === 1) {
     disabledReason = '已生成结算单'
@@ -1944,6 +1944,9 @@ const repairPersonInputLabel = computed(() => {
 const isFaultReadonly = computed(() =>
   detail.isCreateStatementInfo === 1 || Number(detail.orderStatus) === RepairOrderStatusEnum.DELIVERED || Number(detail.orderStatus) === RepairOrderStatusEnum.CANCEL
 )
+
+// 是否已作废
+const isCanceled = computed(() => Number(detail.orderStatus) === RepairOrderStatusEnum.CANCEL)
 
 // 已生成结算单但未交车/未作废，部分字段仍可编辑
 const isSettled = computed(() => detail.isCreateStatementInfo === 1)

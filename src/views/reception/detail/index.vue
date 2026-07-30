@@ -104,15 +104,24 @@
             <!-- 异常描述 -->
             <div class="section-card borderB">
               <div class="section-title">异常描述</div>
-              <div class="expandable-text" :class="{ expanded: abnormalDescExpanded }">
+              <div class="expandable-text">
                 {{ detail.anomalyDescription || '无' }}
               </div>
-              <div
-                v-if="abnormalDescNeedExpand"
-                class="expand-btn"
-                @click="abnormalDescExpanded = !abnormalDescExpanded"
-              >
-                {{ abnormalDescExpanded ? '收起' : '展开' }}
+            </div>
+
+            <!-- 异常描述 -->
+            <div class="section-card borderB">
+              <div class="section-title">客户诉求</div>
+              <div class="expandable-text">
+                {{ detail.customerComment || '无' }}
+              </div>
+            </div>
+
+            <!-- 异常描述 -->
+            <div class="section-card">
+              <div class="section-title">客户经理建议</div>
+              <div class="expandable-text">
+                {{ detail.testResult || '无' }}
               </div>
             </div>
           </div>
@@ -127,7 +136,7 @@
             </div>
 
             <!-- 故障模块列表 -->
-            <div class="fault-modules" v-if="detail.faultAlertRecordRespList.length">
+            <div class="fault-modules borderB" v-if="detail.faultAlertRecordRespList?.length">
               <div class="modules-list">
                 <div
                   v-for="(module, index) in detail.faultAlertRecordRespList"
@@ -140,7 +149,7 @@
             </div>
 
             <!-- 客户故障描述 -->
-            <div class="section-card" v-if="detail.currentFault === '1'">
+            <div class="section-card">
               <div class="section-title">客户故障描述</div>
               <div class="expandable-text" :class="{ expanded: customerFaultDescExpanded }">
                 {{ detail.customerContent || '无' }}
@@ -588,7 +597,7 @@ const onTabScroll = (e) => {
 // Tab状态
 const activeTab = ref('inspection')
 // 可展开文本状态
-const abnormalDescExpanded = ref(false)
+// const abnormalDescExpanded = ref(false)
 const abnormalDescNeedExpand = ref(false)
 const customerFaultDescExpanded = ref(false)
 const customerFaultDescNeedExpand = ref(false)

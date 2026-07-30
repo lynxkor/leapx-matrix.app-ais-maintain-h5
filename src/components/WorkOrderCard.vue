@@ -21,7 +21,7 @@
           <span v-if="item.alarmLevelList?.includes(20)" style="height: 17px">
             <img src="@/assets/image/warning-green.svg" alt="" />
           </span>
-          <span v-if="item.repairItemTypeDetailCollect">
+          <template v-if="item.repairItemTypeDetailCollect">
             <span
               v-for="(tag, index) in item.repairItemTypeDetailCollect.split('&')"
               :key="index"
@@ -29,7 +29,7 @@
             >
               {{ tag }}
             </span>
-          </span>
+          </template>
         </div>
       </div>
       <div class="vehicle-model">
@@ -145,7 +145,6 @@ const onCardClick = () => {
         display: flex;
         gap: 4px;
         align-items: center;
-        padding-top: 5px;
         .info-tag {
           font-size: 10px;
           padding: 1px 4px;
