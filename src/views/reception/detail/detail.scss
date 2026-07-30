@@ -464,12 +464,7 @@
   font-size: 14px;
   color: #191a1b;
   line-height: 20px;
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-
+  word-break: break-all;
   &.expanded {
     -webkit-line-clamp: unset;
     line-clamp: unset;
@@ -486,6 +481,7 @@
 
 // 故障模块列表样式
 .fault-modules {
+  padding-bottom: 10px;
   .modules-list {
     display: flex;
     flex-direction: column;
