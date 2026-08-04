@@ -1,6 +1,6 @@
 import { showToast } from 'vant'
 import { nextTick } from 'vue'
-import { AlarmLevelEnum, WarrantyTypeEnum } from '@/views/repairWork/constant'
+import { AlarmLevelEnum, WarrantyTypeEnum, PackageTypeEnum } from '@/views/repairWork/constant'
 import { RepairOrderStatusEnum, FAULT_REMIND_REPAIR_TYPES } from '@/views/reception/constant'
 import { deleteAttachmentConfig } from '@/libs/api/fileConfig'
 import { getFaultModule, getRecentlyServiceProxy } from '@/api/reception'
@@ -440,6 +440,64 @@ export function validateGoodWillWarranty(selectedItems, selectedParts) {
   if (filteredItems.length > 0 && allItems.length > filteredItems.length) {
     showToast({ message: '善意保修只能单独开单', 'z-index': 5100 })
     return false
+  }
+  return true
+}
+
+/**
+ * 验证商城订单只能单独开单
+ * @returns {boolean} 是否通过验证
+ */
+export function validateStoreOrder(selectedItems, selectedParts) {
+  const allItems = [...selectedItems, ...selectedParts]
+  const filteredItems = allItems.filter(
+    (i) => String(i.packageType) === PackageTypeEnum.STORE
+  )
+  if (filteredItems.length > 0 && allItems.length > filteredItems.length) {
+    showToast({ message: '商城订单只能单独开单', 'z-index': 5100 })
+    return false
+  }
+  return true
+}
+
+/**
+ * 单独开单校验规则配置
+ * - matcher: 命中规则的项目/零件判定函数
+ * - message: 命中规则且未单独开单时的提示文案
+ */
+const ALONE_ORDER_RULES = [
+  {
+    message: '售前保修只能单独开单',
+    matcher: (i) => i.warrantyTypeId === WarrantyTypeEnum.PRE_SALE_WARRANTY
+  },
+  {
+    message: '善意保修只能单独开单',
+    matcher: (i) => i.warrantyTypeId === WarrantyTypeEnum.GOODWILL_WARRANTY
+  },
+  {
+    message: '商城订单只能单独开单',
+    matcher: (i) => String(i.packageType) === PackageTypeEnum.STORE
+  }
+]
+
+/**
+ * 验证单独开单逻辑
+ *
+ * 汇总售前保修、善意保修、商城订单三类「只能单独开单」的校验：
+ * 只要某类项目/零件存在，就不允许与其它项目/零件混在一个工单中。
+ *
+ * @param {Array} selectedItems 选中的维修项目
+ * @param {Array} selectedParts 选中的备件
+ * @returns {boolean} 是否通过验证
+ */
+export function validateAloneOrder(selectedItems, selectedParts) {
+  const allItems = [...(selectedItems || []), ...(selectedParts || [])]
+  for (const rule of ALONE_ORDER_RULES) {
+    const filteredItems = allItems.filter(rule.matcher)
+    if (filteredItems.length > 0 && allItems.length > filteredItems.length) {
+      showToast({ message: rule.message, 'z-index': 5100 })
+      return false
+    }
   }
   return true
 }

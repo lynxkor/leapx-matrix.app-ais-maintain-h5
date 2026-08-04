@@ -1,7 +1,8 @@
 import { ref } from 'vue'
 import { showToast, closeToast, showLoadingToast, showConfirmDialog } from 'vant'
 import { filterRepairItems, filterRepairParts, saveRepairItemInfo } from '@/api/repairWork'
-import { WarrantyTypeEnum, UNIVERSAL_LABOR_HOUR_ITEM_ID, WorkRecordStatusEnum, PackageTypeEnum } from '@/views/repairWork/constant'
+import { UNIVERSAL_LABOR_HOUR_ITEM_ID, WorkRecordStatusEnum, PackageTypeEnum } from '@/views/repairWork/constant'
+import { validateAloneOrder } from '@/utils/receptionCommon'
 import { checkoutTypeIncluded } from './repairItemRules'
 
 /**
@@ -226,34 +227,6 @@ export default function useRepairItemOperations({
   // ============ 保存操作 ============
 
   /**
-   * 验证售前保修只能单独开单
-   * @returns {boolean} 是否通过验证
-   */
-  const validatePreSaleWarranty = () => {
-    const allItems = [...selectedItems.value, ...selectedParts.value]
-    const filteredItems = allItems.filter(i => i.warrantyTypeId === WarrantyTypeEnum.PRE_SALE_WARRANTY)
-    if (filteredItems.length > 0 && allItems.length > filteredItems.length) {
-      showToast({ message: '售前保修只能单独开单', 'z-index': 5100 })
-      return false
-    }
-    return true
-  }
-
-  /**
-   * 验证善意保修只能单独开单
-   * @returns {boolean} 是否通过验证
-   */
-  const validateGoodWillWarranty = () => {
-    const allItems = [...selectedItems.value, ...selectedParts.value]
-    const filteredItems = allItems.filter(i => i.warrantyTypeId === WarrantyTypeEnum.GOODWILL_WARRANTY)
-    if (filteredItems.length > 0 && allItems.length > filteredItems.length) {
-      showToast({ message: '善意保修只能单独开单', 'z-index': 5100 })
-      return false
-    }
-    return true
-  }
-
-  /**
    * 保存维修项目和零件信息
    * @param {Function} onSuccess - 成功回调
    * @returns {Promise<boolean>} 是否保存成功
@@ -262,11 +235,8 @@ export default function useRepairItemOperations({
     // 允许清空
     // if (selectedItems.value.length === 0 && selectedParts.value.length === 0) return false
 
-    // 售前保修只能单独开单
-    if (!validatePreSaleWarranty()) return false
-
-    // 善意保修只能单独开单
-    if (!validateGoodWillWarranty()) return false
+    // 售前保修、善意保修、商城订单只能单独开单
+    if (!validateAloneOrder(selectedItems.value, selectedParts.value)) return false
 
     // 零件如果数量为0，不允许保存，项目允许为0
     if (selectedParts.value.some(i => i.quantity <= 0)) {
@@ -323,7 +293,6 @@ export default function useRepairItemOperations({
     removeItem,
 
     // 保存操作
-    handleSave,
-    validatePreSaleWarranty
+    handleSave
   }
 }

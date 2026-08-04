@@ -829,8 +829,7 @@ import {
   getAttachConfig as _getAttachConfig,
   getTargetFileList as _getTargetFileList,
   handleFileDelete as _handleFileDelete,
-  validatePreSaleWarranty,
-  validateGoodWillWarranty,
+  validateAloneOrder,
   applyRecentInspectionByVin,
   hasFaultRemindType,
   validateFileExtension,
@@ -2283,11 +2282,8 @@ const onPartsSave = async() => {
     showToast('备件数量必须要大于0')
     return
   }
-  // 售前保修只能单独开单
-  if (!validatePreSaleWarranty(items, parts)) return
-
-  // 善意保修只能单独开单
-  if (!validateGoodWillWarranty(items, parts)) return
+  // 售前保修、善意保修、商城订单只能单独开单
+  if (!validateAloneOrder(items, parts)) return
 
   savingLoading.value = true
   try {
