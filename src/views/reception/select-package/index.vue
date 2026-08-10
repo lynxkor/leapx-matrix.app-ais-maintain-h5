@@ -1218,7 +1218,7 @@ const doUseService = () => {
     warrantyTypeId: activityResp.repairItemTypeId,
     warrantyTypeName: activityResp.repairItemTypeName,
     workHour: item.workHour || item.quantity || 1,
-    price: item.amount,
+    price: item.unitPrice,
     packageType: String(activityResp.activityType) === '4' ? '60' : '50',
     packageId: selectedService.activityId + '#' + selectedService.id,
     packageCode: activityResp.activityCode,
