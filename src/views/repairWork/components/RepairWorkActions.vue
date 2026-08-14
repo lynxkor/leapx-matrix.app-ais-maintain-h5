@@ -50,7 +50,7 @@
         作业开始
       </van-button>
       <van-button
-        v-if="hasQualityed && permissionStore.hasPermission('AISMC-app-serviceProxy-repaired')"
+        v-if="hasQualityed && activeTab !== 'working' && permissionStore.hasPermission('AISMC-app-serviceProxy-repaired')"
         class="action-btn rework-btn"
         plain
         type="primary"
@@ -61,7 +61,7 @@
         返修
       </van-button>
       <van-button
-        v-if="hasPendingQuality && permissionStore.hasPermission('AISMC-app-serviceProxy-qualityInspection')"
+        v-if="hasPendingQuality && activeTab !== 'working' && permissionStore.hasPermission('AISMC-app-serviceProxy-qualityInspection')"
         class="action-btn"
         plain
         type="primary"
