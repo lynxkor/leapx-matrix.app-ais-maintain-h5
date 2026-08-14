@@ -323,8 +323,8 @@ const handleSubmit = async() => {
     } else {
       showToast(res.message)
     }
-  } catch {
-    showToast('派工失败')
+  } catch (error) {
+    showToast(error?.msg || '派工失败')
   } finally {
     submitting.value = false
   }
