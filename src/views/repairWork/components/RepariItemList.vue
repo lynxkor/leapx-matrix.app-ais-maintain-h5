@@ -64,8 +64,8 @@
               >
 
               <!-- 终检tab：返修 + 终检 -->
-              <span v-if="item.status === WorkRecordStatusEnum.COMPLETED && permissionStore.hasPermission('AISMC-app-serviceProxy-repaired')" class="action-text rework" @click="handleAction('rework', item)">返修</span>
-              <span v-if="item.status === WorkRecordStatusEnum.COMPLETED && item.qualityCheckStatus !== 30 && permissionStore.hasPermission('AISMC-app-serviceProxy-qualityInspection')" class="action-text rework" @click="handleAction('quality', item)">质检</span>
+              <span v-if="activeTab !== 'working' && item.status === WorkRecordStatusEnum.COMPLETED && permissionStore.hasPermission('AISMC-app-serviceProxy-repaired')" class="action-text rework" @click="handleAction('rework', item)">返修</span>
+              <span v-if="activeTab !== 'working' && item.status === WorkRecordStatusEnum.COMPLETED && item.qualityCheckStatus !== 30 && permissionStore.hasPermission('AISMC-app-serviceProxy-qualityInspection')" class="action-text rework" @click="handleAction('quality', item)">质检</span>
               <!-- <span v-if="item.status === WorkRecordStatusEnum.COMPLETED" class="action-text final-check" @click="handleAction('finalCheck', item)">终检</span> -->
             </div>
           </div>

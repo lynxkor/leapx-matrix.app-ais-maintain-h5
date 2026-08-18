@@ -212,8 +212,8 @@ export async function executeSingleItemOperation(action, { serviceProxyId, item,
       showToast(res.message)
       return false
     }
-  } catch {
-    showToast('操作失败')
+  } catch (res) {
+    showToast(res?.msg || res?.message || '操作失败')
     return false
   }
 }
@@ -248,8 +248,8 @@ export async function executeBatchOperation(action, { serviceProxyId, ids, selec
       showToast(res.message)
       return false
     }
-  } catch {
-    showToast('操作失败')
+  } catch (res) {
+    showToast(res?.msg || res?.message || '操作失败')
     return false
   }
 }
