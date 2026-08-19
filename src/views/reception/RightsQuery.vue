@@ -27,6 +27,9 @@
                     >{{ item.rightsName }}</span
                   >
                 </div>
+                <div v-if="item.rightsType == RightsTypeEnum.COUPON" class="card-bottom">
+                  {{ formatPaymentText(item.paymentAmount) }}
+                </div>
                 <div class="card-bottom">
                   <span v-if="item.forever == 1" class="validity-period">永久有效</span>
                   <span v-else>{{ item.effectDate }} 至 {{ item.expiryDate }}</span>
@@ -48,7 +51,7 @@
             </div>
           </div>
         </div>
-        <Empty v-else />
+        <Empty v-else-if="loaded" />
       </RefreshList>
     </div>
 
@@ -88,6 +91,9 @@ const activeTab = ref(RightsStatusEnum.USABLE)
 // 全量列表数据（接口不支持按状态搜索，一次性拉取后前端过滤）
 const allList = ref([])
 
+// 首次请求是否已返回（成功或失败），返回前不展示空状态，避免先出现后隐藏
+const loaded = ref(false)
+
 // 当前 tab 按权益使用状态过滤后的展示数据
 const list = computed(() =>
   allList.value.filter((item) => item.rightsStatus === activeTab.value)
@@ -108,11 +114,24 @@ const requestData = reactive({
 
 // 设置列表数据
 const onSetData = (data) => {
+  loaded.value = true
   if (data.isRefresh) {
     allList.value = data.list
   } else {
     allList.value.push(...data.list)
   }
+}
+
+// 解析金额区间（如 "(0,2)"）为满减文案：第一个数为使用门槛，第二个数为抵扣金额
+const formatPaymentText = (paymentAmount) => {
+  if (!paymentAmount) return ''
+  const match = String(paymentAmount).match(
+    /^[\[(]\s*(\d+(?:\.\d+)?)\s*,\s*(\d+(?:\.\d+)?)\s*[\])]$/
+  )
+  if (!match) return ''
+  const threshold = Number(match[1])
+  const amount = Number(match[2])
+  return `满${threshold}元减${amount}元`
 }
 
 // 身份权益卡（终身/期限）点击查看权益说明
@@ -229,10 +248,8 @@ onMounted(() => {
       }
 
       .card-bottom {
-        .validity-period {
-          font-size: 12px;
-          color: #888888;
-        }
+        font-size: 12px;
+        color: #888888;
       }
     }
 
