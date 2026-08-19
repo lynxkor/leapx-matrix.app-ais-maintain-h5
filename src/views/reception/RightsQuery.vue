@@ -6,22 +6,24 @@
     </div>
 
     <!-- Tab 导航 -->
-    <van-tabs v-model:active="activeTab" sticky offset-top="0px" @change="onTabChange">
-      <van-tab title="未使用" :name="2"></van-tab>
-      <van-tab title="已失效" :name="5"></van-tab>
+    <van-tabs v-model:active="activeTab" sticky offset-top="0px">
+      <van-tab title="未使用" :name="RightsStatusEnum.USABLE"></van-tab>
+      <van-tab title="已失效" :name="RightsStatusEnum.EXPIRED"></van-tab>
     </van-tabs>
 
     <!-- 列表内容 -->
     <div class="common-scroll-content" ref="scrollEle">
-      <RefreshList :requestData="requestData" :needRefresh="needRefresh" @setData="onSetData">
+      <RefreshList :requestData="requestData" @setData="onSetData">
         <div v-if="list.length > 0" class="card-list">
-          <div v-for="item in list" :key="item.id" class="rights-card">
+          <div v-for="item in list" :key="item.id" class="rights-card" @click="onCardClick(item)">
             <div class="card-main">
               <div class="card-left">
                 <div class="card-top">
                   <span
                     class="rights-name"
-                    :style="{ color: activeTab == 2 ? '#191a1b' : '#888' }"
+                    :style="{
+                      color: item.rightsStatus == RightsStatusEnum.USABLE ? '#191a1b' : '#888'
+                    }"
                     >{{ item.rightsName }}</span
                   >
                 </div>
@@ -32,36 +34,47 @@
               </div>
               <div class="card-divider"></div>
               <div class="card-right">
-                <span v-if="activeTab == 2" class="status-tag status-usable">可使用</span>
-                <span v-if="activeTab == 5" class="status-tag status-expired">已失效</span>
+                <span
+                  v-if="item.rightsStatus == RightsStatusEnum.USABLE"
+                  class="status-tag status-usable"
+                  >可使用</span
+                >
+                <span
+                  v-if="item.rightsStatus == RightsStatusEnum.EXPIRED"
+                  class="status-tag status-expired"
+                  >已失效</span
+                >
               </div>
             </div>
           </div>
         </div>
-        <div v-else class="no-list">
-          <img src="@/assets/image/noList.png" alt="" />
-        </div>
+        <Empty v-else />
       </RefreshList>
     </div>
 
-    <!-- 全屏Loading -->
-    <van-overlay :show="loading">
-      <div class="loading-wrapper">
-        <van-loading size="24px" vertical color="#009100">请稍候...</van-loading>
-      </div>
-    </van-overlay>
+    <!-- 身份权益卡权益说明弹窗 -->
+    <AisPopup
+      v-model:show="showRightsDesc"
+      :title="currentRights?.rightsName"
+      style="height: 70%"
+    >
+      <template #content>
+        <div class="rights-desc" v-html="currentRights?.rightsDesc"></div>
+      </template>
+    </AisPopup>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import RefreshList from '@/libs/components/RefreshList.vue'
+import AisPopup from '@/components/AisPopup.vue'
+import Empty from '@/views/repairWork/components/Empty.vue'
 import { getRightsList } from '@/api/reception'
+import { RightsStatusEnum, RightsTypeEnum } from './constant'
 import { useRoute } from 'vue-router'
 import { usePageSafeArea } from '@/utils/safeArea'
 
-const needRefresh = ref(false)
-const loading = ref(false)
 const route = useRoute()
 usePageSafeArea({ bodyClass: 'ais-page-nav-safe-area' })
 // 车辆信息
@@ -70,38 +83,47 @@ const vehicleInfo = reactive({
 })
 
 // Tab 状态
-const activeTab = ref('unused')
+const activeTab = ref(RightsStatusEnum.USABLE)
 
-// 列表数据
-const list = ref([])
+// 全量列表数据（接口不支持按状态搜索，一次性拉取后前端过滤）
+const allList = ref([])
+
+// 当前 tab 按权益使用状态过滤后的展示数据
+const list = computed(() =>
+  allList.value.filter((item) => item.rightsStatus === activeTab.value)
+)
+
+// 权益说明弹窗
+const showRightsDesc = ref(false)
+const currentRights = ref(null)
 
 // 请求参数
 const requestData = reactive({
   data: {
-    rightsTypeList: [1, 3],
-    serviceProxyId: route.query.id,
-    status: 2
+    rightsTypeList: [RightsTypeEnum.LIFETIME_CARD, RightsTypeEnum.COUPON],
+    serviceProxyId: route.query.id
   },
   api: getRightsList
 })
 
-// Tab 切换
-const onTabChange = (val) => {
-  activeTab.value = val
-  requestData.data.status = val
-  loading.value = true
-  needRefresh.value = true
-}
-
 // 设置列表数据
 const onSetData = (data) => {
   if (data.isRefresh) {
-    list.value = data.list
+    allList.value = data.list
   } else {
-    list.value.push(...data.list)
+    allList.value.push(...data.list)
   }
-  needRefresh.value = false
-  loading.value = false
+}
+
+// 身份权益卡（终身/期限）点击查看权益说明
+const onCardClick = (item) => {
+  if (
+    item.rightsType === RightsTypeEnum.LIFETIME_CARD ||
+    item.rightsType === RightsTypeEnum.TERM_CARD
+  ) {
+    currentRights.value = item
+    showRightsDesc.value = true
+  }
 }
 
 // 页面加载时获取车辆信息
@@ -247,22 +269,22 @@ onMounted(() => {
   }
 }
 
-.no-list {
-  height: 45vh;
-  text-align: center;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.rights-desc {
+  padding: 12px;
+  background: #ffffff;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #333333;
+  line-height: 1.6;
+  word-break: break-word;
 
-  img {
-    max-width: 200px;
+  :deep(img) {
+    max-width: 100%;
+    height: auto;
   }
-}
 
-.loading-wrapper {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
+  :deep(p) {
+    margin: 0 0 8px;
+  }
 }
 </style>
