@@ -296,7 +296,8 @@ const onConfirmFaultChange = async() => {
   clearingFault.value = true
 
   // confirmFault===1（已确认为"准确"）保留原客户描述，否则用默认文案
-  const newCustomerContent = Number(props.confirmFault) === ConfirmFaultEnum.ACCURATE
+  // 原描述为空/纯空格（含回显脏数据）时回落默认文案，避免提交并回写空值
+  const newCustomerContent = Number(props.confirmFault) === ConfirmFaultEnum.ACCURATE && (prevCustomerFaultDesc || '').trim()
     ? prevCustomerFaultDesc
     : '本次进店车辆无故障'
 
