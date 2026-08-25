@@ -90,3 +90,35 @@ export const FAULT_REMIND_REPAIR_TYPES = ['一般维修', '三电维修', '保�
 export const FAULT_REMIND_MESSAGE =
   '维修类型为一般维修或三电维修或保修，系统默认调整 【本次进店是否存在故障】为是，存在故障，请填写故障模块信息!'
 
+/** 权益使用状态 */
+export const RightsStatusEnum = {
+  /** 待生效 */
+  PENDING: 1,
+  /** 可使用 */
+  USABLE: 2,
+  /** 已锁定 */
+  LOCKED: 3,
+  /** 已使用 */
+  USED: 4,
+  /** 已失效 */
+  EXPIRED: 5,
+  /** 已回收 */
+  RECYCLED: 6
+}
+
+/** 权益类型 */
+export const RightsTypeEnum = {
+  /** 终身身份权益卡 */
+  LIFETIME_CARD: 1,
+  /** 期限身份权益卡 */
+  TERM_CARD: 2,
+  /** 优惠券(尾款抵扣券/服务抵扣券) */
+  COUPON: 3,
+  /** 服务代金券 */
+  SERVICE_VOUCHER: 4,
+  /** 商品兑换券 */
+  GOODS_VOUCHER: 5,
+  /** 折扣券 */
+  DISCOUNT_COUPON: 6
+}
+
