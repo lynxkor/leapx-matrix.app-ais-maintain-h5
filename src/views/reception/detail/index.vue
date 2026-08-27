@@ -551,7 +551,7 @@ const onSelectMoreAction = (action) => {
     })
   }
   if (action.name === '实时故障') {
-    window.location.href = `${window.APP_AIS_H5_CONFIG?.VITE_STATIC_RES_URL || import.meta.env.VITE_STATIC_RES_URL}/leapx/batteryDiagnosis?vin=${detail.value.vehProfileVin}&vehicleModel=${detail.value.vehSeriesName}`
+    window.location.href = `${window.APP_AIS_H5_CONFIG?.VITE_STATIC_RES_URL || import.meta.env.VITE_STATIC_RES_URL}/leapx/batteryDiagnosis?vin=${detail.value.vehProfileVin}&vehicleModel=${detail.value.vehSeriesName}&token=${localStorage.getItem('lxpToken')}`
     // router.push({
     //   path: `${window.APP_AIS_H5_CONFIG?.VITE_STATIC_RES_URL || import.meta.env.VITE_STATIC_RES_URL}/leapx/batteryDiagnosis?vin=${detail.value.vehProfileVin}&vehicleModel=${detail.value.vehSeriesName}`,
     //   query: {
@@ -720,6 +720,7 @@ const fetchDetail = async() => {
         // 故障模块列表
         detail.value.faultAlertRecordRespList = data.faultAlertRecordRespList || []
         detail.value.customerContent = data.customerContent || ''
+        detail.value.vehSeriesName = data.vehSeriesName || ''
 
         // 签字确认数据
         signatureData.maintenanceCostEstimation =

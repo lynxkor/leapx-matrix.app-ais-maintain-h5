@@ -1006,7 +1006,7 @@ const onSelectMoreAction = (action) => {
     })
   }
   if (action.name === '实时故障') {
-    window.location.href = `${window.APP_AIS_H5_CONFIG?.VITE_STATIC_RES_URL || import.meta.env.VITE_STATIC_RES_URL}/leapx/batteryDiagnosis?vin=${detail.vin}&vehicleModel=${detail.vehSeriesName}`
+    window.location.href = `${window.APP_AIS_H5_CONFIG?.VITE_STATIC_RES_URL || import.meta.env.VITE_STATIC_RES_URL}/leapx/batteryDiagnosis?vin=${detail.vin}&vehicleModel=${detail.vehSeriesName}&token=${localStorage.getItem('lxpToken')}`
     // router.push({
     //   path: `${window.APP_AIS_H5_CONFIG?.VITE_STATIC_RES_URL || import.meta.env.VITE_STATIC_RES_URL}/leapx/batteryDiagnosis?vin=${detail.vehProfileVin}&vehicleModel=${detail.vehModelId}`,
     //   query: {
@@ -1404,6 +1404,7 @@ const fetchDetail = async(cb) => {
       detail.vehicleModel = data.vehModelName || ''
       detail.vehicleModelName = data.vehModelName || ''
       detail.vehicleModelId = data.vehModelId || ''
+      detail.vehSeriesName = data.vehSeriesName || ''
       detail.vin = data.vehProfileVin || ''
       detail.customerName = data.customerName || ''
       detail.customerPhone = data.customerPhone || ''
