@@ -765,11 +765,11 @@ const handleSignClick = async() => {
         businessId: currentStatementId,
         attachType: '制单签字',
         sortColumns: [
-          { 'column': 'id', 'sort': 'ASC' }
+          { 'column': 'create_time', 'sort': 'DESC' }
         ]
       })
       if (res.code === 200 && res.data && res.data.length > 0) {
-        const images = res.data.map(item => item.fileUrl || item.authFileUrl || item.url)
+        const images = res.data.map(item => item.fileUrl || item.authFileUrl || item.url).slice(0, 1)
         showImagePreview({
           images,
           startPosition: 0,
