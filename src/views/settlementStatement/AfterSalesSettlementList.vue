@@ -72,6 +72,10 @@
               <span class="row-value">{{ detailData.code }}</span>
             </div>
             <div class="info-row">
+              <span class="row-label">结算单状态</span>
+              <span class="row-value">{{ detailData.statementStatusLabel }}</span>
+            </div>
+            <div class="info-row">
               <span class="row-label">总金额</span>
               <span class="row-value">¥{{ formatPrice(detailData.totalAmount) }}</span>
             </div>
@@ -480,6 +484,15 @@ const getDetail = async(options = {}) => {
   }
 }
 
+// 结算单是否是最终状态（无法操作）
+const isFinalStatus = computed(() => {
+  const finalStatuses = [
+    StatementStatusEnum.REVERSE_SETTLEMENT,
+    StatementStatusEnum.CANCELED_SETTLEMENT
+  ]
+  return finalStatuses.includes(detailData.value.statementStatus)
+})
+
 // 是否为待交车状态
 const isPending = computed(() => sourceStatus.value === 'pending')
 
@@ -528,7 +541,7 @@ const showSignSection = computed(() => {
 const showSignAction = computed(() => {
   const backendSignStatus = Number(detailData.value.signStatus)
   const backendSignChannel = Number(detailData.value.signChannel)
-  return !(backendSignStatus === SignStatusEnum.SIGNED && backendSignChannel === SignChannelEnum.PAPER)
+  return !(backendSignStatus === SignStatusEnum.SIGNED && backendSignChannel === SignChannelEnum.PAPER) && !isFinalStatus.value
 })
 const isPcPaymentCompleted = computed(() => {
   return Boolean(detailData.value.receiveTime) || statementStatusText.value.includes('已收款')
@@ -570,7 +583,7 @@ const bottomActionConfig = computed(() => {
   // 2. isCheck === true：已提交结算，判断签字状态
   // 保修/合同类型特殊处理
   if (isWarrantyOrContract.value) {
-    if (signStatus.value === 'signed') {
+    if (signStatus.value === 'signed' && !isFinalStatus.value) {
       return {
         type: 'hint',
         text: '请移步PC创建保修申请单'
@@ -923,7 +936,7 @@ const handleBottomAction = () => {
 
 const handleDirectSubmitSettlement = async() => {
   // 判断是否有多个待结算单
-  if (pendingSettlementCount.value > 1) {
+  if (pendingSettlementCount.value >= 1) {
     showPendingTip.value = true
     return
   }
