@@ -73,7 +73,7 @@
             </div>
             <div class="info-row">
               <span class="row-label">结算单状态</span>
-              <span class="row-value">{{ detailData.statementStatusLabel }}</span>
+              <span class="row-value">{{ statementStatusText || '-' }}</span>
             </div>
             <div class="info-row">
               <span class="row-label">总金额</span>
@@ -499,7 +499,7 @@ const isPending = computed(() => sourceStatus.value === 'pending')
 // 是否为已交车状态
 const isCompleted = computed(() => sourceStatus.value === 'completed')
 const isSingleSettlement = computed(() => statementList.value.length <= 1)
-// 计算数组中 isCheck 为 false 的数量
+// 计算数组中 isCheck 为 false 且状态为待结算的数量（取消/反结算的单子不算待提交）
 const uncheckedCount = computed(() => {
   return statementList.value.filter((item) => item.isCheck === false && item.statementStatus === StatementStatusEnum.PENDING_SETTLEMENT).length
 })
@@ -536,20 +536,23 @@ const showSignSection = computed(() => {
   }
   return true
 })
-// 仅"已签字且纸质单据"隐藏签字入口（纸质单据没有用户签字图片）；
-// 待签字时即使是纸质单据也保留入口，避免脏数据（如重复签字后状态回退）导致无法邀请客户签字
+// 已签字：保留"查看客户签字"入口（纸质单据除外，无用户签字图片）——最终状态下签字图片仍可作反结算争议凭证
+// 待签字：最终状态（反结算/取消结算）不再邀请签字，其余情况保留入口，避免脏数据（如重复签字后状态回退）导致无法邀请客户签字
 const showSignAction = computed(() => {
   const backendSignStatus = Number(detailData.value.signStatus)
   const backendSignChannel = Number(detailData.value.signChannel)
-  return !(backendSignStatus === SignStatusEnum.SIGNED && backendSignChannel === SignChannelEnum.PAPER) && !isFinalStatus.value
+  if (backendSignStatus === SignStatusEnum.SIGNED) {
+    return backendSignChannel !== SignChannelEnum.PAPER
+  }
+  return !isFinalStatus.value
 })
 const isPcPaymentCompleted = computed(() => {
   return Boolean(detailData.value.receiveTime) || statementStatusText.value.includes('已收款')
 })
 const bottomActionConfig = computed(() => {
   // ========== 前置条件检查 ==========
-  // 详情为空、已交车状态、已确认收款 → 不显示按钮
-  if (isEmptyDetail.value || isCompleted.value || isPcPaymentCompleted.value || isPaymentConfirmed.value) {
+  // 详情为空、已交车状态、已确认收款、最终状态（反结算/取消结算） → 不显示按钮
+  if (isEmptyDetail.value || isCompleted.value || isPcPaymentCompleted.value || isPaymentConfirmed.value || isFinalStatus.value) {
     return null
   }
 
@@ -581,9 +584,9 @@ const bottomActionConfig = computed(() => {
   }
 
   // 2. isCheck === true：已提交结算，判断签字状态
-  // 保修/合同类型特殊处理
+  // 保修/合同类型特殊处理（最终状态已被顶层前置条件拦截）
   if (isWarrantyOrContract.value) {
-    if (signStatus.value === 'signed' && !isFinalStatus.value) {
+    if (signStatus.value === 'signed') {
       return {
         type: 'hint',
         text: '请移步PC创建保修申请单'
@@ -935,7 +938,7 @@ const handleBottomAction = () => {
 }
 
 const handleDirectSubmitSettlement = async() => {
-  // 判断是否有多个待结算单
+  // 只要还有其他待提交结算单就先提示（确认后继续提交，不阻塞）
   if (pendingSettlementCount.value >= 1) {
     showPendingTip.value = true
     return
