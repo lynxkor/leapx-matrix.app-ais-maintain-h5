@@ -326,7 +326,7 @@ import {
 import { getFileList } from '@/libs/api/fileConfig'
 import { usePageSafeArea } from '@/utils/safeArea'
 import { usePermissionStore } from '@/stores/permission'
-import { SignChannelEnum, SignStatusEnum } from '@/views/reception/constant'
+import { SignChannelEnum, SignStatusEnum, StatementStatusEnum } from '@/views/reception/constant'
 
 const route = useRoute()
 const permissionStore = usePermissionStore()
@@ -488,7 +488,7 @@ const isCompleted = computed(() => sourceStatus.value === 'completed')
 const isSingleSettlement = computed(() => statementList.value.length <= 1)
 // 计算数组中 isCheck 为 false 的数量
 const uncheckedCount = computed(() => {
-  return statementList.value.filter((item) => item.isCheck === false).length
+  return statementList.value.filter((item) => item.isCheck === false && item.statementStatus === StatementStatusEnum.PENDING_SETTLEMENT).length
 })
 
 // 当前结算单是否为最后一个（isCheck 为 false 且整个数组中只有一个 isCheck 为 false）
@@ -548,7 +548,7 @@ const bottomActionConfig = computed(() => {
   // ========== 核心逻辑 ==========
 
   // 1. isCheck === false：未提交结算，显示提交结算按钮
-  if (detailData.value.isCheck === false) {
+  if (detailData.value.isCheck === false && detailData.value.statementStatus === StatementStatusEnum.PENDING_SETTLEMENT) {
     if (shouldUseSignFlow.value) {
       return permissionStore.hasPermission('AISMC-app-serviceStatement-submitSettlementAndSign')
         ? {

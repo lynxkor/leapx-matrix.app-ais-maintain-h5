@@ -39,6 +39,16 @@ export const SignStatusEnum = {
   SIGNED: 20
 }
 
+/** 结算状态 */
+export const StatementStatusEnum = {
+  /** 待结算 */
+  PENDING_SETTLEMENT: 10,
+  PENDING_PAYMENT: 30,
+  PAID: 40,
+  REVERSE_SETTLEMENT: 50,
+  CANCELED_SETTLEMENT: 60
+}
+
 /** 当前故障 */
 export const CurrentFaultEnum = {
   /** 无故障 */
