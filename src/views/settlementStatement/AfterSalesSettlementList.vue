@@ -47,10 +47,10 @@
 
         <!-- 结算信息卡片 -->
         <div class="settle-info-card">
-          <div v-if="showSignSection" class="sign-section" @click="handleSignClick">
+          <div v-if="showSignSection" class="sign-section">
           <div class="sign-header">
             <span class="sign-title">客户签字</span>
-            <div class="sign-status">
+            <div v-if="showSignAction" class="sign-status" @click="handleSignClick">
               <span :class="signStatusClass">{{ signActionText }}</span>
               <svg class="chevron-icon" width="16" height="16" viewBox="0 0 16 16" fill="none">
                 <path
@@ -70,6 +70,10 @@
             <div class="info-row">
               <span class="row-label">结算单号</span>
               <span class="row-value">{{ detailData.code }}</span>
+            </div>
+            <div class="info-row">
+              <span class="row-label">结算单状态</span>
+              <span class="row-value">{{ statementStatusText || '-' }}</span>
             </div>
             <div class="info-row">
               <span class="row-label">总金额</span>
@@ -326,6 +330,7 @@ import {
 import { getFileList } from '@/libs/api/fileConfig'
 import { usePageSafeArea } from '@/utils/safeArea'
 import { usePermissionStore } from '@/stores/permission'
+import { SignChannelEnum, SignStatusEnum, StatementStatusEnum } from '@/views/reception/constant'
 
 const route = useRoute()
 const permissionStore = usePermissionStore()
@@ -384,13 +389,13 @@ const getFallbackBaseInfo = () => ({
 const getSignStatus = (statement) => {
   const backendSignStatus = Number(statement?.signStatus)
 
-  // 20: 已签字
-  if (backendSignStatus === 20) {
+  // 已签字
+  if (backendSignStatus === SignStatusEnum.SIGNED) {
     return 'signed'
   }
 
-  // 10: 待签字
-  if (backendSignStatus === 10) {
+  // 待签字
+  if (backendSignStatus === SignStatusEnum.PENDING_SIGN) {
     return 'pending'
   }
 
@@ -479,15 +484,24 @@ const getDetail = async(options = {}) => {
   }
 }
 
+// 结算单是否是最终状态（无法操作）
+const isFinalStatus = computed(() => {
+  const finalStatuses = [
+    StatementStatusEnum.REVERSE_SETTLEMENT,
+    StatementStatusEnum.CANCELED_SETTLEMENT
+  ]
+  return finalStatuses.includes(detailData.value.statementStatus)
+})
+
 // 是否为待交车状态
 const isPending = computed(() => sourceStatus.value === 'pending')
 
 // 是否为已交车状态
 const isCompleted = computed(() => sourceStatus.value === 'completed')
 const isSingleSettlement = computed(() => statementList.value.length <= 1)
-// 计算数组中 isCheck 为 false 的数量
+// 计算数组中 isCheck 为 false 且状态为待结算的数量（取消/反结算的单子不算待提交）
 const uncheckedCount = computed(() => {
-  return statementList.value.filter((item) => item.isCheck === false).length
+  return statementList.value.filter((item) => item.isCheck === false && item.statementStatus === StatementStatusEnum.PENDING_SETTLEMENT).length
 })
 
 // 当前结算单是否为最后一个（isCheck 为 false 且整个数组中只有一个 isCheck 为 false）
@@ -517,18 +531,28 @@ const pendingSettlementCount = computed(() => {
 const showSignSection = computed(() => {
   const backendSignStatus = Number(detailData.value.signStatus)
   // null 或 undefined → 不显示签字模块
-  if (backendSignStatus !== 10 && backendSignStatus !== 20) {
+  if (backendSignStatus !== SignStatusEnum.PENDING_SIGN && backendSignStatus !== SignStatusEnum.SIGNED) {
     return false
   }
   return true
+})
+// 已签字：保留"查看客户签字"入口（纸质单据除外，无用户签字图片）——最终状态下签字图片仍可作反结算争议凭证
+// 待签字：最终状态（反结算/取消结算）不再邀请签字，其余情况保留入口，避免脏数据（如重复签字后状态回退）导致无法邀请客户签字
+const showSignAction = computed(() => {
+  const backendSignStatus = Number(detailData.value.signStatus)
+  const backendSignChannel = Number(detailData.value.signChannel)
+  if (backendSignStatus === SignStatusEnum.SIGNED) {
+    return backendSignChannel !== SignChannelEnum.PAPER
+  }
+  return !isFinalStatus.value
 })
 const isPcPaymentCompleted = computed(() => {
   return Boolean(detailData.value.receiveTime) || statementStatusText.value.includes('已收款')
 })
 const bottomActionConfig = computed(() => {
   // ========== 前置条件检查 ==========
-  // 详情为空、已交车状态、已确认收款 → 不显示按钮
-  if (isEmptyDetail.value || isCompleted.value || isPcPaymentCompleted.value || isPaymentConfirmed.value) {
+  // 详情为空、已交车状态、已确认收款、最终状态（反结算/取消结算） → 不显示按钮
+  if (isEmptyDetail.value || isCompleted.value || isPcPaymentCompleted.value || isPaymentConfirmed.value || isFinalStatus.value) {
     return null
   }
 
@@ -540,7 +564,7 @@ const bottomActionConfig = computed(() => {
   // ========== 核心逻辑 ==========
 
   // 1. isCheck === false：未提交结算，显示提交结算按钮
-  if (detailData.value.isCheck === false) {
+  if (detailData.value.isCheck === false && detailData.value.statementStatus === StatementStatusEnum.PENDING_SETTLEMENT) {
     if (shouldUseSignFlow.value) {
       return permissionStore.hasPermission('AISMC-app-serviceStatement-submitSettlementAndSign')
         ? {
@@ -560,7 +584,7 @@ const bottomActionConfig = computed(() => {
   }
 
   // 2. isCheck === true：已提交结算，判断签字状态
-  // 保修/合同类型特殊处理
+  // 保修/合同类型特殊处理（最终状态已被顶层前置条件拦截）
   if (isWarrantyOrContract.value) {
     if (signStatus.value === 'signed') {
       return {
@@ -603,7 +627,7 @@ const bottomActionConfig = computed(() => {
   // 其他类型：已提交结算后不显示按钮
   return null
 })
-const signChannelValue = computed(() => (selectedChannel.value === 'paper' ? 40 : undefined))
+const signChannelValue = computed(() => (selectedChannel.value === 'paper' ? SignChannelEnum.PAPER : undefined))
 const buildSettlementPayload = (includeSignChannel = false) => {
   const payload = {
     id: detailData.value.id,
@@ -710,7 +734,7 @@ const onAmountInput = () => {
 // signStatus: 10-待签字, 20-已签字
 const signActionText = computed(() => {
   const backendSignStatus = Number(detailData.value.signStatus)
-  if (backendSignStatus === 20) {
+  if (backendSignStatus === SignStatusEnum.SIGNED) {
     return '查看客户签字'
   }
   return '邀请客户签字'
@@ -718,7 +742,7 @@ const signActionText = computed(() => {
 
 const signDescription = computed(() => {
   const backendSignStatus = Number(detailData.value.signStatus)
-  if (backendSignStatus === 20) {
+  if (backendSignStatus === SignStatusEnum.SIGNED) {
     return '客户已完成签字确认'
   }
   return '为保障双方合理权益，请完成客户签字确认'
@@ -726,8 +750,8 @@ const signDescription = computed(() => {
 
 const signStatusClass = computed(() => {
   const backendSignStatus = Number(detailData.value.signStatus)
-  // 10-待签字显示红色(#B91919)，20-已签字显示灰色(#888888)
-  if (backendSignStatus === 10) {
+  // 待签字显示红色(#B91919)，已签字显示灰色(#888888)
+  if (backendSignStatus === SignStatusEnum.PENDING_SIGN) {
     return 'status-red'
   }
   return 'status-gray'
@@ -746,15 +770,15 @@ const handleSignClick = async() => {
 
   const backendSignStatus = Number(detailData.value.signStatus)
 
-  // signStatus=10: 待签字，直接跳转外部页面（同APP/短信/零小跑逻辑）
-  if (backendSignStatus === 10) {
+  // 待签字：直接跳转外部页面（同APP/短信/零小跑逻辑）
+  if (backendSignStatus === SignStatusEnum.PENDING_SIGN) {
     const targetUrl = `${window.APP_AIS_H5_CONFIG?.VITE_STATIC_RES_URL || import.meta.env.VITE_STATIC_RES_URL}/leapx/biling/aisInner/settlement?serviceProxyId=${serviceProxyId.value}&signChannel=3&token=${localStorage.getItem('lxpToken')}`
     window.location.href = targetUrl
     return
   }
 
-  // signStatus=20: 已签字，调用接口获取签字图片并展示
-  if (backendSignStatus === 20) {
+  // 已签字：调用接口获取签字图片并展示
+  if (backendSignStatus === SignStatusEnum.SIGNED) {
     const currentStatementId = detailData.value.id || statementId.value
     if (!currentStatementId) {
       showToast('缺少结算单ID')
@@ -765,11 +789,11 @@ const handleSignClick = async() => {
         businessId: currentStatementId,
         attachType: '制单签字',
         sortColumns: [
-          { 'column': 'id', 'sort': 'ASC' }
+          { 'column': 'create_time', 'sort': 'DESC' }
         ]
       })
       if (res.code === 200 && res.data && res.data.length > 0) {
-        const images = res.data.map(item => item.fileUrl || item.authFileUrl || item.url)
+        const images = res.data.map(item => item.fileUrl || item.authFileUrl || item.url).slice(0, 1)
         showImagePreview({
           images,
           startPosition: 0,
@@ -914,8 +938,8 @@ const handleBottomAction = () => {
 }
 
 const handleDirectSubmitSettlement = async() => {
-  // 判断是否有多个待结算单
-  if (pendingSettlementCount.value > 1) {
+  // 只要还有其他待提交结算单就先提示（确认后继续提交，不阻塞）
+  if (pendingSettlementCount.value >= 1) {
     showPendingTip.value = true
     return
   }
@@ -1425,7 +1449,6 @@ const handlePaymentSubmit = async() => {
     border-radius: 6px;
     padding: 12px;
     margin-bottom: 12px;
-    cursor: pointer;
 
     .sign-header {
       display: flex;
@@ -1444,6 +1467,7 @@ const handlePaymentSubmit = async() => {
         display: flex;
         align-items: center;
         gap: 4px;
+        cursor: pointer;
 
         .status-red {
           font-family: 'PingFang SC';
