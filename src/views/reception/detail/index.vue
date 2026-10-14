@@ -34,7 +34,7 @@
       </div>
 
       <div class="select-row">
-        <span class="label">业务类型</span>
+        <span class="label">进店类型</span>
         <div class="value-wrapper">
           <span class="value">{{ detail.businessTypeLabel }}</span>
         </div>

@@ -166,10 +166,27 @@
       </RefreshList>
     </div>
 
-    <!-- 结算确认弹窗（存在故障） -->
+    <!-- 结算确认弹窗 -->
     <AisPopup v-model:show="showSettlePopup" title="结算" position="bottom" round>
       <template #content>
+        <!-- 离店类型选择 -->
         <div class="question-card">
+          <div class="question-text">离店类型</div>
+          <div class="option-row">
+            <div
+              v-for="item in departureTypeOptions"
+              :key="item.value"
+              class="option-btn"
+              :class="departureType === item.value ? 'active resolved-active' : ''"
+              @click="departureType = item.value"
+            >
+              {{ item.label }}
+            </div>
+          </div>
+        </div>
+
+        <!-- 故障解决情况（仅故障进店时展示） -->
+        <div v-if="currentFault === 1" class="question-card">
           <div class="question-text">客户反馈故障是否全部解决</div>
           <div class="option-row">
             <div
@@ -190,7 +207,7 @@
         </div>
 
         <!-- 未解决原因单选标签 -->
-        <div v-if="settleOption === 'unresolved'" class="reason-card">
+        <div v-if="currentFault === 1 && settleOption === 'unresolved'" class="reason-card">
           <div class="reason-text">未解决原因</div>
           <div class="reason-tags">
             <div
@@ -329,6 +346,8 @@ const showConfirmPopup = ref(false)
 const showUploadDialog = ref(false)
 const settleOption = ref('resolved')
 const selectedReason = ref('')
+const departureType = ref('10')
+const departureTypeOptions = ref([])
 const currentItem = ref(null)
 const refreshListRef = ref(null)
 const submitLoading = ref(false)
@@ -412,8 +431,25 @@ const getReasonOptions = async() => {
   }
 }
 
+// 离店类型选项
+const getDepartureTypeOptions = async() => {
+  try {
+    const res = await getEnumValue('DepartureTypeEnum')
+    if (res?.data) {
+      const list = Array.isArray(res.data) ? res.data : []
+      departureTypeOptions.value = list.map((item) => ({
+        label: item.message,
+        value: String(item.code)
+      }))
+    }
+  } catch (error) {
+    console.error('获取离店类型枚举失败', error)
+  }
+}
+
 onMounted(() => {
   getReasonOptions()
+  getDepartureTypeOptions()
   const savedFilter = sessionStorage.getItem('settlementFilter')
   if (savedFilter) {
     try {
@@ -629,21 +665,14 @@ const handleSettle = (item) => {
   currentFault.value = item.currentFault ?? 0
   settleOption.value = 'resolved'
   selectedReason.value = ''
-  if (currentFault.value === 1) {
-    showSettlePopup.value = true
-  } else {
-    showConfirmPopup.value = true
-  }
+  departureType.value = '10'
+  // 结算统一弹窗：选择离店类型（有故障时还需填写故障解决情况）
+  showSettlePopup.value = true
 }
 
 const confirmSettle = () => {
-  // 非故障进店：直接弹出确认对话框
-  if (currentFault.value !== 1) {
-    showConfirmPopup.value = true
-    return
-  }
   // 存在故障：校验未解决原因
-  if (settleOption.value === 'unresolved' && !selectedReason.value) {
+  if (currentFault.value === 1 && settleOption.value === 'unresolved' && !selectedReason.value) {
     showToast('请选择未解决原因')
     return
   }
@@ -660,6 +689,7 @@ const executeSettle = async() => {
     const res = await addServiceProxyStatement({
       ...currentItem.value,
       serviceProxyId: currentItem.value.serviceProxyId || currentItem.value.id,
+      departureType: Number(departureType.value),
       faultSolve: settleOption.value === 'resolved' ? 1 : 0,
       faultSolveLabel: settleOption.value === 'resolved' ? '已解决' : '未解决',
       reason: settleOption.value === 'unresolved' ? selectedReason.value : ''

@@ -77,6 +77,7 @@ export function cancelServiceProxy(data) {
  * 接车施工单结算
  * @param {Object} data - 结算参数
  * @param {string} data.serviceProxyId - 接车施工单 ID
+ * @param {number} data.departureType - 离店类型 DepartureTypeEnum：10-自然离店，20-取送车离店
  * @param {number} data.faultSolve - 客户反馈问题是否全部解决：1-已解决，0-未解决
  * @param {string} [data.reason] - 未解决原因
  * @returns {Promise}

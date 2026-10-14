@@ -8,7 +8,7 @@
     <van-collapse-item name="businessType">
       <template #title>
         <div class="select-row">
-          <span class="label">业务类型</span>
+          <span class="label">进店类型</span>
           <span class="value">{{ currentLabel }}</span>
         </div>
       </template>
@@ -27,7 +27,7 @@
     </van-collapse-item>
   </van-collapse>
   <div v-else class="select-row">
-    <span class="label">业务类型</span>
+    <span class="label">进店类型</span>
     <span class="value">{{ currentLabel }}</span>
   </div>
 </template>
